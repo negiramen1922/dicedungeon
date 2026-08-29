@@ -288,11 +288,11 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .tierb{font-size:9px;letter-spacing:.14em;border:1px solid;padding:0 5px;
   line-height:1.5;display:inline-block;vertical-align:1px}
 .act.cstat{border-left-color:var(--moss)} .act.cstat .rcat{color:var(--moss);border-color:var(--moss)}
-.act.cact{border-left-color:var(--brass)} .act.cact .rcat{color:var(--brass);border-color:var(--brass)}
+.act.cskill{border-left-color:var(--brass)} .act.cskill .rcat{color:var(--brass);border-color:var(--brass)}
 .act.cpass{border-left-color:var(--blue)} .act.cpass .rcat{color:var(--blue);border-color:var(--blue)}
 .legend2{font-size:10px;color:var(--ink);letter-spacing:.04em;margin-left:6px}
 .legend2 i{display:inline-block;width:8px;height:8px;margin-right:3px;vertical-align:0}
-.legend2 i.cstat{background:var(--moss)} .legend2 i.cact{background:var(--brass)}
+.legend2 i.cstat{background:var(--moss)} .legend2 i.cskill{background:var(--brass)}
 .legend2 i.cpass{background:var(--blue)}
 /* 取得済みの特性 */
 .passrow{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
@@ -2252,7 +2252,7 @@ const REW={
  },
 };
 
-const CAT={act:{n:"ス キ ル",c:"cact"},
+const CAT={act:{n:"ス キ ル",c:"cskill"},   /* 盤面の .cact（予告アイコン）と名前を分ける */
            pass:{n:"パッシブ",c:"cpass"},
            gear:{n:"装 備",c:"cgear"}};
 const PCOND={
@@ -3385,7 +3385,7 @@ function foeModal(f){
     ${c>=2?`<div class="msec">わ か っ て い る こ と</div>
       <div class="mitem">攻 <b>${f.STR}</b>　DEF <b>${f.DEF}</b>　速 <b>${f.DEX}</b></div>`:""}
     ${c>=4?`<div class="mitem"><span class="s">${f.acts.map(a=>a.n).join("・")}</span></div>`:""}
-    <button class="mclose" id="fmClose">閉じる</button>`);
+    <button class="mclose" id="fmClose">閉じる</button>`,true);
   $("#fmClose").onclick=closeModal;
 }
 
@@ -4532,11 +4532,19 @@ function metaNote(){
 }
 
 /* ---------- せり出す窓 ---------- */
-function openModal(html){
+/* 外側を押して閉じてよいのは「見るだけの窓」だけ。
+   選ぶことで流れが進む窓（報酬・レベルアップ・枠の入れ替え・戦利品など）を
+   外側クリックで閉じると、続きを呼ぶ処理が走らず先に進めなくなる。
+   そのため既定は閉じない。閉じてよい窓だけ openModal(h,true) で開く。 */
+function openModal(html,dismissible){
   $("#mbox").innerHTML=html;
-  $("#modal").classList.remove("hide");
+  const m=$("#modal");
+  m.dataset.free=dismissible?"1":"";
+  m.classList.remove("hide");
 }
 function closeModal(){$("#modal").classList.add("hide");}
+function modalOpen(){return !$("#modal").classList.contains("hide");}
+function modalFree(){return modalOpen()&&$("#modal").dataset.free==="1";}
 
 /* 3つから1つ選ぶ窓 */
 function choiceModal(title,note,list,onPick,skipTxt,onSkip){
@@ -4655,7 +4663,7 @@ function charModal(back){
       ${poolTag("pass",pp.id)}</div>`;}).join("")
     :`<div class="mitem" style="color:#4d5346">まだ無い</div>`;
   h+=`<button class="mclose" id="mClose">${back?"もどる":"閉じる"}</button>`;
-  openModal(h);
+  openModal(h,true);
   $("#mClose").onclick=()=>{if(back){closeModal();back();}else closeModal();};
 }
 
@@ -4741,7 +4749,7 @@ function swapModal(kind,newR,after){
   const isAct=(kind==="act");
   const list=isAct?me.sk:me.pass;
   const label=isAct?"ス キ ル":"パ ッ シ ブ";
-  const cls=isAct?"cact":"cpass";
+  const cls=isAct?"cskill":"cpass";
   let h=`<div class="mtitle">${label} の 枠 が 埋 ま っ て い る</div>
     <div class="mgrow"><b>${newR.n}</b>　${newR.d}</div>
     <div class="msub">忘れるものを選ぶ（上限 ${isAct?SKMAX:PASSMAX}）</div><div class="acts">`;
@@ -5532,7 +5540,7 @@ $("#back").onclick=goHome;
 if(!META.tutSeen){drawTut();showScreen("tut");}else goHome();
 $("#charBtn").onclick=charModal;
 $("#charBtn2").onclick=charModal;
-$("#modal").onclick=e=>{if(e.target.id==="modal")closeModal();};
+$("#modal").onclick=e=>{if(e.target.id==="modal"&&modalFree())closeModal();};
 $("#detBtn").onclick=()=>{
   const d=$("#detail"),b=$("#detBtn");
   d.classList.toggle("hide");
@@ -5573,7 +5581,9 @@ $("#gear").onclick=()=>{SFX.click();openSet();};
 $("#setClose").onclick=closeSet;
 $("#setwrap").onclick=e=>{if(e.target.id==="setwrap")closeSet();};
 document.addEventListener("keydown",e=>{
-  if(e.key==="Escape"&&!$("#setwrap").classList.contains("hide"))closeSet();});
+  if(e.key!=="Escape")return;
+  if(!$("#setwrap").classList.contains("hide"))return closeSet();
+  if(modalFree())closeModal();});
 SLIDERS.forEach(([k,sid])=>{
   const el=$("#"+sid);
   el.oninput=()=>{
