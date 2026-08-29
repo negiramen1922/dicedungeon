@@ -361,6 +361,11 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .mnode{cursor:default}
 .mnode.go{cursor:pointer}
 .mnode.go:hover rect{fill:#343a28}
+/* 部屋を選んだときの窓は地図の下にあり、地図が 68vh あるぶん画面からはみ出して
+   「やめておく」を押すのにスクロールが要っていた。画面の下に貼り付ける。 */
+#mapinfo{position:sticky;bottom:0;z-index:40;background:var(--bg);
+  padding-bottom:4px;margin-top:2px}
+#mapinfo:has(.ndbox){box-shadow:0 -10px 14px -6px var(--bg)}
 .pick{font-size:11px;letter-spacing:.14em;color:var(--ink);text-align:center;padding:10px 0}
 .ndbox{background:var(--panel);border:1px solid var(--brass);padding:12px 14px;
   animation:pop2 .2s ease-out}
@@ -484,10 +489,13 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .secbar .backbtn{margin-bottom:0;flex:none}
 .secbar .secttl{margin:0;flex:1;min-width:0;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-body.play .secbar{padding-right:44px}      /* 歯車のぶんを空ける */
+body.play .secbar{padding-right:38px}      /* 歯車のぶんを空ける */
 @media(max-width:430px){
   .secbar .secttl{font-size:15px;letter-spacing:.16em}
   .secbar .backbtn{padding:6px 9px}
+  /* 探索の見出し。歯車のぶんを空けたぶん折り返しが増えるので、狭い画面では詰める */
+  .fh1 span{font-size:14.5px;letter-spacing:.06em;line-height:1.35}
+  .fh1 em{white-space:nowrap}
 }
 /* ===== 殿堂 ===== */
 .hallcard{display:flex;gap:11px;background:var(--panel);border:1px solid var(--line);
@@ -560,7 +568,11 @@ body.play .secbar{padding-right:44px}      /* 歯車のぶんを空ける */
    その間は歯車とぶつからないよう、上の行の右側だけ空ける。 */
 body.play #brand{display:none}
 body.play{padding-bottom:22px}
-body.play .stagerow,body.play .fh1{padding-right:42px}
+/* 歯車を避けるぶんだけ空ける。歯車の左端は画面の右から 44px。
+   .fh1 は .fhead の内側（右から 26px）にあるので、必要なのは差の 18px+α。
+   一律に広く取ると見出しが折り返して縦を食う。 */
+body.play .stagerow{padding-right:38px}
+body.play .fh1{padding-right:22px}
 
 /* ===== 設定（歯車） ===== */
 .gear{position:fixed;top:10px;z-index:70;right:max(10px,calc(50vw - 360px + 10px));
@@ -4111,8 +4123,22 @@ function drawMap(keepScroll){
     g.onclick=()=>{RUN.preview=g.dataset.k;drawMap(true);};
   });
   if(keep!==null)box.scrollTop=keep;
-  else if(!mapScrollLock)box.scrollTop=focusY();
+  else if(!mapScrollLock)setFocus(box);
   drawNodeInfo();
+}
+/* 地図の見せる位置を決める。
+   drawFloor() はどの呼び出し元でも showScreen("floor") より先に走るので、
+   このとき #floor はまだ hide のまま。clientWidth も clientHeight も 0 になり、
+   focusY() が最下部を返して「いつも入口が映っている」状態になっていた。
+   寸法が取れないうちは次の描画まで待ってから決め直す。 */
+function setFocus(box){
+  box=box||$("#mapbox");
+  if(!box)return;
+  if(!box.clientHeight||!box.clientWidth){
+    requestAnimationFrame(()=>{ if(!mapScrollLock)setFocus(box); });
+    return;
+  }
+  box.scrollTop=focusY();
 }
 function focusY(){
   const box=$("#mapbox"),rowH=50,top=30,H=top*2+ROWS*rowH;
@@ -4132,6 +4158,9 @@ function mapScale(){
 function introScroll(){
   const box=$("#mapbox");
   if(!box)return;
+  if(!box.clientHeight||!box.clientWidth){    /* まだ寸法が出ていない */
+    requestAnimationFrame(introScroll);return;
+  }
   mapScrollLock=true;
   box.scrollTop=0;
   const to=focusY(), t0=performance.now(), dur=1500;
