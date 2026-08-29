@@ -28,18 +28,36 @@
 ### リポジトリの中身
 
 ```
-index.html                          本体。828 KB・5448 行。これ1つで動く
-PerituneMaterial_Wonder2_loop.mp3   草原1階層のBGM。3.6 MB・151秒
+index.html                          本体。816 KB・5589 行。これ1つで動く
 tools/probe.js                      Node でデータを検証するための足場
+tools/bump.js                       版（VERSION）を1つ上げる
 README.md
+
+遥かなる伝説.mp3                     ホーム・キャラ作成・遊び方・見立て
+そろそろ帰ろっと！_M325.mp3            殿堂・潜行の結果
+オルゴールファンタジー.mp3             図鑑
+深域で待つもの.mp3                   ボス戦
+PerituneMaterial_Wonder2_loop.mp3   原始の草原 1階層（草原）
+樹木の息吹.mp3                      原始の草原 2階層（森）
 ```
 
 BGM は `index.html` と同じ場所に置く。`file://` で直接開いても鳴るが、
 ブラウザによっては読み込みが止められるので、確認するときは
 `python3 -m http.server` などで配ったほうが確実。
 
-**BGM が入っているのは草原1階層だけ。** 他の階層は `BGM` 定数に登録が無く、
-`Music.play()` がそのまま `stop()` に落ちるので無音になる（意図した挙動）。
+曲が入っていない場面（アトランティスの各階層など）は無音になる。
+`BGM` に登録が無いと `Music.play()` がそのまま `stop()` に落ちる。
+
+### 版（バージョン）
+
+`index.html` の `VERSION` 定数。設定画面の右下に出る。
+
+```
+node tools/bump.js          α0.0001 → α0.0002
+node tools/bump.js --show   いまの版を見るだけ
+```
+
+**マージのたびに1つ上げる。** 桁は保たれ、α0.0999 の次は α0.1000。
 
 ### ファイルの内訳
 
@@ -235,8 +253,10 @@ Lv1→2: 18   Lv2→3: 28   Lv3→4: 38 …（10ずつ増加、Lv25 の 258 ま�
 
 | 行 | 区切り | 内容 |
 |---|---|---|
-| 646 | `BGM` `Music` | BGM。階層ごとに曲を割り当て、`enterAct` から鳴らす |
-| 686 | `SND` `SFX` | 効果音 12種。base64 の MP3・555 KB |
+| 646 | `VERSION` | 版。`tools/bump.js` が書き換える |
+| 649 | `BGM` `BGMN` `Music` | 場面ごとの曲。切り替えは `showScreen` が引き受ける |
+| 895 | `AUDIO` | 音量の設定。`audioLoad` / `audioSave` / `audioApply` |
+| 730 | `SND` `SFX` | 効果音 12種。base64 の MP3・555 KB。`bus()` が音量のつまみ |
 | 821 | ユーティリティ | `$` `r6` `wait` |
 | 831 | `PX` | 立ち絵の部品（body/head/extra） |
 | 981 | `PXFOE` | 敵28体のドット絵（16×20） |
@@ -434,22 +454,60 @@ PXDUN.newdun = [[x,y,w,h,"#色"], ...];   // 24×14 の情景
 
 ### BGMを足す
 
+ファイルを `index.html` と同じ場所に置き、`BGM` に場面のキーで足す。
+`BGMN` に短い曲名を書いておくと設定画面に出る。
+
 ```javascript
 const BGM={
-  "plains:0":"PerituneMaterial_Wonder2_loop.mp3",
-  "plains:1":"bgm_forest.mp3",      // ダンジョンキー:階層番号
+  home  :"遥かなる伝説.mp3",           // ホーム・キャラ作成・遊び方・見立て
+  hall  :"そろそろ帰ろっと！_M325.mp3",    // 殿堂
+  result:"そろそろ帰ろっと！_M325.mp3",    // 潜行の結果
+  codex :"オルゴールファンタジー.mp3",     // 図鑑
+  boss  :"深域で待つもの.mp3",           // ボス戦
+  "plains:0":"…",                    // 探索は ダンジョンキー:階層番号
+  "atlantis:0":"…",
 };
 ```
 
-ファイルを `index.html` と同じ場所に置く。未設定の階層は無音になる。
+**曲を切り替えるのは `showScreen()` の1箇所だけ。**
+どの場面にどのキーを使うかは `bgmKey()`（3730行あたり）が決める。
 
-鳴らす側は `enterAct()`（3858行）が `Music.play(sel.dun+":"+ai)` を呼ぶだけ。
-`enterAct` は潜行開始と階層の進行の両方が通る唯一の入口なので、ここ1箇所で足りる。
-同じ曲なら鳴らし直さないので、戦闘に入っても切れない。
-止めるのは `endRun()` と `goHome()`。
+```
+fight  → RUN.boss なら "boss"、そうでなければ探索と同じ曲
+floor  → RUN.over なら "result"、そうでなければ ダンジョン:階層
+hall   → "hall"      codex → "codex"
+その他 → "home"（home・make・tut・quiz）
+```
 
-ループ前提の音源を置くこと（`<audio loop>` で繋いでいる）。
-自動再生を止められた場合は黙って諦める作りになっている。
+新しい場面に曲を足すなら `bgmKey()` に1行足す。個別に `Music.play()` を
+呼ぶ必要はないし、呼ばないほうがよい（切り替えの入口を1つに保つため）。
+
+**キーではなくファイル名で比べている。** 殿堂と結果のように曲が同じ場面をまたぐとき、
+頭から鳴り直さずそのまま続く。
+
+音源はループ前提のものを置くこと（`<audio loop>` で繋いでいる）。
+日本語のファイル名は `encodeURI()` を通しているのでそのままでよい。
+自動再生を止められた場合は `now` を戻し、次に何か押されたとき
+（`document` の click から `Music.resume()`）鳴らし直す。
+
+### 音量の設定
+
+右上の歯車（`#gear`）を押すと出る。`AUDIO`（895行あたり）が持ち、
+`localStorage` の `dd.audio` に残る。読めない環境でも既定値で動く。
+
+```
+AUDIO = {master:100, sfx:80, bgm:50}      // 0〜100
+
+実際のBGM音量   = master/100 × bgm/100    → <audio>.volume
+実際の効果音音量 = master/100 × sfx/100    → SFX の bus() の gain
+```
+
+効果音は `SFX` の中の `bus()` が返す GainNode を全部が通る。
+個々の音の大きさ（`play("click",.55)` の .55 など）はそのままで、
+つまみはその後ろの1つのつまみを動かす。
+
+`♪ 音 ON/OFF` のボタンは戦闘画面にしかないので、
+消音中につまみを動かすと音が戻るようにしてある（`soundToggle()`）。
 
 ---
 

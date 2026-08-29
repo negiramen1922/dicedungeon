@@ -10,4 +10,5 @@
 ```
 node tools/probe.js          データの件数を一覧する
 node tools/probe.js --check  データの参照が壊れていないか確かめる
+node tools/bump.js           版（α0.0xxx）を1つ上げる。マージのたびに走らせる
 ```
