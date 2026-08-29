@@ -644,7 +644,7 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
    外部ファイルを読む。同じ場所に置いておく。
    階層ごとに 曲を割り当て、場面が変わったときだけ 切り替える。 */
 const BGM={
-  "plains:0":"bgm_plains1.ogg",
+  "plains:0":"PerituneMaterial_Wonder2_loop.mp3",
 };
 const Music=(()=>{
   let el=null, now=null, on=true;
@@ -3859,6 +3859,7 @@ function enterAct(ai){
   RUN.act=ai;RUN.curKey=null;RUN.cur=null;
   if(ORIG[sel.orig]&&ORIG[sel.orig].actFull){me.HP=me.maxHP;me.MP=me.maxMP;}
   RUN.M=genAct(ai);RUN.preview=null;
+  Music.play(sel.dun+":"+ai);        /* 同じ曲なら鳴らし直さない */
   drawFloor();showScreen("floor");window.scrollTo(0,0);
   setTimeout(introScroll,120);
 }

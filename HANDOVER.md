@@ -28,15 +28,18 @@
 ### リポジトリの中身
 
 ```
-index.html      本体。828 KB・5447 行。これ1つで動く
-tools/probe.js  Node でデータを検証するための足場（ゲーム本体は使わない）
+index.html                          本体。828 KB・5448 行。これ1つで動く
+PerituneMaterial_Wonder2_loop.mp3   草原1階層のBGM。3.6 MB・151秒
+tools/probe.js                      Node でデータを検証するための足場
 README.md
 ```
 
-**BGM ファイルはリポジトリに入っていない。**
-コード上は `bgm_plains1.ogg` を参照しているが（`BGM` 定数）、実体が無いので
-草原1階層は無音のまま動く。音を鳴らしたいなら `index.html` と同じ場所に置く。
-3.6 MB あるので、Git に入れるかどうかは判断が要る。
+BGM は `index.html` と同じ場所に置く。`file://` で直接開いても鳴るが、
+ブラウザによっては読み込みが止められるので、確認するときは
+`python3 -m http.server` などで配ったほうが確実。
+
+**BGM が入っているのは草原1階層だけ。** 他の階層は `BGM` 定数に登録が無く、
+`Music.play()` がそのまま `stop()` に落ちるので無音になる（意図した挙動）。
 
 ### ファイルの内訳
 
@@ -232,7 +235,7 @@ Lv1→2: 18   Lv2→3: 28   Lv3→4: 38 …（10ずつ増加、Lv25 の 258 ま�
 
 | 行 | 区切り | 内容 |
 |---|---|---|
-| 646 | `BGM` `Music` | BGM（外部ファイル参照） |
+| 646 | `BGM` `Music` | BGM。階層ごとに曲を割り当て、`enterAct` から鳴らす |
 | 686 | `SND` `SFX` | 効果音 12種。base64 の MP3・555 KB |
 | 821 | ユーティリティ | `$` `r6` `wait` |
 | 831 | `PX` | 立ち絵の部品（body/head/extra） |
@@ -433,12 +436,20 @@ PXDUN.newdun = [[x,y,w,h,"#色"], ...];   // 24×14 の情景
 
 ```javascript
 const BGM={
-  "plains:0":"bgm_plains1.ogg",
-  "plains:1":"bgm_forest.ogg",      // ダンジョンキー:階層番号
+  "plains:0":"PerituneMaterial_Wonder2_loop.mp3",
+  "plains:1":"bgm_forest.mp3",      // ダンジョンキー:階層番号
 };
 ```
 
-ファイルを `index.html` と同じ場所に置く。未設定の階層は無音。
+ファイルを `index.html` と同じ場所に置く。未設定の階層は無音になる。
+
+鳴らす側は `enterAct()`（3858行）が `Music.play(sel.dun+":"+ai)` を呼ぶだけ。
+`enterAct` は潜行開始と階層の進行の両方が通る唯一の入口なので、ここ1箇所で足りる。
+同じ曲なら鳴らし直さないので、戦闘に入っても切れない。
+止めるのは `endRun()` と `goHome()`。
+
+ループ前提の音源を置くこと（`<audio loop>` で繋いでいる）。
+自動再生を止められた場合は黙って諦める作りになっている。
 
 ---
 
@@ -491,6 +502,12 @@ const BGM={
 上の `hex` を `ailAdd` に寄せるなら、`me.debuffs` 系はまとめて畳めて、
 アンチポーションは `me.ail` から `weak/weakp/break/blur/charm/slow` を落とす道具に書き直せる。
 これで下の「解除する道具がない」も同時に片づく。
+
+### 〔修正済〕BGM が鳴らなかった
+
+`Music.play()` の呼び出し元が **音のON/OFFボタン（5442行）1箇所しかなく**、
+階層に入っても曲が始まらなかった。一度ミュートして戻さないと鳴らない状態。
+`enterAct()` から呼ぶようにして直した。
 
 ### 状態異常を解く手段が足りない
 
