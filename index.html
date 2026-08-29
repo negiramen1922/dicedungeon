@@ -478,6 +478,17 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .backbtn:hover{border-color:var(--brass);color:var(--brass)}
 .secttl{font-family:"Hiragino Mincho ProN",serif;font-size:17px;letter-spacing:.3em;
   color:var(--bone);text-align:center;margin:-28px 0 14px}
+/* 戻るボタンと見出しを1行に。負のマージンで重ねる作りだと、
+   見出しが長いとき（「キ ャ ラ を 作 る」）ボタンや歯車にぶつかる */
+.secbar{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.secbar .backbtn{margin-bottom:0;flex:none}
+.secbar .secttl{margin:0;flex:1;min-width:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.play .secbar{padding-right:44px}      /* 歯車のぶんを空ける */
+@media(max-width:430px){
+  .secbar .secttl{font-size:15px;letter-spacing:.16em}
+  .secbar .backbtn{padding:6px 9px}
+}
 /* ===== 殿堂 ===== */
 .hallcard{display:flex;gap:11px;background:var(--panel);border:1px solid var(--line);
   border-left-width:3px;padding:10px 12px;margin-bottom:9px}
@@ -544,6 +555,13 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .topbtn:hover{border-color:var(--brass);color:var(--brass)}
 .stagerow{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 
+/* ===== 遊んでいる間は表題を下ろす =====
+   大見出しと副題で 74px 使っている。ホームと遊び方だけに残し、
+   その間は歯車とぶつからないよう、上の行の右側だけ空ける。 */
+body.play #brand{display:none}
+body.play{padding-bottom:22px}
+body.play .stagerow,body.play .fh1{padding-right:42px}
+
 /* ===== 設定（歯車） ===== */
 .gear{position:fixed;top:10px;z-index:70;right:max(10px,calc(50vw - 360px + 10px));
   width:34px;height:34px;padding:0;display:grid;place-items:center;line-height:1;
@@ -574,8 +592,10 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 </head>
 <body>
 
-<h1>ダイスダンジョン</h1>
-<div class="sub">潜る場所を選び、階層を抜ける</div>
+<div id="brand">
+  <h1>ダイスダンジョン</h1>
+  <div class="sub">潜る場所を選び、階層を抜ける</div>
+</div>
 
 <div class="modal hide" id="modal"><div class="mbox" id="mbox"></div></div>
 
@@ -603,8 +623,8 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 </section>
 
 <section id="quiz" class="hide">
-  <button class="backbtn" id="qzBack">← もどる</button>
-  <div class="secttl">見 立 て</div>
+  <div class="secbar"><button class="backbtn" id="qzBack">← もどる</button>
+    <div class="secttl">見 立 て</div></div>
   <div class="cxall">３つの問いに答えると、向いていそうな組み合わせを示します。</div>
   <div id="qzBody"></div>
 </section>
@@ -623,23 +643,23 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 </section>
 
 <section id="hall" class="hide">
-  <button class="backbtn" id="hallBack">← もどる</button>
-  <div class="secttl">殿 堂</div>
+  <div class="secbar"><button class="backbtn" id="hallBack">← もどる</button>
+    <div class="secttl">殿 堂</div></div>
   <div class="note" id="hallNote"></div>
   <div id="hallList"></div>
 </section>
 
 <section id="codex" class="hide">
-  <button class="backbtn" id="cxBack">← もどる</button>
-  <div class="secttl">図 鑑</div>
+  <div class="secbar"><button class="backbtn" id="cxBack">← もどる</button>
+    <div class="secttl">図 鑑</div></div>
   <div class="cxall" id="cxAll"></div>
   <div class="tabs" id="cxTabs"></div>
   <div id="cxBody"></div>
 </section>
 
 <section id="make" class="hide">
-  <button class="backbtn" id="mkBack">← もどる</button>
-  <div class="secttl" id="mkTtl">キ ャ ラ を 作 る</div>
+  <div class="secbar"><button class="backbtn" id="mkBack">← もどる</button>
+    <div class="secttl" id="mkTtl">キ ャ ラ を 作 る</div></div>
   <div class="mkstep" id="mkStep"></div>
   <div class="mkfig" id="mkFig"></div>
   <div id="mkBody"></div>
@@ -684,7 +704,7 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0001";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0002";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== BGM =====
    外部ファイルを読む。index.html と同じ場所に置いておく。
@@ -2656,8 +2676,10 @@ function unitCell(u,isMine){
         d.k==="weak"?"15%":d.v,d.t+1)).join("")}</div>`:""}
     ${ailText(u)?`<div class="celrow">${ailText(u)}</div>`:""}
     ${isMine&&u.half?`<div class="cst">被弾 半減</div>`:""}
-    ${(!isMine&&u.HP>0)?(()=>{const ic=actIcon(st.t);
-      return `<div class="cact ${p.danger?"bad":"ok"}" title="${p.txt}">${ic.g}</div>`;})():""}
+    ${!isMine?(u.HP>0?(()=>{const ic=actIcon(st.t);
+        return `<div class="cact ${p.danger?"bad":"ok"}" title="${p.txt}">${ic.g}</div>`;})()
+      /* 倒れても枠は空けておく。消すとセルが縮み、行動一覧が毎ターン動く */
+      :`<div class="cact" style="visibility:hidden"></div>`):""}
   </div>`;
 }
 function emptyCell(){return `<div class="cell"></div>`;}
@@ -2665,6 +2687,17 @@ function slotRows(list){
   const out=[null,null,null], order=[1,0,2];
   list.slice(0,3).forEach((u,i)=>{out[order[i]]=u;});
   return out;
+}
+/* 盤面に並べる顔ぶれ。枠は3つしかないので、倒れた者は空きがあるときだけ残す。
+   生きている者を押し出すと、その敵は絵が出ず、的として押せなくなる
+   （仲間を呼ぶ敵がいると起きる）。並び順は変えないので位置は動かない。 */
+function boardList(list){
+  if(list.length<=3)return list;
+  const live=list.filter(f=>f.HP>0);
+  if(live.length>=3)return live.slice(0,3);
+  const keep=new Set(live);
+  list.filter(f=>f.HP<=0).slice(0,3-live.length).forEach(f=>keep.add(f));
+  return list.filter(f=>keep.has(f));
 }
 /* 行動の種類をアイコンに */
 function actIcon(t){
@@ -2742,16 +2775,28 @@ function drawDetail(){
 function draw(){
   const myBack =slotRows(me.rank==="back" ?[me]:[]);
   const myFront=slotRows(me.rank==="front"?[me]:[]);
-  const fFront=slotRows(foes.filter(f=>f.rank==="front"&&f.HP>0));
-  const fBack =slotRows(foes.filter(f=>f.rank==="back"));
+  /* 倒れた敵も置いたままにする。後列は元からそうしており、前列だけ消していた。
+     消すと生き残りが詰めて動き、盤面が縮んで行動一覧の位置が毎ターンずれる。
+     倒れた枠は unitCell が dead で灰色にし、canTarget が的から外す。 */
+  const fFront=slotRows(boardList(foes.filter(f=>f.rank==="front")));
+  const fBack =slotRows(boardList(foes.filter(f=>f.rank==="back")));
+  /* 使う段だけ描く。3段を常に敷くと、敵1体の戦闘で 200px 以上が空のまま残り、
+     行動一覧が画面の外へ押し出される。
+     段数は倒れた敵を数に入れたまま決めるので、戦闘の途中で盤面の高さは動かない
+     （行動一覧の位置がずれると押し間違える）。呼ばれた仲間が増えたときだけ伸びる。 */
+  const held=[slotRows(me.rank==="back"?[me]:[]),slotRows(me.rank==="front"?[me]:[]),
+              slotRows(boardList(foes.filter(f=>f.rank==="front"))),
+              slotRows(boardList(foes.filter(f=>f.rank==="back")))];
+  const rows=[0,1,2].filter(r=>held.some(c=>c[r]));
+  if(!rows.length)rows.push(1);
   let h="";
-  for(let r=0;r<3;r++){
+  rows.forEach(r=>{
     h+=myBack[r] ?unitCell(myBack[r],true) :emptyCell();
     h+=myFront[r]?unitCell(myFront[r],true):emptyCell();
     h+=`<div class="gap"></div>`;
     h+=fFront[r] ?unitCell(fFront[r],false):emptyCell();
     h+=fBack[r]  ?unitCell(fBack[r],false) :emptyCell();
-  }
+  });
   $("#board").innerHTML=h;
   drawOrder();
   if(pending)bindTargets();
@@ -3741,6 +3786,8 @@ function showScreen(id){
   ["tut","quiz","home","hall","codex","make","floor","fight"].forEach(k=>{
     const el=$("#"+k);if(el)el.classList.toggle("hide",k!==id);});
   curScreen=id;
+  /* 表題を出すのはホームと遊び方だけ。遊んでいる間は盤面に縦を回す */
+  document.body.classList.toggle("play",id!=="home"&&id!=="tut");
   Music.play(bgmKey(id));
 }
 const K=(r,c)=>r+","+c;
