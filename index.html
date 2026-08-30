@@ -726,7 +726,7 @@ body.play .fh1{padding-right:22px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0003";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0004";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== BGM =====
    外部ファイルを読む。index.html と同じ場所に置いておく。
@@ -1700,6 +1700,9 @@ const PXAIL={
    [0,0,8,1,"#5a5468"],[0,7,8,1,"#5a5468"],[1,1,2,1,"#5a5468"],[5,5,2,1,"#5a5468"]],
  charm:[[2,1,2,2,"#c96e8a"],[4,1,2,2,"#c96e8a"],[1,3,6,2,"#c96e8a"],
    [2,5,4,2,"#a8506b"],[3,7,2,1,"#a8506b"]],
+ /* 萎縮：欠けたサイコロ */
+ shrink:[[1,1,5,5,"#9c8a7f"],[2,2,3,3,"#14160f"],[3,3,1,1,"#c9c3b2"],
+   [6,5,2,2,"#5f564e"],[5,6,2,2,"#5f564e"]],
  /* 有利な状態 */
  up_pow:[[3,0,2,2,"#ff8b5a"],[2,2,4,2,"#ff8b5a"],[1,4,6,2,"#d1603a"],
    [3,6,2,2,"#d1603a"]],
@@ -1728,6 +1731,7 @@ const AIL={
  break:{n:"防壊",c:"#c98a3a",d:"DEF が下がる"},
  blur:{n:"盲目",c:"#8a7f9c",d:"命中閾値が上がる"},
  charm:{n:"混乱",c:"#c96e8a",d:"味方を襲うようになる"},
+ shrink:{n:"萎縮",c:"#9c8a7f",d:"攻撃ダイスが減る"},
 };
 function ailAdd(u,k,v,t){
   if(u===me&&passOn("dull")>0)t=Math.max(0,(t||0)-passOn("dull"));
@@ -1922,7 +1926,8 @@ const ITEMS={
  c_cake:{n:"石蜜の焼き菓子",d:"HP を 40% 、MP を 14 戻す",cost:66,heal:.40,mp:14,anywhere:true,tier:3,made:true},
  c_feast:{n:"沈んだ街の宴",d:"HP 全快。この戦闘の間 威力 +18 と DEF +10",cost:120,
    heal:1,pow:18,def:10,tier:3,made:true},
- anti:{n:"アンチポーション",d:"自分にかかった弱体をすべて解く",cost:32,cure:true,anywhere:true,tier:2},
+ anti:{n:"アンチポーション",d:"自分の状態異常をすべて解く（毒・火傷・麻痺・盲目・混乱も）",
+   cost:32,cure:true,anywhere:true,tier:2},
 };
 const GEAR={
  wep:{
@@ -2692,11 +2697,6 @@ function unitCell(u,isMine){
     <div class="bar ${isMine?"me":""}"><i style="width:${Math.max(0,u.HP/u.maxHP*100)}%"></i></div>
     ${isMine?`<div class="cmp">MP ${u.MP}/${u.maxMP}</div>
       <div class="bar mpb"><i style="width:${u.maxMP?u.MP/u.maxMP*100:0}%"></i></div>`:""}
-    ${(isMine&&(me.debuffs||[]).length)?`<div class="celrow">${
-      (me.debuffs||[]).map(d=>badge(ailIcon(d.k==="curse"?"break":d.k==="slow"?"slow":"weak"),
-        d.k==="curse"?"DEF低下":d.k==="slow"?"鈍足":"威力低下",
-        d.k==="curse"?"#c98a3a":d.k==="slow"?"#8fa9bf":"#a68bbf",
-        d.k==="weak"?"15%":d.v,d.t+1)).join("")}</div>`:""}
     ${ailText(u)?`<div class="celrow">${ailText(u)}</div>`:""}
     ${isMine&&u.half?`<div class="cst">被弾 半減</div>`:""}
     ${!isMine?(u.HP>0?(()=>{const ic=actIcon(st.t);
@@ -2767,9 +2767,7 @@ function drawDetail(){
       <div class="dnm" style="color:var(--moss)">${me.name}
         <span style="color:#6f7a63;font-size:10px">${me.rank==="front"?"前衛":"後衛"}　
         HP ${Math.max(0,me.HP)}/${me.maxHP}　MP ${me.MP}/${me.maxMP}　DEF ${defOf(me)}</span>
-        ${(me.curse||me.weak)?`<span style="color:#a68bbf;font-size:10px">　✦ ${
-          [me.curse?"防御 −"+me.curse*6:"",me.weak?"威力 −"+me.weak*15+"%":""]
-          .filter(Boolean).join("　")}</span>`:""}</div>
+        </div>
       <div class="dline"><span class="k">装 備</span>${
         ["wep","armor","acc"].filter(k=>me.eq[k]).map(k=>`${SLOTN[k]} ${me.eq[k].n}`).join("　")
         ||me.wep.n}</div>
@@ -2861,9 +2859,11 @@ function tickBuffs(u){
   u.buffs=u.buffs.filter(b=>b.t>=0);
 }
 function addBuff(u,v,t){(u.buffs=u.buffs||[]).push({v,t:t||1});}
-function curseSum(){return (me.debuffs||[]).filter(d=>d.k==="curse").reduce((a,b)=>a+b.v,0)+ailSum(me,"break");}
-function weakSum(){return (me.debuffs||[]).filter(d=>d.k==="weak").reduce((a,b)=>a+b.v,0);}
-function slowSum(){return (me.debuffs||[]).filter(d=>d.k==="slow").reduce((a,b)=>a+b.v,0)+ailSum(me,"slow");}
+/* 弱体は状態異常（me.ail）に一本化した。
+   前は me.debuffs という別の配列と me.curse / me.weak というスカラーもあり、
+   3通りの持ち方が並んでいた。うち2つは書く側と読む側が繋がっておらず、
+   敵の hex は数字を動かしていなかったし、アンチポーションは何も解いていなかった。 */
+function slowSum(){return ailSum(me,"slow");}
 function dexOf(){
   const dp=1+passOn("statDEX")/100;
   return Math.max(1,Math.round(me.DEX*dp)-slowSum()+passOn("dex")+passOn("light")*15
@@ -2871,20 +2871,12 @@ function dexOf(){
     +(me.order?Math.round(me.DEX*me.order.dex/100):0)
     +(me.beast?me.beast.dex:0)+(me.dexUp||0));
 }
-function addDebuff(k,v,t){(me.debuffs=me.debuffs||[]).push({k,v,t:t||2});}
-function tickDebuffs(){
-  if(!me.debuffs)return;
-  me.debuffs.forEach(d=>d.t--);
-  me.debuffs=me.debuffs.filter(d=>d.t>=0);
-}
 function powOf(u,opt){
   opt=opt||{};
   if(u.isFoe){
     const wk=ailSum(u,"weak"), wp=ailSum(u,"weakp");
     return Math.max(1,Math.round((u.STR+(opt.pow||0)+buffSum(u)-wk)*(1-Math.min(0.6,wp/100))));
   }
-  if(u===me&&weakSum())return Math.round((Math.round(u[u.wep.stat]*statMul(u.wep))
-    +(opt.pow||0))*(1-Math.min(0.5,weakSum()*0.15))*(opt.powMul||1));
   let base=u[u.wep.stat];
   if(u===me){
     let bm=1+passOn("stat"+u.wep.stat)/100;
@@ -2893,6 +2885,10 @@ function powOf(u,opt){
   }
   let p=Math.round(base*statMul(u.wep))+(opt.pow||0);
   if(opt.powMul)p=Math.round(p*opt.powMul);
+  if(u===me){                    /* 弱体は敵と同じ扱い。固定値を引いてから割合を掛ける */
+    const wk=ailSum(me,"weak"), wp=ailSum(me,"weakp");
+    if(wk||wp)p=Math.max(1,Math.round((p-wk)*(1-Math.min(0.6,wp/100))));
+  }
   return p;
 }
 /* 図鑑の段階。META.codex[k] は「その敵と戦った回数」。
@@ -2951,9 +2947,7 @@ function defOf(u){
   if(u===me)d+=passOn("grace")*4;
   if(u===me&&passOn("clean")>0&&!me.hurtThisRound)d+=passOn("clean");
   if(u===me&&me.beast)d=Math.round(d*me.beast.def);
-  if(u===me)d=Math.max(0,d);
-  if(u.isFoe)d=Math.max(0,d-ailSum(u,"break"));
-  if(u===me&&curseSum())d=Math.max(0,d-curseSum());
+  d=Math.max(0,d-ailSum(u,"break"));   /* 防壊は敵にも自分にも同じように効く */
   return d;
 }   // 構えは防御値に上乗せされる
 function blockValue(){return 5+Math.floor(me.VIT/7)+(me.blkBonus||0)+(me.gearBlk||0);}
@@ -3135,8 +3129,8 @@ let killedThisAttack=false,sawSix=false;
 async function playerAttack(targets,opt){
   opt=opt||{};
   killedThisAttack=false;sawSix=false;me.attackedLast=true;
-  let n=me.wep.hands+(opt.dice||0)+scoutBonus+passOn("dice")
-;
+  let n=Math.max(1,me.wep.hands+(opt.dice||0)+scoutBonus+passOn("dice")
+    -ailSum(me,"shrink"));
   const pn=passNames("dice");
   if(pn.length)log(`<span class="c">${pn.join("・")}</span> 攻撃ダイス <span class="m">+${passOn("dice")}</span>`);
   if(scoutBonus){
@@ -3504,7 +3498,7 @@ async function runQueue(){
     if(u.HP<=0){qi++;continue;}
     if(u===me){
       if(me.again){me.again=false;log(`<span class="a">${me.name}</span> は続けて動く`);busy=false;draw();drawActs();return;}
-      me.block=0;me.counter=0;me.selfDef=0;tickDebuffs();
+      me.block=0;me.counter=0;me.selfDef=0;
       if(me.holdDef){
         me.holdDef.t--;
         if(me.holdDef.t<0)me.holdDef=null;
@@ -3645,13 +3639,19 @@ async function enemyAct(f){
     log(`<span class="b">${f.name}</span> は傷を塞いだ　HP <span class="m">+${hl}</span>`);
     await wait(620);
   }else if(t.k==="hex"){
-    if(t.curse)me.curse=(me.curse||0)+t.curse;
-    if(t.weak)me.weak=(me.weak||0)+t.weak;
+    /* 弱体は状態異常として乗せる。前は me.curse / me.weak に足していたが、
+       それを読む計算がどこにも無く、ログと表示だけ出て数字が動いていなかった。
+       weak は 1 につき 15% の威力低下（前の表示に合わせてある）。 */
+    const dur=t.dur||2, msg=[];
+    if(t.curse){ailAdd(me,"break",t.curse,dur);msg.push(`DEF <span class="m">−${t.curse}</span>`);}
+    if(t.weak){ailAdd(me,"weakp",t.weak*15,dur);msg.push(`威力 <span class="m">−${t.weak*15}%</span>`);}
+    if(t.slow){ailAdd(me,"slow",t.slow,dur);msg.push(`DEX <span class="m">−${t.slow}</span>`);}
+    if(t.blind){ailAdd(me,"blur",t.blind,dur);msg.push(`命中が <span class="m">${t.blind}</span> 遠のく`);}
+    if(t.dice){ailAdd(me,"shrink",t.dice,dur);msg.push(`攻撃ダイス <span class="m">−${t.dice}</span>`);}
     draw();fxOn(me,"magic");
-    popSelf(t.curse?"防御−":"威力−","each");SFX.atk("magic");
+    popSelf(t.curse?"防御−":t.dice?"手数−":"威力−","each");SFX.atk("magic");
     log(`<span class="b">${f.name}</span> の <span class="c">${t.n}</span>　`+
-      (t.curse?`DEFが <span class="m">${me.curse*6}</span> 下がっている`
-             :`威力が <span class="m">${me.weak*15}%</span> 下がっている`));
+      (msg.length?msg.join("　")+`　<span class="s">（${dur+1}ターン）</span>`:"効き目がなかった"));
     await wait(620);
   }else if(t.k==="veil"){
     aliveIn("front").forEach(x=>{x.block+=t.block;});
@@ -4604,10 +4604,10 @@ function resolveEvent(nd,out){
     const h=Math.min(Math.round(me.maxHP*0.40*rh),me.maxHP-me.HP);
     const m=Math.min(Math.round(me.maxMP*0.5*rh),me.maxMP-me.MP);
     me.HP+=h;me.MP+=m;
-    const cured=(me.debuffs||[]).length;me.debuffs=[];
+    const cured=(me.ail||[]).length;me.ail=[];
     out.push(`<span class="gain">澄んだ泉が湧いていた</span>`);
     out.push(`　HP <b>+${h}</b>　MP <b>+${m}</b>`);
-    if(cured)out.push(`　<span class="s">かかっていた弱体も洗い流された</span>`);
+    if(cured)out.push(`　<span class="s">かかっていた ${cured} つの状態異常も洗い流された</span>`);
     backToFloor(nd.name,out,[
       {n:"火を使って こしらえる",cb:()=>craftModal(null)},
       {n:"確 認"}]);
@@ -5193,11 +5193,12 @@ async function doItem(k,tgt){
     me.MP+=g;draw();fxOn(me,"charge");popSelf("MP+"+g,"blk");SFX.open();
     log(`<span class="a">${it.n}</span> を使った　MP <span class="m">+${g}</span>`);
   }else if(it.cure){
-    const had=(me.debuffs||[]).length;
-    me.debuffs=[];draw();fxOn(me,"charge");
-    popSelf(had?"弱体解除":"変化なし","blk");SFX.found();
+    const had=(me.ail||[]).map(a=>AIL[a.k].n);
+    me.ail=[];draw();fxOn(me,"charge");
+    popSelf(had.length?"解 除":"変化なし","blk");SFX.found();
     log(`<span class="a">${it.n}</span> を使った　`+
-      (had?`かかっていた弱体をすべて解いた`:`解くべき弱体はなかった`));
+      (had.length?`<span class="m">${[...new Set(had)].join("・")}</span> を解いた`
+                 :`解くべきものはなかった`));
   }else if(it.half){
     me.half=true;draw();fxOn(me,"guard");popSelf("半減","blk");SFX.buff();
     log(`<span class="a">${it.n}</span> を使った　次の被害が半分になる`);
@@ -5285,7 +5286,7 @@ function prepareBattle(){
   }
   round=1;over=false;busy=true;pending=null;scoutBonus=0;
   queue=[me,...foes];qi=-1;
-  me.block=0;me.half=false;me.rank="front";me.tmpPow=0;me.tmpDef=0;me.debuffs=[];me.ail=[];me.counter=0;me.focus=null;me.dexUp=0;me.again=null;me.selfDef=0;me.endured=false;me.coat=null;me.beast=null;me.goldPow=null;me.selfPow=null;me.taken=0;
+  me.block=0;me.half=false;me.rank="front";me.tmpPow=0;me.tmpDef=0;me.ail=[];me.counter=0;me.focus=null;me.dexUp=0;me.again=null;me.selfDef=0;me.endured=false;me.coat=null;me.beast=null;me.goldPow=null;me.selfPow=null;me.taken=0;
   me.sk.forEach(k=>k.cdLeft=0);
   $("#acts").innerHTML="";
   $("#stageLbl").textContent=`${RUN.act+1}階層　${RUN.cur?RUN.cur.name:""}`+
