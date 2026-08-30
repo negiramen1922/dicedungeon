@@ -597,8 +597,16 @@ body.play .fh1{padding-right:22px}
 .setnow{font-size:11.5px;color:var(--dim);line-height:1.6;
   border-top:1px solid var(--line);padding-top:10px;margin-top:4px}
 .setnow b{color:var(--moss);font-weight:600}
+.setrec{font-size:11.5px;color:var(--dim);line-height:1.6;
+  border-top:1px solid var(--line);padding-top:9px;margin-top:10px}
+.setrec b{color:var(--bone);font-weight:600}
+.setrec .warn{color:var(--blood)}
+.setrec button{margin-top:7px;background:none;border:1px solid var(--line);
+  color:var(--ink);font-family:inherit;font-size:11px;letter-spacing:.08em;
+  padding:5px 10px;cursor:pointer}
+.setrec button:hover{border-color:var(--blood);color:var(--blood)}
 .setver{display:flex;justify-content:space-between;font-size:11px;color:var(--ink);
-  letter-spacing:.08em;margin-top:7px}
+  letter-spacing:.08em;margin-top:9px}
 .setver b{color:var(--dim);font-weight:600;letter-spacing:.04em}
 .hide{display:none}
 </style>
@@ -625,6 +633,7 @@ body.play .fh1{padding-right:22px}
     <div class="setlbl"><span>Ｂ Ｇ Ｍ</span><b id="vBgm">—</b></div>
     <input type="range" id="sBgm" min="0" max="100" step="5" aria-label="BGMの音量"></div>
   <div class="setnow" id="setNow"></div>
+  <div class="setrec" id="setRec"></div>
   <div class="setver"><span>ダイスダンジョン</span><b id="setVer">—</b></div>
   <button class="mclose" id="setClose" style="width:100%;margin-top:13px">閉 じ る</button>
 </div></div>
@@ -1823,6 +1832,7 @@ function elemKnown(key,kind){
 function learnElem(key,kind,el){
   META.elem[key]=META.elem[key]||{};
   META.elem[key][kind]=el;
+  touchMeta();
 }
 const MATS={
  gel:{n:"粘 液",v:8,k:"m",d:"薄めれば薬になるという"},
@@ -3689,7 +3699,60 @@ async function finish(win){
 }
 
 /* ============ 探索 ============ */
-const META={codex:{},rooms:{},elem:{},mats:{},seen:{},hall:[],runs:0,best:0};
+/* ===== 周回をまたぐ記録 =====
+   1周ごとに作り直すキャラの外側に残るもの。図鑑・殿堂・弱点の記録・到達階層。
+   「強さは持ち帰らせない。持ち帰るのは知識だけ」（HANDOVER §9）の“知識”がこれ。
+
+   localStorage に置く。読めない環境（プライベート窓・容量切れ・
+   site data を切っている）でも、保存を諦めるだけで遊べるようにしてある。 */
+const META={codex:{},rooms:{},elem:{},mats:{},seen:{},hall:[],runs:0,best:0,tutSeen:false};
+const MKEY="dd.meta";
+const MVER=1;                /* 中身の形を変えたら上げる。読み込み側で移行する */
+const HALLMAX=50;            /* 殿堂は増え続けるので上限を置く。古いものから捨てる */
+let metaTimer=null, metaBroken=false;
+
+function metaLoad(){
+  let raw;
+  try{ raw=localStorage.getItem(MKEY); }catch(e){ metaBroken=true; return; }
+  if(!raw)return;
+  let o;
+  try{ o=JSON.parse(raw); }catch(e){ return; }        /* 壊れていたら無かったことにする */
+  if(!o||typeof o!=="object")return;
+  if(o.v!==MVER)return;                               /* 形が違う。今は捨てる */
+  const obj=k=>(o[k]&&typeof o[k]==="object"&&!Array.isArray(o[k]))?o[k]:{};
+  META.codex=obj("codex"); META.rooms=obj("rooms");
+  META.elem =obj("elem");  META.mats =obj("mats");
+  META.seen =obj("seen");
+  META.hall =Array.isArray(o.hall)?o.hall.slice(-HALLMAX):[];
+  META.runs =Number.isFinite(o.runs)?o.runs:0;
+  META.best =Number.isFinite(o.best)?o.best:0;
+  META.tutSeen=!!o.tutSeen;
+}
+function metaWrite(){
+  metaTimer=null;
+  if(metaBroken)return;
+  try{
+    if(META.hall.length>HALLMAX)META.hall=META.hall.slice(-HALLMAX);
+    localStorage.setItem(MKEY,JSON.stringify({v:MVER,
+      codex:META.codex,rooms:META.rooms,elem:META.elem,mats:META.mats,
+      seen:META.seen,hall:META.hall,runs:META.runs,best:META.best,tutSeen:META.tutSeen}));
+  }catch(e){ metaBroken=true; }   /* 容量切れなど。以降は諦めて遊べるようにする */
+}
+/* 記録が変わったら呼ぶ。まとめて少し後で書く（1戦で何度も呼ばれるため） */
+function touchMeta(){
+  if(metaBroken||metaTimer)return;
+  metaTimer=setTimeout(metaWrite,400);
+}
+/* 書く前に閉じられても落とさない */
+function metaFlush(){ if(metaTimer){clearTimeout(metaTimer);metaWrite();} }
+function metaClear(){
+  META.codex={};META.rooms={};META.elem={};META.mats={};META.seen={};
+  META.hall=[];META.runs=0;META.best=0;
+  /* 遊び方を見たかどうかは残す。消すと毎回チュートリアルに戻されて煩わしい */
+  metaTimer&&clearTimeout(metaTimer);metaTimer=null;
+  metaWrite();
+}
+metaLoad();
 let RUN=null, curScreen="home";
 
 /* 敵の組み合わせ */
@@ -3948,7 +4011,7 @@ function rollMats(){
     const f=FOE[k];if(!f||!f.mat)return;
     const rate=RUN.boss?1:(RUN.elite?0.85:0.7);
     if(Math.random()<rate){
-      me.mats[f.mat]=(me.mats[f.mat]||0)+1;META.mats[f.mat]=true;
+      me.mats[f.mat]=(me.mats[f.mat]||0)+1;META.mats[f.mat]=true;touchMeta();
       got[f.mat]=(got[f.mat]||0)+1;
     }
   });
@@ -3963,7 +4026,7 @@ function gainFood(n){
       return t<=12+RUN.act*8;
     });
     const k=pool[Math.floor(Math.random()*pool.length)];
-    me.mats[k]=(me.mats[k]||0)+1;got[k]=(got[k]||0)+1;META.mats[k]=true;
+    me.mats[k]=(me.mats[k]||0)+1;got[k]=(got[k]||0)+1;META.mats[k]=true;touchMeta();
   }
   return got;
 }
@@ -4035,7 +4098,7 @@ function startRun(){
   markSeen("w_"+me.baseWep);
   me.gold=(ORIG[sel.orig]&&ORIG[sel.orig].startGold)||30;
   RUN={act:0,cur:null,curKey:null,over:false,cleared:false};
-  owned=[];META.runs++;
+  owned=[];META.runs++;touchMeta();
   $("#log").innerHTML="";
   enterAct(0);
   const n=(ORIG[sel.orig]&&ORIG[sel.orig].startGear)||1;
@@ -4465,7 +4528,7 @@ function shopModal(nd){
 
 /* ---- 部屋の解決 ---- */
 function enterNode(nd){
-  const mk=(nd.e||nd.t);META.rooms[mk]=(META.rooms[mk]||0)+1;
+  const mk=(nd.e||nd.t);META.rooms[mk]=(META.rooms[mk]||0)+1;touchMeta();
   if(nd.t==="battle"||nd.t==="elite"||nd.t==="boss"){
     sel.enc=nd.e;RUN.elite=(nd.t==="elite");RUN.boss=(nd.t==="boss");
     startBattle();return;
@@ -4602,6 +4665,8 @@ function endRun(cleared){
     sk:me.sk.map(x=>x.n), pass:me.pass.map(x=>x.n),
     gold:me.gold, kills:Object.values(META.codex).reduce((a,b)=>a+b,0),
   });
+  if(META.hall.length>HALLMAX)META.hall=META.hall.slice(-HALLMAX);
+  metaTimer&&clearTimeout(metaTimer);metaTimer=null;metaWrite();  /* 1周の終わりは確実に残す */
   drawEnd();showScreen("floor");window.scrollTo(0,0);
 }
 function drawEnd(){
@@ -4832,7 +4897,7 @@ function slotNote(slot){
   const cur=me.eq[slot];
   return `${SLOTN[slot]} の枠`+(cur?`　いまの「${cur.n}」と入れ替え`:"　空いている");
 }
-function markSeen(id){if(id)META.seen[id]=true;}
+function markSeen(id){if(id){META.seen[id]=true;touchMeta();}}
 function applyReward(cat,r){
   markSeen(r.id);
   owned.push(r.id);
@@ -4920,6 +4985,7 @@ function lootModal(list,after){
       if(o.t==="gold"){me.gold+=o.v;
         RUN.lootLines.push(`金貨 <b>+${o.v}</b>　<span class="s">（所持 ${me.gold}）</span>`);}
       else if(o.t==="mat"){
+        touchMeta();
         o.keys.forEach(k=>{me.mats[k]=(me.mats[k]||0)+o.num;META.mats[k]=true;
           RUN.lootLines.push(`<b>${MATS[k].n}</b> ×${o.num}　`+
             `<span class="s">（手持ち ${me.mats[k]}　1つ ${MATS[k].v} 金貨）</span>`);});
@@ -5032,6 +5098,7 @@ function nextStage(){
   const out=[`${ENCS[sel.enc].n} を退けた`];
   /* 同じ敵が何体並んでいても、1戦は1戦 */
   [...new Set(ENCS[sel.enc].list)].forEach(k=>{META.codex[k]=(META.codex[k]||0)+1;});
+  touchMeta();
   const g=gainGold(RUN.boss?"boss":(RUN.elite?"elite":"battle"));
   if(RUN.lootLines&&RUN.lootLines.length){
     out.push(`<span class="gain">手に入れたもの</span>`);
@@ -5643,7 +5710,7 @@ $("#hQuiz").onclick=()=>{qzStep=0;qzAns={};drawQuiz();showScreen("quiz");window.
 $("#hTut").onclick=()=>{drawTut();showScreen("tut");window.scrollTo(0,0);};
 $("#qzBack").onclick=goHome;
 $("#tutOK").onclick=()=>{
-  META.tutSeen=true;
+  META.tutSeen=true;touchMeta();
   qzStep=0;qzAns={};drawQuiz();showScreen("quiz");window.scrollTo(0,0);};
 $("#hallBack").onclick=goHome;
 $("#mkBack").onclick=goHome;
@@ -5687,6 +5754,33 @@ function drawSet(){
     : (t?`いま流れている曲　<b>${t}</b>`
         :`いまの場面に曲は入っていない`);
   $("#setVer").textContent=VERSION;
+  drawRec();
+}
+/* 記録の状態と、消す道 */
+function drawRec(){
+  const el=$("#setRec");if(!el)return;
+  const cx=codexCount();
+  if(metaBroken){
+    el.innerHTML=`<span class="warn">記録を残せていない</span><br>`+
+      `<span style="color:var(--ink)">この環境では保存が使えない（プライベート窓など）。`+
+      `図鑑と殿堂はページを閉じると消える</span>`;
+    return;
+  }
+  el.innerHTML=`記録は<b>この端末に残る</b>　`+
+    `<span style="color:var(--ink)">図鑑 ${cx.got}/${cx.all}　潜った回数 ${META.runs}　最高 ${META.best} 階層</span>`+
+    `<br><button id="recClear">記録を消す</button>`;
+  $("#recClear").onclick=()=>{
+    const b=$("#recClear");
+    if(b.dataset.sure!=="1"){
+      b.dataset.sure="1";b.textContent="本当に消す（もう一度押す）";b.style.color="var(--blood)";
+      b.style.borderColor="var(--blood)";
+      setTimeout(()=>{if(b.isConnected&&b.dataset.sure==="1")drawRec();},4000);
+      return;
+    }
+    metaClear();SFX.click();
+    if(!$("#home").classList.contains("hide"))drawHome();
+    drawRec();
+  };
 }
 function openSet(){$("#setwrap").classList.remove("hide");drawSet();}
 function closeSet(){$("#setwrap").classList.add("hide");}
@@ -5707,6 +5801,9 @@ SLIDERS.forEach(([k,sid])=>{
 });
 /* 自動再生を止められていたら、最初に何か押されたときに鳴らし直す */
 document.addEventListener("click",()=>{SFX.init();Music.resume();});
+/* 書く前に閉じられても記録を落とさない。pagehide は iOS でも呼ばれる */
+window.addEventListener("pagehide",metaFlush);
+document.addEventListener("visibilitychange",()=>{if(document.hidden)metaFlush();});
 </script>
 </body>
 </html>
