@@ -504,7 +504,7 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .secbar .backbtn{margin-bottom:0;flex:none}
 .secbar .secttl{margin:0;flex:1;min-width:0;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-body.play .secbar{padding-right:38px}      /* 歯車のぶんを空ける */
+body.play .secbar{padding-right:78px}      /* 歯車と封筒のぶんを空ける */
 @media(max-width:430px){
   .secbar .secttl{font-size:15px;letter-spacing:.16em}
   .secbar .backbtn{padding:6px 9px}
@@ -586,15 +586,40 @@ body.play{padding-bottom:22px}
 /* 歯車を避けるぶんだけ空ける。歯車の左端は画面の右から 44px。
    .fh1 は .fhead の内側（右から 26px）にあるので、必要なのは差の 18px+α。
    一律に広く取ると見出しが折り返して縦を食う。 */
-body.play .stagerow{padding-right:38px}
-body.play .fh1{padding-right:22px}
+body.play .stagerow{padding-right:78px}
+body.play .fh1{padding-right:62px}
 
 /* ===== 設定（歯車） ===== */
-.gear{position:fixed;top:10px;z-index:70;right:max(10px,calc(50vw - 360px + 10px));
+/* 右上の小さなボタン。歯車と封筒を並べる */
+.topicon{position:fixed;top:10px;z-index:70;
   width:34px;height:34px;padding:0;display:grid;place-items:center;line-height:1;
   background:var(--panel);border:1px solid var(--line);color:var(--dim);
   font-family:inherit;font-size:17px;cursor:pointer}
-.gear:hover{border-color:var(--brass);color:var(--brass)}
+.topicon:hover{border-color:var(--brass);color:var(--brass)}
+.gear{right:max(10px,calc(50vw - 360px + 10px))}
+.mail{right:calc(max(10px,calc(50vw - 360px + 10px)) + 40px)}
+/* 未読の印 */
+.mail .dot{position:absolute;top:-4px;right:-4px;min-width:15px;height:15px;
+  padding:0 3px;display:grid;place-items:center;
+  background:var(--blood);color:#1b1d18;border:1px solid var(--bg);
+  font-size:9px;font-weight:700;font-family:ui-monospace,monospace;line-height:1}
+.mail.unread{color:var(--brass);border-color:#5c4a1a}
+/* お知らせ */
+.newsbox{max-width:460px;max-height:82vh;overflow-y:auto}
+.nwitem{border:1px solid var(--line);background:var(--panel);padding:11px 13px;
+  margin-bottom:9px}
+.nwitem.new{border-color:var(--brass)}
+.nwh{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:5px}
+.nwtag{font-size:9px;letter-spacing:.16em;border:1px solid;padding:1px 5px;line-height:1.5}
+.nwv{font-size:10px;color:var(--dim);font-family:ui-monospace,monospace;letter-spacing:.04em}
+.nwd{font-size:10px;color:var(--ink);margin-left:auto}
+.nwnew{font-size:9px;color:var(--blood);letter-spacing:.1em}
+.nwt{font-size:13.5px;color:var(--bone);letter-spacing:.04em;margin-bottom:5px}
+.nwb{font-size:11.5px;color:var(--dim);line-height:1.75;padding-left:11px;
+  position:relative}
+.nwb::before{content:"・";position:absolute;left:0;color:var(--ink)}
+.nwb b{color:var(--bone);font-weight:600}
+.nwnone{font-size:12px;color:var(--ink);text-align:center;padding:20px 0}
 .setwrap{position:fixed;inset:0;z-index:80;background:rgba(16,18,13,.86);
   display:flex;align-items:center;justify-content:center;padding:16px}
 .setbox{width:100%;max-width:360px;background:var(--bg);border:1px solid var(--brass);
@@ -634,7 +659,13 @@ body.play .fh1{padding-right:22px}
 
 <div class="modal hide" id="modal"><div class="mbox" id="mbox"></div></div>
 
-<button class="gear" id="gear" title="設 定" aria-label="設定">⚙</button>
+<button class="topicon mail" id="mail" title="お 知 ら せ" aria-label="お知らせ">✉</button>
+<button class="topicon gear" id="gear" title="設 定" aria-label="設定">⚙</button>
+<div class="setwrap hide" id="newswrap"><div class="setbox newsbox">
+  <div class="setttl">お 知 ら せ</div>
+  <div id="newsBody"></div>
+  <button class="mclose" id="newsClose" style="width:100%;margin-top:6px">閉 じ る</button>
+</div></div>
 <div class="setwrap hide" id="setwrap"><div class="setbox">
   <div class="setttl">設 定</div>
   <div class="setrow" id="rowMaster">
@@ -740,7 +771,58 @@ body.play .fh1{padding-right:22px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0004";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0005";      /* マージのたびに tools/bump.js で上げる */
+
+/* ===== お知らせ =====
+   新しいものを上に足していく。id は一度決めたら変えないこと
+   （読んだところまでを id で覚えているため）。
+   tag を増やしたいときは NEWSTAG に足す。 */
+const NEWSTAG={
+  up  :{n:"アップデート",c:"#c9a227"},
+  fix :{n:"修 正",     c:"#6f92ab"},
+  info:{n:"お 知 ら せ", c:"#8fa261"},
+};
+const NEWS=[
+ {id:"v0005",tag:"up",v:"α0.0005",d:"2026-08-30",n:"お知らせを置いた",b:[
+   "右上に<b>封筒</b>を置きました。更新の内容をここに残していきます",
+   "未読があると封筒に数が出ます。開けば消え、読んだところは端末に覚えます",
+ ]},
+ {id:"v0004",tag:"up",v:"α0.0004",d:"2026-08-30",n:"敵の弱体が効くようになった",b:[
+   "敵の <b>呪縛・力を奪う・溶かす</b> といった技が、これまで見た目だけで数字を動かしていませんでした。DEF・威力・素早さ・攻撃ダイスが実際に下がります",
+   "状態異常に <b>萎縮</b>（攻撃ダイスが減る）を追加",
+   "<b>アンチポーション</b>が働くようになりました。毒・火傷・麻痺・盲目・混乱も含めて、かかっている状態異常をすべて解きます",
+   "行動順の帯を小さくして、<b>次のラウンドの並びと技</b>も見えるようにしました",
+   "<b>戦場の誰かを押す</b>と、その相手の詳細（弱点・次の行動・分かっている能力値）が開きます",
+   "詳細に弱点・耐性・状態異常を表示",
+ ]},
+ {id:"v0003",tag:"up",v:"α0.0003",d:"2026-08-30",n:"記録が残るようになった",b:[
+   "<b>図鑑・殿堂・弱点の記録・到達階層が、ページを閉じても残ります</b>。これまでは開き直すたびに消えていました",
+   "設定から記録の状態を見たり、消したりできます",
+   "図鑑が埋まる速さを見直しました。同じ敵が3体並ぶ戦闘でも <b>1戦は1戦</b> と数え、1・3・6・10・15戦で段階が上がります",
+   "図鑑の5段目に中身を入れました。<b>15戦まで進めると、突かなくても弱点と耐性が分かります</b>",
+   "図鑑に「あと何戦で次の段階か」を表示",
+ ]},
+ {id:"v0002",tag:"up",v:"α0.0002",d:"2026-08-29",n:"戦闘と探索の画面を作り直した",b:[
+   "<b>戦闘画面が1画面に収まる</b>ようになりました。盤面を見てから行動を選ぶのにスクロールが要りません",
+   "遊んでいる間は大きな表題を下ろし、そのぶんを盤面に回しました",
+   "盤面は使う段だけ描きます。敵が倒れても<b>行動一覧の位置が動きません</b>",
+   "探索の地図が<b>現在地を追う</b>ようになりました。これまでは常に入口が映っていて、後半は毎回スクロールで戻る必要がありました",
+   "「ここに進む／やめておく」を画面の下に貼り付けました。スクロールせずに押せます",
+ ]},
+ {id:"v0002f",tag:"fix",v:"α0.0002",d:"2026-08-29",n:"レベルアップ画面の不具合",b:[
+   "スキルのカードが潰れて、技名が一文字ずつ折り返していたのを直しました",
+   "<b>窓の外側を押すと先に進めなくなる</b>のを直しました。習得や戦利品のように選ぶことで先に進む窓は、外側を押しても閉じません",
+ ]},
+ {id:"v0001",tag:"up",v:"α0.0001",d:"2026-08-29",n:"BGMと設定画面",b:[
+   "場面ごとに<b>BGM</b>が流れます。ホーム・殿堂・図鑑・探索の各階層・ボス戦",
+   "右上に<b>設定</b>を置きました。全体・効果音・BGM の音量を変えられます。設定はこの端末に残ります",
+   "版（α0.0xxx）を表示するようにしました",
+ ]},
+];
+function newsUnread(){
+  const i=NEWS.findIndex(x=>x.id===META.newsSeen);
+  return i<0?NEWS.length:i;      /* 覚えが無ければ全部が未読 */
+}
 
 /* ===== BGM =====
    外部ファイルを読む。index.html と同じ場所に置いておく。
@@ -3759,7 +3841,8 @@ async function finish(win){
 
    localStorage に置く。読めない環境（プライベート窓・容量切れ・
    site data を切っている）でも、保存を諦めるだけで遊べるようにしてある。 */
-const META={codex:{},rooms:{},elem:{},mats:{},seen:{},hall:[],runs:0,best:0,tutSeen:false};
+const META={codex:{},rooms:{},elem:{},mats:{},seen:{},hall:[],runs:0,best:0,
+  tutSeen:false,newsSeen:""};
 const MKEY="dd.meta";
 const MVER=1;                /* 中身の形を変えたら上げる。読み込み側で移行する */
 const HALLMAX=50;            /* 殿堂は増え続けるので上限を置く。古いものから捨てる */
@@ -3781,6 +3864,7 @@ function metaLoad(){
   META.runs =Number.isFinite(o.runs)?o.runs:0;
   META.best =Number.isFinite(o.best)?o.best:0;
   META.tutSeen=!!o.tutSeen;
+  META.newsSeen=typeof o.newsSeen==="string"?o.newsSeen:"";
 }
 function metaWrite(){
   metaTimer=null;
@@ -3789,7 +3873,8 @@ function metaWrite(){
     if(META.hall.length>HALLMAX)META.hall=META.hall.slice(-HALLMAX);
     localStorage.setItem(MKEY,JSON.stringify({v:MVER,
       codex:META.codex,rooms:META.rooms,elem:META.elem,mats:META.mats,
-      seen:META.seen,hall:META.hall,runs:META.runs,best:META.best,tutSeen:META.tutSeen}));
+      seen:META.seen,hall:META.hall,runs:META.runs,best:META.best,
+      tutSeen:META.tutSeen,newsSeen:META.newsSeen}));
   }catch(e){ metaBroken=true; }   /* 容量切れなど。以降は諦めて遊べるようにする */
 }
 /* 記録が変わったら呼ぶ。まとめて少し後で書く（1戦で何度も呼ばれるため） */
@@ -3802,7 +3887,8 @@ function metaFlush(){ if(metaTimer){clearTimeout(metaTimer);metaWrite();} }
 function metaClear(){
   META.codex={};META.rooms={};META.elem={};META.mats={};META.seen={};
   META.hall=[];META.runs=0;META.best=0;
-  /* 遊び方を見たかどうかは残す。消すと毎回チュートリアルに戻されて煩わしい */
+  /* 遊び方を見たか・お知らせを読んだかは残す。
+     消すと毎回チュートリアルに戻され、読んだお知らせがまた未読になって煩わしい */
   metaTimer&&clearTimeout(metaTimer);metaTimer=null;
   metaWrite();
 }
@@ -5837,6 +5923,43 @@ function drawRec(){
     drawRec();
   };
 }
+/* ---------- お知らせ（封筒） ---------- */
+function drawMail(){
+  const b=$("#mail");if(!b)return;
+  const n=newsUnread();
+  b.classList.toggle("unread",n>0);
+  b.innerHTML=`✉${n>0?`<span class="dot">${n>9?"9+":n}</span>`:""}`;
+  b.title=n>0?`お知らせ ${n} 件`:"お知らせ";
+}
+function drawNews(){
+  const unread=newsUnread();
+  $("#newsBody").innerHTML=NEWS.length?NEWS.map((x,i)=>{
+    const T=NEWSTAG[x.tag]||NEWSTAG.info;
+    return `<div class="nwitem ${i<unread?"new":""}">
+      <div class="nwh">
+        <span class="nwtag" style="color:${T.c};border-color:${T.c}">${T.n}</span>
+        <span class="nwv">${x.v}</span>
+        ${i<unread?`<span class="nwnew">NEW</span>`:""}
+        <span class="nwd">${x.d}</span></div>
+      <div class="nwt">${x.n}</div>
+      ${x.b.map(t=>`<div class="nwb">${t}</div>`).join("")}
+    </div>`;
+  }).join(""):`<div class="nwnone">まだ お知らせはない</div>`;
+}
+function openNews(){
+  drawNews();                       /* 開いた時点の未読を印として見せてから */
+  $("#newswrap").classList.remove("hide");
+  if(NEWS.length&&META.newsSeen!==NEWS[0].id){
+    META.newsSeen=NEWS[0].id;touchMeta();
+  }
+  drawMail();                       /* 封筒の印はその場で消す */
+}
+function closeNews(){$("#newswrap").classList.add("hide");}
+$("#mail").onclick=()=>{SFX.click();openNews();};
+$("#newsClose").onclick=closeNews;
+$("#newswrap").onclick=e=>{if(e.target.id==="newswrap")closeNews();};
+drawMail();
+
 function openSet(){$("#setwrap").classList.remove("hide");drawSet();}
 function closeSet(){$("#setwrap").classList.add("hide");}
 $("#gear").onclick=()=>{SFX.click();openSet();};
@@ -5845,6 +5968,7 @@ $("#setwrap").onclick=e=>{if(e.target.id==="setwrap")closeSet();};
 document.addEventListener("keydown",e=>{
   if(e.key!=="Escape")return;
   if(!$("#setwrap").classList.contains("hide"))return closeSet();
+  if(!$("#newswrap").classList.contains("hide"))return closeNews();
   if(modalFree())closeModal();});
 SLIDERS.forEach(([k,sid])=>{
   const el=$("#"+sid);
