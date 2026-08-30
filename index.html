@@ -290,6 +290,7 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .act.cstat{border-left-color:var(--moss)} .act.cstat .rcat{color:var(--moss);border-color:var(--moss)}
 .act.cskill{border-left-color:var(--brass)} .act.cskill .rcat{color:var(--brass);border-color:var(--brass)}
 .act.cpass{border-left-color:var(--blue)} .act.cpass .rcat{color:var(--blue);border-color:var(--blue)}
+.cxnx{font-style:normal;font-size:9px;color:var(--ink);letter-spacing:.06em;margin-left:6px}
 .legend2{font-size:10px;color:var(--ink);letter-spacing:.04em;margin-left:6px}
 .legend2 i{display:inline-block;width:8px;height:8px;margin-right:3px;vertical-align:0}
 .legend2 i.cstat{background:var(--moss)} .legend2 i.cskill{background:var(--brass)}
@@ -716,7 +717,7 @@ body.play .fh1{padding-right:22px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0002";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0003";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== BGM =====
    外部ファイルを読む。index.html と同じ場所に置いておく。
@@ -2884,15 +2885,45 @@ function powOf(u,opt){
   if(opt.powMul)p=Math.round(p*opt.powMul);
   return p;
 }
-function codexLv(k){return Math.min(5,META.codex[k]||0);}
+/* 図鑑の段階。META.codex[k] は「その敵と戦った回数」。
+   同じ敵が3体並ぶ遭遇でも1戦につき1しか増えない（数えるのは戦闘の回数）。
+
+   前は 体数 をそのまま段階にしていたため、3体そろう遭遇を2回こなすだけで
+   カンストし、草原1階層が終わる前に主要な敵が全部 5/5 になっていた。
+
+     1段目  1戦   名前と列
+     2段目  3戦   HP・攻　＋命中閾値 −1
+     3段目  6戦   DEF・速　＋命中閾値 さらに −1
+     4段目 10戦   使う技の名前
+     5段目 15戦   弱点と耐性（突いていなくても分かる）
+
+   段階を増やしたい・遅くしたいときはこの表だけ触ればよい。 */
+const CODEXN=[1,3,6,10,15];
+function codexLv(k){
+  const n=META.codex[k]||0;
+  let lv=0;for(const t of CODEXN)if(n>=t)lv++;
+  return lv;
+}
+/* 次の段階まであと何戦か。0 なら最後まで進んでいる */
+function codexNext(k){
+  const n=META.codex[k]||0;
+  for(const t of CODEXN)if(n<t)return t-n;
+  return 0;
+}
+/* 弱点と耐性。実際に突いて覚えたぶんに加え、5段目まで進むと分かる */
+function knownElem(key,kind){
+  const r=META.elem[key];
+  if(r&&r[kind])return r[kind];
+  return codexLv(key)>=5?(FOE[key]&&FOE[key][kind])||null:null;
+}
 function threshold(u,tgt,opt){
   opt=opt||{};
   let t=4;
   t+=ailSum(u,"blur");                   /* 盲目：狙いが定まらない */
   if(!u.isFoe&&tgt.key){
     const c=codexLv(tgt.key);
-    if(c>=2)t-=1;
-    if(c>=4)t-=1;
+    if(c>=2)t-=1;      /* 3戦 */
+    if(c>=3)t-=1;      /* 6戦。段階を遅くしたぶん、ここは前の4段目から繰り上げた */
   }
   if(!u.isFoe){
     if(u.wep.type==="ranged"&&u.rank==="front")t+=1;      // 近すぎて撃ちにくい
@@ -3419,16 +3450,17 @@ async function resolvePlayer(a,target){
 function foeModal(f){
   const st=shownTele(f);
   const p=telePreview(f,st.t);
-  const nx=st.nx?telePreview(f,st.nx):null;
-  const ek=META.elem[f.key]||{};
+  const nxT=st.nx?telePreview(f,st.nx):null;
+  const ek={weak:knownElem(f.key,"weak"),resist:knownElem(f.key,"resist")};
   const c=codexLv(f.key);
+  const nx=codexNext(f.key);
   openModal(`
     <div class="mtitle">${f.name}</div>
     <div style="text-align:center;line-height:0;margin-bottom:8px">${foeFig(f.key,64)}</div>
     <div class="mgrow">
       HP <b>${Math.max(0,f.HP)}</b>/${f.maxHP}　
       ${f.rank==="front"?"前列":"後列"}　
-      図鑑 ${c}/5
+      図鑑 ${c}/5${nx?`<span class="s">（あと ${nx} 戦）</span>`:""}
       ${ek.weak?`　<span class="elw">弱 ${ELEM[ek.weak].n}</span>`:""}
       ${ek.resist?`　<span class="elr">耐 ${ELEM[ek.resist].n}</span>`:""}
     </div>
@@ -3436,9 +3468,9 @@ function foeModal(f){
     <div class="msec">こ の タ ー ン</div>
     <div class="mitem ${p.danger?"warn":""}"><b>${p.txt}</b><br>
       <span class="s">${p.sub}</span></div>
-    ${nx?`<div class="msec">次 の タ ー ン</div>
-      <div class="mitem ${nx.danger?"warn":""}"><b>${nx.txt}</b><br>
-        <span class="s">${nx.sub}</span></div>`:""}
+    ${nxT?`<div class="msec">次 の タ ー ン</div>
+      <div class="mitem ${nxT.danger?"warn":""}"><b>${nxT.txt}</b><br>
+        <span class="s">${nxT.sub}</span></div>`:""}
     ${c>=2?`<div class="msec">わ か っ て い る こ と</div>
       <div class="mitem">攻 <b>${f.STR}</b>　DEF <b>${f.DEF}</b>　速 <b>${f.DEX}</b></div>`:""}
     ${c>=4?`<div class="mitem"><span class="s">${f.acts.map(a=>a.n).join("・")}</span></div>`:""}
@@ -4037,9 +4069,9 @@ function roomInfo(nd){
     let t=`<span class="known">${(META.rooms[nd.e||nd.t]||0)?(META.rooms[nd.e||nd.t])+"回 戦った相手":"見通している"}</span><br>${E.n}　—　`+
       E.list.map(k=>FOE[k].n).join("・");
     if(seen>=2)t+=`<br>`+[...new Set(E.list)].map(k=>{
-      const c=codexLv(k),ek=META.elem[k]||{};
-      return `${FOE[k].n} 図鑑${c}/5${c>=2?"（閾値 −"+(c>=4?2:1)+"）":""}`+
-        (ek.weak?`　弱 ${ELEM[ek.weak].n}`:"")+(ek.resist?`　耐 ${ELEM[ek.resist].n}`:"");
+      const c=codexLv(k),w=knownElem(k,"weak"),r=knownElem(k,"resist");
+      return `${FOE[k].n} 図鑑${c}/5${c>=2?"（閾値 −"+(c>=3?2:1)+"）":""}`+
+        (w?`　弱 ${ELEM[w].n}`:"")+(r?`　耐 ${ELEM[r].n}`:"");
       }).join("<br>");
     return t;
   }
@@ -4998,7 +5030,8 @@ function nextStage(){
   const r=RUN.cur;
   if(r)r.done=true;
   const out=[`${ENCS[sel.enc].n} を退けた`];
-  ENCS[sel.enc].list.forEach(k=>{META.codex[k]=(META.codex[k]||0)+1;});
+  /* 同じ敵が何体並んでいても、1戦は1戦 */
+  [...new Set(ENCS[sel.enc].list)].forEach(k=>{META.codex[k]=(META.codex[k]||0)+1;});
   const g=gainGold(RUN.boss?"boss":(RUN.elite?"elite":"battle"));
   if(RUN.lootLines&&RUN.lootLines.length){
     out.push(`<span class="gain">手に入れたもの</span>`);
@@ -5514,13 +5547,17 @@ function drawCodex(){
 }
 function cxBody(){
   if(cxNow==="foe"){
-    return `<div class="cxnote">倒した数で少しずつ見えてくる。弱点は 突いたときに 書き込まれる。</div>`+
+    return `<div class="cxnote">戦った回数で少しずつ見えてくる（${
+      CODEXN.join("・")} 戦）。弱点は 突いたときに書き込まれ、${
+      CODEXN[4]} 戦まで進めば突かなくても分かる。</div>`+
       Object.keys(FOE).map(k=>{
-        const c=codexLv(k),f=FOE[k],ek=META.elem[k]||{};
+        const c=codexLv(k),f=FOE[k],nx=codexNext(k);
+        const ek={weak:knownElem(k,"weak"),resist:knownElem(k,"resist")};
         if(!c)return `<div class="cxrow dim"><span class="cxfig">${foeFig(k,30)}</span>
           <span class="cxn">？ ？ ？</span></div>`;
         return `<div class="cxrow"><span class="cxfig">${foeFig(k,30)}</span>
-          <span class="cxn">${f.n}<i>${c}/5</i></span>
+          <span class="cxn">${f.n}<i>${c}/5</i>${
+            nx?`<em class="cxnx">あと ${nx} 戦</em>`:""}</span>
           <span class="cxd">${f.rank==="front"?"前列":"後列"}${
             c>=2?`　HP ${f.HP}　攻 ${f.STR}`:""}${
             c>=3?`　DEF ${f.DEF}　速 ${f.DEX}`:""}${
