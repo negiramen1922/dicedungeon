@@ -784,11 +784,8 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
- {id:"v0006",tag:"bal",v:"α0.0006",d:"2026-08-30",n:"スカウトとナイトの数値を直した",b:[
-   "<b>スカウトの武器が DEX 依存になりました。</b>これまでは成長が DEX 中心なのに武器の威力が STR 依存で、レベルを上げても威力が伸びず、Lv10 で火力が最下位でした。短剣・双短剣・狼牙・レイピア・スティング・シャドウ・暗殺刀の7本が対象です",
-   "あわせて <b>俊敏</b>（DEXを伸ばすパッシブ）がスカウトの威力に乗るようになりました",
-   "<b>ナイトの VIT の伸びを 1 下げました。</b>耐久が突出していて、レベルが上がるほど差が開いていました",
-   "16通りの組み合わせの差が <b>5.7倍から 2.3倍</b>に縮みました（Lv10 で比べた場合）",
+ {id:"v0006",tag:"bal",v:"α0.0006",d:"2026-08-30",n:"ナイトの伸びを下げた",b:[
+   "<b>ナイトの VIT の伸びを 1 下げました。</b>耐久が突出していて、レベルが上がるほど差が開いていました。Lv10 の HP が 387 から 351 になります",
  ]},
  {id:"v0005",tag:"up",v:"α0.0005",d:"2026-08-30",n:"お知らせを置いた",b:[
    "右上に<b>封筒</b>を置きました。更新の内容をここに残していきます",
@@ -1621,16 +1618,14 @@ const WEP={
   stormbow:{snd:"bow",el:"pierce",n:"リピータークロスボウ",hands:4,mul:1.38,stat:"STR",type:"ranged",d:"弦を巻き上げ、続けざまに撃つ"},
   piercebow:{snd:"bow",el:"pierce",n:"雷 弓",hands:2,mul:2.42,stat:"STR",type:"ranged",d:"岩をも貫く。放った音は雷のような轟音"},
 
-  /* ---- スカウト：手数で削る。威力は DEX 依存 ----
-       成長（GROW.scout）が DEX 中心なのに武器が STR 依存だったため、
-       レベルを上げても威力が伸びず、Lv10 で火力が全16通りの最下位群だった。 */
-  dagger:{snd:"slash",el:"pierce",n:"短 剣",hands:5,mul:0.8,stat:"DEX",type:"melee",d:"素早く何度も刺す"},
-  twindagger:{snd:"slash",el:"slash",n:"双 短 剣",hands:6,mul:0.7,stat:"DEX",type:"melee",d:"両手で刻む"},
-  fang:{snd:"slash",el:"slash",n:"狼 牙",hands:5,mul:0.86,stat:"DEX",type:"melee",d:"狼の牙を削り出した刃"},
-  rapier:{snd:"slash",el:"pierce",n:"レイピア",hands:4,mul:1.0,stat:"DEX",type:"melee",d:"細く鋭い突き"},
-  clawblade:{snd:"slash",el:"slash",n:"スティング",hands:7,mul:0.62,stat:"DEX",type:"melee",d:"刺し続ける。手数だけならこの世で一番"},
-  shadowfang:{snd:"slash",el:"slash",n:"シャドウ",hands:6,mul:0.78,stat:"DEX",type:"melee",d:"闇に紛れて振るう"},
-  assassin:{snd:"slash",el:"pierce",n:"暗 殺 刀",hands:5,mul:0.92,stat:"DEX",type:"melee",d:"一突きで終わらせるための刃"},
+  /* ---- スカウト：手数で削る ---- */
+  dagger:{snd:"slash",el:"pierce",n:"短 剣",hands:5,mul:0.8,stat:"STR",type:"melee",d:"素早く何度も刺す"},
+  twindagger:{snd:"slash",el:"slash",n:"双 短 剣",hands:6,mul:0.7,stat:"STR",type:"melee",d:"両手で刻む"},
+  fang:{snd:"slash",el:"slash",n:"狼 牙",hands:5,mul:0.86,stat:"STR",type:"melee",d:"狼の牙を削り出した刃"},
+  rapier:{snd:"slash",el:"pierce",n:"レイピア",hands:4,mul:1.0,stat:"STR",type:"melee",d:"細く鋭い突き"},
+  clawblade:{snd:"slash",el:"slash",n:"スティング",hands:7,mul:0.62,stat:"STR",type:"melee",d:"刺し続ける。手数だけならこの世で一番"},
+  shadowfang:{snd:"slash",el:"slash",n:"シャドウ",hands:6,mul:0.78,stat:"STR",type:"melee",d:"闇に紛れて振るう"},
+  assassin:{snd:"slash",el:"pierce",n:"暗 殺 刀",hands:5,mul:0.92,stat:"STR",type:"melee",d:"一突きで終わらせるための刃"},
 
   /* ---- ウィザード：INT頼み。遠隔 ---- */
   wand:{snd:"magic",el:"none",n:"見習いの杖",hands:3,mul:1.2,stat:"INT",type:"ranged",d:"扱いやすい入門の杖"},

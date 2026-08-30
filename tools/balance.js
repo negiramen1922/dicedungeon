@@ -144,14 +144,19 @@ if (require.main === module) {
     Object.keys(scoutWepDex).forEach(k => scoutWepDexLow[k] = {stat:"DEX", mul:+(WEP[k].mul*0.78).toFixed(2)});
     const K4 = {...GROW, knight:{STR:4,VIT:4}};
     const K35= {...GROW, knight:{STR:5,VIT:4}};
+    const mulUp = {};
+    ["dagger","twindagger","fang","rapier","clawblade","shadowfang","assassin"]
+      .forEach(k => { if (WEP[k]) mulUp[k] = {mul:+(WEP[k].mul*1.15).toFixed(2)}; });
+    const S43 = {...GROW, scout:{STR:4,DEX:3,VIT:2}};
     compare([
-      {n:"いまのまま", grow:null},
-      {n:"C 短剣をDEX依存", grow:null, wep:scoutWepDex},
-      {n:"C＋ナイトVIT5→4", grow:K4, wep:scoutWepDex},
-      {n:"C＋ナイトSTR5VIT4", grow:K35, wep:scoutWepDex},
-      {n:"C＋ウィザードVIT3→2", grow:{...GROW, mage:{INT:5,VIT:2}}, wep:scoutWepDex},
-      {n:"C＋ナイト4＋魔2", grow:{...K4, mage:{INT:5,VIT:2}}, wep:scoutWepDex},
+      {n:"手つかず", grow:{...GROW, knight:{STR:4,VIT:5}}},
+      {n:"いま(騎VIT4のみ)", grow:null},
+      {n:"斥候 STR4DEX3VIT2", grow:S43},
+      {n:"斥候の武器 倍率1.15倍", grow:null, wep:mulUp},
+      {n:"両方", grow:S43, wep:mulUp},
     ]);
+
+
   } else {
     [[1,0],[10,1],[16,2]].forEach(([lv,act]) => table(lv, act, null, "いまの数値"));
   }
