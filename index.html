@@ -42,26 +42,38 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .orderwrap{background:var(--panel);border:1px solid var(--line);margin-bottom:8px}
 .orderbar{display:flex;align-items:stretch;gap:6px;padding:6px 7px}
 .ordList{display:flex;gap:5px;overflow-x:auto;flex:1;align-items:stretch;padding-bottom:2px}
-.ord{cursor:pointer;flex:0 0 auto;width:56px;border:1px solid var(--line);background:#1d2019;
-  border-top-width:3px;padding:3px 2px 4px;display:flex;flex-direction:column;
-  align-items:center;gap:1px;opacity:.5;transition:.15s;position:relative}
+/* 顔だけの小さなふだ。行動は顔の右上に重ねる。名前は title と盤面で分かる */
+.ord{cursor:pointer;flex:0 0 auto;border:1px solid var(--line);background:#1d2019;
+  border-top-width:3px;padding:7px 7px 6px;opacity:.5;transition:.15s}
 .ord.mine{border-top-color:var(--moss)} .ord.foe{border-top-color:var(--blood)}
 .ord.now{opacity:1;border-color:var(--brass);background:#2c3024}
 .ord.done{opacity:.2}
 .ord svg{display:block}
-.oi{position:absolute;top:1px;left:3px;font-size:8px;color:var(--ink);
-  font-family:ui-monospace,monospace}
-.oact{font-size:15px;line-height:1.1;margin-top:1px}
-.oact.atk{color:var(--blood)} .oact.def{color:var(--blue)}
-.oact.hex{color:#a68bbf}
-.oact.buf{color:var(--brass)} .oact.me{color:var(--moss)}
-.onx{font-size:7px;color:var(--ink);letter-spacing:0;margin-left:1px;vertical-align:2px}
-.ordn{font-size:8.5px;line-height:1.2;text-align:center;white-space:nowrap;
-  overflow:hidden;text-overflow:ellipsis;max-width:54px}
-.ord.mine .ordn{color:var(--moss)} .ord.foe .ordn{color:var(--blood)}
+.oface{position:relative;line-height:0}
+.oi{position:absolute;left:-5px;bottom:-4px;font-size:8px;color:var(--dim);
+  font-family:ui-monospace,monospace;line-height:1;
+  background:var(--panel);border:1px solid var(--line);padding:0 2px}
+.oact{position:absolute;top:-5px;right:-5px;font-size:11px;line-height:1;
+  width:16px;height:16px;display:grid;place-items:center;
+  background:var(--panel);border:1px solid var(--line)}
+.oact.atk{color:var(--blood);border-color:#5e2f2a}
+.oact.def{color:var(--blue);border-color:#33454f}
+.oact.hex{color:#a68bbf;border-color:#4a3c58}
+.oact.buf{color:var(--brass);border-color:#5c4a1a}
+.oact.me{color:var(--moss);border-color:#4a5730}
+/* 次のラウンドの区切り */
+.orddiv{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:1px;padding:0 6px;border-left:1px dashed var(--line);
+  margin-left:3px}
+.orddiv b{font-size:9px;color:var(--brass);font-weight:600;
+  font-family:ui-monospace,monospace;letter-spacing:.04em}
+.orddiv span{font-size:8px;color:var(--ink);letter-spacing:.1em}
+.ord.later{opacity:.42;border-top-style:dashed}
+.ord.later .oi{color:#4d5346}
+
 .detbtn{flex:0 0 auto;background:var(--panel2);border:1px solid var(--line);
-  color:var(--dim);font-family:inherit;font-size:10px;letter-spacing:.12em;
-  padding:0 9px;cursor:pointer;writing-mode:vertical-rl}
+  color:var(--dim);font-family:inherit;font-size:10px;letter-spacing:.1em;
+  padding:0 8px;cursor:pointer;white-space:nowrap}
 .detbtn:hover,.detbtn.on{border-color:var(--brass);color:var(--brass)}
 .detail{border-top:1px solid var(--line);padding:8px 9px}
 .drow{display:flex;gap:8px;align-items:flex-start;padding:6px 0;
@@ -88,6 +100,8 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
   align-items:center;justify-content:flex-start;position:relative}
 .cell.dead{opacity:.24;filter:grayscale(1)}
 .cell.sel{cursor:pointer}
+.cell.look{cursor:pointer}
+.cell.look:hover .por{background:#262b1e}
 .cell.sel .por{outline:2px solid var(--brass);outline-offset:3px;background:#2a2e22}
 .cell.sel:hover .por{background:#343a28}
 .por{padding:2px 4px;border-radius:2px;transition:.12s}
@@ -2738,23 +2752,36 @@ function drawOrder(){
   const st=$("#stageLbl");
   if(st&&RUN&&RUN.cur)
     st.textContent=`${RUN.act+1}階層　${RUN.cur.name}`+(RUN.elite?"　［手練れ］":RUN.boss?"　［ボス］":"");
-  host.innerHTML=queue.map((u,i)=>{
+  /* 1枚のふだ。act に null を渡すと「？」になる（自分の手は自分で決めるので） */
+  const card=(u,{no,act,cls})=>{
+    const mine=(u===me);
+    const ic=mine?{g:"？",c:"me"}:actIcon(act);
+    return `<div class="ord ${mine?"mine":"foe"} ${cls}" title="${u.name}" ${
+      mine?'data-om="1"':`data-oid="${u.id}"`}>
+      <div class="oface">
+        ${mine?faceFig(sel.job,sel.race,34):foeFaceFig(u.key,34)}
+        <div class="oact ${ic.c}">${ic.g}</div>
+        <div class="oi">${no}</div>
+      </div></div>`;
+  };
+  /* いまのラウンド。済んだ者は薄くする */
+  let h=queue.map((u,i)=>{
     if(u!==me&&u.HP<=0)return "";
-    const mine=(u===u&&u===me);
     const done=(i<qi||u.HP<=0);
-    const ic=mine?{g:"？",c:"me"}:actIcon(done?(u.next||u.tele):u.tele);
-    const col=mine?"#8fa261":"#b1544a";
-    return `<div class="ord ${mine?"mine":"foe"} ${i===qi?"now":""} ${
-      (i<qi||u.HP<=0)?"done":""}" ${mine?'data-om="1"':`data-oid="${u.id}"`}>
-      <div class="oi">${i+1}</div>
-      ${mine?faceFig(sel.job,sel.race,34):foeFaceFig(u.key,34)}
-      <div class="oact ${ic.c}">${ic.g}${done&&!mine?'<span class="onx">次</span>':""}</div>
-      <div class="ordn">${u.name}</div></div>`;
+    return card(u,{no:i+1,
+      act:done?(u.next||u.tele):u.tele,
+      cls:(i===qi?"now ":"")+(done?"done":"")});
   }).join("");
+  /* 次のラウンド。並びも技も いまの値から決まるので前もって出せる */
+  const later=orderOf().filter(u=>u===me||u.HP>0);
+  if(later.length){
+    h+=`<div class="orddiv"><b>R${round+1}</b><span>次</span></div>`;
+    h+=later.map((u,i)=>card(u,{no:i+1,act:u.next||u.tele,cls:"later"})).join("");
+  }
+  host.innerHTML=h;
   host.querySelectorAll("[data-oid]").forEach(el=>{
     el.onclick=()=>{const f=foes.find(x=>x.id===+el.dataset.oid);if(f)foeModal(f);};});
-  const om=host.querySelector("[data-om]");
-  if(om)om.onclick=()=>charModal();
+  host.querySelectorAll("[data-om]").forEach(el=>{el.onclick=()=>charModal();});
   const now=host.querySelector(".ord.now");
   if(now&&now.scrollIntoView)now.scrollIntoView({block:"nearest",inline:"nearest"});
   if(!$("#detail").classList.contains("hide"))drawDetail();
@@ -2766,11 +2793,15 @@ function drawDetail(){
     <div style="flex:1;min-width:0">
       <div class="dnm" style="color:var(--moss)">${me.name}
         <span style="color:#6f7a63;font-size:10px">${me.rank==="front"?"前衛":"後衛"}　
-        HP ${Math.max(0,me.HP)}/${me.maxHP}　MP ${me.MP}/${me.maxMP}　DEF ${defOf(me)}</span>
+        HP ${Math.max(0,me.HP)}/${me.maxHP}　MP ${me.MP}/${me.maxMP}　DEF ${defOf(me)}　速 ${dexOf()}</span>
         </div>
+      ${ailText(me)?`<div class="dline"><span class="k">状 態</span>${ailText(me)}</div>`:""}
       <div class="dline"><span class="k">装 備</span>${
-        ["wep","armor","acc"].filter(k=>me.eq[k]).map(k=>`${SLOTN[k]} ${me.eq[k].n}`).join("　")
-        ||me.wep.n}</div>
+        /* acc は配列なので、他の枠と同じ扱いにすると undefined が出る */
+        [me.eq.wep&&`${SLOTN.wep} ${me.eq.wep.n}`,
+         me.eq.armor&&`${SLOTN.armor} ${me.eq.armor.n}`,
+         (me.eq.acc||[]).length&&`${SLOTN.acc} ${me.eq.acc.map(g=>g.n).join("・")}`]
+        .filter(Boolean).join("　")||me.wep.n}</div>
       ${me.pass.length?`<div class="dline"><span class="k">パッシブ</span>${
         me.pass.map(p=>`<b style="color:${PCOND[p.ef.w]()?"#9fc4dc":"#5f7080"}">${p.n}</b>`).join("　")
       }</div>`:""}
@@ -2781,11 +2812,17 @@ function drawDetail(){
     const acted=(st.lbl==="次のターン");
     const now=telePreview(f,st.t), nx=(!acted&&f.next)?telePreview(f,f.next):null;
     const ni=actIcon(st.t), xi=(!acted&&f.next)?actIcon(f.next):null;
-    const ek=META.elem[f.key]||{};
+    const c=codexLv(f.key);
+    const w=knownElem(f.key,"weak"), r=knownElem(f.key,"resist");
+    const ail=ailText(f);
     return `<div class="drow">${foeFig(f.key,28)}
       <div style="flex:1;min-width:0">
         <div class="dnm">${f.name}　<span style="color:#6f7a63;font-size:10px">${
-          f.rank==="front"?"前列":"後列"}　HP ${Math.max(0,f.HP)}/${f.maxHP}</span></div>
+          f.rank==="front"?"前列":"後列"}　HP ${Math.max(0,f.HP)}/${f.maxHP}${
+          c>=3?`　DEF ${defOf(f)}　速 ${Math.max(1,f.DEX-ailSum(f,"slow"))}`:""}</span>${
+          w?` <span class="elw">弱 ${ELEM[w].n}</span>`:""}${
+          r?` <span class="elr">耐 ${ELEM[r].n}</span>`:""}</div>
+        ${ail?`<div class="dline"><span class="k">状 態</span>${ail}</div>`:""}
         <div class="dline ${now.danger?"now":"safe"}"><span class="k">${st.lbl}</span>
           ${ni.g} <b>${now.txt.replace(/^[⚔◈▲]\s*/,"")}</b>　${now.sub}</div>
         ${nx?`<div class="dline ${nx.danger?"now":"safe"}"><span class="k">次 の タ ー ン</span>
@@ -2820,7 +2857,22 @@ function draw(){
   });
   $("#board").innerHTML=h;
   drawOrder();
-  if(pending)bindTargets();
+  bindCells();
+  if(pending)bindTargets();   /* 的を選ぶ最中は、選べるマスだけそちらで上書きする */
+}
+/* 盤面の誰かを押したら、その者の詳細を開く。
+   的を選んでいる最中は選択のほうが大事なので何もしない（bindTargets が受け持つ）。 */
+function bindCells(){
+  document.querySelectorAll("#board .cell[data-id],#board .cell[data-me]").forEach(el=>{
+    const dead=el.classList.contains("dead");
+    if(!dead)el.classList.add("look");
+    el.onclick=()=>{
+      if(pending)return;
+      if(el.dataset.me)return charModal();
+      const f=foes.find(x=>x.id===+el.dataset.id);
+      if(f)foeModal(f);
+    };
+  });
 }
 function bindTargets(){
   document.querySelectorAll(".cell.sel").forEach(el=>{
@@ -3483,15 +3535,17 @@ function foeModal(f){
 }
 
 /* ---------- 待ち行列 ---------- */
-function buildQueue(){
+/* DEX順の並び。次のラウンドも同じ規則で決まるので、前もって見せられる。
+   （鈍足や強化で DEX が変われば当然そのぶん変わる） */
+function orderOf(){
   const dx=u=>(u===me?dexOf():Math.max(1,u.DEX-ailSum(u,"slow")));
-  queue=[me,...alive()].sort((a,b)=>{
+  return [me,...alive()].sort((a,b)=>{
     const d=dx(b)-dx(a);
     if(d)return d;
     return a===me?-1:1;
   });
-  qi=0;
 }
+function buildQueue(){ queue=orderOf(); qi=0; }
 async function runQueue(){
   while(qi<queue.length){
     const u=queue[qi];
