@@ -3811,6 +3811,10 @@ async function endRound(){
 }
 async function finish(win){
   over=true;busy=false;pending=null;
+  /* 状態異常は戦闘の中だけのもの。持続をターン数で測っているので、
+     手番の無い探索中に持ち越すと永久に減らない。戦闘が終わったら必ず落とす。
+     （前は次の戦闘の開始時に消していたので、探索中だけ中途半端に残っていた） */
+  me.ail=[];
   $("#prompt").textContent="";
   if(!win){
     $("#acts").innerHTML=`<div class="end lose">戦 死</div>`;
@@ -4744,10 +4748,10 @@ function resolveEvent(nd,out){
     const h=Math.min(Math.round(me.maxHP*0.40*rh),me.maxHP-me.HP);
     const m=Math.min(Math.round(me.maxMP*0.5*rh),me.maxMP-me.MP);
     me.HP+=h;me.MP+=m;
-    const cured=(me.ail||[]).length;me.ail=[];
+    /* 状態異常の解除はここには書かない。状態異常は戦闘の中だけのもので、
+       探索画面では必ず空になっている（§ 状態異常の決まり）。 */
     out.push(`<span class="gain">澄んだ泉が湧いていた</span>`);
     out.push(`　HP <b>+${h}</b>　MP <b>+${m}</b>`);
-    if(cured)out.push(`　<span class="s">かかっていた ${cured} つの状態異常も洗い流された</span>`);
     backToFloor(nd.name,out,[
       {n:"火を使って こしらえる",cb:()=>craftModal(null)},
       {n:"確 認"}]);
