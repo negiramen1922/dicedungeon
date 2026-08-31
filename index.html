@@ -862,14 +862,13 @@ body.play .fh1{padding-right:62px}
   <div class="cmdwrap"><div class="prompt" id="prompt"></div>
   <div class="acts" id="acts"></div></div>
   <div class="log" id="log"></div>
-  <div class="ctrl"><button id="again">もう一度</button><button id="back">選び直す</button>
-    <button id="mute">♪ 音 ON</button></div>
+
 </section>
 
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0009";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0010";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -882,6 +881,12 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0010",tag:"up",v:"α0.0010",d:"2026-08-31",n:"宝箱を増やし、地図を長くした",b:[
+   "<b>宝物の部屋が1階層に2つ</b>になりました。これまで宝物は1段にしか置かれておらず、通る道は1本なので<b>1階層に1回しか宝箱を開けられません</b>でした",
+   "<b>宝箱は装備をそのままくれます。</b>3つから選ぶ画面をやめました。箱から飛び出したものが そのまま手に入ります。幸運が<b>大あたり以上なら装備が2つ</b>出ます",
+   "<b>1階層で通る部屋が 15 から 19 に増えました。</b>3階層通しで 45室 → 57室、宝箱は 3回 → 6回になります",
+   "戦闘画面の下にあった <b>「もう一度」「選び直す」「♪音ON」</b> を外しました。音量は歯車から変えられます",
+ ]},
  {id:"v0009",tag:"up",v:"α0.0009",d:"2026-08-31",n:"技能値を足した",b:[
    "能力値とは別に <b>技能値</b> を5つ足しました。<b>探索・射撃・格闘・鍛冶・料理</b>。判定は幸運と同じ <b>1d100</b> で、失敗／成功／ハード／エクストリーム、それに出目1のクリティカルと出目100のファンブルがあります",
    "技能値は<b>職業・種族・欲望だけ</b>で決まります。能力値からも装備からも来ません",
@@ -2745,12 +2750,14 @@ function lukRoll(pct){
   const r=roll100(pct);
   return {...r,...LUKRANK[r.k]};
 }
-/* 宝箱が段階ごとにどれだけ実るか */
+/* 宝箱が段階ごとにどれだけ実るか。
+   装備は選ばせずに、箱から飛び出したものをそのまま渡す。
+   選択肢を並べるより、開けた手応えがそのまま報酬になるほうが素直。 */
 const CHESTGAIN=[
-  {grade:0,pick:3,gold:1},      /* はずれ */
-  {grade:1,pick:3,gold:1},      /* あたり　　等級の上限 +1 */
-  {grade:1,pick:4,gold:1.5},    /* 大あたり　＋ 並ぶ数 +1・金貨 1.5倍 */
-  {grade:2,pick:5,gold:2},      /* 超あたり　等級 +2・並ぶ数 +2・金貨 2倍 */
+  {grade:0,gear:1,gold:1},      /* はずれ　　装備1つ */
+  {grade:1,gear:1,gold:1},      /* あたり　　等級の上限 +1 */
+  {grade:1,gear:2,gold:1.5},    /* 大あたり　装備2つ・金貨 1.5倍 */
+  {grade:2,gear:2,gold:2},      /* 超あたり　等級 +2・装備2つ・金貨 2倍 */
 ];
 function rollLuk(){const a=r6(),b=r6();return {v:(a+b)*2,d:[a,b]};}
 function newChar(){sel.luk=0;sel.lukD=null;}   /* 作り直すときだけ振り直す */
@@ -4793,7 +4800,10 @@ const RNAME={battle:"戦闘",elite:"精鋭",treasure:"宝物",rest:"休息",even
 const NCOL={battle:"#b1544a",elite:"#8f3a32",treasure:"#c9a227",
             rest:"#8fa261",event:"#6f92ab",shop:"#a68bbf",boss:"#e05a4a"};
 
-const ROWS=15, COLS=3, PATHS=4;
+const ROWS=18, COLS=3, PATHS=4;
+/* 宝物の部屋を置く段。通る道は1本なので、置いた段の数だけ開けられる。
+   1段だけだと1階層に1回しか宝箱が出ず、演出を見る機会が少なすぎた。 */
+const TREASUREROWS=[4,10];
 const WEIGHT=[["battle",45],["event",22],["elite",16],["rest",12],["shop",5]];
 
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){
@@ -4850,7 +4860,7 @@ function genAct(ai){
   rows.forEach((ks,r)=>{
     ks.forEach(k=>{
       if(r===0){node[k].t="battle";return;}
-      if(r===8){node[k].t="treasure";return;}
+      if(TREASUREROWS.includes(r)){node[k].t="treasure";return;}
       if(r===ROWS-1){node[k].t="rest";return;}
       let t=null;
       for(let tries=0;tries<50;tries++){
@@ -4868,7 +4878,7 @@ function genAct(ai){
     });
     // 同じ親から出る道の行き先が重なっていたら差し替える
     ks.forEach(k=>{
-      if(r===0||r===8||r===ROWS-1)return;
+      if(r===0||TREASUREROWS.includes(r)||r===ROWS-1)return;
       const clash=()=>(par[k]||[]).some(pk=>(kids[pk]||[]).some(sib=>
         sib!==k&&node[sib].t===node[k].t));
       for(let tries=0;tries<40&&clash();tries++){
@@ -5600,7 +5610,7 @@ function chestNote(k){
   const G=CHESTGAIN[k];
   const a=[];
   if(G.grade)a.push(`等級の上限 +${G.grade}`);
-  if(G.pick>3)a.push(`並ぶ数 ${G.pick}`);
+  if(G.gear>1)a.push(`装備 ${G.gear}つ`);
   if(G.gold>1)a.push(`金貨 ${G.gold}倍`);
   return a.join("　")||"上乗せなし";
 }
@@ -5669,6 +5679,20 @@ async function openChest(nd,weak){
       gains.push({ic:itemIcon("i_scroll",34),n:`${R.n} の覚え書き`,
         d:`${R.kind==="cook"?"料理":"鍛冶"}　加工賃 ${R.cost}`,sm:itemIcon("i_scroll",20)});}
   }
+  /* 装備。選ばせずにここで決めて、箱から飛び出させる。
+     幸運の段階が等級の上限（LUKGRADE）と数を決める。 */
+  const swaps=[];
+  LUKGRADE=CG.grade;
+  const pool=catPool("gear");
+  LUKGRADE=0;                       /* 戦利品やレベルアップに漏らさない */
+  for(let i=0;i<CG.gear&&pool.length;i++){
+    const g=pool.splice(Math.floor(Math.random()*pool.length),1)[0];
+    const icon=g.slot==="wep"?wepIcon(g.key):(g.slot==="armor"?armorIcon(g):accIcon(g));
+    gains.push({ic:itemIcon(icon,34),sm:itemIcon(icon,20),
+      n:`${g.n}`,d:`${TIERN[g.tier===undefined?1:g.tier]}　${g.d||""}`.slice(0,60)});
+    const res=applyReward("gear",g);
+    if(res&&res.full)swaps.push(res);
+  }
 
   /* ③ 揺らして、一つずつ飛び出させる */
   const box=$("#cBox"), stage=$("#cStage");
@@ -5700,14 +5724,21 @@ async function openChest(nd,weak){
       幸運 ${lr.s}　<span style="color:var(--ink)">1d100 → ${lr.v}</span>
       <div style="font-size:11px;margin-top:3px;letter-spacing:.06em">${chestNote(lr.k)}</div></div>
     <button class="go2" id="cGo" style="width:100%;margin-top:11px">
-      装 備 を ${CG.pick} つ か ら 選 ぶ</button></div>`;
+      受 け 取 る</button></div>`;
   $("#cSkip").style.display="none";
   return new Promise(res=>{
     $("#cGo").onclick=()=>{
       SFX.pick();chestClose();
-      showChoice(title,["gear"],0,
-        lr.k?[`<span class="gain">幸運 ${lr.s}</span>　${chestNote(lr.k)}`]:[],lr);
-      res();
+      /* 枠が満杯だった装備は、ここで入れ替えるか捨てるかを決めてもらう */
+      const next=()=>{
+        const sw=swaps.shift();
+        if(sw)return swapModal(sw.kind||"acc",sw.full,next);
+        backToFloor(title,[
+          `<span class="gain">${gains.map(g=>g.n).join("　")}</span>`,
+          lr.k?`　<span class="s">幸運 ${lr.s}　${chestNote(lr.k)}</span>`:"" ].filter(Boolean));
+        res();
+      };
+      next();
     };
   });
 }
@@ -6892,8 +6923,6 @@ $("#tutOK").onclick=()=>{
 $("#hallBack").onclick=goHome;
 $("#mkBack").onclick=goHome;
 $("#cxBack").onclick=goHome;
-$("#again").onclick=()=>{if(RUN&&!RUN.over){drawFloor();showScreen("floor");}else if(!META.tutSeen){drawTut();showScreen("tut");}else goHome();};
-$("#back").onclick=goHome;
 if(!META.tutSeen){drawTut();showScreen("tut");}else goHome();
 $("#charBtn").onclick=charModal;
 $("#charBtn2").onclick=charModal;
@@ -6907,11 +6936,10 @@ $("#detBtn").onclick=()=>{
 /* 音のON/OFF。♪ のボタンは戦闘画面にしかないので、設定のつまみからも戻せる */
 function soundToggle(){
   const o=SFX.toggle(); Music.toggle();
-  $("#mute").textContent=o?"♪ 音 ON":"♪ 音 OFF";
+
   if(!$("#setwrap").classList.contains("hide"))drawSet();
   return o;
 }
-$("#mute").onclick=soundToggle;
 
 /* ---------- 設定（歯車） ---------- */
 const SLIDERS=[["master","sMaster","vMaster","rowMaster"],
