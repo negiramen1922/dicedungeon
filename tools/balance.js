@@ -16,7 +16,7 @@
 */
 const path = require("path");
 const api = require(path.join(__dirname, "probe.js")).load();
-const {JOB, RACE, GROW, WEP, FOE, ENCS, DUNGEONS} = api;
+const {JOB, RACE, GROW, WEP, FOE, ENCS, DUNGEONS, SKJOB, SKRACE} = api;
 
 /* ---- 敵の側の代表値。実データから作る ---- */
 function foeStats(actIdx) {
@@ -111,11 +111,16 @@ function rate(job, race, lv, foe, grow) {
      ev = floor((狙われる側のDEX − 狙う側のDEX)/15) を 4 に足し、2〜6 で丸める。
      これを入れないと、DEX の高い組み合わせの耐久を大きく取りこぼす
      （敵が 4以上ではなく 6 でしか当たらなくなるため）。 */
-  const ev = (a, d) => Math.max(2, Math.min(6,
-    4 + Math.min(EVCAP, Math.max(0, Math.floor((d - a)/EVDIV)))));
-  const fdex   = Math.round(foe.DEX * FOEDEX);
-  const thr    = ev(b.st.DEX, fdex);      /* 自分が敵を狙うとき */
-  const thrFoe = ev(fdex, b.st.DEX);      /* 敵が自分を狙うとき */
+  const fdex = Math.round(foe.DEX * FOEDEX);
+  /* 自分が狙うとき … 技能（射撃/格闘）と、相手の素早さ
+     敵が狙うとき   … こちらの DEX（回避）
+     threshold() と同じ形にしてある */
+  const skName = ranged ? "shoot" : "fight";
+  const skVal  = (SKJOB[job][skName]||0)+(SKRACE[race][skName]||0);
+  const thr    = Math.max(2, Math.min(6,
+    4 - Math.round((skVal-40)/25) + Math.floor(fdex/15)));
+  const thrFoe = Math.max(2, Math.min(6,
+    4 + Math.min(EVCAP, Math.max(0, Math.floor((b.st.DEX - fdex)/EVDIV)))));
   /* 索敵に勝つと、その戦闘の最初の攻撃だけダイスが増える（最大 +3）。
      DEX が索敵ダイスに乗る（floor(DEX/13)）ので、DEX の高い職業ほど得をする。
      1戦のうち1回ぶんなので、倒すのにかかるターン数で薄めて数える。 */
