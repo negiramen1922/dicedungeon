@@ -4309,7 +4309,9 @@ const Cloud=(()=>{
       if(!auth){
         const app=f.app.initializeApp(FIREBASE_CONFIG);
         auth=f.auth.getAuth(app);
-        db=f.fs.getFirestore(app);
+        /* undefined が混じると setDoc がまるごと落ちる。記録の一部が
+           欠けていても保存は通したいので、黙って捨てさせる。 */
+        db=f.fs.initializeFirestore(app,{ignoreUndefinedProperties:true});
         f.auth.onAuthStateChanged(auth,u=>{
           user=u||null;
           if(!user){ set(offPref()?"out":"loading"); return; }
