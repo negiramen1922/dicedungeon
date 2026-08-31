@@ -234,14 +234,20 @@ if (require.main === module) {
     ["dagger","twindagger","fang","rapier","clawblade","shadowfang","assassin"]
       .forEach(k => { if (WEP[k]) mulUp09[k] = {mul:+(WEP[k].mul*0.92).toFixed(2)}; });
     const E = o => ({elf:{...RACE.elf.st, ...o}});
+    /* 成長点は archer 9・scout 9 のまま、DEX を減らしたぶんを配り直す */
+    const W1 = {...GROW, archer:{STR:4,DEX:1,VIT:3,INT:1}, scout:{STR:5,DEX:1,VIT:3}};
+    const W2 = {...GROW, archer:{STR:4,DEX:2,VIT:2,INT:1}, scout:{STR:5,DEX:2,VIT:2}};
+    const W3 = {...GROW, archer:{STR:4,VIT:4,INT:1},       scout:{STR:5,VIT:4}};
     compare([
-      {n:"いま", grow:null},
-      {n:"Q 回避の上限 +1まで", ev:{cap:1}},
-      {n:"Q＋妖STR−3→0", ev:{cap:1}, race:E({STR:0})},
-      {n:"Q＋妖STR0 VIT6", ev:{cap:1}, race:E({STR:0,VIT:6})},
-      {n:"Q＋妖STR0 VIT7", ev:{cap:1}, race:E({STR:0,VIT:7})},
-      {n:"Q＋妖STR0 VIT6 DEF1", ev:{cap:1}, race:E({STR:0,VIT:6,DEF:1})},
-      {n:"Q＋妖STR0 VIT6 DEX10", ev:{cap:1}, race:E({STR:0,VIT:6,DEX:10})},
+      {n:"いま (DEX3/Lv)", grow:null},
+      {n:"W2 DEX 3→2", grow:W2},
+      {n:"W1 DEX 3→1", grow:W1},
+      {n:"W3 DEX 成長なし", grow:W3},
+      {n:"P 割り算 15→25", ev:{div:25}},
+      {n:"P30 割り算 15→30", ev:{div:30}},
+      {n:"Q 回避の上限 +1", ev:{cap:1}},
+      {n:"W1＋P30", grow:W1, ev:{div:30}},
+      {n:"W2＋P25", grow:W2, ev:{div:25}},
     ]);
 
 
