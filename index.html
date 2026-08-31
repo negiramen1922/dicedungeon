@@ -4228,14 +4228,16 @@ function metaMerge(r){
    設定のしかたは FIREBASE.md に書いてある。                           */
 const FBVER="12.18.0";        /* 読み込む Firebase Web SDK の版。上げるならここだけ */
 const FIREBASE_CONFIG={
-  /* Firebase コンソール → プロジェクトの設定 → マイアプリ（ウェブ）から
-     そのまま貼る。空のままならクラウド保存は動かず、端末内だけに残る。 */
-  apiKey:"",
-  authDomain:"",
-  projectId:"",
-  storageBucket:"",
-  messagingSenderId:"",
-  appId:"",
+  /* Firebase コンソール → プロジェクトの設定 → マイアプリ（ウェブ）の値。
+     ここは公開してよい識別子で、秘密ではない（守りは firestore.rules）。
+     空にすればクラウド保存は眠り、端末内だけに残る形へ戻る。 */
+  apiKey:"AIzaSyCWT4QUR4_Vzln3lVuHtw8n4nJ7cT6NBu0",
+  authDomain:"dicedungeon-a3d1e.firebaseapp.com",
+  projectId:"dicedungeon-a3d1e",
+  storageBucket:"dicedungeon-a3d1e.firebasestorage.app",
+  messagingSenderId:"16242944558",
+  appId:"1:16242944558:web:82fddd9cc8bdd94d5e4dbf",
+  measurementId:"G-D9QRT88QWX",   /* Analytics 用。いまは読み込んでいない */
 };
 const CKEY="dd.cloud";        /* 覚えるのは「自分でサインアウトしたか」だけ */
 const PUSHWAIT=8000;          /* 書き込みをまとめる間（ミリ秒） */

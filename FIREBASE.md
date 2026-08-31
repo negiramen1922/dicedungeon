@@ -7,6 +7,23 @@
 
 ---
 
+## いまの状態（2026-08-31）
+
+プロジェクト **`dicedungeon-a3d1e`** の `firebaseConfig` は `index.html` に入れてある。
+**あとはコンソール側の4つだけ。**
+
+- [ ] **1-1** Firestore を作る（本番環境モード・`asia-northeast1`）
+- [ ] **1-2** Authentication で **匿名** と **Google** を有効にする
+- [ ] **1-4** 承認済みドメインに、配る場所を足す（`localhost` は最初から入っている）
+- [ ] **3** `firebase deploy --only firestore:rules` でルールを配る
+
+**4つ目を忘れると、本番環境モードは書き込みを全部拒否する。**
+歯車の中に「書き込みを断られた」と出たらこれ。
+
+済んだら **5. 動いているか確かめる** へ。
+
+---
+
 ## 0. 先に読む ―― サービスアカウントキーの話
 
 `firebase-admin` と `serviceAccountKey.json` を使う書き方が世の中にはあるが、
@@ -72,25 +89,29 @@ Admin SDK が要るのは、あとでサーバー側の処理（Cloud Functions 
 
 ---
 
-## 2. `index.html` に設定値を貼る
+## 2. `index.html` に設定値を貼る　― 済
 
-`index.html` の `FIREBASE_CONFIG` を探して、コンソールの値で埋める。
+`index.html` の `FIREBASE_CONFIG` に `dicedungeon-a3d1e` の値が入っている。
+プロジェクトを作り直したときはここを差し替える。
 
-```js
-const FIREBASE_CONFIG={
-  apiKey:"AIza…",
-  authDomain:"あなたのプロジェクト.firebaseapp.com",
-  projectId:"あなたのプロジェクト",
-  storageBucket:"あなたのプロジェクト.firebasestorage.app",
-  messagingSenderId:"123456789012",
-  appId:"1:123456789012:web:……",
-};
-```
-
-**空のままなら、クラウド保存の仕組みはまるごと眠ったまま**で、
-ゲームはこれまでどおり端末内だけに記録を残す。
+**空にすれば、クラウド保存の仕組みはまるごと眠る**（ゲームは端末内だけに記録を残す）。
 
 読み込む SDK の版は同じところの `FBVER` で決めている。上げたいときはここだけ直す。
+
+### apiKey がリポジトリに入っていることについて
+
+これは仕様どおりで、問題ない。ウェブの `apiKey` は**どのプロジェクトかを示す識別子**で、
+パスワードではない。Firebase の公式もクライアントに埋めることを前提にしている。
+**守っているのは `firestore.rules`**（→ 3.）。
+
+気になるならもう一段だけ足せる。Google Cloud コンソールの
+**APIとサービス → 認証情報 → Browser key** で、
+**アプリケーションの制限 → HTTP リファラー**に配るドメインを入れておくと、
+他所のサイトから同じ鍵を使い回されにくくなる。
+（ただしこれは行儀の悪い利用を減らすだけで、防壁はあくまでルールのほう）
+
+**逆に `serviceAccountKey.json` は一切ちがう。** あれは本物の鍵で、
+ルールを通らない。リポジトリにもブラウザにも置かない（0. を読む）。
 
 ---
 
@@ -101,7 +122,7 @@ const FIREBASE_CONFIG={
 ```
 npm install -g firebase-tools
 firebase login
-cp .firebaserc.example .firebaserc     # 中のプロジェクトIDを書き換える
+cp .firebaserc.example .firebaserc     # 中身はもう dicedungeon-a3d1e になっている
 firebase deploy --only firestore:rules
 ```
 
@@ -150,6 +171,7 @@ GitHub Pages のままでもよい。その場合は 1-4 のドメイン追加�
 | その入り方が有効になっていない | 匿名 / Google が無効 | 1-2 で有効にする |
 | SDK を読み込めなかった | `file://` で開いた・版が違う | http(s) で配る／`FBVER` を直す |
 | Firestore がまだ作られていない | 1-1 をやっていない | データベースを作る |
+| SDK を読み込めなかった（版 12.18.0） | CDN に届いていない | つながりを確かめる。社内網などで `gstatic.com` が塞がれていることもある |
 
 ---
 
@@ -174,3 +196,15 @@ users/{uid}
 - 殿堂 … **両方を混ぜて**、時刻で並べ、新しい 50 件
 
 2台で別々に遊んでいても、どちらの記録も消えないようにしてある。
+
+---
+
+## 8. Analytics を足したくなったら
+
+コンソールが出す雛形には `getAnalytics` が入っているが、**いまは読み込んでいない**。
+`measurementId` だけ `FIREBASE_CONFIG` に控えてある。
+
+要るようになったら `Cloud` の `load()` に
+`import(base+"firebase-analytics.js")` を足して `getAnalytics(app)` を呼ぶ。
+ただし**遊びに要るものではない**うえ、地域によっては同意の取得が要る。
+入れるなら「何を測って何に使うか」を決めてからにする。
