@@ -408,6 +408,12 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .wmn.go:hover circle{stroke:#e9c46a}
 .wmwrap{margin:0 auto;max-width:560px}
 .wmwrap.mkmap{max-width:420px;margin:8px auto 0}
+.contnote{font-size:11px;color:var(--dim);line-height:1.7;text-align:center;
+  margin:-4px 0 4px;padding:0 6px}
+.contnote b{color:var(--bone)}
+/* 控えがあるときは「つづきから」を主にして、新しく作るほうを控えめにする */
+#hGo.sub{background:transparent;color:var(--bone);border:1px solid var(--line);
+  font-weight:400}
 .wmnote{font-size:11px;color:var(--dim);text-align:center;margin-top:6px;line-height:1.7}
 .actTtl{position:absolute;inset:0;display:none;flex-direction:column;
   align-items:center;justify-content:center;gap:8px;pointer-events:none;z-index:5;
@@ -851,6 +857,8 @@ body.play .fh1{padding-right:62px}
   <div class="homesub">賽の目に身を委ね、深みへ降りる</div>
   <div class="homestat" id="homeStat"></div>
   <div class="homemenu">
+    <button class="go hide" id="hCont">つ づ き か ら</button>
+    <div class="contnote hide" id="hContNote"></div>
     <button class="go" id="hGo">潜 る</button>
     <button class="topbtn" id="hWorld">世 界 地 図</button>
     <button class="topbtn" id="hHall">殿 堂</button>
@@ -922,7 +930,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0018";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0019";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -3773,6 +3781,7 @@ function fleeBack(){
   RUN.cur=back?RUN.M.node[back]:null;
   RUN.preview=null;RUN.elite=false;RUN.boss=false;
   const nd=RUN.cur;
+  runSave();
   drawFloor();showScreen("floor");window.scrollTo(0,0);
   const lines=[`追っ手を振り切って、ひとつ前まで引き返した`];
   const btns=[];
@@ -4612,6 +4621,80 @@ function metaClear(){
   CloudHook.flush();              /* 消したことはすぐクラウドにも伝える */
 }
 
+/* ---------- 潜 行 の 保 存 （つ づ き か ら） ----------
+   ノードを1つ抜けるたびに、いまの冒険者と地図をまるごと控える。
+   控える瞬間は次の3つ。
+     1. 部屋に踏み込む直前（stepTo の頭）… 中で落ちても踏み込む前に戻る
+     2. 部屋を抜けて地図に戻ったとき（backToFloor）
+     3. 新しい区画に入ったとき（enterArea）
+   1 があるので、戦闘中にページを閉じても その戦闘の開始前から続けられる。
+
+   RUN.cur は RUN.M.node の中身を指しているだけなので控えない。
+   読み戻すときに curKey から繋ぎ直す。
+   RUN.preview・RUN.lootLines はその場かぎりのものなので落とす。 */
+const RKEY="dd.run", RVER=1;
+let runBroken=false;
+function runSave(){
+  if(runBroken||!RUN||RUN.over||!RUN.M||!me)return;
+  try{
+    localStorage.setItem(RKEY,JSON.stringify({
+      v:RVER, ver:VERSION, t:Date.now(),
+      sel:{job:sel.job,race:sel.race,orig:sel.orig,area:sel.area,
+           luk:sel.luk,lukD:sel.lukD},
+      me, owned,
+      run:{act:RUN.act,area:RUN.area,seen:RUN.seen||[],curKey:RUN.curKey||null,
+           path:RUN.path||[],M:RUN.M,stock:RUN.stock||null,
+           shopRecipe:RUN.shopRecipe===undefined?undefined:RUN.shopRecipe},
+    }));
+  }catch(e){ runBroken=true; }   /* 容量切れなど。保存を諦めて遊べるようにする */
+}
+function runClear(){ try{localStorage.removeItem(RKEY);}catch(e){} }
+/* 読めるかどうかまで見る。表の中身が変わって指し先が消えていたら捨てる */
+function runLoad(){
+  let r=null;
+  try{ r=JSON.parse(localStorage.getItem(RKEY)||"null"); }catch(e){ return null; }
+  if(!r||r.v!==RVER||!r.me||!r.run||!r.run.M||!r.sel)return null;
+  if(!JOB[r.sel.job]||!RACE[r.sel.race]||!ORIG[r.sel.orig])return null;
+  if(!AREAS[r.run.area])return null;
+  const N=r.run.M.node||{};
+  const ok=Object.keys(N).every(k=>{
+    const nd=N[k];
+    return !nd.e||!!ENCS[nd.e];        /* 遭遇の鍵が今の表にあるか */
+  });
+  if(!ok||!Object.keys(N).length)return null;
+  return r;
+}
+function runHas(){ return !!runLoad(); }
+/* 続きから始める */
+function runResume(){
+  const r=runLoad();
+  if(!r){ runClear(); drawHome(); return; }
+  sel.job=r.sel.job;sel.race=r.sel.race;sel.orig=r.sel.orig;
+  sel.area=r.sel.area;sel.luk=r.sel.luk;sel.lukD=r.sel.lukD;
+  me=r.me; owned=r.owned||[];
+  RUN={act:r.run.act||0, area:r.run.area, seen:r.run.seen||[],
+       curKey:r.run.curKey||null, cur:null, path:r.run.path||[],
+       M:r.run.M, stock:r.run.stock||null, shopRecipe:r.run.shopRecipe,
+       preview:null, over:false, cleared:false, elite:false, boss:false};
+  RUN.cur=RUN.curKey?(RUN.M.node[RUN.curKey]||null):null;
+  recalcMe(me);                       /* 式が変わっていても組み直す */
+  $("#log").innerHTML="";
+  drawFloor();showScreen("floor");window.scrollTo(0,0);
+  setTimeout(introScroll,120);
+}
+/* 家に出す一行。どこまで潜っていたか */
+function runLabel(){
+  const r=runLoad(); if(!r)return null;
+  const A=AREAS[r.run.area]||{};
+  const nd=r.run.curKey?(r.run.M.node||{})[r.run.curKey]:null;
+  const d=Math.round((Date.now()-(r.t||0))/60000);
+  const ago=d<1?"たったいま":d<60?`${d} 分前`:
+    (d<1440?`${Math.floor(d/60)} 時間前`:`${Math.floor(d/1440)} 日前`);
+  return `${A.n||""}　${nd?`${nd.r+1} / ${ROWS} 段目`:"入口"}`+
+    `　<span class="s">${RACE[r.sel.race].n}の${JOB[r.sel.job].n}　Lv ${r.me.lv}`+
+    `　HP ${Math.max(0,r.me.HP)}/${r.me.maxHP}　${ago}</span>`;
+}
+
 /* ---- 記録の統合 ----
    2台で別々に遊んでいることがある。どちらかを捨てるのではなく、
    数は大きいほう、印は付いているほう、殿堂は両方を混ぜて拾う。
@@ -5371,7 +5454,7 @@ function startRun(){
 function startPick(left){
   /* 1階層目は装備選びの窓が先に出るので、それが片づいてから名前を出す。
      窓の下でぼわぁとやっても見えない。 */
-  if(left<=0){actTitle();return;}
+  if(left<=0){runSave();actTitle();return;}   /* 支度が済んだ姿を控える */
   choiceModal("出 立 の 支 度",
     left>1?`装備を ${left} つ選べる（傲慢）`:"",
     pickList(["gear"]),()=>{drawFloor();startPick(left-1);},
@@ -5429,6 +5512,10 @@ function enterArea(key,quiet){
   RUN.curKey=null;RUN.cur=null;RUN.path=[];
   if(ORIG[sel.orig]&&ORIG[sel.orig].actFull){me.HP=me.maxHP;me.MP=me.maxMP;}
   RUN.M=genAct(AREAS[key]);RUN.preview=null;
+  /* 1区画目は このあと「出立の支度」の窓が出る。
+     選ぶ前に控えると、装備なしの姿で続きが始まってしまう。
+     支度が片づいた startPick(0) で控える。 */
+  if(!quiet)runSave();               /* 新しい区画に入った */
   drawFloor();showScreen("floor");window.scrollTo(0,0);
   setTimeout(introScroll,120);
   if(!quiet)actTitle();
@@ -5897,6 +5984,7 @@ function drawNodeInfo(){
   $("#ndNo").onclick=()=>{RUN.preview=null;drawMap(true);};
 }
 function stepTo(k){
+  runSave();                         /* 踏み込む前を控える。中で落ちてもここへ戻る */
   RUN.preview=null;RUN.curKey=k;RUN.cur=RUN.M.node[k];
   (RUN.path=RUN.path||[]).push(k);   /* 逃げたときに ひとつ戻るために覚えておく */
   enterNode(RUN.cur);
@@ -6457,6 +6545,7 @@ function resultModal(title,lines,btns){
   });
 }
 function backToFloor(title,out,btns){
+  runSave();                         /* 部屋をひとつ抜けた */
   drawFloor();showScreen("floor");
   window.scrollTo(0,0);
   if(title&&(out||[]).length)resultModal(title,out,btns);
@@ -6483,6 +6572,7 @@ function endRun(cleared){
     gold:me.gold, kills:Object.values(META.codex).reduce((a,b)=>a+b,0),
   });
   if(META.hall.length>HALLMAX)META.hall=META.hall.slice(-HALLMAX);
+  runClear();                      /* 終わった潜行の続きは無い */
   metaTimer&&clearTimeout(metaTimer);metaTimer=null;metaWrite();
   CloudHook.flush();               /* 1周の終わりは端末にもクラウドにも確実に残す */
   drawEnd();showScreen("floor");window.scrollTo(0,0);
@@ -7570,6 +7660,13 @@ function drawHome(){
     `<span>踏破 <b>${cleared}</b></span>`+
     `<span>最も深く <b>${META.best}</b> 階層</span>`+
     `<span>図鑑 <b>${c.got}</b>/${c.all}　<b>${c.pct}%</b></span>`;
+  /* 途中の潜行が控えてあれば「つづきから」を出す */
+  const lb=runLabel();
+  $("#hCont").classList.toggle("hide",!lb);
+  $("#hContNote").classList.toggle("hide",!lb);
+  $("#hContNote").innerHTML=lb||"";
+  $("#hGo").textContent=lb?"新しく 作 っ て 潜 る":"潜 る";
+  $("#hGo").classList.toggle("sub",!!lb);
 }
 function goHome(){drawHome();showScreen("home");window.scrollTo(0,0);}
 
@@ -7731,7 +7828,17 @@ function cxBody(){
   }).join("");
 }
 
-$("#hGo").onclick=()=>{newChar();mkStep=0;drawMake();showScreen("make");window.scrollTo(0,0);};
+$("#hCont").onclick=()=>{SFX.pick();runResume();};
+$("#hGo").onclick=()=>{
+  const lb=runLabel();
+  const go=()=>{runClear();newChar();mkStep=0;drawMake();
+    showScreen("make");window.scrollTo(0,0);};
+  if(!lb)return go();
+  resultModal("新 し く 潜 る",
+    [`途中の潜行が残っている`,`　${lb}`,
+     `<span class="loss">新しく作ると この続きは消える</span>`],
+    [{n:"やめる"},{n:"消して 新しく作る",cb:go}]);
+};
 $("#hWorld").onclick=()=>{SFX.click();worldModal();};
 $("#hHall").onclick=()=>{drawHall();showScreen("hall");window.scrollTo(0,0);};
 $("#hCodex").onclick=()=>{drawCodex();showScreen("codex");window.scrollTo(0,0);};
