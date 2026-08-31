@@ -144,9 +144,15 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
   45%{transform:translate(-50%,-6px) scale(1.15);opacity:1}
   100%{transform:translate(-50%,0) scale(1);opacity:1}}
 /* ===== ダイス演出（盤面の上に大きく） ===== */
-.diceOv{position:absolute;inset:0;z-index:20;display:none;
+/* 盤面より中身が高くなることがある（索敵は 2段ぶんの d100 と結果で 275px ほど）。
+   inset:0 で盤面にぴったり合わせていたので、はみ出したぶんは
+   暗幕の外に出て、上は並び順の帯・下はコマンドの列に重なっていた。
+   高さを中身なりに伸ばし、上下の中心で釣り合わせて、暗幕ごと覆う。 */
+.diceOv{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);
+  min-height:100%;padding:10px 0;box-sizing:border-box;
+  z-index:20;display:none;
   flex-direction:column;align-items:center;justify-content:center;gap:9px;
-  background:rgba(20,22,15,.9);animation:fadein .12s ease-out}
+  background:rgba(20,22,15,.97);animation:fadein .12s ease-out}
 .diceOv.on{display:flex}
 @keyframes fadein{from{opacity:0}to{opacity:1}}
 .ovTop{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:17px;
@@ -401,6 +407,7 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .wmn.go{cursor:pointer}
 .wmn.go:hover circle{stroke:#e9c46a}
 .wmwrap{margin:0 auto;max-width:560px}
+.wmwrap.mkmap{max-width:420px;margin:8px auto 0}
 .wmnote{font-size:11px;color:var(--dim);text-align:center;margin-top:6px;line-height:1.7}
 .actTtl{position:absolute;inset:0;display:none;flex-direction:column;
   align-items:center;justify-content:center;gap:8px;pointer-events:none;z-index:5;
@@ -915,7 +922,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0016";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0017";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -2981,6 +2988,7 @@ const FOE={
 
 /* ---------- 状態 ---------- */
 let me,foes,round,busy=false,over=false,pending=null,scoutBonus=0,queue=[],qi=0;
+let fleeUsed=false, foeStart=0;   /* 逃走は1戦闘に1回。倒した数だけ逃げやすくなる */
 /* 索敵で片方だけが成功したとき、1ラウンド目だけ DEX を無視して
    成功したほうが先に動く。"me" / "foe" / null。 */
 let scoutFirst=null;
@@ -3653,6 +3661,15 @@ function drawActs(){
       ()=>doAct({kind:"move",to:"back"}));
   else
     add("mv","前へ出る","前衛へ ・ 近接が使える ・ 遠隔の命中は落ちる",false,()=>doAct({kind:"move",to:"front"}));
+  {
+    const od=fleeOdds();
+    add("flee","逃 げ る",
+      fleeUsed?"もう一度は試せない"
+      :`1ターン使う ・ <b class="thr">${od.mine}</b> 対 <b class="thr">${od.theirs}</b> の 素早さ比べ`+
+       (od.down?`　<span style="color:#8fa261">倒した ${od.down} 体ぶん 追っ手 −${od.down*FLEEDOWN}</span>`:"")+
+       `　戦闘に1回だけ`,
+      fleeUsed,()=>doAct({kind:"flee"}));
+  }
   me.sk.forEach((s,i)=>{
     const noMp=me.MP<s.mp,onCd=s.cdLeft>0;
     const needFront=s.front&&me.rank!=="front";
@@ -3677,6 +3694,99 @@ function drawActs(){
             else doAct({kind:"skill",i}); });
   });
 }
+/* ---------- 逃 走 ----------
+   1戦闘に1回だけ、1ターンを使って挑戦できる。
+   こちらの素早さと、いちばん速い追っ手の素早さの 1d100 対抗。
+   倒した数だけ包囲がゆるむので、追っ手の値はそのぶん下がる。
+   DEX の上限が 100 なので、40 を下駄にしてそのまま百分率として使える。 */
+const FLEEBASE=40, FLEEDOWN=12;
+function fleeOdds(){
+  const ls=alive();
+  const fast=ls.reduce((a,f)=>(a&&a.DEX>=f.DEX)?a:f, ls[0]);
+  const down=Math.max(0,foeStart-ls.length);
+  const cl=v=>Math.max(5,Math.min(95,Math.round(v)));
+  return {
+    mine  : cl(FLEEBASE+dexOf()),
+    theirs: cl(FLEEBASE+(fast?Math.max(1,fast.DEX-ailSum(fast,"slow")):0)-down*FLEEDOWN),
+    fast, down, left:ls.length,
+  };
+}
+/* 逃げ切れたか。段階が高いほうが勝ち。
+   同じ段階なら 出目の小さいほう（より深く踏み込めたほう）が勝つ。
+   まったく同じなら振り切れない＝失敗。 */
+async function fleeRoll(){
+  const od=fleeOdds();
+  const o=$("#diceOv");
+  o.className="diceOv on";
+  o.innerHTML=`<div class="ovTop">逃 走</div>
+    <div class="scRow" id="flMine"></div>
+    <div class="scRow" id="flFoe"></div>
+    <div class="scEnd" id="flEnd"></div>`;
+  const side=async(id,name,pct,cls,note)=>{
+    const el=$("#"+id);
+    el.innerHTML=`<div class="scName ${cls}">${name}</div>
+      <div class="scPct">1d100 ・ <b>${pct}</b> 以下${note?`　${note}`:""}</div>
+      <div class="d100 roll" id="${id}D">00</div>
+      <div class="scRes" id="${id}R">—</div>`;
+    const d=$("#"+id+"D");
+    SFX.shake();
+    const spin=setInterval(()=>{d.textContent=String(r100()).padStart(2,"0");},55);
+    await wait(760);
+    clearInterval(spin);
+    const r=roll100(pct);
+    d.textContent=String(r.v).padStart(2,"0");
+    d.className="d100 land";
+    const nm=r.crit?"クリティカル":r.fumble?"ファンブル":SKRANK[r.k].s;
+    const c=r.crit?"#e9c46a":(r.fumble?"#b1544a":SKRANK[r.k].c);
+    d.style.color=c;d.style.borderColor=c;
+    $("#"+id+"R").innerHTML=`<span style="color:${c}">${nm}</span>`;
+    if(r.k>=2||r.crit)SFX.crit();else SFX.tick();
+    await wait(400);
+    return r;
+  };
+  const a=await side("flMine",me.name,od.mine,"mine","足の速さ");
+  const b=await side("flFoe",(od.fast?od.fast.name:"追っ手")+(od.left>1?` ほか ${od.left-1}`:""),
+    od.theirs,"foe",od.down?`<span style="color:#8fa261">倒した ${od.down} 体ぶん −${od.down*FLEEDOWN}</span>`:"");
+  const la=scoutLevel(a), lb=scoutLevel(b);
+  const ok = (la!==lb) ? (la>lb) : (a.v!==b.v ? a.v<b.v : false);
+  $("#flEnd").innerHTML=ok
+    ? `<div class="scDiff" style="color:#8fa261">振り切った</div>
+       <div class="scGain">ひとつ前の場所まで引き返す</div>`
+    : `<div class="scDiff" style="color:#7d6b68">回り込まれた</div>
+       <div class="scGain lose">1ターンを無駄にした　<b>もう逃げられない</b></div>`;
+  if(ok)SFX.found();else SFX.miss();
+  log(`<span class="a">逃走</span> ${me.short||"自分"} <span class="m">${SCLV[la+1]}</span>`+
+      ` 対 ${od.fast?od.fast.name:"追っ手"} <span class="m">${SCLV[lb+1]}</span>`+
+      (ok?` → <span class="m">振り切った</span>`:` → <span class="c">回り込まれた</span>`));
+  await wait(1250);
+  ovHide();
+  return ok;
+}
+/* 逃げ切ったあと。ひとつ前のノードに戻し、次を選び直せる状態にする。
+   通り過ぎた部屋の効き目（休息の回復など）は二度と得られないが、
+   焚き火のそばであれば ものづくりだけはできる。 */
+function fleeBack(){
+  const path=RUN.path||(RUN.path=[]);
+  path.pop();                       /* いま逃げてきたノードを外す */
+  const back=path[path.length-1]||null;
+  RUN.curKey=back;
+  RUN.cur=back?RUN.M.node[back]:null;
+  RUN.preview=null;RUN.elite=false;RUN.boss=false;
+  const nd=RUN.cur;
+  drawFloor();showScreen("floor");window.scrollTo(0,0);
+  const lines=[`追っ手を振り切って、ひとつ前まで引き返した`];
+  const btns=[];
+  if(nd){
+    lines.push(`いまは <b>${nd.r+1} 段目</b> の <b>${RNAME[nd.t]}</b>`);
+    lines.push(`<span class="s">一度通った部屋なので、休息も宝ももう得られない</span>`);
+    if(nd.t==="rest")btns.push({n:"火を使って こしらえる",cb:()=>craftModal(null)});
+  }else{
+    lines.push(`区画の入口まで戻った`);
+  }
+  btns.push({n:"地 図 を 見 る"});
+  resultModal("逃 走",lines,btns);
+}
+
 /* 同じ縦位置の相手を探す（貫通矢） */
 function columnMate(t){
   const same=alive().filter(f=>f.rank===t.rank);
@@ -4155,6 +4265,17 @@ async function resolvePlayer(a,target){
     me.rank=a.to;SFX.move();draw();
     log(`<span class="a">${me.name}</span> は ${a.to==="front"?"前へ出た":"後ろへ下がった"}`);
     await wait(500);
+  }else if(a.kind==="flee"){
+    fleeUsed=true;
+    const ok=await fleeRoll();
+    if(ok){
+      over=true;busy=false;pending=null;
+      me.ail=[];                    /* 状態異常は戦闘の中だけのもの（finish と同じ） */
+      $("#prompt").textContent="";$("#acts").innerHTML="";
+      fleeBack();
+      return;
+    }
+    /* 失敗。1ターンを使ったので そのまま敵の手番へ流れる */
   }
   if(!alive().length)return finish(true);
   qi++;
@@ -4931,9 +5052,10 @@ const LANDC={
 function areaKnown(k){ return !!META.areas[k]||!!(AREAS[k]&&AREAS[k].start); }
 function worldMap(mode,pick){
   const seen=(RUN&&RUN.seen)||[];
-  const known=k=>areaKnown(k)||(mode!=="home"&&seen.includes(k))
+  const inRun=(mode==="run"||mode==="gate");
+  const known=k=>areaKnown(k)||(inRun&&seen.includes(k))
     ||(pick||[]).some(w=>w.key===k);
-  const here=(RUN&&!RUN.over&&mode!=="home")?RUN.area:null;
+  const here=(inRun&&RUN&&!RUN.over)?RUN.area:null;
   const canGo=k=>(pick||[]).some(w=>w.key===k);
 
   let h=`<svg viewBox="0 0 100 100" class="wmsvg">
@@ -5239,7 +5361,7 @@ function startRun(){
   me=makeMe();
   markSeen("w_"+me.baseWep);
   me.gold=(ORIG[sel.orig]&&ORIG[sel.orig].startGold)||30;
-  RUN={act:0,area:sel.area,seen:[],cur:null,curKey:null,over:false,cleared:false};
+  RUN={act:0,area:sel.area,seen:[],cur:null,curKey:null,path:[],over:false,cleared:false};
   owned=[];META.runs++;touchMeta();
   $("#log").innerHTML="";
   enterArea(sel.area,true);  /* 名前は出立の支度が終わってから出す */
@@ -5304,7 +5426,7 @@ function enterArea(key,quiet){
   RUN.area=key;
   RUN.seen=RUN.seen||[];
   if(!RUN.seen.includes(key))RUN.seen.push(key);
-  RUN.curKey=null;RUN.cur=null;
+  RUN.curKey=null;RUN.cur=null;RUN.path=[];
   if(ORIG[sel.orig]&&ORIG[sel.orig].actFull){me.HP=me.maxHP;me.MP=me.maxMP;}
   RUN.M=genAct(AREAS[key]);RUN.preview=null;
   drawFloor();showScreen("floor");window.scrollTo(0,0);
@@ -5494,6 +5616,7 @@ function drawNodeInfo(){
 }
 function stepTo(k){
   RUN.preview=null;RUN.curKey=k;RUN.cur=RUN.M.node[k];
+  (RUN.path=RUN.path||[]).push(k);   /* 逃げたときに ひとつ戻るために覚えておく */
   enterNode(RUN.cur);
 }
 
@@ -6880,6 +7003,7 @@ function prepareBattle(){
     log(`<span class="c">一目惚れ</span>　<span class="b">${v.name}</span> は 見とれて動けない`);
   }
   round=1;over=false;busy=true;pending=null;scoutBonus=0;
+  fleeUsed=false;foeStart=foes.length;
   queue=[me,...foes];qi=-1;
   scoutFirst=null;
   me.block=0;me.half=false;me.rank="front";me.tmpPow=0;me.tmpDef=0;me.ail=[];me.counter=0;me.focus=null;me.dexUp=0;me.again=null;me.selfDef=0;me.endured=false;me.coat=null;me.beast=null;me.goldPow=null;me.selfPow=null;me.taken=0;
@@ -7056,7 +7180,14 @@ function drawMake(){
   $("#mkTtl").textContent=S.k==="__ok"?"こ の 者 で 良 い か":"キ ャ ラ を 作 る";
   if(S.k==="__ok")return drawMakeConfirm();
   const D=S.data();
-  let h=`<div class="mkq">${S.ttl}　<span>${S.sub}</span></div><div class="acts">`;
+  let h=`<div class="mkq">${S.ttl}　<span>${S.sub}</span></div>`;
+  if(S.k==="area"){
+    h+=`<div class="wmwrap mkmap">${
+      worldMap("make",Object.keys(D).map(k=>({key:k,a:D[k]})))}</div>
+      <div class="wmnote">光っている場所を押しても選べる<br>
+        <span class="s">最後まで抜けた場所だけ名前がわかる</span></div>`;
+  }
+  h+=`<div class="acts">`;
   Object.keys(D).forEach(k=>{
     const o=D[k], on=(sel[S.k]===k);
     const ic=tagFig(k,15);const nm=o.n;
@@ -7079,12 +7210,15 @@ function drawMake(){
   h+=`</div>`;
   if(mkStep>0)h+=`<button class="mclose" id="mkPrev">ひとつ もどる</button>`;
   $("#mkBody").innerHTML=h;
+  const pickIt=k=>{
+    sel[S.k]=k;
+    if(S.k==="area"){SFX.pick();return startRun();}
+    SFX.open();mkStep++;drawMake();window.scrollTo(0,0);
+  };
   $("#mkBody").querySelectorAll("[data-k]").forEach(b=>{
-    b.onclick=()=>{
-      sel[S.k]=b.dataset.k;
-      if(S.k==="area"){SFX.pick();return startRun();}
-      SFX.open();mkStep++;drawMake();window.scrollTo(0,0);
-    };});
+    b.onclick=()=>pickIt(b.dataset.k);});
+  $("#mkBody").querySelectorAll("[data-w]").forEach(g=>{
+    g.onclick=()=>pickIt(g.dataset.w);});
   const pv=$("#mkPrev");
   if(pv)pv.onclick=()=>{mkStep--;drawMake();window.scrollTo(0,0);};
 }
