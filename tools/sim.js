@@ -34,6 +34,14 @@ const rnd = a => a[Math.floor(Math.random()*a.length)];
      boss … ボスの重み（いま 1.3。r>=10 の通常部屋と同じ値）
      strf … 深さぶんの攻撃力の伸び（いま 0.6。HP は 1.0 で伸びる） */
 const BASE={step:0.34, boss:1.3, strf:0.6};
+/* 敵の素の数値を差し替える。案を比べるために FOE を書き換え、あとで戻す。
+   倍率は全区画に一律にかかるが、こちらは敵ごとに狙って直せる。 */
+let FOESAVE=null;
+function setFoe(over){
+  if(!FOESAVE){FOESAVE={};Object.keys(FOE).forEach(k=>FOESAVE[k]={...FOE[k]});}
+  Object.keys(FOE).forEach(k=>Object.assign(FOE[k],FOESAVE[k]));
+  Object.keys(over||{}).forEach(k=>{ if(FOE[k])Object.assign(FOE[k],over[k]); });
+}
 function setKnobs(k){
   window.depthAt=(tier)=>1+((tier||1)-1)*k.step;
   window.depthMul=()=>{
@@ -133,8 +141,9 @@ function equip(tier){
   recalcMe(me,false);
 }
 
-function measure(job,race,orig,gear,knobs){
+function measure(job,race,orig,gear,knobs,foeOver){
   setKnobs(knobs||BASE);
+  setFoe(foeOver);
   const w=walk(job,race,orig);
   const rows=[];
   R.forEach((area,ai)=>{
@@ -180,10 +189,11 @@ if(mode==="try"){
   /* 案ごとに、4人ぶんの平均の「余裕」を階層×種類で出す */
   const out={};
   Object.keys(plans).forEach(name=>{
-    const k={...BASE,...plans[name]};
+    const pl=plans[name]||{};
+    const k={...BASE,...(pl.knobs||{})};
     const acc={};
     COMBOS.forEach(c=>{
-      const m=measure(c[0],c[1],c[2],true,k);
+      const m=measure(c[0],c[1],c[2],true,k,pl.foe);
       m.表.forEach(r=>{
         ["通常","精鋭","ボス"].forEach(t=>{
           const key=r.tier+"/"+t;
@@ -196,7 +206,22 @@ if(mode==="try"){
     const o={};
     Object.keys(acc).forEach(key=>{const a=acc[key];
       o[key]={余裕:+(a.余裕/a.n).toFixed(2),敵HP:Math.round(a.敵HP/a.n),被:+(a.被/a.n).toFixed(1)};});
-    out[name]={knobs:k,表:o};
+    /* 案を当てたあとの区画ごとの平均も出す */
+    setFoe(pl.foe);
+    const areaAvg={};
+    R.forEach(key=>{
+      const A=AREAS[key], ks=new Set(), bs=new Set();
+      ["solo","easy","norm","hard","elite"].forEach(sl=>(A[sl]||[]).forEach(e=>
+        (ENCS[e]?ENCS[e].list:[]).forEach(x=>ks.add(x))));
+      (ENCS[A.boss]?ENCS[A.boss].list:[]).forEach(x=>bs.add(x));
+      const L=[...ks].map(x=>FOE[x]);
+      const av=q=>Math.round(L.reduce((a,f)=>a+f[q],0)/L.length);
+      const B=FOE[[...bs][0]];
+      areaAvg[A.n.replace(/ /g,"")]={HP:av("HP"),STR:av("STR"),DEF:av("DEF"),
+        ボスHP:B?B.HP:0,ボスSTR:B?B.STR:0};
+    });
+    setFoe(null);
+    out[name]={knobs:k,表:o,素:areaAvg};
   });
   return out;
 }
@@ -217,13 +242,18 @@ return res;
   await p.evaluate(()=>{try{localStorage.clear()}catch(e){}});
   await p.reload(); await p.waitForTimeout(900);
   const TRY = process.argv.includes("--try");
+  /* 案の書き方は2通り。
+       knobs … 深さの重み（step / boss / strf）。全区画に一律にかかる
+       foe   … 敵の素の数値。区画を狙って直せる（{敵の鍵:{HP,STR,DEF}}）
+     α0.0025 で「案3」を index.html に取り込んだので、いまの並びは
+       原始の草原 78/25/6　苔むした洞窟 90/27/8
+       水没した回廊 165/39/17　アトランティス 174/46/14
+     ここに残してあるのは、次に振るときの型。 */
   const PLANS = {
-    "いま"            : {},
-    "A ボスを重く"     : {boss:1.7},
-    "B 攻撃力を伸ばす" : {strf:0.85},
-    "C 階層の刻みを上げ": {step:0.44},
-    "A+B"             : {boss:1.7, strf:0.85},
-    "A+B+C"           : {boss:1.7, strf:0.85, step:0.44},
+    "いま"              : {},
+    "ボスをさらに重く"   : {knobs:{boss:1.6}},
+    "攻撃力の伸びを上げ" : {knobs:{strf:0.8}},
+    "階層の刻みを上げ"   : {knobs:{step:0.42}},
   };
   const out = await p.evaluate(PAGE,
     {route:ROUTE, tries:TRY?60:TRIES, mode:TRY?"try":"now", plans:PLANS});
@@ -248,7 +278,21 @@ return res;
       });
       console.log("");
     });
-    Object.keys(out).forEach(n=>console.log(`  ${n} … ${JSON.stringify(out[n].knobs)}`));
+    console.log("── 素の数値（区画ごとの平均・ボスは1体目）──");
+    const areas=Object.keys(out[Object.keys(out)[0]].素);
+    console.log("  案".padEnd(20)+areas.map(a=>a.slice(0,6).padStart(9)).join(""));
+    Object.keys(out).forEach(n=>{
+      const S=out[n].素;
+      console.log("  "+n.padEnd(18,"　").slice(0,18)+
+        areas.map(a=>`${S[a].HP}/${S[a].STR}`.padStart(9)).join(""));
+    });
+    console.log("  "+"（ボスHP）".padEnd(17,"　")+
+      areas.map(a=>String(out[Object.keys(out)[0]].素[a].ボスHP).padStart(9)).join(""));
+    Object.keys(out).forEach(n=>{
+      if(n===Object.keys(out)[0])return;
+      console.log("  "+("→ "+n).padEnd(18,"　").slice(0,18)+
+        areas.map(a=>String(out[n].素[a].ボスHP).padStart(9)).join(""));
+    });
     return;
   }
 
