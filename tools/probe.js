@@ -45,7 +45,7 @@ function stubDom() {
 const EXPORTS = [
   /* データ */
   "WEP", "GEAR", "ITEMS", "MATS", "FOODS", "RECIPES", "JOB", "RACE", "ORIG", "GROW",
-  "REW", "FOE", "ENCS", "DUNGEONS", "AIL", "ELEM", "ELCYCLE", "EXPNEED", "PCOND",
+  "REW", "FOE", "ENCS", "AREAS", "AIL", "ELEM", "ELCYCLE", "EXPNEED", "PCOND",
   "SND", "BGM", "PXFOE", "PXTAG", "PXITEM", "PXMAT", "PXAIL", "PXDUN", "PX",
   "WEIGHT", "GOLD", "ROWS", "COLS", "PATHS", "SKMAX", "PASSMAX", "BAGBASE",
   "SK", "SKJOB", "SKRACE", "SKORIG", "SKMAXV", "LUKRANK", "CHESTGAIN",
@@ -78,7 +78,7 @@ function report(api) {
     ["レシピ", size(api.RECIPES)],
     ["職業", size(api.JOB)], ["種族", size(api.RACE)], ["欲望", size(api.ORIG)],
     ["属性", size(api.ELEM)], ["状態異常", size(api.AIL)],
-    ["ダンジョン", size(api.DUNGEONS)],
+    ["区画", size(api.AREAS)],
     ["効果音", size(api.SND)], ["BGM", size(api.BGM)],
   ];
   rows.forEach(([n, v]) => console.log(String(n).padEnd(16, "　").slice(0, 16), v));
@@ -112,18 +112,31 @@ function check(api) {
 
   /* ダンジョン：階層の遭遇キーが実在するか。どこからも呼ばれない遭遇も拾う */
   const used = new Set();
-  Object.entries(api.DUNGEONS).forEach(([dk, d]) => {
-    if (!api.PXDUN[dk]) add(`DUNGEONS.${dk}: 情景 PXDUN.${dk} がない`);
-    d.acts.forEach((a, i) => {
-      ["solo", "easy", "norm", "hard", "elite"].forEach(slot => {
-        (a[slot] || []).forEach(x => {
-          used.add(x);
-          if (!api.ENCS[x]) add(`DUNGEONS.${dk}[${i}].${slot}: 遭遇 ${x} がない`);
-        });
-      });
-      used.add(a.boss);
-      if (!api.ENCS[a.boss]) add(`DUNGEONS.${dk}[${i}].boss: 遭遇 ${a.boss} がない`);
+  Object.entries(api.AREAS).forEach(([ak, a]) => {
+    if (!api.PXDUN[a.art]) add(`AREAS.${ak}: 情景 PXDUN.${a.art} がない`);
+    ["solo","easy","norm","hard","elite"].forEach(slot =>
+      (a[slot]||[]).forEach(x => {
+        if (!api.ENCS[x]) add(`AREAS.${ak}.${slot}: 遭遇 ${x} がない`);
+      }));
+    if (!api.ENCS[a.boss]) add(`AREAS.${ak}.boss: 遭遇 ${a.boss} がない`);
+    used.add(a.boss);
+    ["solo","easy","norm","hard","elite"].forEach(slot =>
+      (a[slot]||[]).forEach(x => used.add(x)));
+    (a.to||[]).forEach(t => {
+      if (!api.AREAS[t]) add(`AREAS.${ak}.to: 区画 ${t} がない`);
     });
+  });
+  /* どの区画からも辿り着けない区画がないか */
+  const reach = new Set(Object.keys(api.AREAS).filter(k => api.AREAS[k].start));
+  let grew = true;
+  while (grew) {
+    grew = false;
+    [...reach].forEach(k => (api.AREAS[k].to||[]).forEach(t => {
+      if (api.AREAS[t] && !reach.has(t)) { reach.add(t); grew = true; }
+    }));
+  }
+  Object.keys(api.AREAS).forEach(k => {
+    if (!reach.has(k)) add(`AREAS.${k}: どこからも辿り着けない`);
   });
   Object.keys(api.ENCS).forEach(k => { if (!used.has(k)) add(`ENCS.${k}: どの階層からも出現しない`); });
 

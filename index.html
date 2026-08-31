@@ -391,6 +391,16 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
   margin:0 auto 8px;max-width:560px}
 /* 階層に入ったとき、名前が ぼわぁと浮かんで消える。
    地図が上から下へ流れるあいだに重ねる。押す邪魔はしない。 */
+/* ===== 世界地図 ===== */
+.wmsvg{display:block;width:100%;height:auto;background:#171d18;
+  border:1px solid var(--line)}
+.wmt{font-size:3.4px;fill:var(--bone);letter-spacing:.02em}
+.wmt.unk{fill:#4d5346}
+.wmd{font-size:2.6px;fill:var(--ink);letter-spacing:.04em}
+.wmn.go{cursor:pointer}
+.wmn.go:hover circle{stroke:#e9c46a}
+.wmwrap{margin:0 auto;max-width:560px}
+.wmnote{font-size:11px;color:var(--dim);text-align:center;margin-top:6px;line-height:1.7}
 .actTtl{position:absolute;inset:0;display:none;flex-direction:column;
   align-items:center;justify-content:center;gap:8px;pointer-events:none;z-index:5;
   text-align:center;padding:0 16px}
@@ -834,6 +844,7 @@ body.play .fh1{padding-right:62px}
   <div class="homestat" id="homeStat"></div>
   <div class="homemenu">
     <button class="go" id="hGo">潜 る</button>
+    <button class="topbtn" id="hWorld">世 界 地 図</button>
     <button class="topbtn" id="hHall">殿 堂</button>
     <button class="topbtn" id="hCodex">図 鑑</button>
     <button class="topbtn" id="hQuiz">見 立 て</button>
@@ -868,7 +879,8 @@ body.play .fh1{padding-right:62px}
   <div class="fhead">
     <div class="fh1"><span id="fName">—</span><em id="fSub"></em></div>
     <div class="fstat" id="fStat"></div>
-    <div style="margin-top:9px"><button class="topbtn" id="charBtn2">装備・状態を見る</button></div>
+    <div style="margin-top:9px"><button class="topbtn" id="charBtn2">装備・状態を見る</button>
+      <button class="topbtn" id="worldBtn">世 界 地 図</button></div>
   </div>
   <div class="mapwrap"><div id="mapbox"></div><div class="actTtl" id="actTtl"></div></div>
   <div id="mapinfo"></div>
@@ -902,7 +914,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0013";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0014";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1037,14 +1049,15 @@ const BGM={
   result:"そろそろ帰ろっと！_M325.mp3",       /* 潜行の結果 */
   codex :"オルゴールファンタジー.mp3",        /* 図鑑 */
   boss  :"深域で待つもの.mp3",              /* ボス戦 */
-  "plains:0":"PerituneMaterial_Wonder2_loop.mp3",   /* 原始の草原 1階層：草原 */
-  "plains:1":"樹木の息吹.mp3",                  /* 原始の草原 2階層：森 */
+  plain :"PerituneMaterial_Wonder2_loop.mp3",   /* 原始の草原 */
+  forest:"樹木の息吹.mp3",                      /* 世界樹の森 */
+  /* 苔むした洞窟・水没した回廊・水没都市アトランティスは まだ曲がない */
 };
 /* 設定画面に出す曲名。BGM に無い場面は無音 */
 const BGMN={
   home:"遥かなる伝説", hall:"そろそろ帰ろっと！", result:"そろそろ帰ろっと！",
   codex:"オルゴールファンタジー", boss:"深域で待つもの",
-  "plains:0":"Wonder2", "plains:1":"樹木の息吹",
+  plain:"Wonder2", forest:"樹木の息吹",
 };
 const Music=(()=>{
   let el=null, now=null, want=null, on=true, vol=.5, tok=0;
@@ -2971,7 +2984,7 @@ let me,foes,round,busy=false,over=false,pending=null,scoutBonus=0,queue=[],qi=0;
    成功したほうが先に動く。"me" / "foe" / null。 */
 let scoutFirst=null;
 let owned=[];
-const sel={job:null,race:null,orig:null,dun:"plains",enc:"e1",luk:0,lukD:null};
+const sel={job:null,race:null,orig:null,area:"plain",enc:"e1",luk:0,lukD:null};
 
 function build(host,note,data,key,after){
   const h=$(host);h.innerHTML="";
@@ -3055,10 +3068,16 @@ function recalcMe(m,full){
   if(full){m.HP=m.maxHP;m.MP=m.maxMP;}
   else{m.HP=Math.min(m.maxHP,m.HP+Math.max(0,m.maxHP-oldMax));m.MP=Math.min(m.maxMP,m.MP);}
 }
+/* 区画を抜けるごとに敵が重くなる。
+   これまで depthMul は「その区画の何段目か」しか見ておらず、
+   何区画目かを一切見ていなかった。だから後半が物足りなくなる。
+   ボスに至っては常に等倍で、同じ区画の奥の雑魚より弱かった。 */
+function depthAt(tier){ return 1+((tier||1)-1)*0.34; }
 function depthMul(){
   const r=(RUN&&RUN.cur)?RUN.cur.r:0;
-  if(RUN&&RUN.boss)return 1;
-  return r<2?0.9:(r<5?1:(r<10?1.14:1.3));
+  const d=depthAt(areaTier());
+  if(RUN&&RUN.boss)return 1.3*d;        /* ボスは その区画の最奥より重い */
+  return (r<2?0.9:(r<5?1:(r<10?1.14:1.3)))*d;
 }
 function makeFoes(){
   const dm=depthMul();
@@ -3235,7 +3254,7 @@ function drawOrder(){
   const host=$("#ordList");if(!host)return;
   const st=$("#stageLbl");
   if(st&&RUN&&RUN.cur)
-    st.textContent=`${RUN.act+1}階層　${RUN.cur.name}`+(RUN.elite?"　［手練れ］":RUN.boss?"　［ボス］":"");
+    st.textContent=`${areaOf().n||""}　${RUN.cur.name}`+(RUN.elite?"　［手練れ］":RUN.boss?"　［ボス］":"");
   /* 1枚のふだ。act に null を渡すと「？」になる（自分の手は自分で決めるので） */
   const card=(u,{no,act,cls})=>{
     const mine=(u===me);
@@ -4413,6 +4432,7 @@ async function finish(win){
    localStorage に置く。読めない環境（プライベート窓・容量切れ・
    site data を切っている）でも、保存を諦めるだけで遊べるようにしてある。 */
 const META={codex:{},rooms:{},elem:{},mats:{},seen:{},hall:[],runs:0,best:0,
+  areas:{},                 /* 踏み入れたことのある区画。世界地図の明るさに使う */
   tutSeen:false,newsSeen:""};
 const MKEY="dd.meta";
 const MVER=1;                /* 中身の形を変えたら上げる。読み込み側で移行する */
@@ -4434,7 +4454,7 @@ function metaLoad(){
   const obj=k=>(o[k]&&typeof o[k]==="object"&&!Array.isArray(o[k]))?o[k]:{};
   META.codex=obj("codex"); META.rooms=obj("rooms");
   META.elem =obj("elem");  META.mats =obj("mats");
-  META.seen =obj("seen");
+  META.seen =obj("seen");  META.areas=obj("areas");
   META.hall =Array.isArray(o.hall)?o.hall.slice(-HALLMAX):[];
   META.runs =Number.isFinite(o.runs)?o.runs:0;
   META.best =Number.isFinite(o.best)?o.best:0;
@@ -4448,7 +4468,7 @@ function metaWrite(){
     if(META.hall.length>HALLMAX)META.hall=META.hall.slice(-HALLMAX);
     localStorage.setItem(MKEY,JSON.stringify({v:MVER,
       codex:META.codex,rooms:META.rooms,elem:META.elem,mats:META.mats,
-      seen:META.seen,hall:META.hall,runs:META.runs,best:META.best,
+      seen:META.seen,areas:META.areas,hall:META.hall,runs:META.runs,best:META.best,
       tutSeen:META.tutSeen,newsSeen:META.newsSeen}));
   }catch(e){ metaBroken=true; }   /* 容量切れなど。以降は諦めて遊べるようにする */
   CloudHook.mark();               /* クラウドへは間を置いてまとめて送る */
@@ -4461,7 +4481,7 @@ function touchMeta(){
 /* 書く前に閉じられても落とさない */
 function metaFlush(){ if(metaTimer){clearTimeout(metaTimer);metaWrite();} CloudHook.flush(); }
 function metaClear(){
-  META.codex={};META.rooms={};META.elem={};META.mats={};META.seen={};
+  META.codex={};META.rooms={};META.elem={};META.mats={};META.seen={};META.areas={};
   META.hall=[];META.runs=0;META.best=0;
   /* 遊び方を見たか・お知らせを読んだかは残す。
      消すと毎回チュートリアルに戻され、読んだお知らせがまた未読になって煩わしい */
@@ -4509,7 +4529,7 @@ function metaNewerNews(a,b){           /* NEWS は先頭が新しい。番号が
 }
 function metaSnapshot(){
   return {codex:META.codex,rooms:META.rooms,elem:META.elem,mats:META.mats,
-    seen:META.seen,hall:META.hall,runs:META.runs,best:META.best,
+    seen:META.seen,areas:META.areas,hall:META.hall,runs:META.runs,best:META.best,
     tutSeen:META.tutSeen,newsSeen:META.newsSeen};
 }
 function metaMerge(r){
@@ -4519,6 +4539,7 @@ function metaMerge(r){
   META.elem =metaMergeElem (META.elem ,r.elem);
   META.mats =metaMergeFlag (META.mats ,r.mats);
   META.seen =metaMergeFlag (META.seen ,r.seen);
+  META.areas=metaMergeFlag (META.areas,r.areas);
   META.hall =metaMergeHall (META.hall ,r.hall);
   META.runs =metaMax(META.runs,r.runs);
   META.best =metaMax(META.best,r.best);
@@ -4823,40 +4844,154 @@ const ENCS={
 
 
 /* 階層 */
-const DUNGEONS={
- plains:{n:"原 始 の 草 原",d:"街の外に広がる草原と森。深くはないが、確かに獣がいる。",
-   lv:"はじめての潜行",acts:[
-  {n:"草 原",d:"腰まで伸びた草。風が渡るたび、何かが動く。",
+/* ---------- 区 画 ----------
+   「ダンジョンの中に階層が並ぶ」という入れ子をやめて、
+   区画そのものを並べ、つながりを to で書く形にした。
+
+     tier  担当階層。敵の重さはこれで決まる。何番目に通ったかでは決まらない
+     to    ボスを抜けたときに入口が見つかりうる先
+     start 出発点にできる区画。文言はその難しさの目安
+     art   潜る場所を選ぶ画面の情景（PXDUN の鍵）
+
+   つながり
+     原始の草原 ─┬→ 世界樹の森（いまは行き止まり）
+                 └→ 苔むした洞窟 → 水没した回廊 → 水没都市アトランティス   */
+/* x,y は世界地図の上の位置（0〜100）。y が大きいほど深い。
+   land は情景の描き分け。grass / forest / cave / water */
+const AREAS={
+ plain:{n:"原 始 の 草 原",tier:1,art:"plains",start:"はじめての潜行",
+   x:16,y:34,land:"grass",
+   d:"腰まで伸びた草。風が渡るたび、何かが動く。",
+   to:["forest","cave"],
    solo:["p_sl","p_rb","p_gb","p_wf"],
    easy:["p_rb2","p_sl2","p_gr","p_gg"],
    norm:["p_wf2","p_gw","p_bo","p_rb3"],
    hard:["p_bo2","p_hard","p_wf2"],
    elite:["p_bo2","p_hard"], boss:"pb1"},
-  {n:"森",d:"陽が届かない。木そのものが動くという。",
+ forest:{n:"世 界 樹 の 森",tier:2,art:"plains",
+   x:40,y:14,land:"forest",
+   d:"陽が届かない。木そのものが動くという。",
+   to:[],
    solo:["f_me","f_or","f_md"],
    easy:["f_me2","f_mm","f_or"],
    norm:["f_or2","f_om","f_be","f_tr"],
    hard:["f_bm","f_to","f_hard"],
    elite:["f_to","f_hard"], boss:"pb2"},
- ]},
- atlantis:{n:"水没都市アトランティス",d:"地下に沈んだ古い都市。深度を降りるほど、住人だったものが濃くなる。",
-   lv:"腕に覚えのある者へ",acts:[
-  {n:"苔むした坑道",d:"外縁の掘削跡。湿った岩肌と苔。人の手が入った最後の場所。",
+ cave:{n:"苔 む し た 洞 窟",tier:2,art:"atlantis",start:"腕に覚えのある者へ",
+   x:44,y:52,land:"cave",
+   d:"外縁の掘削跡。湿った岩肌と苔。人の手が入った最後の場所。",
+   to:["hall"],
    solo:["s_sl","s_gb","s_rt","s_ga"],
    easy:["gb1","sl1","gb2"], norm:["rt1","gr1","gs1","gb2"], hard:["hb1","sh2","hb2"],
    elite:["sh1","hb2"], boss:"b1"},
-  {n:"石造りの回廊",d:"切り出した石が整然と並ぶ。作られたものが番をしている。",
+ hall:{n:"水 没 し た 回 廊",tier:3,art:"atlantis",
+   x:68,y:70,land:"water",
+   d:"切り出した石が整然と並ぶ。作られたものが番をしている。",
+   to:["city"],
    solo:["s_bt","s_ls","s_gg2"],
    easy:["bt1","ls1","ls2"], norm:["gg1","bt1","tr1","ls2"], hard:["gg2","gl1","gl2"],
    elite:["gl2","gl3"], boss:"b2"},
-  {n:"沈んだ街",d:"かつて栄えた地下都市。水が満ち、住人だったものが残っている。",
+ city:{n:"水没都市アトランティス",tier:4,art:"atlantis",
+   x:88,y:88,land:"water",
+   d:"かつて栄えた地下都市。水が満ち、住人だったものが残っている。",
+   to:[],
    solo:["s_sk","s_sa","s_wr"],
    easy:["sk1","sk2","sg1"], norm:["sk3","sg2","wr1","sg1"], hard:["sg3","wr2","sk3"],
    elite:["sg3","wr2"], boss:"b3"},
- ]},
 };
-let ACTS=DUNGEONS.plains.acts;
+/* ---------- 世 界 地 図 ----------
+   区画のつながりを土地として描く。上が地上、下ほど深く、
+   深いところは水に沈んでいる。x,y は AREAS が持つ。
+     "home" … 家で見る。踏み入れた区画だけ明るい
+     "run"  … 潜っている最中。通った道と現在地を出す
+     "gate" … 入口を選ぶとき。選べる区画を光らせて押せるようにする */
+const LANDC={
+  grass :{a:"#4a5f38",b:"#5f7a45"},
+  forest:{a:"#2f4a2a",b:"#3f6330"},
+  cave  :{a:"#4a4232",b:"#6b5a3a"},
+  water :{a:"#25414f",b:"#2f5566"},
+};
+function worldMap(mode,pick){
+  const seen=(RUN&&RUN.seen)||[];
+  const known=k=>(mode==="home")?!!META.areas[k]
+    :(seen.includes(k)||(pick||[]).some(w=>w.key===k));
+  const here=(RUN&&!RUN.over&&mode!=="home")?RUN.area:null;
+  const canGo=k=>(pick||[]).some(w=>w.key===k);
 
+  let h=`<svg viewBox="0 0 100 100" class="wmsvg">
+    <defs><linearGradient id="wmg" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#3a4a30"/><stop offset=".42" stop-color="#2e3a2a"/>
+      <stop offset=".70" stop-color="#26333a"/><stop offset="1" stop-color="#1b2a33"/>
+    </linearGradient></defs>
+    <rect x="0" y="0" width="100" height="100" fill="url(#wmg)"/>
+    <path d="M0 60 Q 25 55 48 62 T 100 66 L100 100 L0 100 Z" fill="#20323c" opacity=".7"/>
+    <path d="M0 76 Q 30 72 55 78 T 100 82 L100 100 L0 100 Z" fill="#1a2b35" opacity=".8"/>`;
+  /* 道 */
+  Object.keys(AREAS).forEach(k=>{
+    const A=AREAS[k];
+    (A.to||[]).forEach(t=>{
+      const B=AREAS[t];if(!B)return;
+      const lit=known(k)&&known(t);
+      h+=`<line x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}"
+        stroke="${lit?"#8a7f5a":"#3a3f34"}" stroke-width="${lit?1.1:.7}"
+        stroke-dasharray="${lit?"":"2 2"}" opacity="${lit?.9:.5}"/>`;
+    });
+  });
+  /* 区画 */
+  Object.keys(AREAS).forEach(k=>{
+    const A=AREAS[k], c=LANDC[A.land]||LANDC.grass;
+    const kn=known(k), go=canGo(k), cu=(k===here);
+    const r=cu?5.4:(go?5:4.2);
+    h+=`<g class="wmn ${go?"go":""}" ${go?`data-w="${k}"`:""}>`;
+    if(go)h+=`<circle cx="${A.x}" cy="${A.y}" r="${r+3}" fill="none"
+      stroke="#c9a227" stroke-width=".8"><animate attributeName="r"
+      values="${r+2.4};${r+4.6};${r+2.4}" dur="2s" repeatCount="indefinite"/></circle>`;
+    if(cu)h+=`<circle cx="${A.x}" cy="${A.y}" r="${r+2.6}" fill="none"
+      stroke="#e9e4d4" stroke-width=".7"/>`;
+    h+=`<circle cx="${A.x}" cy="${A.y}" r="${r}" fill="${kn?c.b:"#2b2f26"}"
+        stroke="${cu?"#e9e4d4":(go?"#c9a227":(kn?c.a:"#3a3f34"))}"
+        stroke-width="${(cu||go)?1.1:.7}"/>`;
+    h+=`<text x="${A.x}" y="${A.y+r+5}" class="wmt ${kn?"":"unk"}" text-anchor="middle">${
+      kn?A.n.replace(/ /g,""):"？ ？ ？"}</text>`;
+    if(kn)h+=`<text x="${A.x}" y="${A.y+r+9.2}" class="wmd" text-anchor="middle">第${A.tier}階層</text>`;
+    h+=`</g>`;
+  });
+  return h+`</svg>`;
+}
+
+/* ---------- 区画のめぐり方 ----------
+   RUN.area … いまいる区画の鍵。敵・名前・BGM・難度はこれで決まる
+   RUN.act  … 何区画目か。金貨と装備の等級だけがこれを見る
+   RUN.seen … この周で通った区画。同じ所へは戻らない                */
+function areaOf(){ return AREAS[RUN&&RUN.area]||{}; }
+function areaTier(){ return areaOf().tier||1; }
+/* 出発点にできる区画 */
+function startAreas(){
+  const o={};Object.keys(AREAS).forEach(k=>{if(AREAS[k].start)o[k]=AREAS[k];});
+  return o;
+}
+/* その区画から辿れる道筋を一本ぶん並べる（作成画面の下書きに使う） */
+function routeFrom(k,seen){
+  seen=seen||[];
+  if(!AREAS[k]||seen.includes(k))return [];
+  seen.push(k);
+  const out=[AREAS[k].n];
+  const nx=(AREAS[k].to||[]).filter(x=>!seen.includes(x));
+  if(nx.length)out.push(...routeFrom(nx[0],seen));
+  return out;
+}
+/* ボスを抜けたあと、次の入口が見つかるかどうか。
+   つながっている先のうち、まだ通っていないものが候補。
+   見つからなければそこが終点（踏破）。 */
+function findEntrances(){
+  const pool=(areaOf().to||[]).filter(k=>AREAS[k]&&!RUN.seen.includes(k));
+  if(!pool.length)return [];
+  if(pool.length===1)return [{key:pool[0],a:AREAS[pool[0]]}];
+  /* 道が2本あるときは、両方見つかることもあれば片方だけのこともある */
+  if(Math.random()<0.40)return pool.map(k=>({key:k,a:AREAS[k]}));
+  const one=pool[Math.floor(Math.random()*pool.length)];
+  return [{key:one,a:AREAS[one]}];
+}
 
 const RICON={battle:"⚔",elite:"☠",treasure:"▣",rest:"火",event:"？",shop:"◈",boss:"★"};
 const RNAME={battle:"戦闘",elite:"精鋭",treasure:"宝物",rest:"休息",event:"事象",shop:"行商",boss:"ボス"};
@@ -4875,8 +5010,8 @@ function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){
   const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 /* いまの場面に流す曲。BGM に無いものは無音になる */
 function bgmKey(id){
-  if(id==="fight")return RUN&&RUN.boss?"boss":(RUN?sel.dun+":"+RUN.act:"home");
-  if(id==="floor")return RUN&&RUN.over?"result":(RUN?sel.dun+":"+RUN.act:"home");
+  if(id==="fight")return RUN&&RUN.boss?"boss":(RUN?RUN.area:"home");
+  if(id==="floor")return RUN&&RUN.over?"result":(RUN?RUN.area:"home");
   if(id==="hall")return "hall";
   if(id==="codex")return "codex";
   return "home";                        /* home・make・tut・quiz */
@@ -4958,7 +5093,7 @@ function genAct(ai){
     });
   });
   // 中身を割り当て
-  const A=ACTS[ai];
+  const A=ai;   /* 区画そのものを受け取る */
   Object.keys(node).forEach(k=>{
     const nd=node[k];
     nd.name=RNAME[nd.t];
@@ -5081,40 +5216,86 @@ function price(base){
 
 /* ---- 進行 ---- */
 function startRun(){
-  ACTS=DUNGEONS[sel.dun].acts;
   me=makeMe();
   markSeen("w_"+me.baseWep);
   me.gold=(ORIG[sel.orig]&&ORIG[sel.orig].startGold)||30;
-  RUN={act:0,cur:null,curKey:null,over:false,cleared:false};
+  RUN={act:0,area:sel.area,seen:[],cur:null,curKey:null,over:false,cleared:false};
   owned=[];META.runs++;touchMeta();
   $("#log").innerHTML="";
-  enterAct(0,true);          /* 名前は出立の支度が終わってから出す */
+  enterArea(sel.area,true);  /* 名前は出立の支度が終わってから出す */
   const n=(ORIG[sel.orig]&&ORIG[sel.orig].startGear)||1;
   startPick(n);
 }
 function startPick(left){
   /* 1階層目は装備選びの窓が先に出るので、それが片づいてから名前を出す。
      窓の下でぼわぁとやっても見えない。 */
-  if(left<=0){actTitle(0);return;}
+  if(left<=0){actTitle();return;}
   choiceModal("出 立 の 支 度",
     left>1?`装備を ${left} つ選べる（傲慢）`:"",
     pickList(["gear"]),()=>{drawFloor();startPick(left-1);},
     "取らない",()=>{drawFloor();startPick(left-1);});
 }
-function enterAct(ai,quiet){
-  RUN.act=ai;RUN.curKey=null;RUN.cur=null;
+/* 見つかった入口から行き先を選ぶ。
+   同じ道の続きか、別の場所か。ここが「地図どうしが繋がっている」の入口。 */
+function gateModal(ways){
+  let h=`<div class="mtitle">入 口 を 選 ぶ</div>
+    <div class="msub">${RUN.act+1} 区画を抜けた。次はここへ降りられる</div>
+    <div class="wmwrap">${worldMap("gate",ways)}</div>
+    <div class="wmnote">光っている場所を押しても選べる</div>
+    <div class="acts">`;
+  ways.forEach((w,i)=>{
+    const same=(w.a.tier===areaTier());
+    h+=`<button class="act rew cgear" data-i="${i}">
+      <span class="rcat">${same?"同じ道の先":"別 の 場 所"}</span>
+      <span class="an">${w.a.n}</span>
+      <span class="ad">${w.a.d||""}</span>
+      <span class="rmeta">第 ${w.a.tier} 階層　${(w.a.to||[]).length?"さらに先へ続く":"ここが行き止まり"}</span>
+    </button>`;});
+  h+=`</div>`;
+  openModal(h);
+  const go=key=>{
+    const w=ways.find(x=>x.key===key);if(!w)return;
+    SFX.pick();closeModal();RUN.act++;enterArea(w.key);
+  };
+  $("#mbox").querySelectorAll("[data-i]").forEach(b=>{
+    b.onclick=()=>go(ways[+b.dataset.i].key);});
+  $("#mbox").querySelectorAll("[data-w]").forEach(g=>{
+    g.onclick=()=>go(g.dataset.w);});
+}
+/* 世界地図だけを見せる窓。家からも探索中からも開く */
+function worldModal(back){
+  const mode=(RUN&&!RUN.over&&RUN.area)?"run":"home";
+  const n=Object.keys(AREAS).filter(k=>META.areas[k]).length;
+  let h=`<div class="mtitle">世 界 地 図</div>
+    <div class="wmwrap">${worldMap(mode)}</div>
+    <div class="wmnote">${mode==="run"
+      ? `いまは <b style="color:var(--bone)">${areaOf().n}</b>　この周で ${
+          (RUN.seen||[]).length} 区画目`
+      : `踏み入れた場所 ${n} / ${Object.keys(AREAS).length}`}
+      <br>行ったことのない場所は伏せてある</div>
+    <button class="mclose" id="wmClose">${back?"もどる":"閉じる"}</button>`;
+  openModal(h,true);
+  $("#wmClose").onclick=()=>{if(back){closeModal();back();}else closeModal();};
+}
+/* 区画に入る。深さ（RUN.act）は入るたびに1つ増える */
+function enterArea(key,quiet){
+  RUN.area=key;
+  RUN.seen=RUN.seen||[];
+  if(!RUN.seen.includes(key))RUN.seen.push(key);
+  META.areas[key]=true;touchMeta();
+  RUN.curKey=null;RUN.cur=null;
   if(ORIG[sel.orig]&&ORIG[sel.orig].actFull){me.HP=me.maxHP;me.MP=me.maxMP;}
-  RUN.M=genAct(ai);RUN.preview=null;
+  RUN.M=genAct(AREAS[key]);RUN.preview=null;
   drawFloor();showScreen("floor");window.scrollTo(0,0);
   setTimeout(introScroll,120);
-  if(!quiet)actTitle(ai);
+  if(!quiet)actTitle();
 }
 /* 階層の名前を ぼわぁと出す。introScroll と同じ間だけ重なる */
 let actTtlTimer=null;
-function actTitle(ai){
+function actTitle(){
   const el=$("#actTtl");if(!el)return;
-  const A=ACTS[ai]||{};
-  el.innerHTML=`<div class="atDun">${DUNGEONS[sel.dun].n}　${ai+1} 階層</div>
+  const A=areaOf();
+  el.innerHTML=`<div class="atDun">第 ${A.tier} 階層　${RUN.act+1} 区画目</div>
     <div class="atName">${A.n||""}</div>
     <div class="atSub">${A.d||""}</div>`;
   el.className="actTtl on";
@@ -5158,9 +5339,9 @@ function roomInfo(nd){
 }
 function drawFloor(){
   if(RUN.over)return drawEnd();
-  const A=ACTS[RUN.act];
+  const A=areaOf();
   const cur=RUN.curKey?RUN.M.node[RUN.curKey]:null;
-  $("#fName").textContent=`${DUNGEONS[sel.dun].n}　${RUN.act+1}階層　${A.n}`;
+  $("#fName").innerHTML=`${A.n}　<em>第 ${A.tier} 階層 ・ ${RUN.act+1} 区画目</em>`;
   $("#fSub").textContent=cur?`${cur.r+1} / ${ROWS} 段目`:"入口";
   const low=me.HP<=me.maxHP*0.35?"lowhp":"";
   $("#fStat").innerHTML=
@@ -5866,7 +6047,8 @@ function endRun(cleared){
   META.hall.push({
     t:Date.now(),               /* 統合のときの目印。同じ一件を二重に持たないため */
     no:META.runs, cleared, depth,
-    dun:DUNGEONS[sel.dun].n, acts:DUNGEONS[sel.dun].acts.length,
+    dun:areaOf().n||"", acts:(RUN.seen||[]).length,
+    route:(RUN.seen||[]).map(k=>AREAS[k]?AREAS[k].n:"").filter(Boolean),
     job:sel.job, race:sel.race, orig:sel.orig,
     lv:me.lv, hp:Math.max(0,me.HP), maxHP:me.maxHP,
     wep:me.wep.n, armor:me.eq.armor?me.eq.armor.n:null,
@@ -6438,13 +6620,26 @@ function nextStage(){
   out.push(`金貨 <span class="gain">+${g}</span>　<span class="s">（所持 ${me.gold}）</span>`);
   if(RUN.boss){
     RUN.boss=false;
-    if(RUN.act+1>=ACTS.length)return endRun(true);
     const h=Math.min(Math.round(me.maxHP*0.3),me.maxHP-me.HP);
     me.HP+=h;me.MP=me.maxMP;
-    enterAct(RUN.act+1);
-    resultModal(`${RUN.act}階層を抜けた`,
-      out.concat([`HP <span class="gain">+${h}</span>　MP 全快`]),
-      [{n:"先へ進む"}]);
+    const ways=findEntrances();
+    const cleared=`${areaOf().n} を抜けた`;
+    if(!ways.length){
+      /* 行ける先が見つからない。ここが終点 */
+      drawFloor();showScreen("floor");
+      resultModal(cleared,
+        out.concat([`HP <span class="gain">+${h}</span>　MP 全快`,
+          `<span class="gain">この先へ続く道は見つからなかった</span>`,
+          `　<span class="s">${RUN.act+1} 区画を抜けた</span>`]),
+        [{n:"地上へ戻る",cb:()=>endRun(true)}]);
+      return;
+    }
+    drawFloor();showScreen("floor");
+    resultModal(cleared,
+      out.concat([`HP <span class="gain">+${h}</span>　MP 全快`,
+        ways.length>1?`<span class="gain">道が二股に分かれていた</span>`
+                     :`<span class="gain">先へ続く入口が見つかった</span>`]),
+      [{n:"入口を見る",cb:()=>gateModal(ways)}]);
     return;
   }
   backToFloor(r?r.name:"戦闘",out);
@@ -6817,7 +7012,7 @@ const MKSTEPS=[
   {k:"race",ttl:"種 族", data:()=>RACE, sub:"どんな体か"},
   {k:"orig",ttl:"欲 望", data:()=>ORIG, sub:"何を求めるか"},
   {k:"__ok",ttl:"確 認", sub:""},
-  {k:"dun", ttl:"潜 る 場 所", data:()=>DUNGEONS, sub:"どこへ降りるか"},
+  {k:"area", ttl:"潜 る 場 所", data:()=>startAreas(), sub:"どこから降りるか"},
 ];
 let mkStep=0;
 function mkFig(){
@@ -6836,14 +7031,15 @@ function drawMake(){
   Object.keys(D).forEach(k=>{
     const o=D[k], on=(sel[S.k]===k);
     const ic=tagFig(k,15);const nm=o.n;
-    if(S.k==="dun"){
+    if(S.k==="area"){
       h+=`<button class="duncard${on?" mkon":""}" data-k="${k}">
-        <div class="dcart">${dunArt(k)}</div>
+        <div class="dcart">${dunArt(o.art||"plains")}</div>
         <div class="dcbody">
           <div class="dcn">${o.n}</div>
-          <div class="dcm">${o.acts.length} 階層　${o.lv}</div>
+          <div class="dcm">第 ${o.tier} 階層　${o.start}</div>
           <div class="dcd">${o.d||""}</div>
-          <div class="dcacts">${o.acts.map(a=>a.n).join("　→　")}</div>
+          <div class="dcacts">${routeFrom(k).join("　→　")}${
+            (AREAS[k].to||[]).length>1?"　…ほか":""}</div>
         </div></button>`;
       return;
     }
@@ -6857,7 +7053,7 @@ function drawMake(){
   $("#mkBody").querySelectorAll("[data-k]").forEach(b=>{
     b.onclick=()=>{
       sel[S.k]=b.dataset.k;
-      if(S.k==="dun"){ACTS=DUNGEONS[sel.dun].acts;SFX.pick();return startRun();}
+      if(S.k==="area"){SFX.pick();return startRun();}
       SFX.open();mkStep++;drawMake();window.scrollTo(0,0);
     };});
   const pv=$("#mkPrev");
@@ -7091,6 +7287,7 @@ function cxBody(){
 }
 
 $("#hGo").onclick=()=>{newChar();mkStep=0;drawMake();showScreen("make");window.scrollTo(0,0);};
+$("#hWorld").onclick=()=>{SFX.click();worldModal();};
 $("#hHall").onclick=()=>{drawHall();showScreen("hall");window.scrollTo(0,0);};
 $("#hCodex").onclick=()=>{drawCodex();showScreen("codex");window.scrollTo(0,0);};
 $("#hQuiz").onclick=()=>{qzStep=0;qzAns={};drawQuiz();showScreen("quiz");window.scrollTo(0,0);};
@@ -7105,6 +7302,7 @@ $("#cxBack").onclick=goHome;
 if(!META.tutSeen){drawTut();showScreen("tut");}else goHome();
 $("#charBtn").onclick=charModal;
 $("#charBtn2").onclick=charModal;
+$("#worldBtn").onclick=()=>{SFX.click();worldModal();};
 $("#modal").onclick=e=>{if(e.target.id==="modal"&&modalFree())closeModal();};
 $("#detBtn").onclick=()=>{
   const d=$("#detail"),b=$("#detBtn");

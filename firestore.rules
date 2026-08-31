@@ -39,7 +39,7 @@ service cloud.firestore {
           && d.v is number
           && d.meta is map
           && m.keys().hasOnly(
-               ['codex','rooms','elem','mats','seen','hall','runs','best','tutSeen','newsSeen'])
+               ['codex','rooms','elem','mats','seen','areas','hall','runs','best','tutSeen','newsSeen'])
           && (!m.keys().hasAny(['hall']) || (m.hall is list && m.hall.size() <= 50))
           && (!m.keys().hasAny(['runs']) || m.runs is number)
           && (!m.keys().hasAny(['best']) || m.best is number);

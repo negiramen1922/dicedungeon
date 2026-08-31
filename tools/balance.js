@@ -16,20 +16,21 @@
 */
 const path = require("path");
 const api = require(path.join(__dirname, "probe.js")).load();
-const {JOB, RACE, GROW, WEP, FOE, ENCS, DUNGEONS, SKJOB, SKRACE} = api;
+const {JOB, RACE, GROW, WEP, FOE, ENCS, AREAS, SKJOB, SKRACE} = api;
 
 /* ---- 敵の側の代表値。実データから作る ---- */
 function foeStats(actIdx) {
   /* その階層に出る敵を集め、DEF と 威力 の中央値を取る */
+  /* actIdx は 0 起点。担当階層（tier）は 1 起点なので +1 して引く */
   const keys = new Set();
-  Object.values(DUNGEONS).forEach(d => {
-    const A = d.acts[actIdx]; if (!A) return;
+  Object.values(AREAS).forEach(A => {
+    if ((A.tier||1) !== actIdx+1) return;
     ["solo","easy","norm","hard"].forEach(s => (A[s]||[]).forEach(e =>
       (ENCS[e] ? ENCS[e].list : []).forEach(k => keys.add(k))));
   });
   const list = [...keys].map(k => FOE[k]).filter(Boolean);
   const med = a => a.slice().sort((x,y)=>x-y)[Math.floor(a.length/2)];
-  const dm = actIdx === 0 ? 1.0 : actIdx === 1 ? 1.14 : 1.3;   /* 深さ倍率のおよそ */
+  const dm = (1 + actIdx*0.34) * (actIdx === 0 ? 1.0 : actIdx === 1 ? 1.14 : 1.3);   /* 深さ倍率のおよそ */
   return {
     DEF: med(list.map(f => f.DEF)),
     STR: Math.round(med(list.map(f => f.STR)) * (1 + (dm-1)*0.6)),
@@ -38,8 +39,8 @@ function foeStats(actIdx) {
        敵1体ぶんで割ると効き目を大きく見積もってしまう */
     encHP: (() => {
       const tot = [];
-      Object.values(DUNGEONS).forEach(d => {
-        const A = d.acts[actIdx]; if (!A) return;
+      Object.values(AREAS).forEach(A => {
+        if ((A.tier||1) !== actIdx+1) return;
         ["solo","easy","norm","hard"].forEach(sl => (A[sl]||[]).forEach(e => {
           const L = ENCS[e] ? ENCS[e].list : [];
           if (L.length) tot.push(L.reduce((a,k)=>a+(FOE[k]?FOE[k].HP:0),0));

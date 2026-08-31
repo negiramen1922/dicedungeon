@@ -923,7 +923,7 @@ index.html
 |---|---|
 | `runs` `best` | 大きいほう |
 | `codex` `rooms` | 鍵ごとに大きいほう（戦った数） |
-| `mats` `seen` | 片方でも印が付いていれば付く |
+| `mats` `seen` `areas` | 片方でも印が付いていれば付く |
 | `elem` | 敵ごとに `{weak,resist}` を混ぜる |
 | `hall` | 両方を混ぜ、`t`（記録した時刻）で重複を落とし、新しい50件 |
 | `newsSeen` | `NEWS` の並びで新しいほう |
