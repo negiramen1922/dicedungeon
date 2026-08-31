@@ -397,6 +397,7 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .wmt{font-size:3.4px;fill:var(--bone);letter-spacing:.02em}
 .wmt.unk{fill:#4d5346}
 .wmd{font-size:2.6px;fill:var(--ink);letter-spacing:.04em}
+.wmd.wip{fill:#8a7f5a;letter-spacing:.12em}
 .wmn.go{cursor:pointer}
 .wmn.go:hover circle{stroke:#e9c46a}
 .wmwrap{margin:0 auto;max-width:560px}
@@ -914,7 +915,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0014";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0015";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1050,14 +1051,14 @@ const BGM={
   codex :"オルゴールファンタジー.mp3",        /* 図鑑 */
   boss  :"深域で待つもの.mp3",              /* ボス戦 */
   plain :"PerituneMaterial_Wonder2_loop.mp3",   /* 原始の草原 */
-  forest:"樹木の息吹.mp3",                      /* 世界樹の森 */
+  seed  :"樹木の息吹.mp3",                      /* 実生の森 */
   /* 苔むした洞窟・水没した回廊・水没都市アトランティスは まだ曲がない */
 };
 /* 設定画面に出す曲名。BGM に無い場面は無音 */
 const BGMN={
   home:"遥かなる伝説", hall:"そろそろ帰ろっと！", result:"そろそろ帰ろっと！",
   codex:"オルゴールファンタジー", boss:"深域で待つもの",
-  plain:"Wonder2", forest:"樹木の息吹",
+  plain:"Wonder2", seed:"樹木の息吹",
 };
 const Music=(()=>{
   let el=null, now=null, want=null, on=true, vol=.5, tok=0;
@@ -4852,47 +4853,61 @@ const ENCS={
      to    ボスを抜けたときに入口が見つかりうる先
      start 出発点にできる区画。文言はその難しさの目安
      art   潜る場所を選ぶ画面の情景（PXDUN の鍵）
+     wip   中身がまだ無い区画。地図には出るが降りられない
 
    つながり
-     原始の草原 ─┬→ 世界樹の森（いまは行き止まり）
+     原始の草原 ─┬→ 実生の森 ─┬→ 世界樹の森 → 夜空の洞窟
+                 │             └→ 魔法の森
                  └→ 苔むした洞窟 → 水没した回廊 → 水没都市アトランティス   */
 /* x,y は世界地図の上の位置（0〜100）。y が大きいほど深い。
-   land は情景の描き分け。grass / forest / cave / water */
+   左が森の道、右が水の道。land は情景の描き分け。grass / forest / cave / water */
 const AREAS={
  plain:{n:"原 始 の 草 原",tier:1,art:"plains",start:"はじめての潜行",
-   x:16,y:34,land:"grass",
+   x:50,y:14,land:"grass",
    d:"腰まで伸びた草。風が渡るたび、何かが動く。",
-   to:["forest","cave"],
+   to:["seed","cave"],
    solo:["p_sl","p_rb","p_gb","p_wf"],
    easy:["p_rb2","p_sl2","p_gr","p_gg"],
    norm:["p_wf2","p_gw","p_bo","p_rb3"],
    hard:["p_bo2","p_hard","p_wf2"],
    elite:["p_bo2","p_hard"], boss:"pb1"},
- forest:{n:"世 界 樹 の 森",tier:2,art:"plains",
-   x:40,y:14,land:"forest",
-   d:"陽が届かない。木そのものが動くという。",
-   to:[],
+ seed:{n:"実 生 の 森",tier:2,art:"plains",
+   x:26,y:37,land:"forest",
+   d:"世界樹から落ちた種が芽吹いた森。まだ陽が届く。",
+   to:["wtree","magic"],
    solo:["f_me","f_or","f_md"],
    easy:["f_me2","f_mm","f_or"],
    norm:["f_or2","f_om","f_be","f_tr"],
    hard:["f_bm","f_to","f_hard"],
    elite:["f_to","f_hard"], boss:"pb2"},
+ wtree:{n:"世 界 樹 の 森",tier:3,art:"plains",wip:true,
+   x:13,y:59,land:"forest",
+   d:"陽が届かない。木そのものが動くという。",
+   to:["night"]},
+ magic:{n:"魔 法 の 森",tier:3,art:"plains",wip:true,
+   x:39,y:60,land:"forest",
+   d:"",
+   to:[]},
+ night:{n:"夜 空 の 洞 窟",tier:4,art:"atlantis",wip:true,
+   x:17,y:82,land:"cave",
+   d:"",
+   to:[]},
  cave:{n:"苔 む し た 洞 窟",tier:2,art:"atlantis",start:"腕に覚えのある者へ",
-   x:44,y:52,land:"cave",
+   x:72,y:37,land:"cave",
    d:"外縁の掘削跡。湿った岩肌と苔。人の手が入った最後の場所。",
    to:["hall"],
    solo:["s_sl","s_gb","s_rt","s_ga"],
    easy:["gb1","sl1","gb2"], norm:["rt1","gr1","gs1","gb2"], hard:["hb1","sh2","hb2"],
    elite:["sh1","hb2"], boss:"b1"},
  hall:{n:"水 没 し た 回 廊",tier:3,art:"atlantis",
-   x:68,y:70,land:"water",
+   x:72,y:59,land:"water",
    d:"切り出した石が整然と並ぶ。作られたものが番をしている。",
    to:["city"],
    solo:["s_bt","s_ls","s_gg2"],
    easy:["bt1","ls1","ls2"], norm:["gg1","bt1","tr1","ls2"], hard:["gg2","gl1","gl2"],
    elite:["gl2","gl3"], boss:"b2"},
  city:{n:"水没都市アトランティス",tier:4,art:"atlantis",
-   x:88,y:88,land:"water",
+   x:72,y:82,land:"water",
    d:"かつて栄えた地下都市。水が満ち、住人だったものが残っている。",
    to:[],
    solo:["s_sk","s_sa","s_wr"],
@@ -4911,21 +4926,24 @@ const LANDC={
   cave  :{a:"#4a4232",b:"#6b5a3a"},
   water :{a:"#25414f",b:"#2f5566"},
 };
+/* 名前がわかっている区画。最後まで抜けた場所と、
+   はじめから選べる入口（作成画面で名前を見ている）は知っている扱い */
+function areaKnown(k){ return !!META.areas[k]||!!(AREAS[k]&&AREAS[k].start); }
 function worldMap(mode,pick){
   const seen=(RUN&&RUN.seen)||[];
-  const known=k=>(mode==="home")?!!META.areas[k]
-    :(seen.includes(k)||(pick||[]).some(w=>w.key===k));
+  const known=k=>areaKnown(k)||(mode!=="home"&&seen.includes(k))
+    ||(pick||[]).some(w=>w.key===k);
   const here=(RUN&&!RUN.over&&mode!=="home")?RUN.area:null;
   const canGo=k=>(pick||[]).some(w=>w.key===k);
 
   let h=`<svg viewBox="0 0 100 100" class="wmsvg">
-    <defs><linearGradient id="wmg" x1="0" y1="0" x2="0.3" y2="1">
-      <stop offset="0" stop-color="#3a4a30"/><stop offset=".42" stop-color="#2e3a2a"/>
-      <stop offset=".70" stop-color="#26333a"/><stop offset="1" stop-color="#1b2a33"/>
+    <defs><linearGradient id="wmg" x1="0" y1="0" x2="0.25" y2="1">
+      <stop offset="0" stop-color="#3d4d31"/><stop offset=".40" stop-color="#33402c"/>
+      <stop offset=".72" stop-color="#2a3328"/><stop offset="1" stop-color="#222a24"/>
     </linearGradient></defs>
     <rect x="0" y="0" width="100" height="100" fill="url(#wmg)"/>
-    <path d="M0 60 Q 25 55 48 62 T 100 66 L100 100 L0 100 Z" fill="#20323c" opacity=".7"/>
-    <path d="M0 76 Q 30 72 55 78 T 100 82 L100 100 L0 100 Z" fill="#1a2b35" opacity=".8"/>`;
+    <path d="M46 100 Q 50 58 62 46 Q 82 40 100 46 L100 100 Z" fill="#20323c" opacity=".65"/>
+    <path d="M56 100 Q 60 73 70 63 Q 87 57 100 61 L100 100 Z" fill="#1a2b35" opacity=".8"/>`;
   /* 道 */
   Object.keys(AREAS).forEach(k=>{
     const A=AREAS[k];
@@ -4940,7 +4958,7 @@ function worldMap(mode,pick){
   /* 区画 */
   Object.keys(AREAS).forEach(k=>{
     const A=AREAS[k], c=LANDC[A.land]||LANDC.grass;
-    const kn=known(k), go=canGo(k), cu=(k===here);
+    const kn=known(k)||A.wip, go=canGo(k), cu=(k===here);
     const r=cu?5.4:(go?5:4.2);
     h+=`<g class="wmn ${go?"go":""}" ${go?`data-w="${k}"`:""}>`;
     if(go)h+=`<circle cx="${A.x}" cy="${A.y}" r="${r+3}" fill="none"
@@ -4948,12 +4966,14 @@ function worldMap(mode,pick){
       values="${r+2.4};${r+4.6};${r+2.4}" dur="2s" repeatCount="indefinite"/></circle>`;
     if(cu)h+=`<circle cx="${A.x}" cy="${A.y}" r="${r+2.6}" fill="none"
       stroke="#e9e4d4" stroke-width=".7"/>`;
-    h+=`<circle cx="${A.x}" cy="${A.y}" r="${r}" fill="${kn?c.b:"#2b2f26"}"
+    h+=`<circle cx="${A.x}" cy="${A.y}" r="${r}" fill="${A.wip?"#33362c":(kn?c.b:"#2b2f26")}"
         stroke="${cu?"#e9e4d4":(go?"#c9a227":(kn?c.a:"#3a3f34"))}"
-        stroke-width="${(cu||go)?1.1:.7}"/>`;
+        stroke-width="${(cu||go)?1.1:.7}"
+        stroke-dasharray="${A.wip?"1.6 1.4":""}" opacity="${A.wip?.75:1}"/>`;
     h+=`<text x="${A.x}" y="${A.y+r+5}" class="wmt ${kn?"":"unk"}" text-anchor="middle">${
       kn?A.n.replace(/ /g,""):"？ ？ ？"}</text>`;
-    if(kn)h+=`<text x="${A.x}" y="${A.y+r+9.2}" class="wmd" text-anchor="middle">第${A.tier}階層</text>`;
+    if(kn)h+=`<text x="${A.x}" y="${A.y+r+9.2}" class="wmd ${A.wip?"wip":""}"
+      text-anchor="middle">${A.wip?"開発中":`第${A.tier}階層`}</text>`;
     h+=`</g>`;
   });
   return h+`</svg>`;
@@ -4976,7 +4996,7 @@ function routeFrom(k,seen){
   if(!AREAS[k]||seen.includes(k))return [];
   seen.push(k);
   const out=[AREAS[k].n];
-  const nx=(AREAS[k].to||[]).filter(x=>!seen.includes(x));
+  const nx=(AREAS[k].to||[]).filter(x=>!seen.includes(x)&&!AREAS[x].wip);
   if(nx.length)out.push(...routeFrom(nx[0],seen));
   return out;
 }
@@ -4984,7 +5004,7 @@ function routeFrom(k,seen){
    つながっている先のうち、まだ通っていないものが候補。
    見つからなければそこが終点（踏破）。 */
 function findEntrances(){
-  const pool=(areaOf().to||[]).filter(k=>AREAS[k]&&!RUN.seen.includes(k));
+  const pool=(areaOf().to||[]).filter(k=>AREAS[k]&&!AREAS[k].wip&&!RUN.seen.includes(k));
   if(!pool.length)return [];
   if(pool.length===1)return [{key:pool[0],a:AREAS[pool[0]]}];
   /* 道が2本あるときは、両方見つかることもあれば片方だけのこともある */
@@ -5249,7 +5269,8 @@ function gateModal(ways){
       <span class="rcat">${same?"同じ道の先":"別 の 場 所"}</span>
       <span class="an">${w.a.n}</span>
       <span class="ad">${w.a.d||""}</span>
-      <span class="rmeta">第 ${w.a.tier} 階層　${(w.a.to||[]).length?"さらに先へ続く":"ここが行き止まり"}</span>
+      <span class="rmeta">第 ${w.a.tier} 階層　${
+        (w.a.to||[]).some(t=>AREAS[t]&&!AREAS[t].wip)?"さらに先へ続く":"ここが行き止まり"}</span>
     </button>`;});
   h+=`</div>`;
   openModal(h);
@@ -5265,14 +5286,15 @@ function gateModal(ways){
 /* 世界地図だけを見せる窓。家からも探索中からも開く */
 function worldModal(back){
   const mode=(RUN&&!RUN.over&&RUN.area)?"run":"home";
-  const n=Object.keys(AREAS).filter(k=>META.areas[k]).length;
+  const live=Object.keys(AREAS).filter(k=>!AREAS[k].wip);
+  const n=live.filter(k=>META.areas[k]).length;
   let h=`<div class="mtitle">世 界 地 図</div>
     <div class="wmwrap">${worldMap(mode)}</div>
     <div class="wmnote">${mode==="run"
       ? `いまは <b style="color:var(--bone)">${areaOf().n}</b>　この周で ${
           (RUN.seen||[]).length} 区画目`
-      : `踏み入れた場所 ${n} / ${Object.keys(AREAS).length}`}
-      <br>行ったことのない場所は伏せてある</div>
+      : `抜けた場所 ${n} / ${live.length}`}
+      <br>最後まで抜けていない場所は名前が伏せてある</div>
     <button class="mclose" id="wmClose">${back?"もどる":"閉じる"}</button>`;
   openModal(h,true);
   $("#wmClose").onclick=()=>{if(back){closeModal();back();}else closeModal();};
@@ -5282,7 +5304,6 @@ function enterArea(key,quiet){
   RUN.area=key;
   RUN.seen=RUN.seen||[];
   if(!RUN.seen.includes(key))RUN.seen.push(key);
-  META.areas[key]=true;touchMeta();
   RUN.curKey=null;RUN.cur=null;
   if(ORIG[sel.orig]&&ORIG[sel.orig].actFull){me.HP=me.maxHP;me.MP=me.maxMP;}
   RUN.M=genAct(AREAS[key]);RUN.preview=null;
@@ -6624,6 +6645,11 @@ function nextStage(){
     me.HP+=h;me.MP=me.maxMP;
     const ways=findEntrances();
     const cleared=`${areaOf().n} を抜けた`;
+    /* 最後まで抜けて、はじめてこの場所の名前が地図に残る */
+    const firstTime=!areaKnown(RUN.area);
+    META.areas[RUN.area]=true;touchMeta();
+    if(firstTime)out.push(
+      `<span class="gain">${areaOf().n}</span> の名を知った　<span class="s">（世界地図に残る）</span>`);
     if(!ways.length){
       /* 行ける先が見つからない。ここが終点 */
       drawFloor();showScreen("floor");

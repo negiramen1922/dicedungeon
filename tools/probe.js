@@ -118,8 +118,15 @@ function check(api) {
       (a[slot]||[]).forEach(x => {
         if (!api.ENCS[x]) add(`AREAS.${ak}.${slot}: 遭遇 ${x} がない`);
       }));
-    if (!api.ENCS[a.boss]) add(`AREAS.${ak}.boss: 遭遇 ${a.boss} がない`);
-    used.add(a.boss);
+    /* wip の区画はまだ中身が無い。空であることのほうを確かめる */
+    if (a.wip) {
+      ["solo","easy","norm","hard","elite","boss"].forEach(slot => {
+        if (a[slot]) add(`AREAS.${ak}: 開発中なのに ${slot} が入っている`);
+      });
+    } else {
+      if (!api.ENCS[a.boss]) add(`AREAS.${ak}.boss: 遭遇 ${a.boss} がない`);
+      used.add(a.boss);
+    }
     ["solo","easy","norm","hard","elite"].forEach(slot =>
       (a[slot]||[]).forEach(x => used.add(x)));
     (a.to||[]).forEach(t => {
