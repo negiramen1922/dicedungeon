@@ -1,0 +1,48 @@
+rules_version = '2';
+
+/* ダイスダンジョン ―― 記録の置き場のきまり
+
+   ここが唯一の防壁。ブラウザ側のコード（index.html の firebaseConfig）は
+   誰でも読めるので守りにはならない。守っているのはこのファイル。
+
+   決めていること
+     ・自分の users/{uid} だけ読み書きできる。他人のものには触れない
+     ・一覧（list）は誰にも許さない。uid を総なめされないため
+     ・形が違うもの、大きすぎるものは受け取らない
+
+   直したら必ず配ること：  firebase deploy --only firestore:rules          */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedInAs(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    /* 送られてくる形の見張り。壊れたものや無闇に大きいものを弾く */
+    function wellFormed() {
+      let d = request.resource.data;
+      let m = d.meta;
+      return d.keys().hasOnly(['v', 'meta', 'at'])
+          && d.v is number
+          && d.meta is map
+          && m.keys().hasOnly(
+               ['codex','rooms','elem','mats','seen','hall','runs','best','tutSeen','newsSeen'])
+          && (!m.keys().hasAny(['hall']) || (m.hall is list && m.hall.size() <= 50))
+          && (!m.keys().hasAny(['runs']) || m.runs is number)
+          && (!m.keys().hasAny(['best']) || m.best is number);
+    }
+
+    match /users/{uid} {
+      allow get:            if signedInAs(uid);
+      allow list:           if false;          /* 誰の記録があるかは見せない */
+      allow create, update: if signedInAs(uid) && wellFormed();
+      allow delete:         if signedInAs(uid);
+    }
+
+    /* ほかは全部だめ。書き忘れたパスが素通りしないように最後で閉じる */
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

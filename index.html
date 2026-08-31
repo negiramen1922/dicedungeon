@@ -718,6 +718,9 @@ body.play .fh1{padding-right:62px}
   color:var(--ink);font-family:inherit;font-size:11px;letter-spacing:.08em;
   padding:5px 10px;cursor:pointer}
 .setrec button:hover{border-color:var(--blood);color:var(--blood)}
+/* 赤くするのは「記録を消す」だけ。同期のボタンは壊す操作ではない */
+#setCloud button{margin-right:6px}
+#setCloud button:hover{border-color:var(--brass);color:var(--brass)}
 .setver{display:flex;justify-content:space-between;font-size:11px;color:var(--ink);
   letter-spacing:.08em;margin-top:9px}
 .setver b{color:var(--dim);font-weight:600;letter-spacing:.04em}
@@ -754,6 +757,7 @@ body.play .fh1{padding-right:62px}
     <input type="range" id="sBgm" min="0" max="100" step="5" aria-label="BGMの音量"></div>
   <div class="setnow" id="setNow"></div>
   <div class="setrec" id="setRec"></div>
+  <div class="setrec" id="setCloud"></div>
   <div class="setver"><span>ダイスダンジョン</span><b id="setVer">—</b></div>
   <button class="mclose" id="setClose" style="width:100%;margin-top:13px">閉 じ る</button>
 </div></div>
@@ -859,6 +863,13 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0007c",tag:"up",v:"α0.0007",d:"2026-08-31",n:"記録をクラウドに置けるようにした",b:[
+   "図鑑・殿堂・到達階層を <b>クラウドに保存</b> できるようにしました。<b>Google と連携すると、別の端末でも同じ記録の続き</b>が遊べます",
+   "ログインの操作は要りません。開いた時点で名無しのまま保存が始まり、あとから歯車の中で連携できます",
+   "<b>端末の中が主で、クラウドはその写し</b>です。通信が切れていても、設定していなくても、これまでどおり遊べます",
+   "2台で別々に遊んでいても記録は消えません。数は大きいほう、見つけたものは付いているほう、殿堂は両方を混ぜて新しい50件を残します",
+   "歯車の中で、いま同期しているかどうかと最後に同期した時刻が見られます",
+ ]},
  {id:"v0007",tag:"up",v:"α0.0007",d:"2026-08-31",n:"幸運を足した",b:[
    "<b>幸運</b> を能力に加えました。0〜100 の百分率で、判定はいつも <b>1d100</b> です",
    "幸運は職業・種族・欲望のどれにも属しません。<b>キャラを作るときに 2d6×2（4〜24）を振って決まります</b>。レベルでは伸びず、<b>あとから動かせるのは装備だけ</b>です",
@@ -4079,6 +4090,10 @@ const MKEY="dd.meta";
 const MVER=1;                /* 中身の形を変えたら上げる。読み込み側で移行する */
 const HALLMAX=50;            /* 殿堂は増え続けるので上限を置く。古いものから捨てる */
 let metaTimer=null, metaBroken=false;
+/* クラウド保存への差し込み口。Cloud が用意できたら中身が入れ替わる。
+   Firebase を設定していない・つながらないときは何もしない空のままで、
+   ゲームはこれまでどおり端末内(localStorage)だけで動く。 */
+const CloudHook={mark(){},flush(){}};
 
 function metaLoad(){
   let raw;
@@ -4108,6 +4123,7 @@ function metaWrite(){
       seen:META.seen,hall:META.hall,runs:META.runs,best:META.best,
       tutSeen:META.tutSeen,newsSeen:META.newsSeen}));
   }catch(e){ metaBroken=true; }   /* 容量切れなど。以降は諦めて遊べるようにする */
+  CloudHook.mark();               /* クラウドへは間を置いてまとめて送る */
 }
 /* 記録が変わったら呼ぶ。まとめて少し後で書く（1戦で何度も呼ばれるため） */
 function touchMeta(){
@@ -4115,7 +4131,7 @@ function touchMeta(){
   metaTimer=setTimeout(metaWrite,400);
 }
 /* 書く前に閉じられても落とさない */
-function metaFlush(){ if(metaTimer){clearTimeout(metaTimer);metaWrite();} }
+function metaFlush(){ if(metaTimer){clearTimeout(metaTimer);metaWrite();} CloudHook.flush(); }
 function metaClear(){
   META.codex={};META.rooms={};META.elem={};META.mats={};META.seen={};
   META.hall=[];META.runs=0;META.best=0;
@@ -4123,7 +4139,269 @@ function metaClear(){
      消すと毎回チュートリアルに戻され、読んだお知らせがまた未読になって煩わしい */
   metaTimer&&clearTimeout(metaTimer);metaTimer=null;
   metaWrite();
+  CloudHook.flush();              /* 消したことはすぐクラウドにも伝える */
 }
+
+/* ---- 記録の統合 ----
+   2台で別々に遊んでいることがある。どちらかを捨てるのではなく、
+   数は大きいほう、印は付いているほう、殿堂は両方を混ぜて拾う。
+   クラウドから取ってきたものを、いま端末にあるものへ混ぜ込む。      */
+const metaMax=(a,b)=>Math.max(Number(a)||0,Number(b)||0);
+function metaMergeCount(a,b){          /* 戦った数など。大きいほうを採る */
+  const o={...(a||{})};
+  Object.keys(b||{}).forEach(k=>{o[k]=Math.max(Number(o[k])||0,Number(b[k])||0);});
+  return o;
+}
+function metaMergeFlag(a,b){           /* 見た・持ったの印。片方でも付いていれば付く */
+  const o={...(a||{})};
+  Object.keys(b||{}).forEach(k=>{if(b[k])o[k]=true;});
+  return o;
+}
+function metaMergeElem(a,b){           /* elem は {敵:{weak:…,resist:…}} の入れ子 */
+  const o={};
+  new Set([...Object.keys(a||{}),...Object.keys(b||{})]).forEach(k=>{
+    o[k]={...(((b||{})[k])||{}),...(((a||{})[k])||{})};
+  });
+  return o;
+}
+function metaMergeHall(a,b){           /* 殿堂は両方を混ぜ、同じ一件は一度だけ */
+  const seen=new Set(), out=[];
+  [].concat(a||[],b||[]).forEach(h=>{
+    if(!h||typeof h!=="object")return;
+    const k=h.t!=null?"t"+h.t:"j"+JSON.stringify(h);   /* t が無いのは古い記録 */
+    if(seen.has(k))return;
+    seen.add(k);out.push(h);
+  });
+  out.sort((x,y)=>(x.t||0)-(y.t||0));
+  return out.slice(-HALLMAX);
+}
+function metaNewerNews(a,b){           /* NEWS は先頭が新しい。番号が小さいほうを採る */
+  const ix=v=>{const i=NEWS.findIndex(x=>x.id===v);return i<0?Infinity:i;};
+  return ix(a)<=ix(b)?a:b;
+}
+function metaSnapshot(){
+  return {codex:META.codex,rooms:META.rooms,elem:META.elem,mats:META.mats,
+    seen:META.seen,hall:META.hall,runs:META.runs,best:META.best,
+    tutSeen:META.tutSeen,newsSeen:META.newsSeen};
+}
+function metaMerge(r){
+  if(!r||typeof r!=="object")return;
+  META.codex=metaMergeCount(META.codex,r.codex);
+  META.rooms=metaMergeCount(META.rooms,r.rooms);
+  META.elem =metaMergeElem (META.elem ,r.elem);
+  META.mats =metaMergeFlag (META.mats ,r.mats);
+  META.seen =metaMergeFlag (META.seen ,r.seen);
+  META.hall =metaMergeHall (META.hall ,r.hall);
+  META.runs =metaMax(META.runs,r.runs);
+  META.best =metaMax(META.best,r.best);
+  META.tutSeen =META.tutSeen||!!r.tutSeen;
+  META.newsSeen=metaNewerNews(META.newsSeen,r.newsSeen);
+  metaWrite();
+  /* 開いている画面は描き直す。数字が黙って古いままなのがいちばん困る */
+  try{
+    if(!$("#home").classList.contains("hide"))drawHome();
+    drawMail();
+  }catch(e){}
+}
+
+/* ---------- クラウド保存（Firebase） ----------
+   端末内(localStorage)を主、クラウドをその写しとして扱う。
+   通信が死んでいても、Firebase を設定していなくても、
+   ゲームは今までどおり動く ―― この一線は崩さない。
+
+   ■ 鍵の話（大事）
+     下の firebaseConfig は「公開してよい識別子」で、秘密ではない。
+     誰が誰のものを読み書きできるかを決めているのは firestore.rules のほう。
+     逆に serviceAccountKey.json（firebase-admin が使うやつ）は
+     全データを無条件に読み書きできる鍵なので、ここには絶対に書かない。
+     あれはサーバー（Cloud Functions など）専用で、
+     ブラウザに置いた時点で誰でも全ユーザーのデータを消せるようになる。
+
+   ■ ログイン
+     起動したら黙って匿名でサインインする。押す操作は要らない。
+     あとから「Google と連携」を押せば、同じ記録のまま別の端末で続けられる。
+
+   ■ 置き場所
+     Firestore の users/{uid} に META をまるごと1件。
+     形は  { v:MVER, meta:{...}, at:サーバー時刻 }。
+
+   設定のしかたは FIREBASE.md に書いてある。                           */
+const FBVER="12.18.0";        /* 読み込む Firebase Web SDK の版。上げるならここだけ */
+const FIREBASE_CONFIG={
+  /* Firebase コンソール → プロジェクトの設定 → マイアプリ（ウェブ）から
+     そのまま貼る。空のままならクラウド保存は動かず、端末内だけに残る。 */
+  apiKey:"",
+  authDomain:"",
+  projectId:"",
+  storageBucket:"",
+  messagingSenderId:"",
+  appId:"",
+};
+const CKEY="dd.cloud";        /* 覚えるのは「自分でサインアウトしたか」だけ */
+const PUSHWAIT=8000;          /* 書き込みをまとめる間（ミリ秒） */
+
+const Cloud=(()=>{
+  let F=null;                 /* 読み込んだ Firebase の入れ物 */
+  let auth=null, db=null, user=null;
+  let state="off";            /* off / loading / anon / user / out / error */
+  let err="", syncedAt=0;
+  let pushTimer=null, pushing=false, dirty=false, started=false;
+  const watchers=[];
+
+  const fire=()=>watchers.forEach(f=>{try{f();}catch(e){}});
+  const set=(s,e)=>{state=s;err=e||"";fire();};
+  const configured=()=>!!(FIREBASE_CONFIG.apiKey&&FIREBASE_CONFIG.projectId);
+  const offPref=()=>{try{return localStorage.getItem(CKEY)==="off";}catch(e){return false;}};
+  const setOff=v=>{try{v?localStorage.setItem(CKEY,"off"):localStorage.removeItem(CKEY);}catch(e){}};
+
+  /* Firebase の言い分を、そのまま出しても分からないので言い換える */
+  function msgOf(e){
+    const c=(e&&e.code)||"";
+    if(c==="sdk/load-failed")return e.message;
+    if(/popup-blocked/.test(c))return "ログインの窓が塞がれた。ブラウザで許可する";
+    if(/popup-closed|cancelled-popup/.test(c))return "ログインの窓が閉じられた";
+    if(/unauthorized-domain/.test(c))
+      return "この場所からのログインが許されていない。Firebase の Authentication → 設定 → 承認済みドメイン に足す";
+    if(/operation-not-allowed|admin-restricted/.test(c))
+      return "その入り方が有効になっていない。Firebase の Authentication → Sign-in method で入れる";
+    if(/permission-denied/.test(c))return "書き込みを断られた。firestore.rules を確かめる";
+    if(/unavailable|network-request-failed|deadline/.test(c))return "つながらなかった。あとでまた試す";
+    if(/failed-precondition/.test(c))return "Firestore がまだ作られていないかもしれない";
+    return (e&&(e.message||String(e)))||"わけの分からない不具合";
+  }
+
+  /* SDK は使うときになって初めて取りに行く。読めなくてもゲームは止めない */
+  async function load(){
+    if(F)return F;
+    if(location.protocol==="file:"){
+      const er=new Error("file:// で開いているとクラウド保存は使えない。http(s) で配ること");
+      er.code="sdk/load-failed";throw er;
+    }
+    const base=`https://www.gstatic.com/firebasejs/${FBVER}/`;
+    try{
+      const [a,b,c]=await Promise.all([
+        import(base+"firebase-app.js"),
+        import(base+"firebase-auth.js"),
+        import(base+"firebase-firestore.js"),
+      ]);
+      F={app:a,auth:b,fs:c};        /* 名前がぶつからないように分けて持つ */
+    }catch(e){
+      const er=new Error(`Firebase SDK を読み込めなかった（版 ${FBVER}）。つながりと版を確かめる`);
+      er.code="sdk/load-failed";throw er;
+    }
+    return F;
+  }
+
+  async function start(){
+    if(!configured()){set("off");return;}
+    if(offPref()){set("out");return;}
+    if(state==="loading")return;
+    set("loading");
+    try{
+      const f=await load();
+      if(!auth){
+        const app=f.app.initializeApp(FIREBASE_CONFIG);
+        auth=f.auth.getAuth(app);
+        db=f.fs.getFirestore(app);
+        f.auth.onAuthStateChanged(auth,u=>{
+          user=u||null;
+          if(!user){ set(offPref()?"out":"loading"); return; }
+          set(user.isAnonymous?"anon":"user");
+          sync();                   /* 入れ替わるたびに突き合わせる */
+        });
+        started=true;
+      }
+      if(!auth.currentUser)await f.auth.signInAnonymously(auth);
+      else{ user=auth.currentUser; set(user.isAnonymous?"anon":"user"); }
+    }catch(e){ set("error",msgOf(e)); }
+  }
+
+  async function sync(){
+    if(!user||!db)return;
+    try{
+      const ref=F.fs.doc(db,"users",user.uid);
+      const snap=await F.fs.getDoc(ref);
+      const d=snap.exists()?(snap.data()||{}):null;
+      if(d&&d.meta&&typeof d.meta==="object")metaMerge(d.meta);
+      await pushNow();
+    }catch(e){ set("error",msgOf(e)); }
+  }
+  async function pushNow(){
+    if(!user||!db||pushing)return;
+    pushing=true;dirty=false;
+    try{
+      await F.fs.setDoc(F.fs.doc(db,"users",user.uid),
+        {v:MVER,meta:metaSnapshot(),at:F.fs.serverTimestamp()});
+      syncedAt=Date.now();
+      if(state==="error")set(user.isAnonymous?"anon":"user");
+    }catch(e){ set("error",msgOf(e)); }
+    pushing=false;fire();
+    if(dirty)schedule();
+  }
+  function schedule(){
+    if(!user||!db)return;
+    dirty=true;
+    if(pushTimer)return;
+    pushTimer=setTimeout(()=>{pushTimer=null;pushNow();},PUSHWAIT);
+  }
+  function flush(){
+    if(pushTimer){clearTimeout(pushTimer);pushTimer=null;}
+    if(user&&db)pushNow();
+  }
+
+  async function linkGoogle(){
+    if(!configured())return;
+    try{
+      setOff(false);
+      const f=await load();
+      if(!auth)await start();
+      if(!auth)return;
+      const prov=new f.auth.GoogleAuthProvider();
+      if(auth.currentUser&&auth.currentUser.isAnonymous){
+        try{
+          await f.auth.linkWithPopup(auth.currentUser,prov);
+        }catch(e){
+          /* その Google はもう別の記録を持っている。
+             そちらへ移り、この端末の記録を混ぜ込む（捨てない）。 */
+          const known=e&&(e.code==="auth/credential-already-in-use"
+                        ||e.code==="auth/email-already-in-use");
+          const cred=known&&f.auth.GoogleAuthProvider.credentialFromError(e);
+          if(!cred)throw e;
+          await f.auth.signInWithCredential(auth,cred);
+        }
+      }else{
+        await f.auth.signInWithPopup(auth,prov);
+      }
+      await sync();
+    }catch(e){ set("error",msgOf(e)); }
+  }
+  async function signOut(){
+    try{
+      if(dirty)await pushNow();
+      setOff(true);
+      if(auth&&F)await F.auth.signOut(auth);
+      user=null;set("out");
+    }catch(e){ set("error",msgOf(e)); }
+  }
+  async function signIn(){ setOff(false); await start(); }
+
+  /* 画面を閉じる直前に、溜めていたぶんを投げておく（届かないこともある） */
+  document.addEventListener("visibilitychange",()=>{
+    if(document.visibilityState==="hidden"&&dirty)pushNow();
+  });
+  window.addEventListener("pagehide",()=>{if(dirty)pushNow();});
+
+  CloudHook.mark=schedule;
+  CloudHook.flush=flush;
+
+  return {
+    start,signIn,signOut,linkGoogle,sync,flush,
+    on:f=>watchers.push(f),
+    info:()=>({state,err,syncedAt,configured:configured(),
+      who:user?(user.isAnonymous?"":(user.email||user.displayName||user.uid.slice(0,6))):"",
+      uid:user?user.uid:""}),
+  };
+})();
 metaLoad();
 let RUN=null, curScreen="home";
 
@@ -5129,6 +5407,7 @@ function endRun(cleared){
   const depth=RUN.act+1;
   if(depth>META.best)META.best=depth;
   META.hall.push({
+    t:Date.now(),               /* 統合のときの目印。同じ一件を二重に持たないため */
     no:META.runs, cleared, depth,
     dun:DUNGEONS[sel.dun].n, acts:DUNGEONS[sel.dun].acts.length,
     job:sel.job, race:sel.race, orig:sel.orig,
@@ -5139,7 +5418,8 @@ function endRun(cleared){
     gold:me.gold, kills:Object.values(META.codex).reduce((a,b)=>a+b,0),
   });
   if(META.hall.length>HALLMAX)META.hall=META.hall.slice(-HALLMAX);
-  metaTimer&&clearTimeout(metaTimer);metaTimer=null;metaWrite();  /* 1周の終わりは確実に残す */
+  metaTimer&&clearTimeout(metaTimer);metaTimer=null;metaWrite();
+  CloudHook.flush();               /* 1周の終わりは端末にもクラウドにも確実に残す */
   drawEnd();showScreen("floor");window.scrollTo(0,0);
 }
 function drawEnd(){
@@ -6250,6 +6530,49 @@ function drawSet(){
         :`いまの場面に曲は入っていない`);
   $("#setVer").textContent=VERSION;
   drawRec();
+  drawCloud();
+}
+/* 記録をクラウドに置く話 */
+function drawCloud(){
+  const el=$("#setCloud");if(!el)return;
+  const c=Cloud.info();
+  const when=c.syncedAt
+    ? `<span style="color:var(--ink)">　最後の同期 ${
+        new Date(c.syncedAt).toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"})}</span>`
+    : "";
+  const btn=(id,t)=>`<button id="${id}">${t}</button>`;
+  let h="";
+  if(!c.configured){
+    h=`記録は<b>この端末だけ</b>　<span style="color:var(--ink)">クラウド保存は未設定`+
+      `（<b>FIREBASE.md</b> の手順で firebaseConfig を入れると使える）</span>`;
+  }else if(c.state==="loading"){
+    h=`<b>つないでいる…</b>`;
+  }else if(c.state==="anon"){
+    h=`<b>クラウドに保存中</b>${when}<br>`+
+      `<span style="color:var(--ink)">いまは この端末だけの名無しの記録。`+
+      `Google と連携すると 別の端末でも続きが遊べる</span><br>`+
+      btn("cLink","Google と連携する")+btn("cSync","今すぐ同期")+btn("cOut","同期をやめる");
+  }else if(c.state==="user"){
+    h=`<b>クラウドに保存中</b>　<span style="color:var(--ink)">${c.who}</span>${when}<br>`+
+      btn("cSync","今すぐ同期")+btn("cOut","サインアウト");
+  }else if(c.state==="out"){
+    h=`記録は<b>この端末だけ</b>　<span style="color:var(--ink)">同期を止めている`+
+      `（端末内の記録はそのまま残っている）</span><br>`+
+      btn("cIn","同期を始める")+btn("cLink","Google でサインイン");
+  }else if(c.state==="error"){
+    h=`<span class="warn">クラウドに繋がっていない</span><br>`+
+      `<span style="color:var(--ink)">${c.err}</span><br>`+
+      `<span style="color:var(--ink)">記録は端末内に残っているので遊ぶぶんには困らない</span><br>`+
+      btn("cIn","もう一度つなぐ");
+  }else{
+    h=`記録は<b>この端末だけ</b>`;
+  }
+  el.innerHTML=h;
+  const go=(id,f)=>{const b=$("#"+id);if(b)b.onclick=()=>{SFX.click();f();};};
+  go("cLink",()=>Cloud.linkGoogle());
+  go("cSync",()=>Cloud.sync());
+  go("cOut", ()=>Cloud.signOut());
+  go("cIn",  ()=>Cloud.signIn());
 }
 /* 記録の状態と、消す道 */
 function drawRec(){
@@ -6314,6 +6637,8 @@ $("#newsClose").onclick=closeNews;
 $("#newswrap").onclick=e=>{if(e.target.id==="newswrap")closeNews();};
 drawMail();
 
+Cloud.on(()=>{ if(!$("#setwrap").classList.contains("hide"))drawCloud(); });
+Cloud.start();                      /* 設定が空なら何も起きない */
 function openSet(){$("#setwrap").classList.remove("hide");drawSet();}
 function closeSet(){$("#setwrap").classList.add("hide");}
 $("#gear").onclick=()=>{SFX.click();openSet();};

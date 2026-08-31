@@ -9,6 +9,13 @@
 
 まだ作っていないものの構想は **[IDEAS.md](IDEAS.md)** に置いてある。
 
+記録をクラウドに置いて端末をまたいで遊べるようにするには
+**[FIREBASE.md](FIREBASE.md)** の手順に沿って設定する。設定しなくても遊べる。
+
+> `serviceAccountKey.json`（`firebase-admin` の鍵）は**このリポジトリにもブラウザにも置かない**。
+> 全データを無条件に読み書きできる鍵で、静的サイトに置けば誰でも使えてしまう。
+> 詳しくは FIREBASE.md の冒頭。
+
 ```
 node tools/probe.js          データの件数を一覧する
 node tools/probe.js --check  データの参照が壊れていないか確かめる

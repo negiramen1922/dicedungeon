@@ -1,0 +1,19 @@
+# ぜったいに置かない・上げない ―――――――――――――――――――
+# firebase-admin のサービスアカウントキー。
+# 全データを無条件に読み書きできる鍵なので、リポジトリにもブラウザにも置かない。
+serviceAccountKey.json
+*-firebase-adminsdk-*.json
+service-account*.json
+.env
+.env.*
+
+# Firebase CLI が置いていくもの
+.firebaserc
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# その他
+node_modules/
+.DS_Store
