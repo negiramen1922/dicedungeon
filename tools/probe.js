@@ -48,6 +48,7 @@ const EXPORTS = [
   "REW", "FOE", "ENCS", "DUNGEONS", "AIL", "ELEM", "ELCYCLE", "EXPNEED", "PCOND",
   "SND", "BGM", "PXFOE", "PXTAG", "PXITEM", "PXMAT", "PXAIL", "PXDUN", "PX",
   "WEIGHT", "GOLD", "ROWS", "COLS", "PATHS", "SKMAX", "PASSMAX", "BAGBASE",
+  "SK", "SKJOB", "SKRACE", "SKORIG", "SKMAXV", "LUKRANK", "CHESTGAIN",
   /* 計算 */
   "elemMul", "perHit", "hitDmg", "dieRate", "statMul", "codexLv",
 ];

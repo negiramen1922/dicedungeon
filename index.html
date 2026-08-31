@@ -850,7 +850,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0008";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0009";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -863,6 +863,18 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0009",tag:"up",v:"α0.0009",d:"2026-08-31",n:"技能値を足した",b:[
+   "能力値とは別に <b>技能値</b> を5つ足しました。<b>探索・射撃・格闘・鍛冶・料理</b>。判定は幸運と同じ <b>1d100</b> で、失敗／成功／ハード／エクストリーム、それに出目1のクリティカルと出目100のファンブルがあります",
+   "技能値は<b>職業・種族・欲望だけ</b>で決まります。能力値からも装備からも来ません",
+   "<b>DEX の役割を減らしました。</b>これまで DEX は 命中・回避・行動順・索敵 の4つを一人で抱えていました。命中は 射撃／格闘 へ、索敵は 探索 へ移り、DEX に残るのは <b>回避と行動順</b> だけになります",
+   "<b>遠距離と近距離に腕前の差が生まれます。</b>これまで違いは「後列を狙えるか」だけでした。いまはナイトが弓を持つと当たらず、アーチャーが短剣を持っても当たりません",
+   "<b>索敵のやり方を変えました。</b>両者が d6 を撒いて差を取る形をやめ、探索の 1d100 ひと振りにしました。これまでは誰がやっても上限の +3 が出ていて、索敵の値が意味を持っていませんでした",
+   "<b>こしらえるときに技能を振ります。</b>成功の段階で品質が上がります。料理は取れる数が増え（成功1／上物2／業物3／会心4）、鍛冶は装備の性能そのものが上がります（＋1.15倍／＋1.3倍／★1.5倍）",
+   "失敗しても<b>素材は手元に残ります</b>（加工賃だけ失う）。素材まで持っていかれるのはファンブルのときだけです",
+ ]},
+ {id:"v0008f",tag:"fix",v:"α0.0009",d:"2026-08-31",n:"敵を盲目にしても効いていなかった",b:[
+   "命中閾値の式が3箇所にコピーされていて、そのうち<b>敵が攻撃するときの1箇所が盲目を読んでいませんでした</b>。「甘い囁き」で敵を盲目にしても命中が下がっていませんでした。3箇所を1つにまとめて直しました",
+ ]},
  {id:"v0008",tag:"bal",v:"α0.0008",d:"2026-08-31",n:"スカウトを引き上げ、硬さを削った",b:[
    "<b>スカウトが弱すぎました。</b>成長が DEX 中心なのに短剣系の威力は STR 依存で、レベルを上げても威力がほとんど伸びていませんでした。Lv10 での火力は平均の 57%、エルフでは 44% でした",
    "<b>スカウトの成長を STR 寄りにしました</b>（DEX5 STR2 VIT2 → STR4 DEX3 VIT2）。<b>元の STR も 26 → 30</b> に上げ、1レベル目から効くようにしました",
@@ -2240,61 +2252,69 @@ const GEAR={
 };
 
 /* ---------- 技 能 値 ----------
-   能力値（STR/DEX/INT/VIT/DEF）とは別に持つ、4つの心得。
-   探索の事象で「どう切り抜けるか」を選ぶときに使う。
+   能力値とは別の軸。判定は幸運と同じ 1d100（roll100）。
 
-   判定は  2d6 + 技能値 ≧ 難度。
-   戦闘は d6 のプール、幸運は 1d100、技能は 2d6 ―― 振り方で何の判定か分かる。
-   ゾロ目の 12 は技能がいくつでも成功、2 は必ず失敗。
+   ■ 何のためにあるか
+     DEX が「命中・回避・行動順・索敵」の4つを一人で抱えていて、
+     しかも成長するのはアーチャーとスカウトだけ、という偏りがあった。
+     そのうち「命中」と「索敵」を技能へ移し、DEX には
+     「回避」と「行動順」だけを残す。
+     あわせて、遠隔と近接の違いが「後列を狙えるか」しか無かったところに、
+     射撃と格闘という別々の腕前が入る。
 
-   値は  職業 + 種族 + 欲望 の基礎 ＋ floor(元になる能力値 / 12)。
-   レベルアップで別に選ばせない（スキル・パッシブとの取り合いを避ける）。
-   能力値が伸びれば技能も自然に伸びる。                                  */
-const SKILLDC={easy:10, mid:13, hard:16};      /* 易 / 並 / 難 */
+   ■ 値のなりたち
+     職業 + 種族 + 欲望　の合計。**能力値からは来ない。**
+     装備でもレベルでも動かない、その人の心得。
+
+   ■ 段階
+     roll100 が返す k（0=失敗 1=成功 2=ハード 3=エクストリーム）と
+     crit（出目1）/ fumble（出目100）をそのまま使う。            */
+const SKMAXV=95;                  /* 技能の上限。確実にはしない */
 const SK={
-  agi:{n:"軽 業",st:"DEX",d:"跳ぶ・避ける・忍ぶ"},
-  pow:{n:"剛 力",st:"STR",d:"押す・こじ開ける・担ぐ"},
-  lore:{n:"知 識",st:"INT",d:"読む・見抜く・思い出す"},
-  guts:{n:"胆 力",st:"VIT",d:"耐える・怯まない・踏み込む"},
+  search:{n:"探 索",d:"物音と痕跡に気づく。索敵の先制を決める"},
+  shoot: {n:"射 撃",d:"遠くの的を射抜く。遠隔武器の命中"},
+  fight: {n:"格 闘",d:"間合いを詰めて当てる。近接武器の命中"},
+  forge: {n:"鍛 冶",d:"金属を打つ。装備をこしらえる"},
+  cook:  {n:"料 理",d:"火と素材を扱う。道具をこしらえる"},
 };
 const SKJOB={
-  knight:{pow:2,guts:2},
-  archer:{agi:2,lore:1,pow:1},
-  scout: {agi:3,lore:1},
-  mage:  {lore:3,guts:1},
+  knight:{search:20, shoot:15, fight:55, forge:30, cook:20},
+  archer:{search:40, shoot:55, fight:25, forge:20, cook:25},
+  scout: {search:55, shoot:35, fight:45, forge:15, cook:20},
+  mage:  {search:30, shoot:30, fight:20, forge:20, cook:30},
 };
 const SKRACE={
-  hume: {agi:1,pow:1,lore:1,guts:1},
-  dwarf:{pow:2,guts:2,agi:-1},
-  elf:  {lore:2,agi:2,pow:-1,guts:-1},
-  beast:{agi:2,guts:2,pow:1,lore:-2},
+  hume: {search: 5, shoot: 5, fight: 5, forge: 5, cook: 5},
+  dwarf:{search: 0, shoot:-5, fight: 5, forge:20, cook: 0},
+  elf:  {search:10, shoot:10, fight:-5, forge: 0, cook: 5},
+  beast:{search:15, shoot: 0, fight:10, forge:-5, cook:-5},
 };
 const SKORIG={
-  greed:{lore:1}, wrath:{pow:1}, sloth:{guts:1}, gluttony:{guts:1},
-  pride:{lore:1}, envy:{agi:1},  lust:{agi:1},
+  greed:   {search:10},
+  wrath:   {fight:10},
+  sloth:   {cook:10},
+  gluttony:{cook:15, forge:-5},
+  pride:   {forge:10},
+  envy:    {search:10, shoot:5},
+  lust:    {shoot:10},
 };
-/* いまの技能値。装備や成長で能力値が動けば、ここも動く */
+/* 技能値。職業・種族・欲望だけで決まる */
 function skillOf(k){
-  const S=SK[k]; if(!S||!me)return 0;
-  const base=((SKJOB[sel.job]||{})[k]||0)
-            +((SKRACE[sel.race]||{})[k]||0)
-            +((SKORIG[sel.orig]||{})[k]||0);
-  return base+Math.floor((me[S.st]||0)/12);
+  return Math.max(0,Math.min(SKMAXV,
+     ((SKJOB[sel.job]||{})[k]||0)
+    +((SKRACE[sel.race]||{})[k]||0)
+    +((SKORIG[sel.orig]||{})[k]||0)));
 }
-/* 作成画面など、me がまだ無いときのための版 */
-function skillOfMe(m,k){
-  const S=SK[k]; if(!S||!m)return 0;
-  return ((SKJOB[sel.job]||{})[k]||0)
-        +((SKRACE[sel.race]||{})[k]||0)
-        +((SKORIG[sel.orig]||{})[k]||0)
-        +Math.floor((m[S.st]||0)/12);
-}
-/* 2d6 + 技能値 ≧ 難度。出目と成否をそのまま返す */
-function skillRoll(k,dc){
-  const a=r6(), b=r6(), v=skillOf(k), sum=a+b;
-  const ok = sum===12 ? true : sum===2 ? false : (sum+v)>=dc;
-  return {a,b,sum,v,dc,total:sum+v,ok,
-    crit:sum===12, fumble:sum===2};
+/* いま持っている武器で使う技能 */
+function wepSkill(){ return (me&&me.wep&&me.wep.type==="ranged")?"shoot":"fight"; }
+/* 技能値の一覧。いま持っている武器で使う技能に印を付ける */
+function skillLine(sep){
+  const use=wepSkill();
+  return Object.keys(SK).map(k=>{
+    const on=(k===use);
+    return `<span${on?' style="color:var(--brass)"':""}>${SK[k].n} <b${
+      on?' style="color:var(--brass)"':""}>${skillOf(k)}</b></span>`;
+  }).join(sep||"　");
 }
 
 const RACE={
@@ -2678,15 +2698,22 @@ function lukCuts(pct){
   const p=Math.max(0,Math.min(LUKMAX,pct||0));
   return {p,hit:p,hard:Math.floor(p/2),ext:Math.floor(p/5)};
 }
-function lukRoll(pct){
+/* 1d100 の判定はひとつだけ。幸運も技能もこれを使う。
+   k は段階（0=失敗 1=成功 2=ハード 3=エクストリーム）。
+   crit は出目1、fumble は出目100。ファンブルは ただの失敗より悪い扱いにする。 */
+function roll100(pct){
   const c=lukCuts(pct), v=r100();
-  let k=0;
-  if(v===1)k=3;                 /* 目の 1 は必ず超あたり */
-  else if(v===100)k=0;          /* 目の 100 は必ずはずれ */
+  let k=0, crit=false, fumble=false;
+  if(v===1){k=3;crit=true;}          /* 目の 1 は必ず最上 */
+  else if(v===100){k=0;fumble=true;} /* 目の 100 は必ず最低 */
   else if(v<=c.ext)k=3;
   else if(v<=c.hard)k=2;
   else if(v<=c.hit)k=1;
-  return {v,k,...c,...LUKRANK[k]};
+  return {v,k,crit,fumble,...c};
+}
+function lukRoll(pct){
+  const r=roll100(pct);
+  return {...r,...LUKRANK[r.k]};
 }
 /* 宝箱が段階ごとにどれだけ実るか */
 const CHESTGAIN=[
@@ -2883,8 +2910,10 @@ function sheet(){
     <div class="dline" style="margin-top:8px">
       HP <b>${m.maxHP}</b>　MP <b>${m.maxMP}</b>　
       STR <b>${m.STR}</b>　DEX <b>${m.DEX}</b>　INT <b>${m.INT}</b>　
-      VIT <b>${m.VIT}</b>　DEF <b>${m.DEF}</b>　索敵 <b>${m.scoutDice}D</b>${
+      VIT <b>${m.VIT}</b>　DEF <b>${m.DEF}</b>${
       sel.luk?`　幸運 <b>${m.LUK}</b>`:""}</div>
+    <div class="dline" style="margin-top:4px">${
+      Object.keys(SK).map(k=>`${SK[k].n} <b>${skillOf(k)}</b>`).join("　")}</div>
     <div class="dline" style="margin-top:4px;color:var(--ink)">
       技は持たずに始まる。戦いに勝つたびに スキル／パッシブ／装備 から一つ選ぶ。</div>`;
 }
@@ -2896,7 +2925,6 @@ function makeMe(){
   base.LUK=sel.luk||0;      /* 幸運だけは職業・種族・欲望から来ない */
   const m={name:`${RACE[sel.race].n}の${JOB[sel.job].n}`,short:J.n,art:J.art,
     baseWep:J.wep,isFoe:false,
-    scoutDice:J.scout+RACE[sel.race].scout+ORIG[sel.orig].scout,
     base:base,grow:{STR:0,DEX:0,INT:0,VIT:0,DEF:0},
     eq:{wep:null,armor:null,acc:[]},blkBonus:0,gold:0,bag:{},mats:{},recipes:[],lv:1,exp:0,
     sk:[],pass:[],block:0,half:false,rank:"front"};
@@ -3028,7 +3056,7 @@ function telePreview(f,tt){
       *(1-Math.min(0.6,ailSum(f,"weakp")/100)))),defOf(me));
     const far=(f.rank==="front"&&me.rank==="back");
     if(far)per=Math.max(1,Math.round(per*0.6));
-    const thr=Math.max(2,4+Math.max(0,Math.floor((dexOf()-f.DEX)/15)));
+    const thr=threshold(f,me,{});
     const R=hitRange(per,t.dice,thr);
     return {txt:"⚔ "+t.n,
       sub:`${t.dice}d6 ・ 1ヒット ${per} ・ 最大 ${R.hi*t.dice}`+
@@ -3350,8 +3378,71 @@ function threshold(u,tgt,opt){
     if(me.focus)t-=me.focus.v;
     if(passOn("rank")>0&&tgt.maxHP<me.maxHP)t-=1;
   }
-  const ev=Math.max(0,Math.floor((tgt.DEX-(u===me?dexOf():u.DEX))/15));
-  return Math.max(2,Math.min(6,t+ev));
+  /* 当てる側と避ける側で、見る数字を分ける。
+       自分が攻めるとき … 武器に応じた技能（射撃 / 格闘）。DEX は見ない
+       敵が攻めるとき   … こちらの DEX（回避）。技能は見ない
+     こうすると DEX の仕事が「回避と行動順」だけになり、
+     遠隔と近接に別々の腕前が生まれる。                        */
+  if(u===me){
+    t-=skillHit(wepSkill());
+  }else{
+    const td=(tgt===me)?dexOf():Math.max(1,tgt.DEX-ailSum(tgt,"slow"));
+    t+=Math.max(0,Math.floor((td-u.DEX)/15));            /* こちらの回避 */
+  }
+  return Math.max(2,Math.min(6,t));
+}
+/* 技能 40 を並として、25 ごとに命中閾値が 1 動く。
+   技能 15 → −1（当てにくい）　40 → 0　65 → +1　90 → +2 */
+function skillHit(k){ return Math.round((skillOf(k)-40)/25); }
+
+/* 判定の段階の呼び名。技能はこれ、幸運は LUKRANK を使う */
+const SKRANK=[
+  {n:"失 敗",       s:"失敗",       c:"#7d6b68"},
+  {n:"成 功",       s:"成功",       c:"#8fa261"},
+  {n:"ハ ー ド 成 功", s:"ハード成功", c:"#c9a227"},
+  {n:"エ ク ス ト リ ー ム", s:"エクストリーム", c:"#d98f3f"},
+];
+/* 索敵は段階のぶんだけ先制ダイスが増える（最初の攻撃だけ） */
+const SCOUTGAIN=[0,1,2,3];
+
+/* ---------- こしらえる（鍛冶・料理） ----------
+   レシピを持っていることは前提。そのうえで技能を振る。
+     ファンブル … 素材も加工賃も失う
+     失 敗     … 加工賃だけ失う。**素材は手元に残る**
+     成 功     … そのまま
+     ハード     … 上物
+     エクストリーム … 業物
+     クリティカル  … 会心の出来
+   料理は品質が「個数」に、鍛冶は「性能の倍率」になる。
+   道具は me.bag が {鍵:個数} なので一つひとつに品質を持たせられないが、
+   装備は me.eq に実体が入るので倍率をかけられる。            */
+const CRAFTQ=[
+  {n:"失 敗",       c:"#7d6b68", mul:0,    num:0, tag:""},
+  {n:"成 功",       c:"#8fa261", mul:1,    num:1, tag:""},
+  {n:"上 物",       c:"#c9a227", mul:1.15, num:2, tag:"＋"},
+  {n:"業 物",       c:"#d98f3f", mul:1.3,  num:3, tag:"＋＋"},
+];
+const CRAFTCRIT={n:"会 心 の 出 来", c:"#e9c46a", mul:1.5, num:4, tag:"★"};
+function craftSkill(id){ return RECIPES[id].kind==="forge"?"forge":"cook"; }
+function craftQuality(r){
+  if(r.fumble)return {...CRAFTQ[0],fumble:true};
+  if(r.crit)return CRAFTCRIT;
+  return CRAFTQ[r.k];
+}
+/* 装備に品質の倍率をかける。名前に印を付けて、見て分かるようにする */
+function gearWithQuality(g,q){
+  if(!q||q.mul<=1)return {...g};
+  const out={...g, n:g.n+q.tag};
+  if(g.st){out.st={};for(const k in g.st)out.st[k]=Math.round(g.st[k]*q.mul);}
+  if(g.hp)out.hp=Math.round(g.hp*q.mul);
+  if(g.blk)out.blk=Math.round(g.blk*q.mul);
+  const d=[];
+  if(out.st)for(const k in out.st)d.push(`${k} ${out.st[k]>=0?"+":""}${out.st[k]}`);
+  if(out.hp)d.push(`最大HP ${out.hp>=0?"+":""}${out.hp}`);
+  if(out.blk)d.push(`防御時の上乗せ +${out.blk}`);
+  if(out.bag)d.push(`道具を ${out.bag} つ多く持てる`);
+  out.d=d.join("　")+`　<span style="color:${q.c}">${q.n.replace(/ /g,"")}</span>`;
+  return out;
 }
 function defOf(u){
   let d=u.DEF+(u.block||0)+(u===me?passOn("guard")+(me.tmpDef||0)-passOn("light")*10
@@ -3546,7 +3637,7 @@ async function playerAttack(targets,opt){
   const pn=passNames("dice");
   if(pn.length)log(`<span class="c">${pn.join("・")}</span> 攻撃ダイス <span class="m">+${passOn("dice")}</span>`);
   if(scoutBonus){
-    log(`<span class="a">先制</span> 索敵の差で 攻撃ダイス <span class="m">+${scoutBonus}</span>`);
+    log(`<span class="a">先制</span> 探索で先を取った　攻撃ダイス <span class="m">+${scoutBonus}</span>`);
     scoutBonus=0;
   }
   const thr=threshold(me,targets[0],{...opt,thr:(opt.thr||0)+passOn("thr")});
@@ -3992,7 +4083,7 @@ async function enemyAct(f){
     let per=perHit(powOf(f,{pow:t.pow||0}),defOf(me));
     if(reach)per=Math.max(1,Math.round(per*0.6));
     const rolls=[];for(let i=0;i<t.dice;i++)rolls.push(r6());
-    const thr=Math.max(2,4+Math.max(0,Math.floor((dexOf()-f.DEX)/15)));
+    const thr=threshold(f,me,{});
     await rollDice(rolls,thr,`${f.name} → ${me.name}　<em>${t.dice}d6 ・ ${thr}以上</em>`);
     const hits=rolls.filter(v=>v>=thr).length;
     ovHide();
@@ -5095,6 +5186,68 @@ function canMake(id){
   const need=craftNeed(id);
   return Object.keys(need).every(k=>(me.mats[k]||0)>=need[k]);
 }
+/* こしらえる。技能を振り、段階で品質が決まる */
+async function doCraft(id,nd){
+  const R=RECIPES[id];
+  const sk=craftSkill(id);
+  /* 加工賃は先に払う。素材は判定のあと（失敗なら手元に残る） */
+  me.gold-=craftCost(id);
+  closeModal();
+  const pct=Math.max(5,Math.min(SKMAXV,skillOf(sk)));
+  const r=await skillOv(R.kind==="forge"?"鍛 冶":"料 理",
+    `${SK[sk].n}　${R.n}`,pct,CRAFTQ);
+  const q=craftQuality(r);
+  const out=[];
+  if(q.mul<=0){
+    /* 失敗。ファンブルのときだけ素材まで持っていかれる */
+    if(q.fumble){
+      const need=craftNeed(id);
+      Object.keys(need).forEach(k=>{me.mats[k]-=need[k];if(!me.mats[k])delete me.mats[k];});
+      out.push(`<span class="loss">手元が狂った</span>`);
+      out.push(`　素材も 加工賃 ${craftCost(id)} も 失った`);
+    }else{
+      out.push(`<span class="loss">うまくいかなかった</span>`);
+      out.push(`　加工賃 ${craftCost(id)} を失った　<span class="s">素材は手元に残っている</span>`);
+    }
+    chestClose();
+    return backToFloorOrModal(nd,out);
+  }
+  /* 成功。ここで素材を引く */
+  const need=craftNeed(id);
+  Object.keys(need).forEach(k=>{me.mats[k]-=need[k];if(!me.mats[k])delete me.mats[k];});
+
+  if(R.kind==="cook"){
+    /* 道具は一つずつに品質を持てないので、品質は「取れた数」で表す */
+    let got=0;
+    for(let i=0;i<q.num;i++){
+      if(bagCount()>=bagMax())break;
+      me.bag[R.make]=(me.bag[R.make]||0)+1;got++;
+    }
+    markSeen("i_"+R.make);
+    out.push(`<span style="color:${q.c}">${q.n}</span>　`+
+      `<span class="gain">${ITEMS[R.make].n}</span> ×${got}`);
+    out.push(`　<span class="s">${ITEMS[R.make].d}</span>`);
+    if(got<q.num)out.push(`　<span class="loss">道具袋がいっぱいで ${q.num-got} つ置いてきた</span>`);
+    chestClose();
+    return backToFloorOrModal(nd,out);
+  }
+  /* 装備は実体を持つので、品質を数値そのものに乗せる */
+  const base=[].concat(GEAR.armor.map(x=>({...x,slot:"armor"})),
+                       GEAR.acc.map(x=>({...x,slot:"acc"}))).find(x=>x.id===R.make);
+  const g=gearWithQuality(base,q);
+  out.push(`<span style="color:${q.c}">${q.n}</span>　<span class="gain">${g.n}</span>`);
+  out.push(`　<span class="s">${g.d}</span>`);
+  const res=applyReward("gear",g);
+  SFX.found();
+  chestClose();
+  if(res&&res.full)return swapModal(res.kind||"acc",res.full,()=>craftModal(nd));
+  return backToFloorOrModal(nd,out);
+}
+/* 焚き火から来たか行商から来たかで、戻り先が違う */
+function backToFloorOrModal(nd,out){
+  resultModal(nd?"こしらえる — 行商の前で":"こしらえる — 焚き火のそばで",out,
+    [{n:"もう一度 こしらえる",cb:()=>craftModal(nd)},{n:"やめる",cb:()=>{ if(nd)shopModal(nd); }}]);
+}
 function needText(id){
   const need=craftNeed(id);
   return Object.keys(need).map(k=>{
@@ -5136,29 +5289,7 @@ function craftModal(nd){
   const cch=$("#cChar");
   if(cch)cch.onclick=()=>charModal(()=>craftModal(nd));
   $("#mbox").querySelectorAll("[data-r]").forEach(b=>{
-    b.onclick=()=>{
-      const id=b.dataset.r, R=RECIPES[id];
-      if(!canMake(id))return;
-      if(R.kind==="cook"&&bagCount()>=bagMax()){
-        RUN.pendingItem=R.make;
-        me.gold-=craftCost(id);
-        const nd2=craftNeed(id);
-        Object.keys(nd2).forEach(k=>{me.mats[k]-=nd2[k];if(!me.mats[k])delete me.mats[k];});
-        closeModal();return itemSwapModal(R.make,()=>craftModal(nd));
-      }
-      me.gold-=craftCost(id);
-      const nd3=craftNeed(id);
-      Object.keys(nd3).forEach(k=>{me.mats[k]-=nd3[k];if(!me.mats[k])delete me.mats[k];});
-      if(R.kind==="cook"){me.bag[R.make]=(me.bag[R.make]||0)+1;markSeen("i_"+R.make);}
-      else{
-        const g=[].concat(GEAR.armor.map(x=>({...x,slot:"armor"})),
-                          GEAR.acc.map(x=>({...x,slot:"acc"}))).find(x=>x.id===R.make);
-        const res=applyReward("gear",g);
-        SFX.found();
-        if(res&&res.full)return swapModal(res.kind||"acc",res.full,()=>craftModal(nd));
-      }
-      SFX.found();craftModal(nd);
-    };
+    b.onclick=()=>{ if(canMake(b.dataset.r))doCraft(b.dataset.r,nd); };
   });
   $("#mBack").onclick=()=>{if(nd)shopModal(nd);else closeModal();};
 }
@@ -5329,6 +5460,44 @@ function resolveEvent(nd,out){
 let chestSkip=false;
 async function cwait(ms){ if(chestSkip)return; await wait(ms); }
 function chestClose(){ const O=$("#chestOv"); O.className="chestOv"; O.innerHTML=""; }
+
+/* 技能判定の見せ方。1d100 を回して段階を出す。宝箱の器を使い回す。
+   戻り値は roll100 の結果そのもの。 */
+async function skillOv(title,label,pct,ranks){
+  const O=$("#chestOv");
+  O.className="chestOv on";
+  O.innerHTML=`
+    <div class="cTtl">${title}</div>
+    <div class="cLbl">${label}　<b>1d100</b>　<b>${pct}</b> 以下</div>
+    <div class="cCuts" id="skCuts"></div>
+    <div id="skSlot" style="display:grid;place-items:center;gap:10px;min-height:150px"></div>`;
+  const cut=lukCuts(pct);
+  $("#skCuts").innerHTML=
+    `<span style="color:${ranks[3].c}">上 ${cut.ext}</span>`+
+    `<span style="color:${ranks[2].c}">中 ${cut.hard}</span>`+
+    `<span style="color:${ranks[1].c}">並 ${cut.hit}</span>`;
+  const slot=$("#skSlot");
+  const d=document.createElement("div");
+  d.className="d100 roll";d.textContent="00";
+  slot.appendChild(d);
+  SFX.shake();
+  const spin=setInterval(()=>{d.textContent=String(r100()).padStart(2,"0");},60);
+  await wait(900);
+  clearInterval(spin);
+  const r=roll100(pct);
+  const q=r.crit?CRAFTCRIT:(r.fumble?{n:"フ ァ ン ブ ル",c:"#b1544a"}:ranks[r.k]);
+  d.textContent=String(r.v).padStart(2,"0");
+  d.className="d100 land";
+  d.style.color=q.c;d.style.borderColor=q.c;
+  if(r.k>=2||r.crit)SFX.crit();else SFX.tick();
+  await wait(420);
+  const rk=document.createElement("div");
+  rk.className="cRank";rk.style.color=q.c;rk.textContent=q.n;
+  slot.appendChild(rk);
+  if(r.k>0)SFX.found();
+  await wait(760);
+  return r;
+}
 function chestNote(k){
   const G=CHESTGAIN[k];
   const a=[];
@@ -5618,10 +5787,14 @@ function charModal(back){
     <span>STR <b>${me.STR}</b></span><span>DEX <b>${me.DEX}</b></span>
     <span>INT <b>${me.INT}</b></span><span>VIT <b>${me.VIT}</b></span>
     <span>DEF <b>${me.DEF}</b></span><span>防御時 <b>+${blockValue()}</b></span>
-    <span>索敵 <b>${me.scoutDice}D</b></span>
+
     <span style="color:#c9a227">幸運 <b style="color:#c9a227">${me.LUK}</b></span>
     <span style="color:#c9a227">金貨 <b style="color:#c9a227">${me.gold}</b></span></div>
   ${(()=>{const c=lukCuts(me.LUK);return `
+  <div class="msec">技 能　<span style="color:var(--dim);letter-spacing:0">1d100 で振る</span></div>
+  <div class="mitem">${skillLine("　")}
+    <br><span class="s">${SK[wepSkill()].n.replace(/ /g,"")} は いま持っている ${me.wep.n} の命中に効く。
+    探索は戦いのはじめの先制、鍛冶と料理はこしらえるときに振る</span></div>
   <div class="mitem" style="color:var(--ink)">幸運 ${me.LUK}　＝　生まれ ${
     me.base.LUK||0}${(me.LUK-(me.base.LUK||0))?`　＋ 装備 ${me.LUK-(me.base.LUK||0)}`:""}
     <br><span class="s">1d100 を振って、出目が小さいほど良い段階になる</span>
@@ -6074,40 +6247,47 @@ async function doItem(k,tgt){
 
 /* ---------- 索敵 ---------- */
 async function doScout(){
+  /* 両者が d6 を撒いて差を取る形をやめ、探索技能の 1d100 ひと振りにした。
+     前のやり方だと自分のダイスが相手より桁違いに多く、
+     誰がやっても上限の +3 が出ていて、索敵の値が意味を持っていなかった。 */
   ovMsg("索 敵 開 始",true);
   SFX.open();
-  await wait(950);
-  const mD=Math.max(1,me.scoutDice+passOn("scout")+Math.floor(dexOf()/13)-((ORIG[sel.orig]&&ORIG[sel.orig].scoutPenalty)?2:0));
-  const fD=Math.round(foes.reduce((s,f)=>s+f.scout,0)/foes.length)+
-    Math.floor(Math.max(...foes.map(f=>f.DEX))/13);
-  const mr=[],fr=[];
-  for(let i=0;i<mD;i++)mr.push(r6());
-  for(let i=0;i<fD;i++)fr.push(r6());
-  await rollDice(mr,4,`${me.name}　<em>${mD}d6 ・ 4以上</em>`,"索 敵",true);
-  const ms=mr.filter(v=>v>=4).length;
-  const row=ovShow(`相手側　<em>${fD}d6 ・ 4以上</em>`,"索 敵");
-  for(const v of fr){
-    const sp=document.createElement("span");sp.className="dv roll";sp.textContent=r6();
-    row.appendChild(sp);await wait(60);
-    sp.classList.remove("roll");sp.textContent=v;
-    if(v>=4){sp.style.borderColor="#b1544a";sp.style.color="#e9e4d4";}
-    SFX.tick();await wait(75);
-  }
-  const fs=fr.filter(v=>v>=4).length, diff=ms-fs;
-  scoutBonus=Math.max(0,Math.min(3,diff));
-  $("#dvRes").innerHTML=`<div class="dvRes">${ms} 対 ${fs}</div>`;
-  await wait(650);
-  const vd=diff>=3?"完全に先に見つけた":diff>=1?"わずかに先に見つけた"
-    :diff===0?"互いに気づいた":"出遅れた";
+  await wait(900);
+
+  /* 相手が隠れ上手なら、その分だけこちらの技能が目減りする */
+  const hide=Math.round(foes.reduce((a,f)=>a+(f.scout||0),0)/foes.length)*4
+            +Math.floor(Math.max(...foes.map(f=>f.DEX))/4);
+  const pen=(ORIG[sel.orig]&&ORIG[sel.orig].scoutPenalty)?15:0;
+  const pct=Math.max(5,Math.min(SKMAXV,
+    skillOf("search")+passOn("scout")*5-hide-pen));
+  const r=roll100(pct);
+  scoutBonus=SCOUTGAIN[r.k];
+
+  const row=ovShow(`探 索　<em>1d100 ・ ${pct} 以下</em>`,"索 敵");
+  const sp=document.createElement("span");
+  sp.className="d100 roll";sp.textContent="00";
+  row.appendChild(sp);
+  const spin=setInterval(()=>{sp.textContent=String(r100()).padStart(2,"0");},60);
+  await wait(850);
+  clearInterval(spin);
+  sp.textContent=String(r.v).padStart(2,"0");
+  sp.className="d100 land";
+  sp.style.color=SKRANK[r.k].c;sp.style.borderColor=SKRANK[r.k].c;
+  if(r.k>=2)SFX.crit();else SFX.tick();
+  await wait(520);
+
+  const nm=r.crit?"ク リ ティ カ ル":r.fumble?"フ ァ ン ブ ル":SKRANK[r.k].n;
+  const vd=r.k>=3?"物音も足跡も、すべて拾った":r.k===2?"先に気配を捉えた"
+    :r.k===1?"かろうじて先に気づいた":r.fumble?"派手に踏み抜いた":"出遅れた";
   ovMsg(`<span class="k">索 敵 結 果</span><br>`+
-    `${ms} 対 ${fs}　<span class="${diff>0?"win":diff<0?"lose":""}">差 ${
-      diff>=0?"+":"−"}${Math.abs(diff)}</span>　—　${vd}<br>`+
+    `<span style="color:${SKRANK[r.k].c}">${nm}</span>　`+
+    `<span class="s">1d100 → ${r.v} ／ ${pct}</span><br>${vd}<br>`+
     (scoutBonus?`<span class="win">最初の攻撃に 攻撃ダイス +${scoutBonus}</span>`
       :`<span class="lose">先制の利はない</span>`));
   SFX.found();
-  log(`<span class="a">索敵</span> ${ms} 対 ${fs}（差 ${diff>=0?"+":"−"}${Math.abs(diff)}）`+
+  log(`<span class="a">探索</span> ${nm}　<span class="s">1d100 ${r.v}／${pct}</span>`+
     (scoutBonus?` → 最初の攻撃に ダイス <span class="m">+${scoutBonus}</span>`:` → 先制なし`));
-  await wait(1400);
+  await wait(1300);
   ovHide();
 }
 
@@ -6347,9 +6527,11 @@ function drawMakeConfirm(){
         <span>HP <b>${m.maxHP}</b></span><span>MP <b>${m.maxMP}</b></span>
         <span>STR <b>${m.STR}</b></span><span>DEX <b>${m.DEX}</b></span>
         <span>INT <b>${m.INT}</b></span><span>VIT <b>${m.VIT}</b></span>
-        <span>DEF <b>${m.DEF}</b></span><span>索敵 <b>${m.scoutDice}D</b></span>
+        <span>DEF <b>${m.DEF}</b></span>
         <span style="color:#c9a227">幸運 <b style="color:#c9a227">${m.LUK}</b></span>
       </div>
+      <div class="mkstat" style="margin-top:6px">${
+        Object.keys(SK).map(k=>`<span>${SK[k].n} <b>${skillOf(k)}</b></span>`).join("")}</div>
       <div class="qzd" style="color:var(--ink)">${m.wep.n}　を手に始まる</div>
       <div class="qzd" style="color:var(--ink)">幸運は生まれつき。<b>2d6×2</b> で
         [${(sel.lukD||[]).join("][")}] → <b style="color:#c9a227">${sel.luk}</b>。
