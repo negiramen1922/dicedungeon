@@ -869,6 +869,8 @@ const NEWS=[
    "<b>DEX の役割を減らしました。</b>これまで DEX は 命中・回避・行動順・索敵 の4つを一人で抱えていました。命中は 射撃／格闘 へ、索敵は 探索 へ移り、DEX に残るのは <b>回避と行動順</b> だけになります",
    "<b>遠距離と近距離に腕前の差が生まれます。</b>これまで違いは「後列を狙えるか」だけでした。いまはナイトが弓を持つと当たらず、アーチャーが短剣を持っても当たりません",
    "<b>DEX に上限 100 を置きました。</b>回避と行動順に効くうえ装備で大きく伸びるので、放っておくと後半で敵が当てられなくなっていました。素の成長だけで Lv16 に 96 まで来ます",
+   "上限を<b>越えられるのはスキルのバフだけ</b>です。成長・装備・パッシブはここで止まります",
+   "<b>上限に達していると、どれだけ無駄になっているかを装備・状態の窓に出します。</b>「この装備の DEX の +10 は 上限 100 を超えていて無駄になっている」のように、装備1つずつに出ます",
    "<b>速い敵ほど当てにくくなりました。</b>スライム(DEX 6)とオオコウモリ(DEX 42)では必要な目が2つ違います。あわせて <b>鈍足</b> が命中にも効くようになりました（これまでは行動順を遅らせるだけでした）",
    "<b>索敵のやり方を変えました。</b>両者が d6 を撒いて差を取る形をやめ、探索の 1d100 ひと振りにしました。これまでは誰がやっても上限の +3 が出ていて、索敵の値が意味を持っていませんでした",
    "<b>こしらえるときに技能を振ります。</b>成功の段階で品質が上がります。料理は取れる数が増え（成功1／上物2／業物3／会心4）、鍛冶は装備の性能そのものが上がります（＋1.15倍／＋1.3倍／★1.5倍）",
@@ -2950,8 +2952,11 @@ function recalcMe(m,full){
     if(g.blk)blk+=g.blk;
     if(g.bag)bag+=g.bag;
   });
+  m.raw={};
   ["STR","DEX","INT","VIT","DEF"].forEach(k=>{
-    m[k]=Math.max(1,Math.min(STATMAX[k]||9999,m.base[k]+m.grow[k]+st[k]));
+    const raw=m.base[k]+m.grow[k]+st[k];
+    m.raw[k]=raw;                                   /* 丸める前 */
+    m[k]=Math.max(1,Math.min(STATMAX[k]||9999,raw));
   });
   /* 幸運は伸びない。生まれの値と装備だけで決まる */
   m.LUK=Math.max(0,Math.min(LUKMAX,(m.base.LUK||0)+st.LUK));
@@ -3312,14 +3317,51 @@ function addBuff(u,v,t){(u.buffs=u.buffs||[]).push({v,t:t||1});}
    3通りの持ち方が並んでいた。うち2つは書く側と読む側が繋がっておらず、
    敵の hex は数字を動かしていなかったし、アンチポーションは何も解いていなかった。 */
 function slowSum(){return ailSum(me,"slow");}
-function dexOf(){
+/* 上限の扱いは、どこから来た上乗せかで変える。
+     成長・装備・パッシブ … 上限で止まる。積んでも無駄になる
+     スキルのバフ        … 上限を越えられる。その戦闘のあいだだけの伸び
+   鈍足で下がるぶんは丸めない。
+   （me.order を読む枝があったが、書く場所がどこにも無かったので消した） */
+function dexPassive(){
   const dp=1+passOn("statDEX")/100;
-  const v=Math.round(me.DEX*dp)-slowSum()+passOn("dex")+passOn("light")*15
-    +passOn("allround")*3+passOn("slim")*10+passOn("fang")*6
-    +(me.order?Math.round(me.DEX*me.order.dex/100):0)
-    +(me.beast?me.beast.dex:0)+(me.dexUp||0);
-  /* 上限は上乗せのあとにも掛ける。鈍足で下がるぶんは丸めない */
-  return Math.max(1,Math.min(STATMAX.DEX,v));
+  return Math.round(me.DEX*dp)+passOn("dex")+passOn("light")*15
+    +passOn("allround")*3+passOn("slim")*10+passOn("fang")*6;
+}
+function dexBuff(){
+  return (me.beast?me.beast.dex:0)+(me.dexUp||0);
+}
+function dexOf(){
+  return Math.max(1,Math.min(STATMAX.DEX,dexPassive())+dexBuff()-slowSum());
+}
+/* その上乗せ(add)のうち、上限を超えて無駄になっている量。
+   「外したら実際にいくつ下がるか」を引いて出すので、
+   何個も積んでいても一つひとつについて正しい数が出る。 */
+function statWaste(k,add){
+  const cap=STATMAX[k];
+  if(!cap||!add||add<=0||!me||!me.raw)return 0;
+  const raw=me.raw[k];
+  const now    =Math.max(1,Math.min(cap,raw));
+  const without=Math.max(1,Math.min(cap,raw-add));
+  return Math.max(0,add-(now-without));
+}
+/* パッシブぶんが上限で削られている量 */
+function dexPassiveWaste(){
+  const cap=STATMAX.DEX;
+  const p=dexPassive();
+  return Math.max(0,p-cap);
+}
+/* 装備が持っている上乗せのうち、上限で捨てられているぶんを一言で返す */
+function wasteNote(g){
+  if(!g||!g.st)return "";
+  const out=[];
+  for(const k in STATMAX){
+    const w=statWaste(k,g.st[k]||0);
+    if(w>0)out.push(`${k} の <b>+${w}</b>`);
+  }
+  return out.length
+    ? `<br><span style="color:var(--blood)">この装備の ${out.join("　")} は 上限 ${
+        STATMAX.DEX} を超えていて無駄になっている</span>`
+    : "";
 }
 function powOf(u,opt){
   opt=opt||{};
@@ -4060,7 +4102,7 @@ async function runQueue(){
       if(me.beast){me.beast.t--;if(me.beast.t<0)me.beast=null;}
       if(me.goldPow){me.goldPow.t--;if(me.goldPow.t<0)me.goldPow=null;}
       if(me.selfPow){me.selfPow.t--;if(me.selfPow.t<0)me.selfPow=null;}
-      if(me.order){me.order.t--;if(me.order.t<0)me.order=null;me.vow=null;me.hurtThisRound=false;me.fixId=null;me.fixN=0;me.attackedLast=false;me.whim=null;me.holdDef=null;}
+      me.vow=null;me.hurtThisRound=false;me.fixId=null;me.fixN=0;me.attackedLast=false;me.whim=null;me.holdDef=null;
       if(await ailDot(me)){
         if(passOn("endure")>0&&!me.endured){me.endured=true;me.HP=1;draw();
           popSelf("気 合","heal");log(`<span class="a">気 合</span> HP 1 で耐えた`);}
@@ -5791,7 +5833,8 @@ function pickList(cats,n){
 /* 装備・状態の窓 */
 function charModal(back){
   const eqLine=k=>me.eq[k]
-    ?`${tierTag(me.eq[k].tier)}${madeTag(me.eq[k])} <b>${me.eq[k].n}</b>　${me.eq[k].d||""}`
+    ?`${tierTag(me.eq[k].tier)}${madeTag(me.eq[k])} <b>${me.eq[k].n}</b>　${
+       me.eq[k].d||""}${wasteNote(me.eq[k])}`
     :`<span style="color:#4d5346">なし</span>`;
   let h=`<div class="mtitle">装 備 ・ 状 態</div>
   <div class="msub">${tagFig(sel.job,14)} ${JOB[sel.job].n}　${tagFig(sel.race,14)} ${RACE[sel.race].n}　${tagFig(sel.orig,14)} ${ORIG[sel.orig].n}</div>
@@ -5800,13 +5843,28 @@ function charModal(back){
     <span>経験 <b>${me.exp}</b>/${expCap()}</span>
     <span>HP <b>${Math.max(0,me.HP)}</b>/${me.maxHP}</span>
     <span>MP <b>${me.MP}</b>/${me.maxMP}</span>
-    <span>STR <b>${me.STR}</b></span><span>DEX <b>${me.DEX}</b></span>
+    <span>STR <b>${me.STR}</b></span><span${
+      me.DEX>=STATMAX.DEX?' style="color:#c9a227"':""}>DEX <b${
+      me.DEX>=STATMAX.DEX?' style="color:#c9a227"':""}>${me.DEX}</b>${
+      me.DEX>=STATMAX.DEX?`<span class="s">/${STATMAX.DEX}</span>`:""}</span>
     <span>INT <b>${me.INT}</b></span><span>VIT <b>${me.VIT}</b></span>
     <span>DEF <b>${me.DEF}</b></span><span>防御時 <b>+${blockValue()}</b></span>
 
     <span style="color:#c9a227">幸運 <b style="color:#c9a227">${me.LUK}</b></span>
     <span style="color:#c9a227">金貨 <b style="color:#c9a227">${me.gold}</b></span></div>
   ${(()=>{const c=lukCuts(me.LUK);return `
+  ${(()=>{
+    const gw=me.raw?Math.max(0,me.raw.DEX-STATMAX.DEX):0;
+    const pw=dexPassiveWaste();
+    if(!gw&&!pw)return "";
+    const a=[];
+    if(gw)a.push(`成長と装備で <b>+${gw}</b>`);
+    if(pw)a.push(`パッシブで <b>+${pw}</b>`);
+    return `<div class="mitem" style="color:var(--blood)">
+      DEX は上限 ${STATMAX.DEX} に達している　${a.join("　")} が無駄になっている
+      <br><span class="s" style="color:var(--ink)">上限を越えられるのは
+      スキルのバフだけ。装備とパッシブはここで止まる</span></div>`;
+  })()}
   <div class="msec">技 能　<span style="color:var(--dim);letter-spacing:0">1d100 で振る</span></div>
   <div class="mitem">${skillLine("　")}
     <br><span class="s">${SK[wepSkill()].n.replace(/ /g,"")} は いま持っている ${me.wep.n} の命中に効く。
@@ -5848,7 +5906,7 @@ function charModal(back){
   <div class="mitem">${me.eq.armor?itemIcon(armorIcon(me.eq.armor),16):tagFig("armor",12)} 防具　${eqLine("armor")}</div>
   ${[0,1,2,3].map(i=>{const g=(me.eq.acc||[])[i];
     return `<div class="mitem">${g?itemIcon(accIcon(g),16):tagFig("acc",12)} 装飾${i+1}　${
-      g?`${tierTag(g.tier)}${madeTag(g)} <b>${g.n}</b>　${g.d}`
+      g?`${tierTag(g.tier)}${madeTag(g)} <b>${g.n}</b>　${g.d}${wasteNote(g)}`
        :'<span style="color:#4d5346">空き</span>'}</div>`;}).join("")}
   <div class="msec">スキル　<span style="color:var(--dim);letter-spacing:0">${
     me.sk.length} / ${SKMAX}</span></div>`;
