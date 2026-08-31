@@ -868,7 +868,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0010";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0011";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -881,6 +881,11 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0011",tag:"up",v:"α0.0011",d:"2026-08-31",n:"索敵で先手が決まるようにした",b:[
+   "索敵で<b>片方だけが成功したとき、1ラウンド目だけ DEX を飛び越えて 成功したほうが先に動きます</b>。気配に気づいたほうが先に身構える、という理屈です",
+   "遅い相手でも索敵に勝てば先手を取れますし、速くても気づかれると後手に回ります",
+   "<b>両方成功・両方失敗のときは これまでどおり素早さ順</b>です。2ラウンド目からも必ず素早さ順に戻ります",
+ ]},
  {id:"v0010",tag:"up",v:"α0.0010",d:"2026-08-31",n:"宝箱を増やし、地図を長くした",b:[
    "<b>宝物の部屋が1階層に2つ</b>になりました。これまで宝物は1段にしか置かれておらず、通る道は1本なので<b>1階層に1回しか宝箱を開けられません</b>でした",
    "<b>宝箱は装備をそのままくれます。</b>3つから選ぶ画面をやめました。箱から飛び出したものが そのまま手に入ります。幸運が<b>大あたり以上なら装備が2つ</b>出ます",
@@ -2918,6 +2923,9 @@ const FOE={
 
 /* ---------- 状態 ---------- */
 let me,foes,round,busy=false,over=false,pending=null,scoutBonus=0,queue=[],qi=0;
+/* 索敵で片方だけが成功したとき、1ラウンド目だけ DEX を無視して
+   成功したほうが先に動く。"me" / "foe" / null。 */
+let scoutFirst=null;
 let owned=[];
 const sel={job:null,race:null,orig:null,dun:"plains",enc:"e1",luk:0,lukD:null};
 
@@ -4123,15 +4131,25 @@ function foeModal(f){
 /* ---------- 待ち行列 ---------- */
 /* DEX順の並び。次のラウンドも同じ規則で決まるので、前もって見せられる。
    （鈍足や強化で DEX が変われば当然そのぶん変わる） */
-function orderOf(){
+/* first に "me" / "foe" を渡すと、その回だけ DEX を飛び越えて並べ替える。
+   索敵で片方だけ成功したときの 1ラウンド目に使う。 */
+function orderOf(first){
   const dx=u=>(u===me?dexOf():Math.max(1,u.DEX-ailSum(u,"slow")));
-  return [me,...alive()].sort((a,b)=>{
+  const list=[me,...alive()].sort((a,b)=>{
     const d=dx(b)-dx(a);
     if(d)return d;
     return a===me?-1:1;
   });
+  if(first==="me"||first==="foe"){
+    const rest=list.filter(u=>u!==me);
+    return first==="me"?[me,...rest]:[...rest,me];
+  }
+  return list;
 }
-function buildQueue(){ queue=orderOf(); qi=0; }
+function buildQueue(){
+  /* 索敵の先制が効くのは 1ラウンド目だけ */
+  queue=orderOf(round===1?scoutFirst:null); qi=0;
+}
 async function runQueue(){
   while(qi<queue.length){
     const u=queue[qi];
@@ -6445,6 +6463,9 @@ async function doScout(){
   const a=await side("scMine",me.name,mine,"mine");
   const b=await side("scFoe",lead.name+(foes.length>1?` ほか ${foes.length-1}`:""),theirs,"foe");
   scoutBonus=Math.max(0,Math.min(3,a-b));
+  /* 片方だけが成功したときは、1ラウンド目だけ素早さを飛び越えて先に動く。
+     気配に気づいたほうが先に身構える、という理屈。 */
+  scoutFirst = (a>0&&b<=0) ? "me" : (b>0&&a<=0) ? "foe" : null;
 
   const diff=a-b;
   const vd=diff>=3?"完全に出し抜いた":diff===2?"はっきり先を取った"
@@ -6452,11 +6473,16 @@ async function doScout(){
   $("#scEnd").innerHTML=
     `<div class="scDiff" style="color:${scoutBonus?"#8fa261":"#7d6b68"}">${vd}</div>`+
     (scoutBonus?`<div class="scGain">最初の攻撃に 攻撃ダイス <b>+${scoutBonus}</b></div>`
-      :`<div class="scGain lose">先制の利はない</div>`);
+      :`<div class="scGain lose">先制の利はない</div>`)+
+    (scoutFirst==="me"?`<div class="scGain">1ラウンド目は <b>こちらが先に動く</b></div>`
+     :scoutFirst==="foe"?`<div class="scGain lose">1ラウンド目は <b style="color:var(--blood)">相手が先に動く</b></div>`
+     :"");
   SFX.found();
   log(`<span class="a">索敵</span> ${me.short||"自分"} <span class="m">${SCLV[a+1]}</span>`+
       ` 対 ${lead.name} <span class="m">${SCLV[b+1]}</span>`+
-    (scoutBonus?` → 最初の攻撃に ダイス <span class="m">+${scoutBonus}</span>`:` → 先制なし`));
+    (scoutBonus?` → 最初の攻撃に ダイス <span class="m">+${scoutBonus}</span>`:` → 先制なし`)+
+    (scoutFirst==="me"?`　<span class="m">1ラウンド目は先手</span>`
+     :scoutFirst==="foe"?`　<span class="c">1ラウンド目は後手</span>`:""));
   await wait(1500);
   ovHide();
 }
@@ -6483,6 +6509,7 @@ function prepareBattle(){
   }
   round=1;over=false;busy=true;pending=null;scoutBonus=0;
   queue=[me,...foes];qi=-1;
+  scoutFirst=null;
   me.block=0;me.half=false;me.rank="front";me.tmpPow=0;me.tmpDef=0;me.ail=[];me.counter=0;me.focus=null;me.dexUp=0;me.again=null;me.selfDef=0;me.endured=false;me.coat=null;me.beast=null;me.goldPow=null;me.selfPow=null;me.taken=0;
   me.sk.forEach(k=>k.cdLeft=0);
   $("#acts").innerHTML="";
