@@ -738,6 +738,12 @@ body.play .fh1{padding-right:62px}
   padding:5px 10px;cursor:pointer}
 .setrec button:hover{border-color:var(--blood);color:var(--blood)}
 /* 赤くするのは「記録を消す」だけ。同期のボタンは壊す操作ではない */
+.stbtn{margin:5px 6px 0 0;background:none;border:1px solid var(--line);
+  color:var(--brass);font-family:inherit;font-size:11px;letter-spacing:.1em;
+  padding:4px 12px;cursor:pointer}
+.stbtn:hover{border-color:var(--brass)}
+.stbtn.drop{color:var(--ink)}
+.stbtn.drop:hover{border-color:var(--blood);color:var(--blood)}
 #setCloud button{margin-right:6px}
 #setCloud button:hover{border-color:var(--brass);color:var(--brass)}
 .setver{display:flex;justify-content:space-between;font-size:11px;color:var(--ink);
@@ -868,7 +874,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0011";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0012";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -881,6 +887,12 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0012",tag:"up",v:"α0.0012",d:"2026-08-31",n:"装備に予備の枠を作った",b:[
+   "<b>宝箱で武器や防具が出ると、いま使っているものが確認なしに置き換わっていました。</b>これを直しました",
+   "<b>装備の予備を 2 つまで持てます。</b>枠が埋まっているときに拾ったものは、まず予備に入ります。いまの装備はそのままです",
+   "<b>装備・状態の窓に「予備」の欄</b>ができました。「着ける」で入れ替え、外れたものは予備に戻ります",
+   "<b>予備も満杯のときだけ、何を捨てるか訊く画面</b>が出ます。いま着けているものと予備が並ぶので、武器なら攻撃ダイスと威力を見比べて選べます。装飾も同じです",
+ ]},
  {id:"v0011",tag:"up",v:"α0.0011",d:"2026-08-31",n:"索敵で先手が決まるようにした",b:[
    "索敵で<b>片方だけが成功したとき、1ラウンド目だけ DEX を飛び越えて 成功したほうが先に動きます</b>。気配に気づいたほうが先に身構える、という理屈です",
    "遅い相手でも索敵に勝てば先手を取れますし、速くても気づかれると後手に回ります",
@@ -2971,7 +2983,8 @@ function makeMe(){
   const m={name:`${RACE[sel.race].n}の${JOB[sel.job].n}`,short:J.n,art:J.art,
     baseWep:J.wep,isFoe:false,
     base:base,grow:{STR:0,DEX:0,INT:0,VIT:0,DEF:0},
-    eq:{wep:null,armor:null,acc:[]},blkBonus:0,gold:0,bag:{},mats:{},recipes:[],lv:1,exp:0,
+    eq:{wep:null,armor:null,acc:[]},stash:[],
+    blkBonus:0,gold:0,bag:{},mats:{},recipes:[],lv:1,exp:0,
     sk:[],pass:[],block:0,half:false,rank:"front"};
   recalcMe(m,true);
   return m;
@@ -5708,10 +5721,11 @@ async function openChest(nd,weak){
   for(let i=0;i<CG.gear&&pool.length;i++){
     const g=pool.splice(Math.floor(Math.random()*pool.length),1)[0];
     const icon=g.slot==="wep"?wepIcon(g.key):(g.slot==="armor"?armorIcon(g):accIcon(g));
-    gains.push({ic:itemIcon(icon,34),sm:itemIcon(icon,20),
-      n:`${g.n}`,d:`${TIERN[g.tier===undefined?1:g.tier]}　${g.d||""}`.slice(0,60)});
     const res=applyReward("gear",g);
     if(res&&res.full)swaps.push(res);
+    gains.push({ic:itemIcon(icon,34),sm:itemIcon(icon,20),n:`${g.n}`,
+      d:(res&&res.stashed?"予備へ　":res&&res.full?"置き場が満杯　":"")
+        +`${TIERN[g.tier===undefined?1:g.tier]}　${gearDesc(g)}`.slice(0,52)});
   }
 
   /* ③ 揺らして、一つずつ飛び出させる */
@@ -5999,6 +6013,14 @@ function charModal(back){
     return `<div class="mitem">${g?itemIcon(accIcon(g),16):tagFig("acc",12)} 装飾${i+1}　${
       g?`${tierTag(g.tier)}${madeTag(g)} <b>${g.n}</b>　${g.d}${wasteNote(g)}`
        :'<span style="color:#4d5346">空き</span>'}</div>`;}).join("")}
+  <div class="msec">予 備　<span style="color:var(--dim);letter-spacing:0">${
+    (me.stash||[]).length} / ${STASHMAX}</span></div>
+  ${(me.stash||[]).length?(me.stash||[]).map((g,i)=>
+    `<div class="mitem">${itemIcon(g.slot==="wep"?wepIcon(g.key):(g.slot==="armor"?armorIcon(g):accIcon(g)),16)} ${
+      tierTag(g.tier)}${madeTag(g)} <b>${g.n}</b>　${gearDesc(g)}
+      <br><button class="stbtn" data-eq="${i}">着 け る</button>
+      <button class="stbtn drop" data-drop="${i}">捨 て る</button></div>`).join("")
+    :`<div class="mitem" style="color:#4d5346">なし　<span class="s">宝箱や戦利品で枠が埋まっているものは、いったんここに入る</span></div>`}
   <div class="msec">スキル　<span style="color:var(--dim);letter-spacing:0">${
     me.sk.length} / ${SKMAX}</span></div>`;
   h+=me.sk.length?me.sk.map(k=>`<div class="mitem">
@@ -6017,6 +6039,15 @@ function charModal(back){
     :`<div class="mitem" style="color:#4d5346">まだ無い</div>`;
   h+=`<button class="mclose" id="mClose">${back?"もどる":"閉じる"}</button>`;
   openModal(h,true);
+  $("#mbox").querySelectorAll("[data-eq]").forEach(b=>{
+    b.onclick=()=>{const i=+b.dataset.eq;
+      const g=me.stash[i];
+      if(g&&g.slot==="acc"&&(me.eq.acc||[]).length>=ACCMAX){closeModal();return accPickModal(g,i);}
+      stashEquip(i);closeModal();charModal(back);};});
+  $("#mbox").querySelectorAll("[data-drop]").forEach(b=>{
+    b.onclick=()=>{
+      if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent="本当に捨てる";return;}
+      me.stash.splice(+b.dataset.drop,1);SFX.click();closeModal();charModal(back);};});
   $("#mClose").onclick=()=>{if(back){closeModal();back();}else closeModal();};
 }
 
@@ -6050,6 +6081,10 @@ function drawRewards(){
 }
 const SLOTN={wep:"武器",armor:"防具",acc:"装飾"};
 const ACCMAX=4;
+/* 装備の予備。武器・防具・装飾を種類を問わずここに置いておける。
+   宝箱で武器が出るたびに いまの武器が問答無用で置き換わっていたのを、
+   ここへ一度受けてから自分で着け替える形にした。 */
+const STASHMAX=2;
 const SKMAX=6;
 const EXPNEED=[0,18,28,38,48,58,68,78,88,98,108,118,128,138,148,158,168,178,188,198,208,218,228,238,248,258];
 function expCap(){return EXPNEED[Math.min(EXPNEED.length-1,me.lv)];}
@@ -6069,10 +6104,16 @@ function tierTag(t){
   return `<span class="tierb" style="color:${c};border-color:${c}">${TIERN[t]}</span>`;
 }
 function slotNote(slot){
+  const sp=STASHMAX-((me.stash||[]).length);
+  const spare=sp>0?`　予備 ${sp} つ空き`:`　予備も満杯`;
   if(slot==="acc"){
     const n=(me.eq.acc||[]).length;
     return n<ACCMAX?`装飾の枠　${n} / ${ACCMAX}　まだ空いている`
-                   :`装飾の枠　満杯　どれかと入れ替え`;
+                   :`装飾の枠　満杯${spare}`;
+  }
+  if(slot==="wep"||slot==="armor"){
+    if(!me.eq[slot])return `${slot==="wep"?"武器":"防具"}の枠　空いている`;
+    return `いまの ${slot==="wep"?me.wep.n:me.eq.armor.n} は外さない${spare}`;
   }
   const cur=me.eq[slot];
   return `${SLOTN[slot]} の枠`+(cur?`　いまの「${cur.n}」と入れ替え`:"　空いている");
@@ -6089,16 +6130,62 @@ function applyReward(cat,r){
     if(me.pass.length<PASSMAX){me.pass.push(r);recalcMe(me,false);}
     else return {full:r,kind:"pass"};
   }
-  else if(r.slot==="acc"){
+  else if(cat==="gear"){
+    /* 空いている枠にはそのまま着ける。
+       埋まっていれば予備へ。予備も満杯なら、何と入れ替えるか訊く。 */
     me.eq.acc=me.eq.acc||[];
-    if(me.eq.acc.length<ACCMAX){me.eq.acc.push(r);recalcMe(me,false);return null;}
+    me.stash=me.stash||[];
+    if(r.slot==="acc"&&me.eq.acc.length<ACCMAX){me.eq.acc.push(r);recalcMe(me,false);return null;}
+    if(r.slot!=="acc"&&!me.eq[r.slot]){me.eq[r.slot]=r;recalcMe(me,false);return null;}
+    if(me.stash.length<STASHMAX){me.stash.push(r);return {stashed:true};}
     return {full:r};
   }
-  else{me.eq[r.slot]=r;recalcMe(me,false);}
   return null;
 }
+/* 装備の一行説明。武器の等級表は d を持たないので、武器の型から組み立てる */
+function gearDesc(g){
+  if(!g)return "";
+  if(g.slot==="wep"&&WEP[g.key]){
+    const w=WEP[g.key];
+    return `攻撃ダイス ${w.hands}　威力 ${Math.round(statMul(w)*100)}%　${
+      w.type==="melee"?"近接":"遠隔"}　${w.d||""}`;
+  }
+  return g.d||"";
+}
+/* 予備の1つを着ける。外れたものは予備の同じ場所に戻る */
+function stashEquip(i){
+  const g=me.stash[i]; if(!g)return;
+  if(g.slot==="acc"){
+    if((me.eq.acc||[]).length<ACCMAX){me.eq.acc.push(g);me.stash.splice(i,1);}
+    else return accPickModal(g,i);
+  }else{
+    const old=me.eq[g.slot]||null;
+    me.eq[g.slot]=g;
+    if(old)me.stash[i]=old; else me.stash.splice(i,1);
+  }
+  recalcMe(me,false);SFX.pick();
+}
+/* 装飾の枠が満杯のとき、予備のどれと入れ替えるか */
+function accPickModal(g,i){
+  let h=`<div class="mtitle">装 飾 の 枠 が 満 杯</div>
+    <div class="mgrow"><b>${g.n}</b>　${gearDesc(g)}</div>
+    <div class="msub">外すものを選ぶ。外したものは予備に戻る</div><div class="acts">`;
+  me.eq.acc.forEach((x,j)=>{
+    h+=`<button class="act rew cgear" data-j="${j}">
+      <span class="rcat">外す</span><span class="an">${x.n}</span>
+      <span class="ad">${x.d}</span></button>`;});
+  h+=`<button class="act cancel wide" data-keep="1">
+    <span class="an">やめる</span><span class="ad">予備に置いたままにする</span></button></div>`;
+  openModal(h);
+  $("#mbox").querySelectorAll("[data-j]").forEach(b=>{
+    b.onclick=()=>{const j=+b.dataset.j;const old=me.eq.acc[j];
+      me.eq.acc[j]=g;me.stash[i]=old;recalcMe(me,false);
+      SFX.pick();closeModal();charModal();};});
+  const kb=$("#mbox").querySelector("[data-keep]");
+  if(kb)kb.onclick=()=>{closeModal();charModal();};
+}
 function swapModal(kind,newR,after){
-  if(kind==="acc")return accSwapModal(newR,after);
+  if(kind==="acc"||(newR&&newR.slot))return gearSwapModal(newR,after);
   const isAct=(kind==="act");
   const list=isAct?me.sk:me.pass;
   const label=isAct?"ス キ ル":"パ ッ シ ブ";
@@ -6120,20 +6207,36 @@ function swapModal(kind,newR,after){
   const kb=$("#mbox").querySelector("[data-keep]");
   if(kb)kb.onclick=()=>{closeModal();after&&after();};
 }
-function accSwapModal(newR,after){
-  let h=`<div class="mtitle">装 飾 の 枠 が 埋 ま っ て い る</div>
-    <div class="mgrow"><b>${newR.n}</b>　${newR.d}</div>
-    <div class="msub">外すものを選ぶ</div><div class="acts">`;
-  me.eq.acc.forEach((g,i)=>{
+/* 装備の置き場が全部埋まったときに、何と入れ替えるか訊く。
+   いま着けている同じ種類のものと、予備の2つが並ぶ。
+   選ばなかったものは捨てることになるので、そう書く。 */
+function gearSwapModal(newR,after){
+  const SLOTN={wep:"武 器",armor:"防 具",acc:"装 飾"};
+  const cur=[];
+  if(newR.slot==="acc")(me.eq.acc||[]).forEach((g,i)=>cur.push({g,kind:"acc",i}));
+  else if(me.eq[newR.slot])cur.push({g:me.eq[newR.slot],kind:"eq"});
+  (me.stash||[]).forEach((g,i)=>cur.push({g,kind:"stash",i}));
+
+  let h=`<div class="mtitle">置 き 場 が 満 杯</div>
+    <div class="mgrow">${tierTag(newR.tier)}${madeTag(newR)} <b>${newR.n}</b>　${gearDesc(newR)}
+      <br><span class="s">${SLOTN[newR.slot]||""}　装備の枠も予備の ${STASHMAX} つも埋まっている</span></div>
+    <div class="msub">捨てるものを選ぶ</div><div class="acts">`;
+  cur.forEach((c,i)=>{
     h+=`<button class="act rew cgear" data-i="${i}">
-      <span class="rcat">外す</span><span class="an">${g.n}</span>
-      <span class="ad">${g.d}</span></button>`;});
+      <span class="rcat">${c.kind==="stash"?"予備を捨てる":"外して捨てる"}</span>
+      <span class="an">${c.g.n}</span>
+      <span class="ad">${gearDesc(c.g)}</span></button>`;});
   h+=`<button class="act cancel wide" data-keep="1">
-    <span class="an">受け取らない</span><span class="ad">いまの装飾をそのまま使う</span></button></div>`;
+    <span class="an">受け取らない</span>
+    <span class="ad">${newR.n} を置いていく</span></button></div>`;
   openModal(h);
   $("#mbox").querySelectorAll("[data-i]").forEach(b=>{
-    b.onclick=()=>{me.eq.acc[+b.dataset.i]=newR;recalcMe(me,false);
-      SFX.found();closeModal();after&&after();};});
+    b.onclick=()=>{
+      const c=cur[+b.dataset.i];
+      if(c.kind==="acc")me.eq.acc[c.i]=newR;
+      else if(c.kind==="eq")me.eq[newR.slot]=newR;
+      else me.stash[c.i]=newR;
+      recalcMe(me,false);SFX.found();closeModal();after&&after();};});
   const kb=$("#mbox").querySelector("[data-keep]");
   if(kb)kb.onclick=()=>{closeModal();after&&after();};
 }
