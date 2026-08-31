@@ -868,6 +868,7 @@ const NEWS=[
    "技能値は<b>職業・種族・欲望だけ</b>で決まります。能力値からも装備からも来ません",
    "<b>DEX の役割を減らしました。</b>これまで DEX は 命中・回避・行動順・索敵 の4つを一人で抱えていました。命中は 射撃／格闘 へ、索敵は 探索 へ移り、DEX に残るのは <b>回避と行動順</b> だけになります",
    "<b>遠距離と近距離に腕前の差が生まれます。</b>これまで違いは「後列を狙えるか」だけでした。いまはナイトが弓を持つと当たらず、アーチャーが短剣を持っても当たりません",
+   "<b>DEX に上限 100 を置きました。</b>回避と行動順に効くうえ装備で大きく伸びるので、放っておくと後半で敵が当てられなくなっていました。素の成長だけで Lv16 に 96 まで来ます",
    "<b>速い敵ほど当てにくくなりました。</b>スライム(DEX 6)とオオコウモリ(DEX 42)では必要な目が2つ違います。あわせて <b>鈍足</b> が命中にも効くようになりました（これまでは行動順を遅らせるだけでした）",
    "<b>索敵のやり方を変えました。</b>両者が d6 を撒いて差を取る形をやめ、探索の 1d100 ひと振りにしました。これまでは誰がやっても上限の +3 が出ていて、索敵の値が意味を持っていませんでした",
    "<b>こしらえるときに技能を振ります。</b>成功の段階で品質が上がります。料理は取れる数が増え（成功1／上物2／業物3／会心4）、鍛冶は装備の性能そのものが上がります（＋1.15倍／＋1.3倍／★1.5倍）",
@@ -2678,6 +2679,12 @@ function passNames(k){
      ② 宝箱に並ぶ装備の等級の上限 +1     1d100 ≦ 幸運
      ③ 宝箱に並ぶ数 3 → 4               1d100 ≦ 幸運 ÷ 2
    ②③ は宝箱と打ち捨てられた箱だけ。戦利品とレベルアップには効かない。 */
+/* 能力値の上限。決めたものだけ書く（書いていない能力値は青天井のまま）。
+   DEX は 回避・行動順 に効き、しかも装備で大きく伸びるので、
+   放っておくと後半でどこまでも伸びて相手が当てられなくなる。
+   一時的な上乗せ（バフ・パッシブ）も dexOf() で同じ上限に丸める。 */
+const STATMAX={DEX:100};
+
 const LUKMAX=95;                 /* 確定にはしない。必ず外れる余地を残す */
 const r100=()=>1+Math.floor(Math.random()*100);
 function lukOf(){return (me&&me.LUK)||0;}
@@ -2944,7 +2951,7 @@ function recalcMe(m,full){
     if(g.bag)bag+=g.bag;
   });
   ["STR","DEX","INT","VIT","DEF"].forEach(k=>{
-    m[k]=Math.max(1,m.base[k]+m.grow[k]+st[k]);
+    m[k]=Math.max(1,Math.min(STATMAX[k]||9999,m.base[k]+m.grow[k]+st[k]));
   });
   /* 幸運は伸びない。生まれの値と装備だけで決まる */
   m.LUK=Math.max(0,Math.min(LUKMAX,(m.base.LUK||0)+st.LUK));
@@ -3307,10 +3314,12 @@ function addBuff(u,v,t){(u.buffs=u.buffs||[]).push({v,t:t||1});}
 function slowSum(){return ailSum(me,"slow");}
 function dexOf(){
   const dp=1+passOn("statDEX")/100;
-  return Math.max(1,Math.round(me.DEX*dp)-slowSum()+passOn("dex")+passOn("light")*15
+  const v=Math.round(me.DEX*dp)-slowSum()+passOn("dex")+passOn("light")*15
     +passOn("allround")*3+passOn("slim")*10+passOn("fang")*6
     +(me.order?Math.round(me.DEX*me.order.dex/100):0)
-    +(me.beast?me.beast.dex:0)+(me.dexUp||0));
+    +(me.beast?me.beast.dex:0)+(me.dexUp||0);
+  /* 上限は上乗せのあとにも掛ける。鈍足で下がるぶんは丸めない */
+  return Math.max(1,Math.min(STATMAX.DEX,v));
 }
 function powOf(u,opt){
   opt=opt||{};
