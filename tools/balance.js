@@ -48,6 +48,7 @@ function foeStats(actIdx) {
       return Math.round(med(tot) * dm);
     })(),
     dice: med(list.flatMap(f => (f.acts||[]).filter(a=>a.k==="atk").map(a=>a.dice||1))),
+    DEX: med(list.map(f => f.DEX)),
     /* 索敵の相手側。doScout と同じ式 */
     scout: Math.round(med(list.map(f => f.scout||0))) + Math.floor(med(list.map(f=>f.DEX))/13),
     n: list.length,
@@ -56,6 +57,9 @@ function foeStats(actIdx) {
 
 /* ---- 計算はゲーム本体と同じ形 ---- */
 let FLOOR = 0.25;           /* perHit の下限。手数の多い武器ほどここに救われる */
+let EVDIV = 15;             /* 回避 ev = floor(DEX差 / EVDIV)。threshold() と同じ */
+let EVCAP = 99;             /* ev の上限。いまは無い（閾値6で頭打ちになるだけ） */
+let FOEDEX = 1;             /* 敵の DEX を深さで伸ばす倍率（いまは伸びない） */
 const perHit = (pow, def) => Math.max(Math.ceil(pow*FLOOR), pow - def);
 /* 閾値thr以上が当たり、(出目-thr)*5%（上限25%）を上乗せ。期待値を返す */
 function diceExp(thr) {
@@ -103,7 +107,15 @@ function rate(job, race, lv, foe, grow) {
   const b = build(job, race, lv, grow);
   const ranged = b.w.type === "ranged";
   const pow = Math.round(b.st[b.w.stat] * (b.w.mul||1));
-  const thr = 4;
+  /* 命中閾値は threshold() と同じ形にする。
+     ev = floor((狙われる側のDEX − 狙う側のDEX)/15) を 4 に足し、2〜6 で丸める。
+     これを入れないと、DEX の高い組み合わせの耐久を大きく取りこぼす
+     （敵が 4以上ではなく 6 でしか当たらなくなるため）。 */
+  const ev = (a, d) => Math.max(2, Math.min(6,
+    4 + Math.min(EVCAP, Math.max(0, Math.floor((d - a)/EVDIV)))));
+  const fdex   = Math.round(foe.DEX * FOEDEX);
+  const thr    = ev(b.st.DEX, fdex);      /* 自分が敵を狙うとき */
+  const thrFoe = ev(fdex, b.st.DEX);      /* 敵が自分を狙うとき */
   /* 索敵に勝つと、その戦闘の最初の攻撃だけダイスが増える（最大 +3）。
      DEX が索敵ダイスに乗る（floor(DEX/13)）ので、DEX の高い職業ほど得をする。
      1戦のうち1回ぶんなので、倒すのにかかるターン数で薄めて数える。 */
@@ -112,12 +124,12 @@ function rate(job, race, lv, foe, grow) {
   const perTurn = perHit(pow, foe.DEF) * diceExp(thr);
   const turnsToKill = Math.max(1, foe.encHP / (perTurn * b.w.hands));
   const dmg = Math.round(perTurn * (b.w.hands + bonus/turnsToKill));
-  let taken = Math.max(1, perHit(foe.STR, b.st.DEF) * foe.dice * diceExp(thr));
+  let taken = Math.max(1, perHit(foe.STR, b.st.DEF) * foe.dice * diceExp(thrFoe));
   if (ranged) taken *= (1 - FRONT_RATIO*0.4);      /* 後衛に下がっていられる */
   const turns = b.maxHP / taken;
   return {名:`${RACE[race].n} ${JOB[job].n}`, job, race, 列:ranged?"後":"前",
           HP:b.maxHP, DEF:b.st.DEF, 威力:pow, ダイス:b.w.hands,
-          索敵:+bonus.toFixed(1),
+          攻:thr, 防:thrFoe, 索敵:+bonus.toFixed(1),
           火力:dmg, 耐久:+turns.toFixed(1), 総合:Math.round(dmg*turns)};
 }
 
@@ -129,12 +141,13 @@ function table(lv, actIdx, grow, label) {
   const A = {火力:avg("火力"), 耐久:avg("耐久"), 総合:avg("総合")};
   rows.sort((x,y)=>y.総合-x.総合);
   console.log(`\n=== ${label}　Lv${lv}／${actIdx+1}階層の敵（DEF ${foe.DEF}・威力 ${foe.STR}・${foe.dice}発・遭遇まるごとで HP ${foe.encHP}・索敵 ${foe.scout}D）===`);
-  console.log("  組み合わせ".padEnd(19)+"  HP  DEF 威力 ダイス 索敵   火力      耐久        総合");
+  console.log("  組み合わせ".padEnd(19)+"  HP  DEF 威力 ダイス  攻  防 索敵   火力      耐久        総合");
   rows.forEach(s => {
     const p = k => `${String(s[k]).padStart(5)}(${String(Math.round(s[k]/A[k]*100)).padStart(3)}%)`;
     console.log("  "+s.名.padEnd(16,"　").slice(0,16)+
       String(s.HP).padStart(5)+String(s.DEF).padStart(5)+String(s.威力).padStart(5)+
-      String(s.ダイス).padStart(5)+String(s.索敵).padStart(5)+"  "+p("火力")+" "+p("耐久")+" "+p("総合"));
+      String(s.ダイス).padStart(5)+String(s.攻).padStart(4)+String(s.防).padStart(4)+
+      String(s.索敵).padStart(5)+"  "+p("火力")+" "+p("耐久")+" "+p("総合"));
   });
   const spread = k => {
     const v = rows.map(x=>x[k]);
@@ -145,8 +158,10 @@ function table(lv, actIdx, grow, label) {
 }
 
 /* ---- 案を比べる ---- */
-function summary(lv, act, grow, wep, floor, jobSt, raceSt) {
+function summary(lv, act, grow, wep, floor, jobSt, raceSt, ev) {
   const save = {}, saveJob = {}, saveRace = {};
+  const keepEv = [EVDIV, EVCAP, FOEDEX];
+  if (ev) { if (ev.div) EVDIV = ev.div; if (ev.cap!=null) EVCAP = ev.cap; if (ev.foedex) FOEDEX = ev.foedex; }
   if (wep) { Object.keys(wep).forEach(k => { save[k] = {...WEP[k]}; Object.assign(WEP[k], wep[k]); }); }
   if (jobSt) { Object.keys(jobSt).forEach(k => { saveJob[k] = {...JOB[k].st}; Object.assign(JOB[k].st, jobSt[k]); }); }
   if (raceSt){ Object.keys(raceSt).forEach(k => { saveRace[k] = {...RACE[k].st}; Object.assign(RACE[k].st, raceSt[k]); }); }
@@ -155,6 +170,7 @@ function summary(lv, act, grow, wep, floor, jobSt, raceSt) {
   const rows = [];
   Object.keys(JOB).forEach(j => Object.keys(RACE).forEach(r => rows.push(rate(j,r,lv,foe,grow))));
   FLOOR = keepFloor;
+  [EVDIV, EVCAP, FOEDEX] = keepEv;
   if (wep) Object.keys(save).forEach(k => Object.assign(WEP[k], save[k]));
   if (jobSt) Object.keys(saveJob).forEach(k => Object.assign(JOB[k].st, saveJob[k]));
   if (raceSt)Object.keys(saveRace).forEach(k => Object.assign(RACE[k].st, saveRace[k]));
@@ -168,20 +184,27 @@ function summary(lv, act, grow, wep, floor, jobSt, raceSt) {
       総合: Math.round(sub.reduce((a,b)=>a+b.総合,0)/sub.length / avg("総合") * 100),
     };
   });
+  const byRace = {};
+  Object.keys(RACE).forEach(r => {
+    const sub = rows.filter(x => x.race === r);
+    byRace[RACE[r].n] = Math.round(sub.reduce((a,b)=>a+b.総合,0)/sub.length / avg("総合") * 100);
+  });
   const v = rows.map(x=>x.総合);
-  return {byJob, spread:+(Math.max(...v)/Math.min(...v)).toFixed(2),
+  return {byJob, byRace, spread:+(Math.max(...v)/Math.min(...v)).toFixed(2),
           最弱:rows.reduce((a,b)=>a.総合<b.総合?a:b).名,
           最強:rows.reduce((a,b)=>a.総合>b.総合?a:b).名};
 }
 function compare(cases) {
   [[1,0],[10,1],[16,2]].forEach(([lv,act]) => {
     console.log(`\n=== Lv${lv} ／ ${act+1}階層の敵　（職業ごとの平均。100%が全体平均）===`);
-    console.log("  案".padEnd(22)+"ナイト        アーチャー      スカウト      ウィザード     ばらつき");
+    console.log("  案".padEnd(22)+"ナイト        アーチャー      スカウト      ウィザード      種族ごと                    ばらつき");
     cases.forEach(c => {
-      const r = summary(lv, act, c.grow, c.wep, c.floor, c.job, c.race);
+      const r = summary(lv, act, c.grow, c.wep, c.floor, c.job, c.race, c.ev);
       const f = n => {const x=r.byJob[n];return `${String(x.総合).padStart(3)}%(火${String(x.火力).padStart(3)}耐${String(x.耐久).padStart(3)})`;};
+      const g = n => `${String(r.byRace[n]).padStart(3)}%`;
       console.log("  "+c.n.padEnd(20,"　").slice(0,20)+" "+
         f("ナイト")+" "+f("アーチャー")+" "+f("スカウト")+" "+f("ウィザード")+
+        `  人${g("ヒューム")}矮${g("ドワーフ")}妖${g("エルフ")}獣${g("ビースト")}`+
         `  ${String(r.spread).padStart(5)}倍`);
     });
   });
@@ -210,16 +233,27 @@ if (require.main === module) {
     const mulUp09 = {};
     ["dagger","twindagger","fang","rapier","clawblade","shadowfang","assassin"]
       .forEach(k => { if (WEP[k]) mulUp09[k] = {mul:+(WEP[k].mul*0.92).toFixed(2)}; });
+    const E = o => ({elf:{...RACE.elf.st, ...o}});
     compare([
-      {n:"いま(2026-08-31 調整後)", grow:null},
-      {n:"短剣をさらに 1.09倍", grow:null, wep:mulUp},
-      {n:"短剣を 0.92倍に戻す", grow:null, wep:mulUp09},
-      {n:"魔道 VIT2→1", grow:{...GROW, mage:{INT:5,VIT:1}}},
-      {n:"エルフ STR−3→0", grow:null, race:{elf:{...RACE.elf.st, STR:0}}},
-      {n:"矮 VIT14→11", grow:null, race:{dwarf:{...RACE.dwarf.st, VIT:11}}},
+      {n:"いま", grow:null},
+      {n:"Q 回避の上限 +1まで", ev:{cap:1}},
+      {n:"Q＋妖STR−3→0", ev:{cap:1}, race:E({STR:0})},
+      {n:"Q＋妖STR0 VIT6", ev:{cap:1}, race:E({STR:0,VIT:6})},
+      {n:"Q＋妖STR0 VIT7", ev:{cap:1}, race:E({STR:0,VIT:7})},
+      {n:"Q＋妖STR0 VIT6 DEF1", ev:{cap:1}, race:E({STR:0,VIT:6,DEF:1})},
+      {n:"Q＋妖STR0 VIT6 DEX10", ev:{cap:1}, race:E({STR:0,VIT:6,DEX:10})},
     ]);
 
 
+  } else if (process.argv.some(a => a.startsWith("--elf="))) {
+    /* エルフの案を1つ当てて、16通りの内訳をそのまま見る */
+    const key = process.argv.find(a => a.startsWith("--elf=")).slice(6);
+    const OPTS = {
+      a:{STR:0}, b:{STR:0,VIT:6}, c:{STR:0,VIT:6,DEF:2},
+      d:{STR:2,VIT:6,DEF:2}, f:{STR:2,VIT:6,DEF:2,INT:9},
+    };
+    Object.assign(RACE.elf.st, OPTS[key] || {});
+    [[1,0],[10,1]].forEach(([lv,act]) => table(lv, act, null, "エルフ案 "+key));
   } else if (process.argv.includes("--before")) {
     /* 2026-08-31 の調整を巻き戻した状態。効き目を確かめるとき用 */
     GROW.scout = {DEX:5,STR:2,VIT:2};
