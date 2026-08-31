@@ -915,7 +915,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0015";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0016";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -6091,11 +6091,12 @@ function drawEnd(){
   const lines=[];
   if(RUN.cleared){
     lines.push(`最奥を抜けた。<span class="gain">思い出結晶</span> として記録された。`);
+    lines.push(`持ち帰れたのは知識だけ。金貨も素材も装備も置いてきた。`);
     lines.push(`技 ${me.sk.map(x=>x.n).join("・")||"なし"}`);
     lines.push(`パッシブ ${me.pass.map(x=>x.n).join("・")||"なし"}`);
   }else{
     lines.push(`${RUN.act+1}階層で力尽きた。<span class="loss">亡霊</span> として記録された。`);
-    lines.push(`持ち帰れたのは知識だけ。`);
+    lines.push(`持ち帰れたのは知識だけ。金貨も素材も装備も失った。`);
   }
   const cx=Object.keys(META.codex).map(k=>`${FOE[k].n} ${codexLv(k)}/5`).join("　");
   lines.push(`引き継ぐ図鑑：${cx||"なし"}`);
@@ -6927,8 +6928,10 @@ function drawTut(){
     </div>
     <div class="tsec">
       <div class="th">潜 り、拾 い、ま た 潜 る</div>
-      <p>強さは持ち帰れません。持ち帰るのは知識だけ。</p>
-      <p>倒した敵、拾った素材、覚えた技は 図鑑に残ります。</p>
+      <p>強さは持ち帰れません。<b>金貨も 素材も 道具も 装備も 経験も、その一周かぎり</b>。<br>
+         次の冒険者は また Lv1 の手ぶらから始まります。</p>
+      <p>残るのは <b>知識だけ</b>。倒した敵・拾った素材・覚えた技が
+         図鑑に書き込まれ、次の冒険者はそれを知った状態で潜れます。</p>
       <p><span class="s">いま スキル ${sk}・パッシブ ${ps}・全 ${c.all} 件</span></p>
     </div>`;
 }
