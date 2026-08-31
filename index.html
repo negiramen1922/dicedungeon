@@ -2239,6 +2239,64 @@ const GEAR={
  ],
 };
 
+/* ---------- 技 能 値 ----------
+   能力値（STR/DEX/INT/VIT/DEF）とは別に持つ、4つの心得。
+   探索の事象で「どう切り抜けるか」を選ぶときに使う。
+
+   判定は  2d6 + 技能値 ≧ 難度。
+   戦闘は d6 のプール、幸運は 1d100、技能は 2d6 ―― 振り方で何の判定か分かる。
+   ゾロ目の 12 は技能がいくつでも成功、2 は必ず失敗。
+
+   値は  職業 + 種族 + 欲望 の基礎 ＋ floor(元になる能力値 / 12)。
+   レベルアップで別に選ばせない（スキル・パッシブとの取り合いを避ける）。
+   能力値が伸びれば技能も自然に伸びる。                                  */
+const SKILLDC={easy:10, mid:13, hard:16};      /* 易 / 並 / 難 */
+const SK={
+  agi:{n:"軽 業",st:"DEX",d:"跳ぶ・避ける・忍ぶ"},
+  pow:{n:"剛 力",st:"STR",d:"押す・こじ開ける・担ぐ"},
+  lore:{n:"知 識",st:"INT",d:"読む・見抜く・思い出す"},
+  guts:{n:"胆 力",st:"VIT",d:"耐える・怯まない・踏み込む"},
+};
+const SKJOB={
+  knight:{pow:2,guts:2},
+  archer:{agi:2,lore:1,pow:1},
+  scout: {agi:3,lore:1},
+  mage:  {lore:3,guts:1},
+};
+const SKRACE={
+  hume: {agi:1,pow:1,lore:1,guts:1},
+  dwarf:{pow:2,guts:2,agi:-1},
+  elf:  {lore:2,agi:2,pow:-1,guts:-1},
+  beast:{agi:2,guts:2,pow:1,lore:-2},
+};
+const SKORIG={
+  greed:{lore:1}, wrath:{pow:1}, sloth:{guts:1}, gluttony:{guts:1},
+  pride:{lore:1}, envy:{agi:1},  lust:{agi:1},
+};
+/* いまの技能値。装備や成長で能力値が動けば、ここも動く */
+function skillOf(k){
+  const S=SK[k]; if(!S||!me)return 0;
+  const base=((SKJOB[sel.job]||{})[k]||0)
+            +((SKRACE[sel.race]||{})[k]||0)
+            +((SKORIG[sel.orig]||{})[k]||0);
+  return base+Math.floor((me[S.st]||0)/12);
+}
+/* 作成画面など、me がまだ無いときのための版 */
+function skillOfMe(m,k){
+  const S=SK[k]; if(!S||!m)return 0;
+  return ((SKJOB[sel.job]||{})[k]||0)
+        +((SKRACE[sel.race]||{})[k]||0)
+        +((SKORIG[sel.orig]||{})[k]||0)
+        +Math.floor((m[S.st]||0)/12);
+}
+/* 2d6 + 技能値 ≧ 難度。出目と成否をそのまま返す */
+function skillRoll(k,dc){
+  const a=r6(), b=r6(), v=skillOf(k), sum=a+b;
+  const ok = sum===12 ? true : sum===2 ? false : (sum+v)>=dc;
+  return {a,b,sum,v,dc,total:sum+v,ok,
+    crit:sum===12, fumble:sum===2};
+}
+
 const RACE={
  hume:{n:"ヒューム",d:"癖がない。何にでも伸びる。",st:{STR:5,DEX:5,INT:5,VIT:8,DEF:2},scout:1},
  dwarf:{n:"ドワーフ",d:"堅い。重い装備を苦にしない。",st:{STR:8,DEX:-5,INT:0,VIT:14,DEF:3},scout:0},
