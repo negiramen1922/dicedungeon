@@ -7,6 +7,7 @@
 
   測っているもの（すべて初期装備・装飾なし）
     火力   1ターンの見込みダメージ。敵のDEFの分布と、出目の期待値を通す
+           索敵で勝ったぶんの初撃ボーナスも、倒すまでのターン数で薄めて足している
     耐久   敵の攻撃を受けて倒れるまでのターン数
     総合   火力 × 耐久（1戦でどれだけ働けるかの目安）
 
@@ -32,7 +33,23 @@ function foeStats(actIdx) {
   return {
     DEF: med(list.map(f => f.DEF)),
     STR: Math.round(med(list.map(f => f.STR)) * (1 + (dm-1)*0.6)),
+    HP:  Math.round(med(list.map(f => f.HP)) * dm),
+    /* 戦闘の長さは遭遇まるごとで見る。索敵ボーナスは1戦に1回しか乗らないので、
+       敵1体ぶんで割ると効き目を大きく見積もってしまう */
+    encHP: (() => {
+      const tot = [];
+      Object.values(DUNGEONS).forEach(d => {
+        const A = d.acts[actIdx]; if (!A) return;
+        ["solo","easy","norm","hard"].forEach(sl => (A[sl]||[]).forEach(e => {
+          const L = ENCS[e] ? ENCS[e].list : [];
+          if (L.length) tot.push(L.reduce((a,k)=>a+(FOE[k]?FOE[k].HP:0),0));
+        }));
+      });
+      return Math.round(med(tot) * dm);
+    })(),
     dice: med(list.flatMap(f => (f.acts||[]).filter(a=>a.k==="atk").map(a=>a.dice||1))),
+    /* 索敵の相手側。doScout と同じ式 */
+    scout: Math.round(med(list.map(f => f.scout||0))) + Math.floor(med(list.map(f=>f.DEX))/13),
     n: list.length,
   };
 }
@@ -45,6 +62,27 @@ function diceExp(thr) {
   for (let v = 1; v <= 6; v++)
     if (v >= thr) sum += 1 + Math.min(.25, Math.max(0, (v-thr)*.05));
   return sum / 6;
+}
+
+/* 索敵の勝ち幅の期待値。互いに 4以上（1/2）が当たりのダイスを振り、
+   差を 0〜3 に丸めたものが最初の攻撃に乗る（doScout）。
+   E[clamp(差)] を二項分布の畳み込みで正しく出す。 */
+function binom(n) {                       /* p=1/2 の分布 */
+  const out = [1];
+  for (let i = 0; i < n; i++) {
+    const nx = new Array(out.length+1).fill(0);
+    for (let k = 0; k < out.length; k++) { nx[k] += out[k]/2; nx[k+1] += out[k]/2; }
+    out.length = 0; out.push(...nx);
+  }
+  return out;
+}
+function scoutBonusExp(mD, fD) {
+  const A = binom(Math.max(0,mD)), B = binom(Math.max(0,fD));
+  let e = 0;
+  for (let a = 0; a < A.length; a++)
+    for (let b = 0; b < B.length; b++)
+      e += A[a]*B[b] * Math.max(0, Math.min(3, a-b));
+  return e;
 }
 
 function build(job, race, lv, grow) {
@@ -65,12 +103,20 @@ function rate(job, race, lv, foe, grow) {
   const ranged = b.w.type === "ranged";
   const pow = Math.round(b.st[b.w.stat] * (b.w.mul||1));
   const thr = 4;
-  const dmg = Math.round(perHit(pow, foe.DEF) * b.w.hands * diceExp(thr));
+  /* 索敵に勝つと、その戦闘の最初の攻撃だけダイスが増える（最大 +3）。
+     DEX が索敵ダイスに乗る（floor(DEX/13)）ので、DEX の高い職業ほど得をする。
+     1戦のうち1回ぶんなので、倒すのにかかるターン数で薄めて数える。 */
+  const myScout = JOB[job].scout + RACE[race].scout + 1 + Math.floor(b.st.DEX/13);
+  const bonus = scoutBonusExp(myScout, foe.scout);
+  const perTurn = perHit(pow, foe.DEF) * diceExp(thr);
+  const turnsToKill = Math.max(1, foe.encHP / (perTurn * b.w.hands));
+  const dmg = Math.round(perTurn * (b.w.hands + bonus/turnsToKill));
   let taken = Math.max(1, perHit(foe.STR, b.st.DEF) * foe.dice * diceExp(thr));
   if (ranged) taken *= (1 - FRONT_RATIO*0.4);      /* 後衛に下がっていられる */
   const turns = b.maxHP / taken;
   return {名:`${RACE[race].n} ${JOB[job].n}`, job, race, 列:ranged?"後":"前",
           HP:b.maxHP, DEF:b.st.DEF, 威力:pow, ダイス:b.w.hands,
+          索敵:+bonus.toFixed(1),
           火力:dmg, 耐久:+turns.toFixed(1), 総合:Math.round(dmg*turns)};
 }
 
@@ -81,13 +127,13 @@ function table(lv, actIdx, grow, label) {
   const avg = k => rows.reduce((a,b)=>a+b[k],0)/rows.length;
   const A = {火力:avg("火力"), 耐久:avg("耐久"), 総合:avg("総合")};
   rows.sort((x,y)=>y.総合-x.総合);
-  console.log(`\n=== ${label}　Lv${lv}／${actIdx+1}階層の敵（DEF ${foe.DEF}・威力 ${foe.STR}・${foe.dice}発）===`);
-  console.log("  組み合わせ".padEnd(19)+"  HP  DEF 威力 ダイス   火力      耐久        総合");
+  console.log(`\n=== ${label}　Lv${lv}／${actIdx+1}階層の敵（DEF ${foe.DEF}・威力 ${foe.STR}・${foe.dice}発・遭遇まるごとで HP ${foe.encHP}・索敵 ${foe.scout}D）===`);
+  console.log("  組み合わせ".padEnd(19)+"  HP  DEF 威力 ダイス 索敵   火力      耐久        総合");
   rows.forEach(s => {
     const p = k => `${String(s[k]).padStart(5)}(${String(Math.round(s[k]/A[k]*100)).padStart(3)}%)`;
     console.log("  "+s.名.padEnd(16,"　").slice(0,16)+
       String(s.HP).padStart(5)+String(s.DEF).padStart(5)+String(s.威力).padStart(5)+
-      String(s.ダイス).padStart(5)+"  "+p("火力")+" "+p("耐久")+" "+p("総合"));
+      String(s.ダイス).padStart(5)+String(s.索敵).padStart(5)+"  "+p("火力")+" "+p("耐久")+" "+p("総合"));
   });
   const spread = k => {
     const v = rows.map(x=>x[k]);
