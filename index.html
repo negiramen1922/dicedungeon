@@ -945,7 +945,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0026";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0027";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -958,6 +958,16 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0027",tag:"up",v:"α0.0027",d:"2026-08-31",n:"分かれ道を増やし、森を改名した",b:[
+   "<b>実生の森</b>を <b>木漏れ日の森</b> に改めました",
+   "<b>部屋の地図が一本道になりがちでした。</b>2つ以上から選べる節は、歩く道の上で 48% しかありませんでした。<b>およそ 7割</b>になるようにしました",
+   "道の幅を 3列から 4列に広げました。線を交差させない決まりがあるので、3列では2つ以上に分かれる節は上限が 67% でした",
+   "<b>事象で同じ内容が続きにくくなりました。</b>手前と同じものは出る目が半分になります。<b>宝物の部屋の直後は、事象の宝箱も半分</b>です",
+ ]},
+ {id:"v0026",tag:"info",v:"α0.0026",d:"2026-08-31",n:"お知らせを書き忘れていました",b:[
+   "<b>α0.0014 から α0.0025 までの12版ぶん、このお知らせを書き忘れていました。</b>世界地図・逃走・つづきから・装備画面の作り直し・後半の敵の調整まで、何もお伝えできていませんでした。申し訳ありません",
+   "下にさかのぼって全部書いてあります",
+ ]},
  {id:"v0025",tag:"bal",v:"α0.0025",d:"2026-08-31",n:"後半の敵を強くした",b:[
    "<b>敵の素の数値に逆転がありました。</b>苔むした洞窟の敵は原始の草原より弱く、水没都市アトランティスの敵は水没した回廊より HP も DEF も低いままでした",
    "16体を書き換えて、階層が上がるほど必ず強くなるようにしました。区画ごとの平均は <b>78/25/6 → 90/27/8 → 165/39/17 → 174/46/14</b>（HP／攻撃／DEF）です",
@@ -1137,7 +1147,7 @@ const BGM={
   codex :"オルゴールファンタジー.mp3",        /* 図鑑 */
   boss  :"深域で待つもの.mp3",              /* ボス戦 */
   plain :"PerituneMaterial_Wonder2_loop.mp3",   /* 原始の草原 */
-  seed  :"樹木の息吹.mp3",                      /* 実生の森 */
+  seed  :"樹木の息吹.mp3",                      /* 木漏れ日の森 */
   /* 苔むした洞窟・水没した回廊・水没都市アトランティスは まだ曲がない */
 };
 /* 設定画面に出す曲名。BGM に無い場面は無音 */
@@ -5197,7 +5207,7 @@ const ENCS={
      wip   中身がまだ無い区画。地図には出るが降りられない
 
    つながり
-     原始の草原 ─┬→ 実生の森 ─┬→ 世界樹の森 → 夜空の洞窟
+     原始の草原 ─┬→ 木漏れ日の森 ─┬→ 世界樹の森 → 夜空の洞窟
                  │             └→ 魔法の森
                  └→ 苔むした洞窟 → 水没した回廊 → 水没都市アトランティス   */
 /* x,y は世界地図の上の位置（0〜100）。y が大きいほど深い。
@@ -5212,7 +5222,9 @@ const AREAS={
    norm:["p_wf2","p_gw","p_bo","p_rb3"],
    hard:["p_bo2","p_hard","p_wf2"],
    elite:["p_bo2","p_hard"], boss:"pb1"},
- seed:{n:"実 生 の 森",tier:2,art:"plains",
+ /* 鍵は seed のまま。BGM の割り当てと、控えてある潜行の RUN.area が
+    これを見ているので、名前だけ変える */
+ seed:{n:"木 漏 れ 日 の 森",tier:2,art:"plains",
    x:26,y:37,land:"forest",
    d:"世界樹から落ちた種が芽吹いた森。まだ陽が届く。",
    to:["wtree","magic"],
@@ -5362,11 +5374,22 @@ const NCOL={battle:"#b1544a",elite:"#8f3a32",treasure:"#c9a227",
 
 /* ROWS は 0段目からボスの手前までの段数。ボスはそのうしろに1つ置くので、
    1階層で通る部屋は ROWS+1 室になる。いまは 19+1 で 20室目がボス。 */
-const ROWS=19, COLS=3, PATHS=4;
+/* COLS は道の幅。3 だと、線を交差させないかぎり
+   1段で引ける道は「上の節の数＋下の節の数−1」本までで、
+   3対3なら5本＝2つ以上に分かれる節は3つ中2つ（67%）が上限だった。
+   4 に広げて 7割に届くようにしてある。 */
+const ROWS=19, COLS=4, PATHS=4;
 /* 宝物の部屋を置く段。通る道は1本なので、置いた段の数だけ開けられる。
    1段だけだと1階層に1回しか宝箱が出ず、演出を見る機会が少なすぎた。 */
 const TREASUREROWS=[4,11];
 const WEIGHT=[["battle",45],["event",22],["elite",16],["rest",12],["shop",5]];
+/* 事象の中身の重み。親と同じものは半分になる（genAct 参照） */
+const EVWEIGHT={ambush:30,chest:25,spring:25,shop:20};
+/* 子が1つしかない節に、2本目を引きにいく見込み。
+   1.00（必ず試す）でも、線を交差させない決まりに阻まれて全部は引けず、
+   歩く道の上で 2つ以上から選べる節は **およそ 7割** に落ち着く。
+   減らしたいときだけ下げる。 */
+const BRANCHTRY=1.00;
 
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){
   const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
@@ -5413,6 +5436,37 @@ function genAct(ai){
       link(K(r,c),K(r+1,nc));
       c=nc;
     }
+  }
+  /* ---- 分 岐 を 増 や す ----
+     道を PATHS 本引くだけだと、たまたま重なった所しか分かれ道にならない。
+     実測で分岐のある節は 37%（歩く道の上でも 48%）しかなく、
+     一本道が延々と続いて「選ぶ」場面が薄かった。
+     ここで隣の列への道を足し、7割の節が2つ以上に分かれるようにする。 */
+  const rowKeys=r=>Object.keys(node).filter(k=>node[k].r===r);
+  /* 交差の禁じ手は道を引くときと同じ。(r,nc)→(r+1,c) があるなら
+     (r,c)→(r+1,nc) は引けない */
+  function addEdge(k,r){
+    const c=node[k].c;
+    const free=nc=>nc>=0&&nc<COLS&&!edge.has(`${r},${nc}>${r+1},${c}`);
+    const draw=nc=>{edge.add(`${r},${c}>${r+1},${nc}`);link(k,addNode(r+1,nc));return true;};
+    /* まず すでにある節へ */
+    let cand=[-1,0,1].map(d=>c+d).filter(free)
+      .filter(nc=>node[K(r+1,nc)]&&!(kids[k]||[]).includes(K(r+1,nc)));
+    if(cand.length)return draw(cand[Math.floor(Math.random()*cand.length)]);
+    /* 無ければ 隣の列に新しく作る */
+    cand=[-1,1].map(d=>c+d).filter(free).filter(nc=>!node[K(r+1,nc)]);
+    if(cand.length)return draw(cand[Math.floor(Math.random()*cand.length)]);
+    return false;
+  }
+  for(let r=0;r<ROWS-1;r++){
+    /* ① 子のいない節（さっき作ったもの）には必ず1本引く。行き止まりを作らない */
+    rowKeys(r).forEach(k=>{ if(!(kids[k]||[]).length)addEdge(k,r); });
+    /* ② 7割になるまで、2本目を足す */
+    rowKeys(r).forEach(k=>{
+      if((kids[k]||[]).length>=2)return;
+      if(Math.random()>=BRANCHTRY)return;
+      addEdge(k,r);
+    });
   }
   // 種類を決める
   const rows=[];for(let r=0;r<ROWS;r++)rows.push(Object.keys(node).filter(k=>node[k].r===r));
@@ -5469,14 +5523,32 @@ function genAct(ai){
       nd.e=pool[Math.floor(Math.random()*pool.length)];
     }
     if(nd.t==="elite")nd.e=A.elite[Math.floor(Math.random()*A.elite.length)];
-    if(nd.t==="event"){
-      const x=Math.random();
-      nd.ev=x<0.30?"ambush":(x<0.55?"chest":(x<0.80?"spring":"shop"));
-      if(nd.ev==="ambush"){
+  });
+  /* 事象の中身は **段の順に** 決める。
+     手前と同じものが続くと飽きるので、親と同じ中身は重みを半分にする。
+     宝物の部屋（treasure）のあとも、事象の宝箱は半分になる。
+     前は節の鍵の順に決めていたので、親の中身が決まっていないことがあり
+     続き具合を見ようがなかった。 */
+  rows.forEach(ks=>{
+    ks.forEach(k=>{
+      const nd=node[k];
+      if(nd.t!=="event")return;
+      const w={...EVWEIGHT};
+      /* 親が2つとも同じでも 半分は1回だけ。
+         forEach で毎回割ると 1/4 まで落ちてしまう */
+      new Set((par[k]||[]).map(pk=>{
+        const pv=node[pk];
+        return pv.t==="treasure"?"chest":(pv.t==="event"?pv.ev:null);
+      }).filter(Boolean)).forEach(prev=>{ if(w[prev])w[prev]=w[prev]/2; });
+      let tot=0;for(const q in w)tot+=w[q];
+      let x=Math.random()*tot, pick="chest";
+      for(const q in w){x-=w[q];if(x<=0){pick=q;break;}}
+      nd.ev=pick;
+      if(pick==="ambush"){
         const pool=(nd.r<7)?A.easy:A.norm;
         nd.e=pool[Math.floor(Math.random()*pool.length)];
       }
-    }
+    });
   });
   // ボス
   const bk="boss";
@@ -5772,7 +5844,7 @@ const MAPBG={
     }
     return g;
   },
-  /* 実生の森 — 濃いめの木々。幹の影が重なり、梢が空を塞ぐ */
+  /* 木漏れ日の森 — 濃いめの木々。幹の影が重なり、梢が空を塞ぐ */
   seed:H=>{
     let g=`<defs><linearGradient id="bgB" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#0e1810"/><stop offset=".5" stop-color="#1a2a19"/>
