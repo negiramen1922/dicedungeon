@@ -6,21 +6,33 @@ rules_version = '2';
    誰でも読めるので守りにはならない。守っているのはこのファイル。
 
    決めていること
-     ・自分の users/{uid} だけ読み書きできる。他人のものには触れない
+     ・自分の games/dicedungeon/players/{uid} だけ読み書きできる
      ・一覧（list）は誰にも許さない。uid を総なめされないため
      ・形が違うもの、大きすぎるものは受け取らない
 
-   直したら必ず配ること：  firebase deploy --only firestore:rules          */
+   直したら必ず配ること：  firebase deploy --only firestore:rules
+
+   ★ このプロジェクトを別のゲームと相乗りさせるとき ★
+     firestore.rules はプロジェクトに1つしか置けず、deploy は丸ごと差し替える。
+     つまり **このファイルを配ると、他のゲームのルールは消える**。
+     相乗りさせるなら、
+       ① 下の「ダイスダンジョン」の match ブロックを、
+          相手のルールファイルへそのまま貼り足す
+       ② いちばん下の「全部だめ」のブロックは貼らない
+          （相手のゲームのパスまで塞いでしまうため）
+     置き場所を games/dicedungeon/… にしてあるので、パスはぶつからない。      */
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function signedInAs(uid) {
+    /* ===== ここから ダイスダンジョン（相乗りするならこの塊を持っていく） ===== */
+
+    function ddSignedInAs(uid) {
       return request.auth != null && request.auth.uid == uid;
     }
 
     /* 送られてくる形の見張り。壊れたものや無闇に大きいものを弾く */
-    function wellFormed() {
+    function ddWellFormed() {
       let d = request.resource.data;
       let m = d.meta;
       return d.keys().hasOnly(['v', 'meta', 'at'])
@@ -33,14 +45,17 @@ service cloud.firestore {
           && (!m.keys().hasAny(['best']) || m.best is number);
     }
 
-    match /users/{uid} {
-      allow get:            if signedInAs(uid);
+    match /games/dicedungeon/players/{uid} {
+      allow get:            if ddSignedInAs(uid);
       allow list:           if false;          /* 誰の記録があるかは見せない */
-      allow create, update: if signedInAs(uid) && wellFormed();
-      allow delete:         if signedInAs(uid);
+      allow create, update: if ddSignedInAs(uid) && ddWellFormed();
+      allow delete:         if ddSignedInAs(uid);
     }
 
-    /* ほかは全部だめ。書き忘れたパスが素通りしないように最後で閉じる */
+    /* ===== ここまで ダイスダンジョン ===== */
+
+    /* ほかは全部だめ。書き忘れたパスが素通りしないように最後で閉じる。
+       ★ 相乗りさせるときは、この4行は持っていかない ★ */
     match /{document=**} {
       allow read, write: if false;
     }

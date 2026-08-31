@@ -4240,6 +4240,11 @@ const FIREBASE_CONFIG={
   measurementId:"G-D9QRT88QWX",   /* Analytics 用。いまは読み込んでいない */
 };
 const CKEY="dd.cloud";        /* 覚えるのは「自分でサインアウトしたか」だけ */
+/* 記録の置き場所。games/dicedungeon/players/{uid} という形にしてある。
+   いきなり users/{uid} に置くと、同じ Firebase プロジェクトを別のゲームと
+   相乗りさせたときに真正面からぶつかる。一段名前を挟んでおけば、
+   プロジェクトを分けても共有しても、どちらでも困らない。 */
+const CPATH=["games","dicedungeon","players"];
 const PUSHWAIT=8000;          /* 書き込みをまとめる間（ミリ秒） */
 
 const Cloud=(()=>{
@@ -4321,7 +4326,7 @@ const Cloud=(()=>{
   async function sync(){
     if(!user||!db)return;
     try{
-      const ref=F.fs.doc(db,"users",user.uid);
+      const ref=F.fs.doc(db,...CPATH,user.uid);
       const snap=await F.fs.getDoc(ref);
       const d=snap.exists()?(snap.data()||{}):null;
       if(d&&d.meta&&typeof d.meta==="object")metaMerge(d.meta);
@@ -4332,7 +4337,7 @@ const Cloud=(()=>{
     if(!user||!db||pushing)return;
     pushing=true;dirty=false;
     try{
-      await F.fs.setDoc(F.fs.doc(db,"users",user.uid),
+      await F.fs.setDoc(F.fs.doc(db,...CPATH,user.uid),
         {v:MVER,meta:metaSnapshot(),at:F.fs.serverTimestamp()});
       syncedAt=Date.now();
       if(state==="error")set(user.isAnonymous?"anon":"user");

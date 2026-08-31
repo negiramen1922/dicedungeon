@@ -659,7 +659,7 @@ index.html
 
 | | |
 |---|---|
-| 置き場所 | Firestore `users/{uid}` に `{v, meta, at}` の1件 |
+| 置き場所 | Firestore `games/dicedungeon/players/{uid}` に `{v, meta, at}` の1件（`CPATH`） |
 | ログイン | 起動時に黙って匿名。あとから `linkWithPopup` で Google に紐付ける |
 | 書き込み | `metaWrite()` のたびに予約し、8秒ぶんまとめて送る |
 | 必ず送るとき | 1周の終わり（`metaFlush`）・記録を消したとき・画面を閉じる直前 |
@@ -667,6 +667,11 @@ index.html
 
 **SDK は `import()` で使うときに取りに行く。** `<script type="module">` にすると
 `file://` で全部動かなくなるので、classic script のまま動的読み込みにしてある。
+
+**置き場所に一段名前を挟んである**（`users/{uid}` ではなく `games/dicedungeon/players/{uid}`）。
+同じ Firebase プロジェクトを別のゲームと相乗りさせたときにぶつからないため。
+`firestore.rules` はプロジェクトに1つしか置けず deploy が丸ごと差し替えるので、
+相乗りさせるならルールは貼り足す（`FIREBASE.md` §8）。
 
 #### 統合のきまり（`metaMerge`）
 

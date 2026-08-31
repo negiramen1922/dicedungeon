@@ -12,8 +12,9 @@
 プロジェクト **`dicedungeon-a3d1e`** の `firebaseConfig` は `index.html` に入れてある。
 **あとはコンソール側の4つだけ。**
 
-- [ ] **1-1** Firestore を作る（本番環境モード・`asia-northeast1`）
-- [ ] **1-2** Authentication で **匿名** と **Google** を有効にする
+- [x] **1-1** Firestore ―― **もうある**（作ろうとして
+      `Database already exists` が出るのは「既定のデータベースが既にある」という意味）
+- [x] **1-2** Authentication で **匿名** と **Google** を有効にする
 - [ ] **1-4** 承認済みドメインに、配る場所を足す（`localhost` は最初から入っている）
 - [ ] **3** `firebase deploy --only firestore:rules` でルールを配る
 
@@ -62,6 +63,14 @@ Admin SDK が要るのは、あとでサーバー側の処理（Cloud Functions 
 - モード … **本番環境モード**（ルールはこのあと配る）
 - ロケーション … `asia-northeast1`（東京）
 
+> **`Database already exists. Please use another database_id` と出たら**
+> それは失敗ではない。**既定のデータベースがもうある**という意味なので、この手順は済んでいる。
+> <https://console.firebase.google.com/project/dicedungeon-a3d1e/firestore> を開いて、
+> データを一覧する画面が出れば大丈夫。
+>
+> ただし画面に **「Datastore モード」** と書いてあったら、それは別物で
+> Web SDK からは使えない。その場合だけ作り直しが要る。
+
 ### 1-2. ログインの方式を有効にする
 
 **構築 → Authentication → 始める → Sign-in method**
@@ -81,11 +90,16 @@ Admin SDK が要るのは、あとでサーバー側の処理（Cloud Functions 
 
 ### 1-4. 承認済みドメインに、配る場所を足す
 
-**Authentication → 設定 → 承認済みドメイン**
+**Authentication → 「設定」タブ → 承認済みドメイン → ドメインを追加**
+
+直リンク … <https://console.firebase.google.com/project/dicedungeon-a3d1e/authentication/settings>
+
+（Authentication の画面のいちばん上、「ユーザー / Sign-in method / テンプレート / 使用状況 / **設定**」
+という並びの右のほう。Sign-in method と同じ階層にある）
 
 `localhost` は最初から入っている。GitHub Pages などで配るなら、
 その**ドメイン**（例 `negiramen1922.github.io`）を足す。
-足し忘れると Google ログインだけが `auth/unauthorized-domain` で失敗する。
+足し忘れても匿名の保存は動くが、**Google ログインだけ** `auth/unauthorized-domain` で失敗する。
 
 ---
 
@@ -119,12 +133,27 @@ Admin SDK が要るのは、あとでサーバー側の処理（Cloud Functions 
 
 **ここを飛ばすと、本番環境モードでは書き込みが全部拒否される。**
 
+### やりかた A ―― コンソールに貼る（かんたん。何も入れなくていい）
+
+1. <https://console.firebase.google.com/project/dicedungeon-a3d1e/firestore/rules> を開く
+2. エディタの中身を**全部消す**
+3. このリポジトリの **`firestore.rules` の中身をそのまま貼る**
+4. **「公開」** を押す
+
+貼ったあとエディタが赤い波線を出さなければ、書式は通っている。
+
+### やりかた B ―― CLI から配る（手元から何度も直すならこちら）
+
 ```
 npm install -g firebase-tools
 firebase login
 cp .firebaserc.example .firebaserc     # 中身はもう dicedungeon-a3d1e になっている
 firebase deploy --only firestore:rules
 ```
+
+**A と B のどちらでもよいが、混ぜないこと。** コンソールで直した内容は、
+次に B を走らせた瞬間にリポジトリの中身で上書きされる。
+コンソールで直したら、同じ内容を `firestore.rules` にも書き戻しておく。
 
 `firestore.rules` が決めているのは3つ。
 
@@ -178,7 +207,7 @@ GitHub Pages のままでもよい。その場合は 1-4 のドメイン追加�
 ## 7. どう保存しているか
 
 ```
-users/{uid}
+games/dicedungeon/players/{uid}
   v    : 記録の形の版（index.html の MVER）
   meta : { codex, rooms, elem, mats, seen, hall, runs, best, tutSeen, newsSeen }
   at   : サーバー時刻
@@ -199,7 +228,56 @@ users/{uid}
 
 ---
 
-## 8. Analytics を足したくなったら
+## 8. 他のゲームと同じプロジェクトを使いたいとき
+
+**できる。**ログインが1つで済むので、同じ人が同じ uid で両方遊べるという利点もある。
+気をつけるのは2つだけ。
+
+### ぶつからないように、置き場所に名前を付けてある
+
+```
+games/dicedungeon/players/{uid}
+```
+
+`users/{uid}` のような一等地には置いていないので、
+別のゲームが `users/…` や `games/ほかのゲーム/…` を使っていても当たらない。
+場所を変えたいときは `index.html` の `CPATH` を直す（ルールのパスも揃えること）。
+
+### ルールは「丸ごと差し替え」なので、貼り足して配る
+
+`firestore.rules` はプロジェクトに1つしか置けない。
+`firebase deploy --only firestore:rules` は**中身を丸ごと入れ替える**ので、
+このリポジトリの `firestore.rules` をそのまま配ると
+**相手のゲームのルールが消えて、相手が動かなくなる。**
+
+相乗りさせるなら、
+
+1. `firestore.rules` の
+   `===== ここから ダイスダンジョン =====` から `===== ここまで =====` までを、
+   **相手のルールファイルに貼り足す**
+2. いちばん下の **「ほかは全部だめ」の4行は持っていかない**
+   （相手のゲームのパスまで塞いでしまう）
+3. 配るのは、相手のリポジトリの側から一度だけ
+
+`.firebaserc` のプロジェクトIDも、相乗り先のものに合わせる。
+
+### どちらにするか
+
+| | 分ける（いまの `dicedungeon-a3d1e`） | 相乗りさせる |
+|---|---|---|
+| ルールの配布 | このリポジトリから普通に配れる | 貼り足して、片方からだけ配る |
+| 事故ったとき | このゲームだけで済む | 両方止まる |
+| ログイン | ゲームごとに別の uid | 同じ人が同じ uid |
+| 無料枠 | それぞれに付く | 分け合う |
+
+**もう `dicedungeon-a3d1e` は出来上がっているので、分けたままが楽。**
+「アカウントを1つにまとめたい」という気持ちが出てきたら、そのとき移せばいい
+（`index.html` の `FIREBASE_CONFIG` を差し替えるだけ。記録は移らないので、
+移すなら殿堂と図鑑を諦めるか、手で運ぶことになる）。
+
+---
+
+## 9. Analytics を足したくなったら
 
 コンソールが出す雛形には `getAnalytics` が入っているが、**いまは読み込んでいない**。
 `measurementId` だけ `FIREBASE_CONFIG` に控えてある。
