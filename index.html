@@ -790,6 +790,16 @@ body.play .fh1{padding-right:62px}
   padding:5px 10px;cursor:pointer}
 .setrec button:hover{border-color:var(--blood);color:var(--blood)}
 /* 赤くするのは「記録を消す」だけ。同期のボタンは壊す操作ではない */
+/* 装備・状態の札まわり */
+.mstat.chhead{border:1px solid var(--line);background:#14160f;padding:7px 9px;
+  margin-bottom:9px;gap:0 16px}
+.tabs.chtabs{margin-bottom:9px}
+.tabs.chtabs .tab{flex:1 1 22%}
+.mitem.eqrow{display:grid;grid-template-columns:76px minmax(0,1fr);gap:0 8px;
+  align-items:start;border-bottom:1px solid #23261d;padding:6px 0}
+.eqk{color:var(--brass);font-size:11px;letter-spacing:.06em;line-height:1.6;
+  display:flex;align-items:center;gap:5px}
+.eqv{min-width:0;line-height:1.7}
 .stbtn{margin:5px 6px 0 0;background:none;border:1px solid var(--line);
   color:var(--brass);font-family:inherit;font-size:11px;letter-spacing:.1em;
   padding:4px 12px;cursor:pointer}
@@ -930,7 +940,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0020";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0021";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -6754,44 +6764,91 @@ function pickList(cats,n){
 }
 
 /* 装備・状態の窓 */
-function charModal(back){
-  const eqLine=k=>me.eq[k]
-    ?`${tierTag(me.eq[k].tier)}${madeTag(me.eq[k])} <b>${me.eq[k].n}</b>　${
-       me.eq[k].d||""}${wasteNote(me.eq[k])}`
-    :`<span style="color:#4d5346">なし</span>`;
-  let h=`<div class="mtitle">装 備 ・ 状 態</div>
-  <div class="msub">${tagFig(sel.job,14)} ${JOB[sel.job].n}　${tagFig(sel.race,14)} ${RACE[sel.race].n}　${tagFig(sel.orig,14)} ${ORIG[sel.orig].n}</div>
-  <div class="mstat">
-    <span style="color:#c9a227">Lv <b style="color:#c9a227">${me.lv}</b></span>
-    <span>経験 <b>${me.exp}</b>/${expCap()}</span>
-    <span>HP <b>${Math.max(0,me.HP)}</b>/${me.maxHP}</span>
-    <span>MP <b>${me.MP}</b>/${me.maxMP}</span>
-    <span>STR <b>${me.STR}</b></span><span${
-      me.DEX>=STATMAX.DEX?' style="color:#c9a227"':""}>DEX <b${
-      me.DEX>=STATMAX.DEX?' style="color:#c9a227"':""}>${me.DEX}</b>${
-      me.DEX>=STATMAX.DEX?`<span class="s">/${STATMAX.DEX}</span>`:""}</span>
-    <span>INT <b>${me.INT}</b></span><span>VIT <b>${me.VIT}</b></span>
-    <span>DEF <b>${me.DEF}</b></span><span>防御時 <b>+${blockValue()}</b></span>
-
-    <span style="color:#c9a227">幸運 <b style="color:#c9a227">${me.LUK}</b></span>
-    <span style="color:#c9a227">金貨 <b style="color:#c9a227">${me.gold}</b></span></div>
-  ${(()=>{const c=lukCuts(me.LUK);return `
-  ${(()=>{
-    const gw=me.raw?Math.max(0,me.raw.DEX-STATMAX.DEX):0;
-    const pw=dexPassiveWaste();
-    if(!gw&&!pw)return "";
+/* ---------- 装 備 ・ 状 態 ----------
+   前は 技能→レシピ→素材→道具→武器→装備→予備→スキル→パッシブ を
+   ひと続きに並べていて、2000px を超える一本のスクロールだった。
+   名前は「装備・状態」なのに、装備を見るまでに 5 つの節を通り抜けねばならず、
+   武器の節と装備の節で同じ武器を二度書いてもいた。
+   4 つの札に分けて、頭の行（職・種族・欲望・Lv・HP・MP・金貨）だけは常に出す。 */
+const CHTABS=[
+  {k:"eq", n:"装 備"},
+  {k:"st", n:"能 力"},
+  {k:"bag",n:"持 ち 物"},
+  {k:"sk", n:"技 と 癖"},
+];
+let chNow="eq";
+function chCount(k){
+  if(k==="eq") return `装飾 ${(me.eq.acc||[]).length}/${ACCMAX}`;
+  if(k==="st") return `Lv ${me.lv}`;
+  if(k==="bag")return `道具 ${bagLabel()}`;
+  return `技${me.sk.length} 癖${me.pass.length}`;
+}
+/* 装備の1行。武器・防具・装飾で作りが同じなので1つにまとめる */
+function eqRow(icon,label,g,extra){
+  return `<div class="mitem eqrow">
+    <span class="eqk">${icon} ${label}</span>
+    <span class="eqv">${g
+      ?`${tierTag(g.tier)}${madeTag(g)} <b>${g.n}</b>　${g.d||""}${wasteNote(g)}`
+      :`<span style="color:#4d5346">空 き</span>`}${extra||""}</span></div>`;
+}
+function chBodyEq(){
+  const w=me.wep;
+  let h=`<div class="msec">い ま の 装 備</div>
+  <div class="mitem eqrow">
+    <span class="eqk">${itemIcon(wepIcon(me.eq.wep?me.eq.wep.key:me.baseWep),16)} 武 器</span>
+    <span class="eqv">${tierTag(me.eq.wep?me.eq.wep.tier:0)}${
+      w.el&&w.el!=="none"?elemTag(w.el):""} <b>${w.n}</b>　${w.d||""}
+      <br><span style="color:var(--ink)">攻撃ダイス ${w.hands}　威力 ${
+        Math.round(statMul(w)*100)}%（${w.stat} ×${statMul(w).toFixed(2)}）　${
+        w.type==="melee"?"近接・敵前列のみ":"遠隔・後列も狙える"}
+        　→ 1ヒット <b>${powOf(me,{})}</b></span></span></div>`;
+  h+=eqRow(me.eq.armor?itemIcon(armorIcon(me.eq.armor),16):tagFig("armor",12),"防 具",me.eq.armor);
+  for(let i=0;i<ACCMAX;i++){
+    const g=(me.eq.acc||[])[i];
+    h+=eqRow(g?itemIcon(accIcon(g),16):tagFig("acc",12),`装飾 ${i+1}`,g);
+  }
+  /* 上限に達して無駄になっているぶんは、装備の話なのでここに置く */
+  const gw=me.raw?Math.max(0,me.raw.DEX-STATMAX.DEX):0, pw=dexPassiveWaste();
+  if(gw||pw){
     const a=[];
     if(gw)a.push(`成長と装備で <b>+${gw}</b>`);
     if(pw)a.push(`パッシブで <b>+${pw}</b>`);
-    return `<div class="mitem" style="color:var(--blood)">
+    h+=`<div class="mitem warn" style="color:var(--blood)">
       DEX は上限 ${STATMAX.DEX} に達している　${a.join("　")} が無駄になっている
       <br><span class="s" style="color:var(--ink)">上限を越えられるのは
       スキルのバフだけ。装備とパッシブはここで止まる</span></div>`;
-  })()}
+  }
+  h+=`<div class="msec">予 備　<span style="color:var(--dim);letter-spacing:0">${
+    (me.stash||[]).length} / ${STASHMAX}</span></div>`;
+  h+=(me.stash||[]).length?(me.stash||[]).map((g,i)=>
+    `<div class="mitem eqrow">
+      <span class="eqk">${itemIcon(g.slot==="wep"?wepIcon(g.key)
+        :(g.slot==="armor"?armorIcon(g):accIcon(g)),16)} ${
+        g.slot==="wep"?"武 器":(g.slot==="armor"?"防 具":"装 飾")}</span>
+      <span class="eqv">${tierTag(g.tier)}${madeTag(g)} <b>${g.n}</b>　${gearDesc(g)}
+      <br><button class="stbtn" data-eq="${i}">着 け る</button>
+      <button class="stbtn drop" data-drop="${i}">捨 て る</button></span></div>`).join("")
+    :`<div class="mitem" style="color:#4d5346">なし　<span class="s">宝箱や戦利品で枠が埋まっているものは、いったんここに入る</span></div>`;
+  return h;
+}
+function chBodySt(){
+  const c=lukCuts(me.LUK);
+  const cap=me.DEX>=STATMAX.DEX;
+  return `<div class="msec">能 力</div>
+  <div class="mstat">
+    <span>経験 <b>${me.exp}</b>/${expCap()}</span>
+    <span>STR <b>${me.STR}</b></span>
+    <span${cap?' style="color:#c9a227"':""}>DEX <b${cap?' style="color:#c9a227"':""}>${
+      me.DEX}</b>${cap?`<span class="s">/${STATMAX.DEX}</span>`:""}</span>
+    <span>INT <b>${me.INT}</b></span><span>VIT <b>${me.VIT}</b></span>
+    <span>DEF <b>${me.DEF}</b></span><span>防御時 <b>+${blockValue()}</b></span>
+    <span style="color:#c9a227">幸運 <b style="color:#c9a227">${me.LUK}</b></span></div>
   <div class="msec">技 能　<span style="color:var(--dim);letter-spacing:0">1d100 で振る</span></div>
   <div class="mitem">${skillLine("　")}
-    <br><span class="s">${SK[wepSkill()].n.replace(/ /g,"")} は いま持っている ${me.wep.n} の命中に効く。
+    <br><span class="s">${SK[wepSkill()].n.replace(/ /g,"")} は いま持っている ${
+      me.wep.n} の命中に効く。
     探索は戦いのはじめの先制、鍛冶と料理はこしらえるときに振る</span></div>
+  <div class="msec">幸 運</div>
   <div class="mitem" style="color:var(--ink)">幸運 ${me.LUK}　＝　生まれ ${
     me.base.LUK||0}${(me.LUK-(me.base.LUK||0))?`　＋ 装備 ${me.LUK-(me.base.LUK||0)}`:""}
     <br><span class="s">1d100 を振って、出目が小さいほど良い段階になる</span>
@@ -6799,54 +6856,38 @@ function charModal(back){
     <span style="color:${LUKRANK[2].c}">大あたり ${c.hard} 以下</span>　
     <span style="color:${LUKRANK[1].c}">あたり ${c.hit} 以下</span>
     <br><span class="s">空振りは段階のぶんだけ振り直す（1〜3つ）。
-    宝箱は 等級の上限 +1／+1・並ぶ数4・金貨1.5倍／等級 +2・並ぶ数5・金貨2倍</span></div>`;})()}
-  <div class="msec">レシピ　<span style="color:var(--dim);letter-spacing:0">${
-    me.recipes.length} 件</span></div>
-  ${me.recipes.length?me.recipes.map(id=>{const R=RECIPES[id];
-    return `<div class="mitem"><b>${R.n}</b>　${R.d}　<span style="color:var(--ink)">${
-      Object.keys(R.need).map(k=>MATS[k].n+"×"+R.need[k]).join("　")}　加工賃 ${R.cost}</span></div>`;
-    }).join(""):`<div class="mitem" style="color:#4d5346">まだ覚えていない</div>`}
-  <div class="msec">素 材　<span style="color:var(--dim);letter-spacing:0">${
-    matCount()} 個　売値 ${matValue()}</span></div>
-  ${matCount()?Object.keys(me.mats).filter(k=>me.mats[k]).map(k=>
+    宝箱は 等級の上限 +1／+1・並ぶ数4・金貨1.5倍／等級 +2・並ぶ数5・金貨2倍</span></div>`;
+}
+function chBodyBag(){
+  let h=`<div class="msec">道 具　<span style="color:var(--dim);letter-spacing:0">${
+    bagLabel()}</span></div>`;
+  h+=bagCount()?Object.keys(me.bag).filter(k=>me.bag[k]).map(k=>
+    `<div class="mitem">${itemIcon(itemKindIcon(k),16)} ${tierTag(ITEMS[k].tier)} <b>${
+      ITEMS[k].n}</b> ×${me.bag[k]}　${ITEMS[k].d}</div>`).join("")
+    :`<div class="mitem" style="color:#4d5346">何も持っていない</div>`;
+  h+=`<div class="msec">素 材　<span style="color:var(--dim);letter-spacing:0">${
+    matCount()} 個　売値 ${matValue()}</span></div>`;
+  h+=matCount()?Object.keys(me.mats).filter(k=>me.mats[k]).map(k=>
     `<div class="mitem">${itemIcon(k,16)} <b>${MATS[k].n}</b> ×${me.mats[k]}　${MATS[k].d}　`+
     `<span style="color:var(--ink)">1つ ${MATS[k].v} 金貨</span></div>`).join("")
-    :`<div class="mitem" style="color:#4d5346">まだ何も持っていない</div>`}
-  <div class="msec">道 具　<span style="color:var(--dim);letter-spacing:0">${bagLabel()}</span></div>
-  ${bagCount()?Object.keys(me.bag).filter(k=>me.bag[k]).map(k=>
-    `<div class="mitem">${itemIcon(itemKindIcon(k),16)} ${tierTag(ITEMS[k].tier)} <b>${ITEMS[k].n}</b> ×${me.bag[k]}　${ITEMS[k].d}</div>`).join("")
-    :`<div class="mitem" style="color:#4d5346">何も持っていない</div>`}
-  <div class="msec">武 器</div>
-  <div class="mitem">${tierTag(me.eq.wep?me.eq.wep.tier:0)}${
-    me.wep.el&&me.wep.el!=="none"?elemTag(me.wep.el):""} <b>${me.wep.n}</b>　攻撃ダイス ${me.wep.hands}　威力 ${Math.round(statMul(me.wep)*100)}%　${
-    me.wep.type==="melee"?"近接（敵前列のみ）":"遠隔（後列も狙える）"}<br>
-    <span style="color:var(--ink)">${me.wep.stat} の乗り ×${statMul(me.wep).toFixed(2)}
-    　→ 1ヒットの威力 ${powOf(me,{})}</span></div>
-  <div class="msec">装 備</div>
-  <div class="mitem">${itemIcon(wepIcon(me.eq.wep?me.eq.wep.key:me.baseWep),16)} 武器　${me.eq.wep
-    ?`${tierTag(me.eq.wep.tier)} <b>${me.wep.n}</b>　${me.wep.d||""}`
-    :`${tierTag(0)} <b>${me.wep.n}</b>　${me.wep.d||""}`}</div>
-  <div class="mitem">${me.eq.armor?itemIcon(armorIcon(me.eq.armor),16):tagFig("armor",12)} 防具　${eqLine("armor")}</div>
-  ${[0,1,2,3].map(i=>{const g=(me.eq.acc||[])[i];
-    return `<div class="mitem">${g?itemIcon(accIcon(g),16):tagFig("acc",12)} 装飾${i+1}　${
-      g?`${tierTag(g.tier)}${madeTag(g)} <b>${g.n}</b>　${g.d}${wasteNote(g)}`
-       :'<span style="color:#4d5346">空き</span>'}</div>`;}).join("")}
-  <div class="msec">予 備　<span style="color:var(--dim);letter-spacing:0">${
-    (me.stash||[]).length} / ${STASHMAX}</span></div>
-  ${(me.stash||[]).length?(me.stash||[]).map((g,i)=>
-    `<div class="mitem">${itemIcon(g.slot==="wep"?wepIcon(g.key):(g.slot==="armor"?armorIcon(g):accIcon(g)),16)} ${
-      tierTag(g.tier)}${madeTag(g)} <b>${g.n}</b>　${gearDesc(g)}
-      <br><button class="stbtn" data-eq="${i}">着 け る</button>
-      <button class="stbtn drop" data-drop="${i}">捨 て る</button></div>`).join("")
-    :`<div class="mitem" style="color:#4d5346">なし　<span class="s">宝箱や戦利品で枠が埋まっているものは、いったんここに入る</span></div>`}
-  <div class="msec">スキル　<span style="color:var(--dim);letter-spacing:0">${
+    :`<div class="mitem" style="color:#4d5346">まだ何も持っていない</div>`;
+  h+=`<div class="msec">レ シ ピ　<span style="color:var(--dim);letter-spacing:0">${
+    me.recipes.length} 件</span></div>`;
+  h+=me.recipes.length?me.recipes.map(id=>{const R=RECIPES[id];
+    return `<div class="mitem"><b>${R.n}</b>　${R.d}　<span style="color:var(--ink)">${
+      Object.keys(R.need).map(k=>MATS[k].n+"×"+R.need[k]).join("　")}　加工賃 ${R.cost}</span></div>`;
+    }).join(""):`<div class="mitem" style="color:#4d5346">まだ覚えていない</div>`;
+  return h;
+}
+function chBodySk(){
+  let h=`<div class="msec">ス キ ル　<span style="color:var(--dim);letter-spacing:0">${
     me.sk.length} / ${SKMAX}</span></div>`;
   h+=me.sk.length?me.sk.map(k=>`<div class="mitem">
     <span class="tagx" style="color:var(--brass);border-color:var(--brass)">${tagFig(k.kind,12)}</span>
     <b>${k.n}</b>　${k.d}　<span style="color:var(--ink)">MP ${k.mp}・再使用 ${k.cd}</span>
     ${poolTag("act",k.id)}</div>`).join("")
     :`<div class="mitem" style="color:#4d5346">まだ無い</div>`;
-  h+=`<div class="msec">パッシブ　<span style="color:var(--dim);letter-spacing:0">${
+  h+=`<div class="msec">パ ッ シ ブ　<span style="color:var(--dim);letter-spacing:0">${
     me.pass.length} / ${PASSMAX}</span></div>`;
   h+=me.pass.length?me.pass.map(pp=>{
     const on=(typeof round!=="undefined")&&PCOND[pp.ef.w]&&PCOND[pp.ef.w]();
@@ -6855,8 +6896,32 @@ function charModal(back){
       <b>${pp.n}</b>　${pp.d}${on?`　<span style="color:var(--blue)">発動中</span>`:""}
       ${poolTag("pass",pp.id)}</div>`;}).join("")
     :`<div class="mitem" style="color:#4d5346">まだ無い</div>`;
+  return h;
+}
+function charModal(back){
+  if(typeof back!=="function")back=null;   /* onclick から出来事が来ることがある */
+  if(!CHTABS.some(t=>t.k===chNow))chNow="eq";
+  const low=me.HP<=me.maxHP*0.35;
+  let h=`<div class="mtitle">装 備 ・ 状 態</div>
+  <div class="msub">${tagFig(sel.job,14)} ${JOB[sel.job].n}　${
+    tagFig(sel.race,14)} ${RACE[sel.race].n}　${tagFig(sel.orig,14)} ${ORIG[sel.orig].n}</div>
+  <div class="mstat chhead">
+    <span style="color:#c9a227">Lv <b style="color:#c9a227">${me.lv}</b></span>
+    <span${low?' style="color:#b1544a"':""}>HP <b${
+      low?' style="color:#b1544a"':""}>${Math.max(0,me.HP)}</b>/${me.maxHP}</span>
+    <span>MP <b>${me.MP}</b>/${me.maxMP}</span>
+    <span style="color:#c9a227">金貨 <b style="color:#c9a227">${me.gold}</b></span></div>
+  <div class="tabs chtabs">${CHTABS.map(t=>
+    `<button class="tab${t.k===chNow?" on":""}" data-ch="${t.k}">
+      <span class="tabn">${t.n}</span><span class="tabc">${chCount(t.k)}</span></button>`).join("")}</div>`;
+  h+= chNow==="eq" ?chBodyEq()
+    : chNow==="st" ?chBodySt()
+    : chNow==="bag"?chBodyBag()
+    :               chBodySk();
   h+=`<button class="mclose" id="mClose">${back?"もどる":"閉じる"}</button>`;
   openModal(h,true);
+  $("#mbox").querySelectorAll("[data-ch]").forEach(b=>{
+    b.onclick=()=>{chNow=b.dataset.ch;SFX.click();charModal(back);};});
   $("#mbox").querySelectorAll("[data-eq]").forEach(b=>{
     b.onclick=()=>{const i=+b.dataset.eq;
       const g=me.stash[i];
@@ -7924,8 +7989,8 @@ $("#hallBack").onclick=goHome;
 $("#mkBack").onclick=goHome;
 $("#cxBack").onclick=goHome;
 if(!META.tutSeen){drawTut();showScreen("tut");}else goHome();
-$("#charBtn").onclick=charModal;
-$("#charBtn2").onclick=charModal;
+$("#charBtn").onclick =()=>charModal();
+$("#charBtn2").onclick=()=>charModal();
 $("#worldBtn").onclick=()=>{SFX.click();worldModal();};
 $("#modal").onclick=e=>{if(e.target.id==="modal"&&modalFree())closeModal();};
 $("#detBtn").onclick=()=>{
