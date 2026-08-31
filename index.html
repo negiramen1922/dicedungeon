@@ -387,8 +387,36 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 }
 .sheet{background:var(--panel);border:1px solid var(--line);padding:12px;margin-top:14px}
 /* 経路図 */
-.mapwrap{background:var(--panel);border:1px solid var(--line);padding:6px;
+.mapwrap{position:relative;background:var(--panel);border:1px solid var(--line);padding:6px;
   margin:0 auto 8px;max-width:560px}
+/* 階層に入ったとき、名前が ぼわぁと浮かんで消える。
+   地図が上から下へ流れるあいだに重ねる。押す邪魔はしない。 */
+.actTtl{position:absolute;inset:0;display:none;flex-direction:column;
+  align-items:center;justify-content:center;gap:8px;pointer-events:none;z-index:5;
+  text-align:center;padding:0 16px}
+.actTtl.on{display:flex}
+.actTtl .atDun{font-size:11px;letter-spacing:.42em;color:var(--brass);
+  animation:atFade 3400ms ease-out forwards}
+.actTtl .atName{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;
+  font-size:30px;letter-spacing:.30em;color:var(--bone);
+  text-shadow:0 0 22px rgba(16,18,13,.95),0 0 44px rgba(16,18,13,.9);
+  animation:atName 3400ms cubic-bezier(.16,.7,.3,1) forwards}
+.actTtl .atSub{font-size:11.5px;line-height:1.8;color:var(--dim);max-width:300px;
+  text-shadow:0 0 16px rgba(16,18,13,.95);
+  animation:atFade 3400ms ease-out 260ms forwards}
+/* 途中のキーフレームでも filter を書いておくこと。
+   書かないと 22% から 100% へ向けて blur がじわじわ戻る補間になり、
+   いちばん見せたい真ん中がぼやけたままになる。 */
+@keyframes atName{
+  0%  {opacity:0;transform:scale(1.16);filter:blur(16px);letter-spacing:.62em}
+  26% {opacity:1;transform:scale(1.02);filter:blur(0);letter-spacing:.30em}
+  72% {opacity:1;transform:scale(1);   filter:blur(0);letter-spacing:.30em}
+  100%{opacity:0;transform:scale(1);   filter:blur(6px);letter-spacing:.34em}}
+@keyframes atFade{
+  0%  {opacity:0;filter:blur(9px)}
+  30% {opacity:1;filter:blur(0)}
+  74% {opacity:1;filter:blur(0)}
+  100%{opacity:0;filter:blur(4px)}}
 #mapbox{max-height:68vh;min-height:340px;overflow-y:auto;overflow-x:hidden}
 .mapsvg{display:block;width:100%;height:auto}
 
@@ -842,7 +870,7 @@ body.play .fh1{padding-right:62px}
     <div class="fstat" id="fStat"></div>
     <div style="margin-top:9px"><button class="topbtn" id="charBtn2">装備・状態を見る</button></div>
   </div>
-  <div class="mapwrap"><div id="mapbox"></div></div>
+  <div class="mapwrap"><div id="mapbox"></div><div class="actTtl" id="actTtl"></div></div>
   <div id="mapinfo"></div>
   <div class="resbox hide" id="resbox"></div>
 </section>
@@ -874,7 +902,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0012";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0013";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -887,6 +915,10 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0013",tag:"up",v:"α0.0013",d:"2026-08-31",n:"階層に入ると名前が浮かぶ",b:[
+   "階層に入って地図が上から下へ流れるあいだ、<b>その階層の名前がぼわぁと浮かんで消える</b>ようにしました",
+   "ダンジョン名と階層、階層の名前、情景の一文が出ます。1階層目は出立の支度が済んでから出ます",
+ ]},
  {id:"v0012",tag:"up",v:"α0.0012",d:"2026-08-31",n:"装備に予備の枠を作った",b:[
    "<b>宝箱で武器や防具が出ると、いま使っているものが確認なしに置き換わっていました。</b>これを直しました",
    "<b>装備の予備を 2 つまで持てます。</b>枠が埋まっているときに拾ったものは、まず予備に入ります。いまの装備はそのままです",
@@ -5056,23 +5088,38 @@ function startRun(){
   RUN={act:0,cur:null,curKey:null,over:false,cleared:false};
   owned=[];META.runs++;touchMeta();
   $("#log").innerHTML="";
-  enterAct(0);
+  enterAct(0,true);          /* 名前は出立の支度が終わってから出す */
   const n=(ORIG[sel.orig]&&ORIG[sel.orig].startGear)||1;
   startPick(n);
 }
 function startPick(left){
-  if(left<=0)return;
+  /* 1階層目は装備選びの窓が先に出るので、それが片づいてから名前を出す。
+     窓の下でぼわぁとやっても見えない。 */
+  if(left<=0){actTitle(0);return;}
   choiceModal("出 立 の 支 度",
     left>1?`装備を ${left} つ選べる（傲慢）`:"",
     pickList(["gear"]),()=>{drawFloor();startPick(left-1);},
     "取らない",()=>{drawFloor();startPick(left-1);});
 }
-function enterAct(ai){
+function enterAct(ai,quiet){
   RUN.act=ai;RUN.curKey=null;RUN.cur=null;
   if(ORIG[sel.orig]&&ORIG[sel.orig].actFull){me.HP=me.maxHP;me.MP=me.maxMP;}
   RUN.M=genAct(ai);RUN.preview=null;
   drawFloor();showScreen("floor");window.scrollTo(0,0);
   setTimeout(introScroll,120);
+  if(!quiet)actTitle(ai);
+}
+/* 階層の名前を ぼわぁと出す。introScroll と同じ間だけ重なる */
+let actTtlTimer=null;
+function actTitle(ai){
+  const el=$("#actTtl");if(!el)return;
+  const A=ACTS[ai]||{};
+  el.innerHTML=`<div class="atDun">${DUNGEONS[sel.dun].n}　${ai+1} 階層</div>
+    <div class="atName">${A.n||""}</div>
+    <div class="atSub">${A.d||""}</div>`;
+  el.className="actTtl on";
+  if(actTtlTimer)clearTimeout(actTtlTimer);
+  actTtlTimer=setTimeout(()=>{el.className="actTtl";el.innerHTML="";},3750);
 }
 function reachable(){
   const M=RUN.M;
