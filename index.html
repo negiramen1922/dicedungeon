@@ -794,7 +794,12 @@ body.play .fh1{padding-right:62px}
 .mstat.chhead{border:1px solid var(--line);background:#14160f;padding:7px 9px;
   margin-bottom:9px;gap:0 16px}
 .tabs.chtabs{margin-bottom:9px}
-.tabs.chtabs .tab{flex:1 1 22%}
+.tabs.chtabs .tab{flex:1 1 22%;padding:6px 2px}
+/* keep-all で漢字かなの途中では折らせず、<wbr> を入れた所だけで折る。
+   これが無いと「スキルとパッシ／ブ」で切れる */
+.tabs.chtabs .tabn{font-size:10px;letter-spacing:.02em;line-height:1.3;text-align:center;
+  word-break:keep-all}
+.tabs.chtabs .tabc{font-size:9px}
 .mitem.eqrow{display:grid;grid-template-columns:76px minmax(0,1fr);gap:0 8px;
   align-items:start;border-bottom:1px solid #23261d;padding:6px 0}
 .eqk{color:var(--brass);font-size:11px;letter-spacing:.06em;line-height:1.6;
@@ -940,7 +945,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0022";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0023";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -6771,10 +6776,12 @@ function pickList(cats,n){
    武器の節と装備の節で同じ武器を二度書いてもいた。
    4 つの札に分けて、頭の行（職・種族・欲望・Lv・HP・MP・金貨）だけは常に出す。 */
 const CHTABS=[
-  {k:"st", n:"能 力"},
-  {k:"sk", n:"技 と 癖"},
-  {k:"eq", n:"装 備"},
-  {k:"bag",n:"持 ち 物"},
+  {k:"st", n:"ステータス"},
+  /* 日本語は好きな所で折れるので、札の中では「スキルと／パッシブ」で
+     折れるように <wbr> を入れておく（何もしないと「スキルとパッシ／ブ」になる） */
+  {k:"sk", n:"スキルと<wbr>パッシブ"},
+  {k:"eq", n:"装備"},
+  {k:"bag",n:"持ち物"},
 ];
 let chNow=CHTABS[0].k;
 function chCount(k){
@@ -6834,7 +6841,7 @@ function chBodyEq(){
 function chBodySt(){
   const c=lukCuts(me.LUK);
   const cap=me.DEX>=STATMAX.DEX;
-  return `<div class="msec">能 力</div>
+  return `<div class="msec">ス テ ー タ ス</div>
   <div class="mstat">
     <span>経験 <b>${me.exp}</b>/${expCap()}</span>
     <span>STR <b>${me.STR}</b></span>
