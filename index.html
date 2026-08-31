@@ -195,6 +195,11 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .dv.weak{border-color:#4a3a38;color:#7d6b68}
 .dv.six{border-color:var(--brass);color:var(--brass);background:#332b12;font-weight:700;
   box-shadow:0 0 10px rgba(201,162,39,.45)}
+.ad b.thr{color:var(--brass);font-weight:600}
+.ctarget{position:absolute;top:2px;right:2px;font-size:10px;letter-spacing:0;
+  font-family:"DotGothic16",ui-monospace,monospace;color:#1b1d18;background:var(--brass);
+  padding:0 4px;border-radius:2px;pointer-events:none}
+.cell{position:relative}
 .dvRes{font-size:15px;letter-spacing:.1em;color:var(--bone);
   border:1px solid var(--brass);padding:3px 14px;animation:pop2 .25s ease-out}
 @keyframes pop2{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
@@ -871,6 +876,7 @@ const NEWS=[
    "<b>DEX に上限 100 を置きました。</b>回避と行動順に効くうえ装備で大きく伸びるので、放っておくと後半で敵が当てられなくなっていました。素の成長だけで Lv16 に 96 まで来ます",
    "上限を<b>越えられるのはスキルのバフだけ</b>です。成長・装備・パッシブはここで止まります",
    "<b>上限に達していると、どれだけ無駄になっているかを装備・状態の窓に出します。</b>「この装備の DEX の +10 は 上限 100 を超えていて無駄になっている」のように、装備1つずつに出ます",
+   "<b>当たる目を画面に出すようにしました。</b>攻撃と技のボタンに「5〜6以上 で当たり」、相手を選ぶときは<b>マスの右上に敵ごとの数字</b>が出ます。押す前にどちらが当てやすいか分かります",
    "<b>速い敵ほど当てにくくなりました。</b>スライム(DEX 6)とオオコウモリ(DEX 42)では必要な目が2つ違います。あわせて <b>鈍足</b> が命中にも効くようになりました（これまでは行動順を遅らせるだけでした）",
    "<b>索敵のやり方を変えました。</b>両者が d6 を撒いて差を取る形をやめ、探索の 1d100 ひと振りにしました。これまでは誰がやっても上限の +3 が出ていて、索敵の値が意味を持っていませんでした",
    "<b>こしらえるときに技能を振ります。</b>成功の段階で品質が上がります。料理は取れる数が増え（成功1／上物2／業物3／会心4）、鍛冶は装備の性能そのものが上がります（＋1.15倍／＋1.3倍／★1.5倍）",
@@ -3114,6 +3120,9 @@ function unitCell(u,isMine){
       <div class="bar mpb"><i style="width:${u.maxMP?u.MP/u.maxMP*100:0}%"></i></div>`:""}
     ${ailText(u)?`<div class="celrow">${ailText(u)}</div>`:""}
     ${isMine&&u.half?`<div class="cst">被弾 半減</div>`:""}
+    ${target&&u.HP>0?`<div class="ctarget">${
+       threshold(me,u,pending&&pending.kind==="skill"&&me.sk[pending.i]
+         ?{thr:me.sk[pending.i].thr||0,even:me.sk[pending.i].even}:{})}以上</div>`:""}
     ${!isMine?(u.HP>0?(()=>{const ic=actIcon(st.t);
         return `<div class="cact ${p.danger?"bad":"ok"}" title="${p.txt}">${ic.g}</div>`;})()
       /* 倒れても枠は空けておく。消すとセルが縮み、行動一覧が毎ターン動く */
@@ -3515,6 +3524,14 @@ function blockValue(){return 5+Math.floor(me.VIT/7)+(me.blkBonus||0)+(me.gearBlk
 const GUARD_MP=4;
 
 /* ---------- 行動一覧 ---------- */
+/* 狙える相手ぜんぶの命中閾値。ボタンを描く時点では相手が決まっていないので、
+   幅があるときは「4〜5」のように範囲で出す。opt は技の補正（thr など）。 */
+function thrText(opt,filter){
+  const list=alive().filter(f=>(filter?filter(f):canTarget(f)));
+  if(!list.length)return "";
+  const v=[...new Set(list.map(f=>threshold(me,f,opt||{})))].sort((a,b)=>a-b);
+  return v.length===1?`${v[0]}以上`:`${v[0]}〜${v[v.length-1]}以上`;
+}
 function drawActs(){
   const host=$("#acts");host.innerHTML="";
   $("#prompt").textContent="";
@@ -3528,7 +3545,7 @@ function drawActs(){
   const per=perHit(powOf(me,{}),5);
   const RR=hitRange(per,me.wep.hands,4);
   add("atk",me.wep.n+"で攻撃",
-    anyTarget?`${me.wep.hands}d6 ・ 1ヒット ${per} ・ 最大 ${RR.hi*me.wep.hands}`:
+    anyTarget?`${me.wep.hands}d6 ・ <b class="thr">${thrText()}</b> で当たり ・ 1ヒット ${per} ・ 最大 ${RR.hi*me.wep.hands}`:
       (me.wep.type==="melee"&&me.rank==="back"?"後衛からは近接できない":"届く相手がいない"),
     !anyTarget,()=>askTarget({kind:"atk"}));
   if(bagCount()){
@@ -3552,7 +3569,16 @@ function drawActs(){
       ||(s.kind==="atk"&&vowGone());
     const why=needFront?"前衛でのみ":noTgt?"届く相手がいない":
       (onCd?`あと ${s.cdLeft} ターン`:`MP ${s.mp}・再使用 ${s.cd}`);
-    add("sk",s.n,`${s.d}　${tooLate?"（もう使えない）":why}`,noMp||onCd||needFront||noTgt||tooLate,
+    /* 当てる技だけ、その技の補正込みの閾値を出す */
+    let tt="";
+    if(s.kind==="atk"&&!noTgt&&!needFront&&!tooLate){
+      const f=s.backOnly?(x=>x.rank==="back"&&x.HP>0)
+             :s.slower ?(x=>x.DEX<dexOf()&&x.HP>0)
+             :null;
+      const t=thrText({thr:s.thr||0,even:s.even},f);
+      if(t)tt=`　<b class="thr">${s.even?"偶数の目":t+" で当たり"}</b>`;
+    }
+    add("sk",s.n,`${s.d}${tt}　${tooLate?"（もう使えない）":why}`,noMp||onCd||needFront||noTgt||tooLate,
       ()=>{ if(s.kind==="atk"||s.kind==="declare")askTarget({kind:"skill",i});
             else doAct({kind:"skill",i}); });
   });
