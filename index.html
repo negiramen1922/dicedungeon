@@ -940,7 +940,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0021";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0022";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -6771,12 +6771,12 @@ function pickList(cats,n){
    武器の節と装備の節で同じ武器を二度書いてもいた。
    4 つの札に分けて、頭の行（職・種族・欲望・Lv・HP・MP・金貨）だけは常に出す。 */
 const CHTABS=[
-  {k:"eq", n:"装 備"},
   {k:"st", n:"能 力"},
-  {k:"bag",n:"持 ち 物"},
   {k:"sk", n:"技 と 癖"},
+  {k:"eq", n:"装 備"},
+  {k:"bag",n:"持 ち 物"},
 ];
-let chNow="eq";
+let chNow=CHTABS[0].k;
 function chCount(k){
   if(k==="eq") return `装飾 ${(me.eq.acc||[]).length}/${ACCMAX}`;
   if(k==="st") return `Lv ${me.lv}`;
@@ -6900,7 +6900,7 @@ function chBodySk(){
 }
 function charModal(back){
   if(typeof back!=="function")back=null;   /* onclick から出来事が来ることがある */
-  if(!CHTABS.some(t=>t.k===chNow))chNow="eq";
+  if(!CHTABS.some(t=>t.k===chNow))chNow=CHTABS[0].k;
   const low=me.HP<=me.maxHP*0.35;
   let h=`<div class="mtitle">装 備 ・ 状 態</div>
   <div class="msub">${tagFig(sel.job,14)} ${JOB[sel.job].n}　${
