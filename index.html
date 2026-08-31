@@ -771,7 +771,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0006";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0007";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -784,6 +784,18 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0007",tag:"up",v:"α0.0007",d:"2026-08-31",n:"幸運を足した",b:[
+   "<b>幸運</b> を能力に加えました。0〜100 の百分率で、判定はいつも <b>1d100 ≦ 幸運</b> です",
+   "幸運は職業・種族・欲望のどれにも属しません。<b>キャラを作るときに 2d6×2（4〜24）を振って決まります</b>。確認の画面で振った目が見られます",
+   "レベルでは伸びません。<b>動かせるのは装備だけ</b>です",
+   "働く場所は3つ。<b>攻撃が一つも当たらなかったとき、もう一つ振る</b>（幸運%）／<b>宝箱に並ぶ装備の等級の上限が 1 上がる</b>（幸運%）／<b>宝箱に並ぶ数が 3 から 4 になる</b>（幸運÷2 %）",
+   "ヒュームの「人の業」は今までどおり必ず 1 つ振り直します。幸運はそれとは別に判定するので、重なれば 2 つ振れます",
+   "幸運の上がる装飾を 5 つ足しました。<b>四つ葉の護符・兎の足・賭博師の骰子・女神の片眼・黄金の骰子</b>",
+ ]},
+ {id:"v0007f",tag:"fix",v:"α0.0007",d:"2026-08-31",n:"振り直しが働いていなかった",b:[
+   "ヒュームの<b>「人の業」</b>（一つも当たらなかったとき もう1つ振り直す）が、<b>ふつうの攻撃では一度も働いていませんでした</b>。空振りしたところで処理が抜けてしまい、振り直しまで届いていませんでした",
+   "空振りの直後に振り直すようにしました。今回入れた幸運の振り直しも同じところで働きます",
+ ]},
  {id:"v0006",tag:"bal",v:"α0.0006",d:"2026-08-30",n:"ナイトの伸びを下げた",b:[
    "<b>ナイトの VIT の伸びを 1 下げました。</b>耐久が突出していて、レベルが上がるほど差が開いていました。Lv10 の HP が 387 から 351 になります",
  ]},
@@ -2063,6 +2075,7 @@ const GEAR={
   {id:"y5",n:"鉄の留具",tier:1,st:{DEF:3},d:"DEF +3"},
   {id:"y6",n:"小さな生命の指輪",tier:1,hp:22,d:"最大HP +22"},
   {id:"y19",n:"革の小袋",tier:1,bag:2,d:"道具を 2 つ多く持てる"},
+  {id:"y22",n:"四つ葉の護符",tier:1,st:{LUK:8},d:"幸運 +8"},
   {id:"y7",n:"狼の首飾り",tier:2,st:{STR:5,DEX:5},d:"STR +5　DEX +5"},
   {id:"y8",n:"生命の護符",tier:2,hp:38,d:"最大HP +38"},
   {id:"y9",n:"闘志の紋章",tier:2,blk:7,d:"防御時の上乗せ +7"},
@@ -2070,6 +2083,8 @@ const GEAR={
   {id:"y11",n:"熊の毛皮帯",tier:2,st:{VIT:5,DEF:3},d:"VIT +5　DEF +3"},
   {id:"y12",n:"銀の耳飾り",tier:2,st:{STR:4,INT:4},d:"STR +4　INT +4"},
   {id:"y20",n:"旅人の鞄",tier:2,bag:3,hp:10,d:"道具を 3 つ多く持てる　最大HP +10"},
+  {id:"y23",n:"兎の足",tier:2,st:{LUK:12,DEX:4},d:"幸運 +12　DEX +4"},
+  {id:"y24",n:"賭博師の骰子",tier:2,st:{LUK:15},hp:-15,d:"幸運 +15　最大HP −15"},
   {id:"y13",n:"双子の指輪",tier:3,st:{STR:5,DEX:5,INT:5,VIT:5},d:"全能力 +5"},
   {id:"y14",n:"血の首飾り",tier:3,st:{STR:12},hp:-20,d:"STR +12　最大HP −20"},
   {id:"y15",n:"守り手の紋",tier:3,st:{DEF:6},blk:5,d:"DEF +6　防御時の上乗せ +5"},
@@ -2081,6 +2096,8 @@ const GEAR={
   {id:"y_soul",n:"残滓の護符",tier:3,made:true,st:{INT:14,VIT:5},d:"INT +14　VIT +5"},
   {id:"y_core",n:"守護核の冠",tier:3,made:true,st:{STR:8,DEX:8,INT:8,VIT:8,DEF:5},d:"全能力 +8　DEF +5"},
   {id:"y21",n:"キャラバンのバッグ",tier:3,bag:5,d:"道具を 5 つ多く持てる"},
+  {id:"y25",n:"女神の片眼",tier:3,st:{LUK:22},d:"幸運 +22"},
+  {id:"y26",n:"黄金の骰子",tier:3,st:{LUK:14,STR:5,DEX:5},d:"幸運 +14　STR +5　DEX +5"},
  ],
 };
 
@@ -2431,6 +2448,24 @@ function passNames(k){
   return passList().filter(p=>p.ef.k===k&&PCOND[p.ef.w]()).map(p=>p.n);
 }
 
+/* ---------- 幸 運 ----------
+   幸運は 0〜100 の百分率。判定はいつも 1d100 ≦ 幸運。
+   職業にも種族にも欲望にも属さない。生まれつきのもので、
+   キャラを作るときに 2d6×2（4〜24）を振って決まる。
+   そのあと動かせるのは装備だけ。レベルでは伸びない（DEF と同じ考え方）。
+   働く場所は3つ。
+     ① 攻撃で一つも当たらなかったとき   1d100 ≦ 幸運      → もう一つ振る
+     ② 宝箱に並ぶ装備の等級の上限 +1     1d100 ≦ 幸運
+     ③ 宝箱に並ぶ数 3 → 4               1d100 ≦ 幸運 ÷ 2
+   ②③ は宝箱と打ち捨てられた箱だけ。戦利品とレベルアップには効かない。 */
+const LUKMAX=95;                 /* 確定にはしない。必ず外れる余地を残す */
+const r100=()=>1+Math.floor(Math.random()*100);
+function lukOf(){return (me&&me.LUK)||0;}
+function lukHit(pct){return r100()<=Math.max(0,Math.min(LUKMAX,pct));}
+function rollLuk(){const a=r6(),b=r6();return {v:(a+b)*2,d:[a,b]};}
+function newChar(){sel.luk=0;sel.lukD=null;}   /* 作り直すときだけ振り直す */
+let LUKGRADE=0;                  /* catPool("gear") の等級上限に足す一時値 */
+
 /* ---------- 敵 ---------- *//* ---------- 敵 ---------- */
 const FOE={
  /* ===== 1 階層　苔むした坑道 ===== */
@@ -2587,7 +2622,7 @@ const FOE={
 /* ---------- 状態 ---------- */
 let me,foes,round,busy=false,over=false,pending=null,scoutBonus=0,queue=[],qi=0;
 let owned=[];
-const sel={job:null,race:null,orig:null,dun:"plains",enc:"e1"};
+const sel={job:null,race:null,orig:null,dun:"plains",enc:"e1",luk:0,lukD:null};
 
 function build(host,note,data,key,after){
   const h=$(host);h.innerHTML="";
@@ -2615,15 +2650,17 @@ function sheet(){
     <div class="dline" style="margin-top:8px">
       HP <b>${m.maxHP}</b>　MP <b>${m.maxMP}</b>　
       STR <b>${m.STR}</b>　DEX <b>${m.DEX}</b>　INT <b>${m.INT}</b>　
-      VIT <b>${m.VIT}</b>　DEF <b>${m.DEF}</b>　索敵 <b>${m.scoutDice}D</b></div>
+      VIT <b>${m.VIT}</b>　DEF <b>${m.DEF}</b>　索敵 <b>${m.scoutDice}D</b>${
+      sel.luk?`　幸運 <b>${m.LUK}</b>`:""}</div>
     <div class="dline" style="margin-top:4px;color:var(--ink)">
       技は持たずに始まる。戦いに勝つたびに スキル／パッシブ／装備 から一つ選ぶ。</div>`;
 }
 function makeMe(){
   const J=JOB[sel.job];
-  const base={STR:0,DEX:0,INT:0,VIT:0,DEF:0};
+  const base={STR:0,DEX:0,INT:0,VIT:0,DEF:0,LUK:0};
   [J.st,RACE[sel.race].st,ORIG[sel.orig].st].forEach(o=>{
     for(const k in o)base[k]=(base[k]||0)+o[k];});
+  base.LUK=sel.luk||0;      /* 幸運だけは職業・種族・欲望から来ない */
   const m={name:`${RACE[sel.race].n}の${JOB[sel.job].n}`,short:J.n,art:J.art,
     baseWep:J.wep,isFoe:false,
     scoutDice:J.scout+RACE[sel.race].scout+ORIG[sel.orig].scout,
@@ -2635,7 +2672,7 @@ function makeMe(){
 }
 function recalcMe(m,full){
   m=m||me;
-  const st={STR:0,DEX:0,INT:0,VIT:0,DEF:0};
+  const st={STR:0,DEX:0,INT:0,VIT:0,DEF:0,LUK:0};
   let hp=0,blk=0,bag=0;
   [m.eq.armor].concat(m.eq.acc||[]).forEach(g=>{
     if(!g)return;
@@ -2647,6 +2684,8 @@ function recalcMe(m,full){
   ["STR","DEX","INT","VIT","DEF"].forEach(k=>{
     m[k]=Math.max(1,m.base[k]+m.grow[k]+st[k]);
   });
+  /* 幸運は伸びない。生まれの値と装備だけで決まる */
+  m.LUK=Math.max(0,Math.min(LUKMAX,(m.base.LUK||0)+st.LUK));
   m.gearBlk=blk;
   m.bagPlus=bag;
   m.wep=WEP[m.eq.wep?m.eq.wep.key:m.baseWep];
@@ -3288,9 +3327,30 @@ async function playerAttack(targets,opt){
       rolls=rolls.concat(await addDice(add,thr));
     }
   }
-  const hits=rolls.filter(v=>v>=thr).length;
-  const sixes=rolls.filter(v=>v>=6).length;
+  let hits=rolls.filter(v=>v>=thr).length;
+  let sixes=rolls.filter(v=>v>=6).length;
   ovHide();
+  /* 一つも当たらなかったとき、もう一度だけ振る。
+     ヒュームの「人の業」は必ず 1 つ、幸運は 1d100 ≦ 幸運 でもう 1 つ。
+     重なれば 2 つ振れる。
+     （ここは早期 return の手前。以前は的ごとの判定の中に書いてあって、
+       ふつうの攻撃では一度も届いていなかった） */
+  let rerolled=false;
+  if(!hits){
+    let luck=passOn("luck");
+    let lnames=passNames("luck");
+    if(lukOf()>0&&lukHit(lukOf())){luck++;lnames=lnames.concat([`幸運 ${lukOf()}`]);}
+    if(luck>0){
+      rerolled=true;
+      const extra=[];for(let i=0;i<luck;i++)extra.push(r6());
+      log(`<span class="c">${lnames.join("・")}</span> 空振り → もう <span class="m">${luck}</span> つ振る　[${extra.join("][")}]`);
+      await rollDice(extra,thr,`${me.name}　<em>振り直し ${luck}d6</em>`,"再 挑 戦");
+      ovHide();
+      rolls=rolls.concat(extra);
+      hits=rolls.filter(v=>v>=thr).length;
+      sixes=rolls.filter(v=>v>=6).length;
+    }
+  }
   if(!hits){SFX.miss();log(`<span class="a">${me.name}</span> ${n}d6・${thr}以上 → 空振り`);await wait(450);return;}
   for(const t of targets){
     if(t.HP<=0)continue;
@@ -3340,10 +3400,17 @@ async function playerAttack(targets,opt){
     const per=perHit(pow,Math.round(defOf(t)*(1-pen)));
     let vals=(opt.even?rolls.filter(v=>v%2===0):rolls.filter(v=>v>=thr)).sort((a,b)=>a-b);
     /* 一つも当たらなかったとき、もう一度だけ振る */
-    const luck=passOn("luck");
+    /* 「偶数の目だけ当たる」技は、当たりはあっても偶数が無いことがある。
+       そのときだけ、まだ振り直していなければもう一度だけ振る。 */
+    let luck=opt.even&&!rerolled?passOn("luck"):0;
+    let lnames=passNames("luck");
+    if(opt.even&&!rerolled&&!vals.length&&lukOf()>0&&lukHit(lukOf())){
+      luck++;lnames=lnames.concat([`幸運 ${lukOf()}`]);
+    }
     if(luck>0&&!vals.length){
+      rerolled=true;
       const extra=[];for(let i=0;i<luck;i++)extra.push(r6());
-      log(`<span class="c">${passNames("luck").join("・")}</span> 空振り → もう <span class="m">${luck}</span> つ振る　[${extra.join("][")}]`);
+      log(`<span class="c">${lnames.join("・")}</span> 空振り → もう <span class="m">${luck}</span> つ振る　[${extra.join("][")}]`);
       await rollDice(extra,thr,`${me.name}　<em>振り直し ${luck}d6</em>`,"再 挑 戦");
       ovHide();
       rolls.push(...extra);
@@ -4710,7 +4777,7 @@ function enterNode(nd){
         out.push(`<span class="gain">${R.n}</span> の覚え書きが挟まっていた`);
         out.push(`　<span class="s">${R.kind==="cook"?"料理":"鍛冶"}　必要 ${
           Object.keys(R.need).map(k=>MATS[k].n+"×"+R.need[k]).join("　")}　加工賃 ${R.cost}</span>`);}}
-    showChoice(nd.name,["gear"],0,out);
+    showChoice(nd.name,["gear"],0,out,true);
   }else if(nd.t==="shop"){
     SFX.shop();
     shopModal(nd);
@@ -4745,7 +4812,7 @@ function resolveEvent(nd,out){
       if(rk){const R=RECIPES[rk];
         out.push(`　<b>${R.n}</b> の覚え書き　<span class="s">（${
           R.kind==="cook"?"料理":"鍛冶"}）</span>`);}}
-    showChoice(nd.name,["gear"],0,out);
+    showChoice(nd.name,["gear"],0,out,true);
     return;
   }
   if(ev==="spring"){
@@ -4771,9 +4838,26 @@ function resolveEvent(nd,out){
   resultModal(nd.name,out,[{n:"店を覗く",cb:()=>shopModal(nd)}]);
 }
 /* 3つから1つ選ぶ画面（カテゴリを指定できる） */
-function showChoice(title,cats,dummy,out){
-  choiceModal(title,(out||[]).join("<br>"),pickList(cats),
-    r=>backToFloor(title,(out||[]).concat(r
+/* 宝箱を開けるときだけ幸運が働く。等級の上限が上がり、並ぶ数が増える。 */
+function chestLuck(out){
+  LUKGRADE=0;
+  const L=lukOf();
+  let n=3;
+  if(L>0){
+    if(lukHit(L)){LUKGRADE=1;
+      out.push(`<span class="gain">幸運 ${L}</span>　思ったより <b>上等なもの</b> が入っていた`);}
+    if(lukHit(L/2)){n=4;
+      out.push(`<span class="gain">幸運 ${L}</span>　箱の底に <b>もう一つ</b> あった`);}
+  }
+  return n;
+}
+function showChoice(title,cats,dummy,out,chest){
+  out=(out||[]).slice();
+  const n=chest?chestLuck(out):3;
+  const list=pickList(cats,n);
+  LUKGRADE=0;                       /* 戦利品やレベルアップには持ち越さない */
+  choiceModal(title,out.join("<br>"),list,
+    r=>backToFloor(title,out.concat(r
       ?[`<span class="gain">${r.n}</span> を得た`,`　<span class="s">${r.d}</span>`]
       :[`何も取らず、傷を癒した`])));
 }
@@ -4842,7 +4926,7 @@ function drawEnd(){
   b.className="ctrl";b.innerHTML=`<button id="newrun" class="pri">新しい冒険者で潜る</button>`;
   $("#mapinfo").appendChild(b);
   const nb=$("#newrun");
-  if(nb)nb.onclick=()=>{showScreen("make");metaNote();window.scrollTo(0,0);};
+  if(nb)nb.onclick=()=>{newChar();showScreen("make");metaNote();window.scrollTo(0,0);};
 }
 function metaNote(){
   const el=$("#metaNote");if(!el)return;
@@ -4903,11 +4987,12 @@ function choiceModal(title,note,list,onPick,skipTxt,onSkip){
   if(sk)sk.onclick=()=>{me.HP=Math.min(me.maxHP,me.HP+Math.round(me.maxHP*0.2));
     closeModal();(onSkip||onPick)(null);};
 }
-function pickList(cats){
+function pickList(cats,n){
+  n=n||3;
   const list=[];
   if(cats.length===1){
     const pool=catPool(cats[0]);
-    while(list.length<3&&pool.length)
+    while(list.length<n&&pool.length)
       list.push({cat:cats[0],r:pool.splice(Math.floor(Math.random()*pool.length),1)[0]});
   }else{
     cats.forEach(c=>{const pool=catPool(c);
@@ -4937,7 +5022,12 @@ function charModal(back){
     <span>INT <b>${me.INT}</b></span><span>VIT <b>${me.VIT}</b></span>
     <span>DEF <b>${me.DEF}</b></span><span>防御時 <b>+${blockValue()}</b></span>
     <span>索敵 <b>${me.scoutDice}D</b></span>
+    <span style="color:#c9a227">幸運 <b style="color:#c9a227">${me.LUK}</b></span>
     <span style="color:#c9a227">金貨 <b style="color:#c9a227">${me.gold}</b></span></div>
+  <div class="mitem" style="color:var(--ink)">幸運 ${me.LUK}　＝　生まれ ${
+    me.base.LUK||0}${(me.LUK-(me.base.LUK||0))?`　＋ 装備 ${me.LUK-(me.base.LUK||0)}`:""}　
+    <span class="s">空振りを振り直す ${me.LUK}%　／　宝箱の等級 +1 ${me.LUK}%　／　宝箱がもう一つ ${
+    Math.floor(me.LUK/2)}%</span></div>
   <div class="msec">レシピ　<span style="color:var(--dim);letter-spacing:0">${
     me.recipes.length} 件</span></div>
   ${me.recipes.length?me.recipes.map(id=>{const R=RECIPES[id];
@@ -4993,7 +5083,7 @@ function charModal(back){
 /* ---------- 報酬 ---------- */
 function catPool(cat){
   if(cat==="gear"){
-    const maxT=(RUN?RUN.act:0)+1;
+    const maxT=(RUN?RUN.act:0)+1+LUKGRADE;   /* 宝箱では幸運で 1 段上がる */
     const list=[];
     (GEAR.wep[sel.job]||[]).forEach(g=>list.push({...g,slot:"wep",
       d:(()=>{const w=WEP[g.key];
@@ -5539,10 +5629,10 @@ function drawQuizResult(){
     <button class="mclose" id="qzFree">自分で選ぶ</button>`;
   $("#qzAgain").onclick=()=>{qzStep=0;qzAns={};drawQuiz();};
   $("#qzGo").onclick=()=>{
-    sel.job=j;sel.race=r;sel.orig=o;
+    sel.job=j;sel.race=r;sel.orig=o;newChar();
     mkStep=3;drawMake();showScreen("make");window.scrollTo(0,0);
   };
-  $("#qzFree").onclick=()=>{mkStep=0;drawMake();showScreen("make");window.scrollTo(0,0);};
+  $("#qzFree").onclick=()=>{newChar();mkStep=0;drawMake();showScreen("make");window.scrollTo(0,0);};
 }
 /* 選択ボタンの見た目を いまの sel に合わせる */
 function markSel(){
@@ -5640,6 +5730,9 @@ function drawMake(){
   if(pv)pv.onclick=()=>{mkStep--;drawMake();window.scrollTo(0,0);};
 }
 function drawMakeConfirm(){
+  /* 幸運はここで一度だけ振る。「選び直す」で戻っても振り直さない。
+     振り直せるのは家に戻ってキャラを作り直したときだけ（newChar）。 */
+  if(!sel.luk){const L=rollLuk();sel.luk=L.v;sel.lukD=L.d;}
   const m=makeMe();
   $("#mkBody").innerHTML=`
     <div class="qzres">
@@ -5653,8 +5746,12 @@ function drawMakeConfirm(){
         <span>STR <b>${m.STR}</b></span><span>DEX <b>${m.DEX}</b></span>
         <span>INT <b>${m.INT}</b></span><span>VIT <b>${m.VIT}</b></span>
         <span>DEF <b>${m.DEF}</b></span><span>索敵 <b>${m.scoutDice}D</b></span>
+        <span style="color:#c9a227">幸運 <b style="color:#c9a227">${m.LUK}</b></span>
       </div>
       <div class="qzd" style="color:var(--ink)">${m.wep.n}　を手に始まる</div>
+      <div class="qzd" style="color:var(--ink)">幸運は生まれつき。<b>2d6×2</b> で
+        [${(sel.lukD||[]).join("][")}] → <b style="color:#c9a227">${sel.luk}</b>。
+        空振りを拾い直し、宝箱の中身を良くする。装備でしか動かない。</div>
     </div>
     <div class="ndbtn">
       <button class="no2" id="mkRe">選び直す</button>
@@ -5854,7 +5951,7 @@ function cxBody(){
   }).join("");
 }
 
-$("#hGo").onclick=()=>{mkStep=0;drawMake();showScreen("make");window.scrollTo(0,0);};
+$("#hGo").onclick=()=>{newChar();mkStep=0;drawMake();showScreen("make");window.scrollTo(0,0);};
 $("#hHall").onclick=()=>{drawHall();showScreen("hall");window.scrollTo(0,0);};
 $("#hCodex").onclick=()=>{drawCodex();showScreen("codex");window.scrollTo(0,0);};
 $("#hQuiz").onclick=()=>{qzStep=0;qzAns={};drawQuiz();showScreen("quiz");window.scrollTo(0,0);};
