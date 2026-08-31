@@ -850,7 +850,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0007";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0008";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -863,6 +863,14 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0008",tag:"bal",v:"α0.0008",d:"2026-08-31",n:"スカウトを引き上げ、硬さを削った",b:[
+   "<b>スカウトが弱すぎました。</b>成長が DEX 中心なのに短剣系の威力は STR 依存で、レベルを上げても威力がほとんど伸びていませんでした。Lv10 での火力は平均の 57%、エルフでは 44% でした",
+   "<b>スカウトの成長を STR 寄りにしました</b>（DEX5 STR2 VIT2 → STR4 DEX3 VIT2）。<b>元の STR も 26 → 30</b> に上げ、1レベル目から効くようにしました",
+   "<b>短剣系7本の威力を 1.15 倍</b>にしました。1発の威力が小さい武器ほど敵の DEF に削られるためです（1ヒットの威力は 威力−DEF が下限 25% で頭打ち）。短剣・双短剣・狼牙・レイピア・スティング・シャドウ・暗殺刀",
+   "<b>敵の攻撃が通らなさすぎました。</b>ナイトの DEF 10→8、ドワーフの DEF 5→3。1階層のスライムがドワーフのナイトに与える1発が <b>6 から 11</b> になります",
+   "<b>ウィザードが全階層で最上位</b>だったので、成長の VIT を 3 → 2 に下げました",
+   "16通りの強さの開きが、Lv10 で <b>5.5倍から1.9倍</b>、Lv16 で 4.6倍から1.6倍に縮まりました",
+ ]},
  {id:"v0007c",tag:"up",v:"α0.0007",d:"2026-08-31",n:"記録をクラウドに置けるようにした",b:[
    "図鑑・殿堂・到達階層を <b>クラウドに保存</b> できるようにしました。<b>Google と連携すると、別の端末でも同じ記録の続き</b>が遊べます",
    "ログインの操作は要りません。開いた時点で名無しのまま保存が始まり、あとから歯車の中で連携できます",
@@ -1755,13 +1763,13 @@ const WEP={
   piercebow:{snd:"bow",el:"pierce",n:"雷 弓",hands:2,mul:2.42,stat:"STR",type:"ranged",d:"岩をも貫く。放った音は雷のような轟音"},
 
   /* ---- スカウト：手数で削る ---- */
-  dagger:{snd:"slash",el:"pierce",n:"短 剣",hands:5,mul:0.8,stat:"STR",type:"melee",d:"素早く何度も刺す"},
-  twindagger:{snd:"slash",el:"slash",n:"双 短 剣",hands:6,mul:0.7,stat:"STR",type:"melee",d:"両手で刻む"},
-  fang:{snd:"slash",el:"slash",n:"狼 牙",hands:5,mul:0.86,stat:"STR",type:"melee",d:"狼の牙を削り出した刃"},
-  rapier:{snd:"slash",el:"pierce",n:"レイピア",hands:4,mul:1.0,stat:"STR",type:"melee",d:"細く鋭い突き"},
-  clawblade:{snd:"slash",el:"slash",n:"スティング",hands:7,mul:0.62,stat:"STR",type:"melee",d:"刺し続ける。手数だけならこの世で一番"},
-  shadowfang:{snd:"slash",el:"slash",n:"シャドウ",hands:6,mul:0.78,stat:"STR",type:"melee",d:"闇に紛れて振るう"},
-  assassin:{snd:"slash",el:"pierce",n:"暗 殺 刀",hands:5,mul:0.92,stat:"STR",type:"melee",d:"一突きで終わらせるための刃"},
+  dagger:{snd:"slash",el:"pierce",n:"短 剣",hands:5,mul:0.92,stat:"STR",type:"melee",d:"素早く何度も刺す"},
+  twindagger:{snd:"slash",el:"slash",n:"双 短 剣",hands:6,mul:0.8,stat:"STR",type:"melee",d:"両手で刻む"},
+  fang:{snd:"slash",el:"slash",n:"狼 牙",hands:5,mul:0.99,stat:"STR",type:"melee",d:"狼の牙を削り出した刃"},
+  rapier:{snd:"slash",el:"pierce",n:"レイピア",hands:4,mul:1.15,stat:"STR",type:"melee",d:"細く鋭い突き"},
+  clawblade:{snd:"slash",el:"slash",n:"スティング",hands:7,mul:0.71,stat:"STR",type:"melee",d:"刺し続ける。手数だけならこの世で一番"},
+  shadowfang:{snd:"slash",el:"slash",n:"シャドウ",hands:6,mul:0.9,stat:"STR",type:"melee",d:"闇に紛れて振るう"},
+  assassin:{snd:"slash",el:"pierce",n:"暗 殺 刀",hands:5,mul:1.06,stat:"STR",type:"melee",d:"一突きで終わらせるための刃"},
 
   /* ---- ウィザード：INT頼み。遠隔 ---- */
   wand:{snd:"magic",el:"none",n:"見習いの杖",hands:3,mul:1.2,stat:"INT",type:"ranged",d:"扱いやすい入門の杖"},
@@ -2233,7 +2241,7 @@ const GEAR={
 
 const RACE={
  hume:{n:"ヒューム",d:"癖がない。何にでも伸びる。",st:{STR:5,DEX:5,INT:5,VIT:8,DEF:2},scout:1},
- dwarf:{n:"ドワーフ",d:"堅い。重い装備を苦にしない。",st:{STR:8,DEX:-5,INT:0,VIT:14,DEF:5},scout:0},
+ dwarf:{n:"ドワーフ",d:"堅い。重い装備を苦にしない。",st:{STR:8,DEX:-5,INT:0,VIT:14,DEF:3},scout:0},
  elf:{n:"エルフ",d:"魔力と俊敏。線は細い。",st:{STR:-3,DEX:8,INT:12,VIT:2,DEF:0},scout:2},
  beast:{n:"ビースト",d:"獣の血。速く、鼻が利く。考えるのは苦手。",
    st:{STR:7,DEX:7,INT:-6,VIT:6,DEF:1},scout:4},
@@ -2267,13 +2275,16 @@ const GROW={
      成長点は 8 になり、ウィザードと同じ。 */
   knight:{STR:4,VIT:4},
   archer:{STR:3,DEX:3,VIT:2,INT:1},
-  scout:{DEX:5,STR:2,VIT:2},
-  mage:{INT:5,VIT:3},
+  /* スカウトは DEX を伸ばしていたが、短剣系は STR 依存なので威力が伸びなかった。
+     武器を DEX 依存にするのは却下されている（IDEAS.md）ので、成長の側で寄せる。 */
+  scout:{STR:4,DEX:3,VIT:2},
+  /* ウィザードが全階層で最上位だったので、耐久を 1 削る */
+  mage:{INT:5,VIT:2},
 };
 const JOB={
   knight:{n:"ナイト",art:"knight",wep:"longsword",scout:3,
     d:"前で受けて耐える。後列には手が届かない。",
-    st:{STR:30,DEX:18,INT:15,VIT:35,DEF:10},
+    st:{STR:30,DEX:18,INT:15,VIT:35,DEF:8},
     sk:[]},
   archer:{n:"アーチャー",art:"archer",wep:"bow",scout:5,
     d:"後衛から後列を撃ち抜ける。",
@@ -2281,7 +2292,7 @@ const JOB={
     sk:[]},
   scout:{n:"スカウト",art:"scout",wep:"dagger",scout:7,
     d:"手数で削る。索敵が飛び抜けて高い。",
-    st:{STR:26,DEX:36,INT:20,VIT:24,DEF:8},
+    st:{STR:30,DEX:36,INT:20,VIT:24,DEF:8},
     sk:[]},
   mage:{n:"ウィザード",art:"mage",wep:"wand",scout:4,
     d:"MPを燃やす。前で受けると脆い。",

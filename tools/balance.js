@@ -55,7 +55,8 @@ function foeStats(actIdx) {
 }
 
 /* ---- 計算はゲーム本体と同じ形 ---- */
-const perHit = (pow, def) => Math.max(Math.ceil(pow*0.25), pow - def);
+let FLOOR = 0.25;           /* perHit の下限。手数の多い武器ほどここに救われる */
+const perHit = (pow, def) => Math.max(Math.ceil(pow*FLOOR), pow - def);
 /* 閾値thr以上が当たり、(出目-thr)*5%（上限25%）を上乗せ。期待値を返す */
 function diceExp(thr) {
   let sum = 0;
@@ -144,13 +145,19 @@ function table(lv, actIdx, grow, label) {
 }
 
 /* ---- 案を比べる ---- */
-function summary(lv, act, grow, wep) {
-  const save = {};
+function summary(lv, act, grow, wep, floor, jobSt, raceSt) {
+  const save = {}, saveJob = {}, saveRace = {};
   if (wep) { Object.keys(wep).forEach(k => { save[k] = {...WEP[k]}; Object.assign(WEP[k], wep[k]); }); }
+  if (jobSt) { Object.keys(jobSt).forEach(k => { saveJob[k] = {...JOB[k].st}; Object.assign(JOB[k].st, jobSt[k]); }); }
+  if (raceSt){ Object.keys(raceSt).forEach(k => { saveRace[k] = {...RACE[k].st}; Object.assign(RACE[k].st, raceSt[k]); }); }
+  const keepFloor = FLOOR; if (floor) FLOOR = floor;
   const foe = foeStats(act);
   const rows = [];
   Object.keys(JOB).forEach(j => Object.keys(RACE).forEach(r => rows.push(rate(j,r,lv,foe,grow))));
+  FLOOR = keepFloor;
   if (wep) Object.keys(save).forEach(k => Object.assign(WEP[k], save[k]));
+  if (jobSt) Object.keys(saveJob).forEach(k => Object.assign(JOB[k].st, saveJob[k]));
+  if (raceSt)Object.keys(saveRace).forEach(k => Object.assign(RACE[k].st, saveRace[k]));
   const avg = k => rows.reduce((a,b)=>a+b[k],0)/rows.length;
   const byJob = {};
   Object.keys(JOB).forEach(j => {
@@ -171,7 +178,7 @@ function compare(cases) {
     console.log(`\n=== Lv${lv} ／ ${act+1}階層の敵　（職業ごとの平均。100%が全体平均）===`);
     console.log("  案".padEnd(22)+"ナイト        アーチャー      スカウト      ウィザード     ばらつき");
     cases.forEach(c => {
-      const r = summary(lv, act, c.grow, c.wep);
+      const r = summary(lv, act, c.grow, c.wep, c.floor, c.job, c.race);
       const f = n => {const x=r.byJob[n];return `${String(x.総合).padStart(3)}%(火${String(x.火力).padStart(3)}耐${String(x.耐久).padStart(3)})`;};
       console.log("  "+c.n.padEnd(20,"　").slice(0,20)+" "+
         f("ナイト")+" "+f("アーチャー")+" "+f("スカウト")+" "+f("ウィザード")+
@@ -194,15 +201,35 @@ if (require.main === module) {
     ["dagger","twindagger","fang","rapier","clawblade","shadowfang","assassin"]
       .forEach(k => { if (WEP[k]) mulUp[k] = {mul:+(WEP[k].mul*1.15).toFixed(2)}; });
     const S43 = {...GROW, scout:{STR:4,DEX:3,VIT:2}};
+    const mulUp25 = {};
+    ["dagger","twindagger","fang","rapier","clawblade","shadowfang","assassin"]
+      .forEach(k => { if (WEP[k]) mulUp25[k] = {mul:+(WEP[k].mul*1.25).toFixed(2)}; });
+    const S43M2 = {...GROW, scout:{STR:4,DEX:3,VIT:2}, mage:{INT:5,VIT:2}};
+    const scoutSTR = {scout:{...JOB.scout.st, STR:30}};
+    /* いまが基準。ここからさらに動かす案を並べる */
+    const mulUp09 = {};
+    ["dagger","twindagger","fang","rapier","clawblade","shadowfang","assassin"]
+      .forEach(k => { if (WEP[k]) mulUp09[k] = {mul:+(WEP[k].mul*0.92).toFixed(2)}; });
     compare([
-      {n:"手つかず", grow:{...GROW, knight:{STR:4,VIT:5}}},
-      {n:"いま(騎VIT4のみ)", grow:null},
-      {n:"斥候 STR4DEX3VIT2", grow:S43},
-      {n:"斥候の武器 倍率1.15倍", grow:null, wep:mulUp},
-      {n:"両方", grow:S43, wep:mulUp},
+      {n:"いま(2026-08-31 調整後)", grow:null},
+      {n:"短剣をさらに 1.09倍", grow:null, wep:mulUp},
+      {n:"短剣を 0.92倍に戻す", grow:null, wep:mulUp09},
+      {n:"魔道 VIT2→1", grow:{...GROW, mage:{INT:5,VIT:1}}},
+      {n:"エルフ STR−3→0", grow:null, race:{elf:{...RACE.elf.st, STR:0}}},
+      {n:"矮 VIT14→11", grow:null, race:{dwarf:{...RACE.dwarf.st, VIT:11}}},
     ]);
 
 
+  } else if (process.argv.includes("--before")) {
+    /* 2026-08-31 の調整を巻き戻した状態。効き目を確かめるとき用 */
+    GROW.scout = {DEX:5,STR:2,VIT:2};
+    GROW.mage  = {INT:5,VIT:3};
+    JOB.scout.st.STR  = 26;
+    JOB.knight.st.DEF = 10;
+    RACE.dwarf.st.DEF = 5;
+    ["dagger","twindagger","fang","rapier","clawblade","shadowfang","assassin"]
+      .forEach(k => { if (WEP[k]) WEP[k].mul = +(WEP[k].mul/1.15).toFixed(2); });
+    [[1,0],[10,1],[16,2]].forEach(([lv,act]) => table(lv, act, null, "調整前"));
   } else {
     [[1,0],[10,1],[16,2]].forEach(([lv,act]) => table(lv, act, null, "いまの数値"));
   }
