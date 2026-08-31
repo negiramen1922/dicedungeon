@@ -9,6 +9,7 @@ rules_version = '2';
      ・自分の games/dicedungeon/players/{uid} だけ読み書きできる
      ・一覧（list）は誰にも許さない。uid を総なめされないため
      ・形が違うもの、大きすぎるものは受け取らない
+     ・meta（周をまたぐ記録）と run（途中の潜行の控え）の2つだけ
 
    直したら必ず配ること：  firebase deploy --only firestore:rules
 
@@ -35,11 +36,14 @@ service cloud.firestore {
     function ddWellFormed() {
       let d = request.resource.data;
       let m = d.meta;
-      return d.keys().hasOnly(['v', 'meta', 'at'])
+      return d.keys().hasOnly(['v', 'meta', 'run', 'at'])
           && d.v is number
           && d.meta is map
+          /* run は途中の潜行の控え。中身は毎版で変わるので形は見ない。
+             遊んでいない間は null が入る */
+          && (!d.keys().hasAny(['run']) || d.run == null || d.run is map)
           && m.keys().hasOnly(
-               ['codex','rooms','elem','mats','seen','areas','hall','runs','best','tutSeen','newsSeen'])
+               ['codex','rooms','elem','mats','seen','areas','ended','hall','runs','best','tutSeen','newsSeen'])
           && (!m.keys().hasAny(['hall']) || (m.hall is list && m.hall.size() <= 50))
           && (!m.keys().hasAny(['runs']) || m.runs is number)
           && (!m.keys().hasAny(['best']) || m.best is number);

@@ -930,7 +930,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0019";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0020";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -4564,6 +4564,7 @@ async function finish(win){
    site data を切っている）でも、保存を諦めるだけで遊べるようにしてある。 */
 const META={codex:{},rooms:{},elem:{},mats:{},seen:{},hall:[],runs:0,best:0,
   areas:{},                 /* 踏み入れたことのある区画。世界地図の明るさに使う */
+  ended:{},                 /* 終わった潜行の id。古い控えが生き返らないようにする */
   tutSeen:false,newsSeen:""};
 const MKEY="dd.meta";
 const MVER=1;                /* 中身の形を変えたら上げる。読み込み側で移行する */
@@ -4586,6 +4587,7 @@ function metaLoad(){
   META.codex=obj("codex"); META.rooms=obj("rooms");
   META.elem =obj("elem");  META.mats =obj("mats");
   META.seen =obj("seen");  META.areas=obj("areas");
+  META.ended=obj("ended");
   META.hall =Array.isArray(o.hall)?o.hall.slice(-HALLMAX):[];
   META.runs =Number.isFinite(o.runs)?o.runs:0;
   META.best =Number.isFinite(o.best)?o.best:0;
@@ -4599,7 +4601,8 @@ function metaWrite(){
     if(META.hall.length>HALLMAX)META.hall=META.hall.slice(-HALLMAX);
     localStorage.setItem(MKEY,JSON.stringify({v:MVER,
       codex:META.codex,rooms:META.rooms,elem:META.elem,mats:META.mats,
-      seen:META.seen,areas:META.areas,hall:META.hall,runs:META.runs,best:META.best,
+      seen:META.seen,areas:META.areas,ended:META.ended,
+      hall:META.hall,runs:META.runs,best:META.best,
       tutSeen:META.tutSeen,newsSeen:META.newsSeen}));
   }catch(e){ metaBroken=true; }   /* 容量切れなど。以降は諦めて遊べるようにする */
   CloudHook.mark();               /* クラウドへは間を置いてまとめて送る */
@@ -4613,6 +4616,7 @@ function touchMeta(){
 function metaFlush(){ if(metaTimer){clearTimeout(metaTimer);metaWrite();} CloudHook.flush(); }
 function metaClear(){
   META.codex={};META.rooms={};META.elem={};META.mats={};META.seen={};META.areas={};
+  META.ended={};
   META.hall=[];META.runs=0;META.best=0;
   /* 遊び方を見たか・お知らせを読んだかは残す。
      消すと毎回チュートリアルに戻され、読んだお知らせがまた未読になって煩わしい */
@@ -4634,26 +4638,45 @@ function metaClear(){
    RUN.preview・RUN.lootLines はその場かぎりのものなので落とす。 */
 const RKEY="dd.run", RVER=1;
 let runBroken=false;
-function runSave(){
-  if(runBroken||!RUN||RUN.over||!RUN.M||!me)return;
-  try{
-    localStorage.setItem(RKEY,JSON.stringify({
-      v:RVER, ver:VERSION, t:Date.now(),
-      sel:{job:sel.job,race:sel.race,orig:sel.orig,area:sel.area,
-           luk:sel.luk,lukD:sel.lukD},
-      me, owned,
-      run:{act:RUN.act,area:RUN.area,seen:RUN.seen||[],curKey:RUN.curKey||null,
-           path:RUN.path||[],M:RUN.M,stock:RUN.stock||null,
-           shopRecipe:RUN.shopRecipe===undefined?undefined:RUN.shopRecipe},
-    }));
-  }catch(e){ runBroken=true; }   /* 容量切れなど。保存を諦めて遊べるようにする */
+function runNewId(){
+  return Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 }
-function runClear(){ try{localStorage.removeItem(RKEY);}catch(e){} }
+function runSnapshot(){
+  if(!RUN||RUN.over||!RUN.M||!me)return null;
+  return {
+    v:RVER, ver:VERSION, t:Date.now(), id:RUN.id||null,
+    sel:{job:sel.job,race:sel.race,orig:sel.orig,area:sel.area,
+         luk:sel.luk,lukD:sel.lukD},
+    me, owned,
+    run:{act:RUN.act,area:RUN.area,seen:RUN.seen||[],curKey:RUN.curKey||null,
+         path:RUN.path||[],M:RUN.M,stock:RUN.stock||null,
+         shopRecipe:RUN.shopRecipe===undefined?null:RUN.shopRecipe},
+  };
+}
+function runSave(){
+  if(runBroken)return;
+  const o=runSnapshot();
+  if(!o)return;
+  runPut(o);
+  CloudHook.mark();                /* クラウドへは間を置いてまとめて送る */
+}
+/* 控えを端末に置くだけ。RUN には触らない */
+function runPut(o){
+  try{ localStorage.setItem(RKEY,JSON.stringify(o)); }
+  catch(e){ runBroken=true; }      /* 容量切れなど。保存を諦めて遊べるようにする */
+}
+function runRaw(){
+  try{ return JSON.parse(localStorage.getItem(RKEY)||"null"); }catch(e){ return null; }
+}
+function runClear(){
+  try{localStorage.removeItem(RKEY);}catch(e){}
+  CloudHook.mark();                /* 消したことをクラウドにも伝える */
+}
 /* 読めるかどうかまで見る。表の中身が変わって指し先が消えていたら捨てる */
-function runLoad(){
-  let r=null;
-  try{ r=JSON.parse(localStorage.getItem(RKEY)||"null"); }catch(e){ return null; }
+function runLoad(r){
+  if(r===undefined)r=runRaw();
   if(!r||r.v!==RVER||!r.me||!r.run||!r.run.M||!r.sel)return null;
+  if(r.id&&META.ended[r.id])return null;   /* もう終わった潜行 */
   if(!JOB[r.sel.job]||!RACE[r.sel.race]||!ORIG[r.sel.orig])return null;
   if(!AREAS[r.run.area])return null;
   const N=r.run.M.node||{};
@@ -4665,6 +4688,45 @@ function runLoad(){
   return r;
 }
 function runHas(){ return !!runLoad(); }
+const ENDEDMAX=30;               /* 印は増え続けるので、古いものから捨てる */
+function endedTrim(){
+  const k=Object.keys(META.ended||{});
+  if(k.length>ENDEDMAX)k.slice(0,k.length-ENDEDMAX).forEach(x=>delete META.ended[x]);
+}
+/* クラウドから来た控えと、この端末の控えを突き合わせる。
+     どちらか片方しか無い    … あるほうを採る
+     同じ潜行（id が同じ）    … 新しいほう（＝先へ進んでいるほう）を採る
+     別々の潜行（id が違う）  … どちらを残すか選ばせる
+   潜っている最中は触らない。遊んでいる手元の控えが正しいものとして扱う。 */
+function runMerge(cloud){
+  const c=runLoad(cloud), l=runLoad();
+  if(!c&&!l)return;
+  if(RUN&&!RUN.over)return;
+  if(!l&&c){ runPut(c); if(curScreen==="home")drawHome(); return; }
+  if(l&&!c){ CloudHook.mark(); return; }        /* こちらだけ。次の送りで届く */
+  if(l.id&&c.id&&l.id===c.id){                  /* 同じ潜行の進み具合の違い */
+    if((c.t||0)>(l.t||0)){ runPut(c); if(curScreen==="home")drawHome(); }
+    else CloudHook.mark();
+    return;
+  }
+  runPickModal(l,c);
+}
+/* 別々の潜行が2つあるとき、どちらを残すか選ばせる */
+function runPickModal(l,c){
+  const row=(ttl,r)=>`<div class="mitem"><b>${ttl}</b><br>${runLabel(r)}</div>`;
+  openModal(`<div class="mtitle">続 き が 2 つ あ る</div>
+    <div class="msub">この端末とクラウドに、別々の潜行が残っている。<br>
+      残すほうを選ぶ。選ばなかったほうは消える。</div>
+    ${row("こ の 端 末",l)}${row("ク ラ ウ ド",c)}
+    <div class="ndbtn" style="margin-top:12px">
+      <button class="no2" id="rpL">この端末のを残す</button>
+      <button class="go2" id="rpC">クラウドのを残す</button>
+    </div>`);
+  $("#rpL").onclick=()=>{ closeModal(); CloudHook.mark();
+    if(curScreen==="home")drawHome(); };
+  $("#rpC").onclick=()=>{ closeModal(); runPut(c);
+    if(curScreen==="home")drawHome(); };
+}
 /* 続きから始める */
 function runResume(){
   const r=runLoad();
@@ -4672,7 +4734,7 @@ function runResume(){
   sel.job=r.sel.job;sel.race=r.sel.race;sel.orig=r.sel.orig;
   sel.area=r.sel.area;sel.luk=r.sel.luk;sel.lukD=r.sel.lukD;
   me=r.me; owned=r.owned||[];
-  RUN={act:r.run.act||0, area:r.run.area, seen:r.run.seen||[],
+  RUN={id:r.id||runNewId(), act:r.run.act||0, area:r.run.area, seen:r.run.seen||[],
        curKey:r.run.curKey||null, cur:null, path:r.run.path||[],
        M:r.run.M, stock:r.run.stock||null, shopRecipe:r.run.shopRecipe,
        preview:null, over:false, cleared:false, elite:false, boss:false};
@@ -4683,8 +4745,8 @@ function runResume(){
   setTimeout(introScroll,120);
 }
 /* 家に出す一行。どこまで潜っていたか */
-function runLabel(){
-  const r=runLoad(); if(!r)return null;
+function runLabel(rec){
+  const r=runLoad(rec); if(!r)return null;
   const A=AREAS[r.run.area]||{};
   const nd=r.run.curKey?(r.run.M.node||{})[r.run.curKey]:null;
   const d=Math.round((Date.now()-(r.t||0))/60000);
@@ -4734,7 +4796,8 @@ function metaNewerNews(a,b){           /* NEWS は先頭が新しい。番号が
 }
 function metaSnapshot(){
   return {codex:META.codex,rooms:META.rooms,elem:META.elem,mats:META.mats,
-    seen:META.seen,areas:META.areas,hall:META.hall,runs:META.runs,best:META.best,
+    seen:META.seen,areas:META.areas,ended:META.ended,
+    hall:META.hall,runs:META.runs,best:META.best,
     tutSeen:META.tutSeen,newsSeen:META.newsSeen};
 }
 function metaMerge(r){
@@ -4745,6 +4808,8 @@ function metaMerge(r){
   META.mats =metaMergeFlag (META.mats ,r.mats);
   META.seen =metaMergeFlag (META.seen ,r.seen);
   META.areas=metaMergeFlag (META.areas,r.areas);
+  META.ended=metaMergeFlag (META.ended,r.ended);
+  endedTrim();
   META.hall =metaMergeHall (META.hall ,r.hall);
   META.runs =metaMax(META.runs,r.runs);
   META.best =metaMax(META.best,r.best);
@@ -4886,6 +4951,7 @@ const Cloud=(()=>{
       const snap=await F.fs.getDoc(ref);
       const d=snap.exists()?(snap.data()||{}):null;
       if(d&&d.meta&&typeof d.meta==="object")metaMerge(d.meta);
+      runMerge(d?d.run:null);       /* 途中の潜行も突き合わせる */
       await pushNow();
     }catch(e){ set("error",msgOf(e)); }
   }
@@ -4894,7 +4960,7 @@ const Cloud=(()=>{
     pushing=true;dirty=false;
     try{
       await F.fs.setDoc(F.fs.doc(db,...CPATH,user.uid),
-        {v:MVER,meta:metaSnapshot(),at:F.fs.serverTimestamp()});
+        {v:MVER,meta:metaSnapshot(),run:runRaw(),at:F.fs.serverTimestamp()});
       syncedAt=Date.now();
       if(state==="error")set(user.isAnonymous?"anon":"user");
     }catch(e){ set("error",msgOf(e)); }
@@ -5444,7 +5510,10 @@ function startRun(){
   me=makeMe();
   markSeen("w_"+me.baseWep);
   me.gold=(ORIG[sel.orig]&&ORIG[sel.orig].startGold)||30;
-  RUN={act:0,area:sel.area,seen:[],cur:null,curKey:null,path:[],over:false,cleared:false};
+  /* id は「どの潜行か」の目印。クラウドと突き合わせるときに、
+     同じ潜行の進み具合の違いなのか、別々の潜行なのかを見分ける */
+  RUN={id:runNewId(),act:0,area:sel.area,seen:[],cur:null,curKey:null,path:[],
+       over:false,cleared:false};
   owned=[];META.runs++;touchMeta();
   $("#log").innerHTML="";
   enterArea(sel.area,true);  /* 名前は出立の支度が終わってから出す */
@@ -6572,6 +6641,9 @@ function endRun(cleared){
     gold:me.gold, kills:Object.values(META.codex).reduce((a,b)=>a+b,0),
   });
   if(META.hall.length>HALLMAX)META.hall=META.hall.slice(-HALLMAX);
+  /* 終わった潜行に印を残す。もう1台に古い控えが残っていても、
+     この印が届けば「つづきから」に出さない。 */
+  if(RUN.id){META.ended[RUN.id]=true;endedTrim();}
   runClear();                      /* 終わった潜行の続きは無い */
   metaTimer&&clearTimeout(metaTimer);metaTimer=null;metaWrite();
   CloudHook.flush();               /* 1周の終わりは端末にもクラウドにも確実に残す */
