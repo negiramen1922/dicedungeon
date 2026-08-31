@@ -200,6 +200,20 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
   font-family:"DotGothic16",ui-monospace,monospace;color:#1b1d18;background:var(--brass);
   padding:0 4px;border-radius:2px;pointer-events:none}
 .cell{position:relative}
+.scRow{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(52px,auto);
+  align-items:center;gap:8px;
+  width:100%;max-width:340px;padding:6px 10px;border:1px solid var(--line);background:#14160f}
+.scName{font-size:12px;letter-spacing:.02em;text-align:left;line-height:1.3;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scName.mine{color:var(--moss)} .scName.foe{color:var(--blood)}
+.scPct{font-size:10px;color:var(--ink);letter-spacing:0;grid-column:1;grid-row:2}
+.scRow .d100{grid-column:2;grid-row:1/3;width:56px;height:56px;font-size:24px}
+.scRes{grid-column:3;grid-row:1/3;font-size:12px;letter-spacing:.08em;text-align:right}
+.scEnd{text-align:center;animation:pop2 .25s ease-out}
+.scDiff{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:15px;letter-spacing:.2em}
+.scGain{font-size:12px;color:var(--moss);letter-spacing:.08em;margin-top:3px}
+.scGain.lose{color:#7d6b68}
+.scGain b{color:var(--brass);font-size:14px}
 .dvRes{font-size:15px;letter-spacing:.1em;color:var(--bone);
   border:1px solid var(--brass);padding:3px 14px;animation:pop2 .25s ease-out}
 @keyframes pop2{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
@@ -878,7 +892,7 @@ const NEWS=[
    "<b>上限に達していると、どれだけ無駄になっているかを装備・状態の窓に出します。</b>「この装備の DEX の +10 は 上限 100 を超えていて無駄になっている」のように、装備1つずつに出ます",
    "<b>当たる目を画面に出すようにしました。</b>攻撃と技のボタンに「5〜6以上 で当たり」、相手を選ぶときは<b>マスの右上に敵ごとの数字</b>が出ます。押す前にどちらが当てやすいか分かります",
    "<b>速い敵ほど当てにくくなりました。</b>スライム(DEX 6)とオオコウモリ(DEX 42)では必要な目が2つ違います。あわせて <b>鈍足</b> が命中にも効くようになりました（これまでは行動順を遅らせるだけでした）",
-   "<b>索敵のやり方を変えました。</b>両者が d6 を撒いて差を取る形をやめ、探索の 1d100 ひと振りにしました。これまでは誰がやっても上限の +3 が出ていて、索敵の値が意味を持っていませんでした",
+   "<b>索敵を対抗判定にしました。</b>こちらの探索と相手の気配で <b>両者が 1d100 を振り</b>、成功の段階の差がそのまま先制ダイスになります。画面に<b>敵のダイスも並べて出す</b>ので、勝ったか負けたかがひと目で分かります。これまでは誰がやっても上限の +3 が出ていて、索敵の値が意味を持っていませんでした",
    "<b>こしらえるときに技能を振ります。</b>成功の段階で品質が上がります。料理は取れる数が増え（成功1／上物2／業物3／会心4）、鍛冶は装備の性能そのものが上がります（＋1.15倍／＋1.3倍／★1.5倍）",
    "失敗しても<b>素材は手元に残ります</b>（加工賃だけ失う）。素材まで持っていかれるのはファンブルのときだけです",
  ]},
@@ -6347,49 +6361,77 @@ async function doItem(k,tgt){
 
 /* ---------- 索敵 ---------- */
 async function doScout(){
-  /* 両者が d6 を撒いて差を取る形をやめ、探索技能の 1d100 ひと振りにした。
-     前のやり方だと自分のダイスが相手より桁違いに多く、
-     誰がやっても上限の +3 が出ていて、索敵の値が意味を持っていなかった。 */
+  /* こちらの探索と、相手の気配の対抗判定。
+     どちらも 1d100 を振り、成功の段階が高いほうが勝つ。
+     段階の差がそのまま最初の攻撃の攻撃ダイスになる（最大 +3）。
+
+     前は敵のぶんを数字にしてこちらの技能から引いていたので、
+     画面に出るのが「1d100 66／27」だけになり、
+     27 がどこから来たのか・勝ったのか負けたのかが分からなかった。 */
   ovMsg("索 敵 開 始",true);
   SFX.open();
-  await wait(900);
+  await wait(800);
 
-  /* 相手が隠れ上手なら、その分だけこちらの技能が目減りする */
-  const hide=Math.round(foes.reduce((a,f)=>a+(f.scout||0),0)/foes.length)*4
-            +Math.floor(Math.max(...foes.map(f=>f.DEX))/4);
   const pen=(ORIG[sel.orig]&&ORIG[sel.orig].scoutPenalty)?15:0;
-  const pct=Math.max(5,Math.min(SKMAXV,
-    skillOf("search")+passOn("scout")*5-hide-pen));
-  const r=roll100(pct);
-  scoutBonus=SCOUTGAIN[r.k];
+  const mine=Math.max(5,Math.min(SKMAXV,skillOf("search")+passOn("scout")*5-pen));
+  /* いちばん勘のいい一匹が、群れを代表して気づく */
+  const lead=foes.reduce((a,f)=>scoutHide(f)>scoutHide(a)?f:a,foes[0]);
+  const theirs=Math.max(5,Math.min(SKMAXV,scoutHide(lead)));
 
-  const row=ovShow(`探 索　<em>1d100 ・ ${pct} 以下</em>`,"索 敵");
-  const sp=document.createElement("span");
-  sp.className="d100 roll";sp.textContent="00";
-  row.appendChild(sp);
-  const spin=setInterval(()=>{sp.textContent=String(r100()).padStart(2,"0");},60);
-  await wait(850);
-  clearInterval(spin);
-  sp.textContent=String(r.v).padStart(2,"0");
-  sp.className="d100 land";
-  sp.style.color=SKRANK[r.k].c;sp.style.borderColor=SKRANK[r.k].c;
-  if(r.k>=2)SFX.crit();else SFX.tick();
-  await wait(520);
+  const o=$("#diceOv");
+  o.className="diceOv on";
+  o.innerHTML=`<div class="ovTop">索 敵</div>
+    <div class="scRow" id="scMine"></div>
+    <div class="scRow" id="scFoe"></div>
+    <div class="scEnd" id="scEnd"></div>`;
 
-  const nm=r.crit?"ク リ ティ カ ル":r.fumble?"フ ァ ン ブ ル":SKRANK[r.k].n;
-  const vd=r.k>=3?"物音も足跡も、すべて拾った":r.k===2?"先に気配を捉えた"
-    :r.k===1?"かろうじて先に気づいた":r.fumble?"派手に踏み抜いた":"出遅れた";
-  ovMsg(`<span class="k">索 敵 結 果</span><br>`+
-    `<span style="color:${SKRANK[r.k].c}">${nm}</span>　`+
-    `<span class="s">1d100 → ${r.v} ／ ${pct}</span><br>${vd}<br>`+
-    (scoutBonus?`<span class="win">最初の攻撃に 攻撃ダイス +${scoutBonus}</span>`
-      :`<span class="lose">先制の利はない</span>`));
+  const side=async(id,name,pct,cls)=>{
+    const el=$("#"+id);
+    el.innerHTML=`<div class="scName ${cls}">${name}</div>
+      <div class="scPct">1d100 ・ <b>${pct}</b> 以下</div>
+      <div class="d100 roll" id="${id}D">00</div>
+      <div class="scRes" id="${id}R">—</div>`;
+    const d=$("#"+id+"D");
+    SFX.shake();
+    const spin=setInterval(()=>{d.textContent=String(r100()).padStart(2,"0");},55);
+    await wait(780);
+    clearInterval(spin);
+    const r=roll100(pct);
+    d.textContent=String(r.v).padStart(2,"0");
+    d.className="d100 land";
+    const lv=scoutLevel(r);
+    const nm=r.crit?"クリティカル":r.fumble?"ファンブル":SKRANK[r.k].s;
+    const c=r.crit?"#e9c46a":(r.fumble?"#b1544a":SKRANK[r.k].c);
+    d.style.color=c;d.style.borderColor=c;
+    $("#"+id+"R").innerHTML=`<span style="color:${c}">${nm}</span>`;
+    if(r.k>=2||r.crit)SFX.crit();else SFX.tick();
+    await wait(420);
+    return lv;
+  };
+
+  const a=await side("scMine",me.name,mine,"mine");
+  const b=await side("scFoe",lead.name+(foes.length>1?` ほか ${foes.length-1}`:""),theirs,"foe");
+  scoutBonus=Math.max(0,Math.min(3,a-b));
+
+  const diff=a-b;
+  const vd=diff>=3?"完全に出し抜いた":diff===2?"はっきり先を取った"
+    :diff===1?"わずかに先に気づいた":diff===0?"互いに気づいた":"こちらが出遅れた";
+  $("#scEnd").innerHTML=
+    `<div class="scDiff" style="color:${scoutBonus?"#8fa261":"#7d6b68"}">${vd}</div>`+
+    (scoutBonus?`<div class="scGain">最初の攻撃に 攻撃ダイス <b>+${scoutBonus}</b></div>`
+      :`<div class="scGain lose">先制の利はない</div>`);
   SFX.found();
-  log(`<span class="a">探索</span> ${nm}　<span class="s">1d100 ${r.v}／${pct}</span>`+
+  log(`<span class="a">索敵</span> ${me.short||"自分"} <span class="m">${SCLV[a+1]}</span>`+
+      ` 対 ${lead.name} <span class="m">${SCLV[b+1]}</span>`+
     (scoutBonus?` → 最初の攻撃に ダイス <span class="m">+${scoutBonus}</span>`:` → 先制なし`));
-  await wait(1300);
+  await wait(1500);
   ovHide();
 }
+/* 敵の気配。勘のよさと素早さから出す */
+function scoutHide(f){ return (f.scout||0)*8+Math.floor(f.DEX/2); }
+/* 判定の結果を −1〜4 の段階にならす（ファンブル −1、クリティカル 4） */
+function scoutLevel(r){ return r.fumble?-1:(r.crit?4:r.k); }
+const SCLV=["ファンブル","失敗","成功","ハード","エクストリーム","クリティカル"];
 
 /* ---------- 開始 ---------- */
 function startBattle(){
