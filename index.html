@@ -965,6 +965,8 @@ const NEWS=[
    "<b>世界樹の苗</b>は森の奥ほど多く出ます。マナを吸って傷を塞ぎ、周りを芽吹かせて強くします",
    "新しい素材が6つ。<b>マナの雫・大輪の花弁・妖精の粉・硬い蹄・風切り羽・大樹の芯</b>",
    "手応えは 水没した回廊 とほぼ同じ、ボスだけ 1割ほど重くしてあります",
+   "<b>スプリガンは、最初は HP が半分ほどしかありません。</b>1ターン目に必ず膨れ上がって倍になります。<b>索敵に勝って先に動けば、膨れる前に仕留められます</b>",
+   "アルラウネの <b>毒の花粉</b> は毒と鈍足、ハーピーの <b>羽ばたく</b> は自分の速さを上げます（当てにくくなります）",
    "<span class=\"s\">この区画にはまだ曲がありません（無音になります）</span>",
  ]},
  {id:"v0028",tag:"up",v:"α0.0028",d:"2026-08-31",n:"モンスターに設定を書いた",b:[
@@ -3159,22 +3161,23 @@ const FOE={
  dryad:{n:"ドライアド",d:"一本の木に宿った精。その木が枯れれば ともに消える。歌うような声を出すが、聞き入っていると こちらの足が勝手に木のほうへ向かう。",mat:"petal",weak:"fire",resist:"earth",elem:"earth",art:"dryad",snd:"magic",
    HP:150,STR:36,DEF:12,DEX:26,rank:"back",scout:5,
    acts:[{n:"蔦を振るう",k:"atk",dice:2,pow:6,w:6},
-         {n:"惑わす歌",k:"hex",weak:2,dur:2,w:3},
-         {n:"森を励ます",k:"cheer",pow:12,dur:2,w:1}]},
- spriggan:{n:"スプリガン",d:"森の境を守る妖精。普段は岩と見分けがつかないほど小さいが、侵入者を見つけると膨れ上がって道を塞ぐ。苔の生えた背は刃を弾く。",mat:"fdust",weak:"blunt",resist:"pierce",elem:"earth",art:"spriggan",snd:"blunt",
-   HP:210,STR:38,DEF:28,DEX:10,rank:"front",scout:1,
-   acts:[{n:"石の拳",k:"atk",dice:2,pow:8,w:6},
+         {n:"惑いの歌",k:"hex",weak:2,dur:2,w:3},
+         {n:"鼓舞の歌",k:"cheer",pow:12,dur:2,w:1}]},
+ spriggan:{n:"スプリガン",d:"森の境を守る妖精。普段は岩と見分けがつかないほど小さいが、侵入者を見つけると膨れ上がって道を塞ぐ。膨れる前に仕留めれば、ただの小石でしかない。",mat:"fdust",weak:"blunt",resist:"pierce",elem:"earth",art:"spriggan",snd:"blunt",
+   HP:100,STR:38,DEF:28,DEX:10,rank:"front",scout:1,
+   acts:[{n:"膨れ上がる",k:"grow",hp:110,seq:1},
+         {n:"石の拳",k:"atk",dice:2,pow:8,w:6},
          {n:"背を固める",k:"guard",block:20,w:2},
-         {n:"膨れ上がる",k:"buff",pow:16,dur:2,w:1}]},
+         {n:"岩を振り下ろす",k:"atk",dice:1,pow:20,w:2}]},
  redcap:{n:"レッドキャップ",d:"血に染めた帽子をかぶった小妖精。帽子の色が褪せると死ぬと信じており、そのために刃物を手放さない。足が速く、走りながら斬りつけてくる。",mat:"fdust",weak:"light",resist:"dark",elem:"dark",art:"redcap",snd:"slash",
    HP:130,STR:40,DEF:10,DEX:38,rank:"front",scout:4,
-   acts:[{n:"駆け抜けざま",k:"atk",dice:3,w:5},
-         {n:"帽子を絞る",k:"regen",heal:26,w:3},
-         {n:"喉を狙う",k:"atk",dice:1,pow:16,w:2}]},
+   acts:[{n:"駆け抜ける",k:"atk",dice:3,w:5},
+         {n:"帽子を絞る",k:"regen",heal:26,w:2},
+         {n:"疾 走 槍",k:"atk",dice:5,pow:-14,w:2}]},
  alraune:{n:"アルラウネ",d:"大輪の花の中央に人の上半身を持つ植物。根を張ったまま動かない。花粉には強い痺れがあり、近づいた獣がそのまま養分になる。",mat:"petal",weak:"fire",resist:"water",elem:"earth",art:"alraune",snd:"magic",
    HP:180,STR:36,DEF:14,DEX:12,rank:"back",scout:2,
-   acts:[{n:"花粉を撒く",k:"hex",slow:6,dur:2,w:2},
-         {n:"蔓を伸ばす",k:"atk",dice:2,pow:10,w:6},
+   acts:[{n:"ツタのムチ",k:"atk",dice:3,w:6},
+         {n:"毒の花粉",k:"hex",poison:14,slow:4,dur:2,w:2},
          {n:"根を張る",k:"guard",block:18,w:2}]},
  centaur:{n:"ケンタウロス",d:"上半身が人、下半身が馬の種族。森の道を巡回している。弓の腕は確かで、間合いを取ったまま射続ける。話は通じるが、まず矢が飛んでくる。",mat:"hoof",weak:"pierce",resist:"blunt",art:"centaur",snd:"bow",
    HP:175,STR:47,DEF:16,DEX:30,rank:"back",scout:5,
@@ -3185,7 +3188,7 @@ const FOE={
    HP:145,STR:42,DEF:8,DEX:40,rank:"front",flex:true,scout:6,
    acts:[{n:"鉤爪で裂く",k:"atk",dice:3,w:7},
          {n:"甲高く鳴く",k:"summon",who:"harpy",cd:3,w:1},
-         {n:"羽ばたく",k:"veil",block:10,w:2}]},
+         {n:"羽ばたく",k:"buff",dex:10,dur:2,w:2}]},
  sprout:{n:"世界樹の苗",d:"世界樹から落ちた種のうち、根を下ろす前に自ら歩き出したもの。全身からマナが漏れており、周りの草木が異様に育つ。森の奥ほど多い。",mat:"mana",weak:"fire",resist:"bolt",elem:"earth",art:"sprout",snd:"blunt",
    HP:230,STR:44,DEF:22,DEX:14,rank:"front",scout:2,
    acts:[{n:"根で薙ぐ",k:"atk",dice:2,pow:12,w:6},
@@ -3379,8 +3382,12 @@ function chooseTele(f){
     for(const a of sp){sr-=(a.w||1);if(sr<=0)return {...a};}
     return {...sp[0]};
   }
+  /* 決まった手番の行動。ひとりでいても出す。
+     前は !alone を付けていたが、solo の手を持つ敵は上の枝で返ってしまうので
+     この条件は効いたことがなく、solo を持たない敵（スプリガン）の
+     seq だけを黙って握り潰していた。 */
   const seq=f.acts.find(a=>a.seq===(f.turn||0)+1);
-  if(seq&&!alone){f.turn=(f.turn||0)+1;return {...seq};}
+  if(seq){f.turn=(f.turn||0)+1;return {...seq};}
   if(f.forceNext){
     const fa=f.acts.find(a=>a.n===f.forceNext);
     f.forceNext=null;
@@ -3429,17 +3436,23 @@ function telePreview(f,tt){
         (far?`　／　後衛なので4割減`:""),danger:true};
   }
   if(t.k==="guard")return {txt:"◈ "+t.n,sub:`防御 +${t.block}（1ヒットごと）`,danger:false};
-  if(t.k==="buff")return {txt:"▲ "+t.n,sub:`自分の威力 +${t.pow}　${(t.dur||1)+1}ターン`,danger:false};
+  if(t.k==="buff")return {txt:"▲ "+t.n,
+    sub:t.pow?`自分の威力 +${t.pow}　${(t.dur||1)+1}ターン`
+             :`自分の速さ +${t.dex}　この戦闘のあいだ`,danger:false};
   if(t.k==="cheer")return {txt:"▲ "+t.n,sub:`前列すべての威力 +${t.pow}`,danger:false};
   if(t.k==="summon")return {txt:"✚ "+t.n,
     sub:`${FOE[t.who].n} を 1〜3 体 呼ぶ`,danger:true};
   if(t.k==="regen")return {txt:"✚ "+t.n,sub:`自分の HP を ${t.heal} 回復する`,danger:false};
   if(t.k==="hex")return {txt:"✦ "+t.n,
     sub:[t.curse?`こちらのDEF −${t.curse}`:"",t.weak?`こちらの威力 −15%`:"",
-      t.slow?`こちらのDEX −${t.slow}`:"",t.blind?`こちらの命中閾値 +${t.blind}`:""]
+      t.slow?`こちらのDEX −${t.slow}`:"",t.blind?`こちらの命中閾値 +${t.blind}`:"",
+      t.poison?`毎ターン ${t.poison} の毒`:""]
       .filter(Boolean).join("　")+
       `　${(t.dur||2)+1}ターン`+(t.dice?`　＋ ${t.dice}d6 の侵蝕`:""),danger:true};
   if(t.k==="veil")return {txt:"◈ "+t.n,sub:`前列すべてに DEF +${t.block}`,danger:false};
+  if(t.k==="grow")return {txt:"▲ "+t.n,
+    sub:`最大HP +${Math.round(t.hp*depthMul())}`+(t.pow?`　威力 +${t.pow}`:"")+
+      `　膨れる前に倒せば これは起きない`,danger:false};
   return {txt:t.n,sub:"",danger:false};
 }
 
@@ -3500,7 +3513,7 @@ function actIcon(t){
   if(!t)return {g:"…",c:"me",n:"—"};
   if(t.k==="atk")return {g:"⚔",c:"atk",n:"攻撃"};
   if(t.k==="guard"||t.k==="veil")return {g:"◈",c:"def",n:"防御"};
-  if(t.k==="buff"||t.k==="cheer")return {g:"▲",c:"buf",n:"溜め"};
+  if(t.k==="buff"||t.k==="cheer"||t.k==="grow")return {g:"▲",c:"buf",n:"溜め"};
   return {g:"→",c:"me",n:"移動"};
 }
 function drawOrder(){
@@ -4691,10 +4704,18 @@ async function enemyAct(f){
     f.block+=t.block;draw();fxOn(f,"guard");popOn(f,"+"+t.block,"blk");SFX.open();
     log(`<span class="b">${f.name}</span> は身を固めた（防御 +${f.block}／ヒット）`);await wait(450);
   }else if(t.k==="buff"){
-    addBuff(f,t.pow,t.dur||1);f.lastAid=t.n;
+    f.lastAid=t.n;
+    if(t.pow)addBuff(f,t.pow,t.dur||1);
+    /* 素早さを上げる手。持続の器が無いので この戦闘のあいだ ずっと乗る。
+       threshold が tgt.DEX をそのまま見るので、上げた瞬間から当てにくくなる。
+       行動順は次のラウンドの buildQueue から効く。 */
+    if(t.dex)f.DEX+=t.dex;
     if(t.forceNext)f.forceNext=t.forceNext;
-    draw();fxOn(f,"charge");popOn(f,"力+"+t.pow,"blk");SFX.open();
-    log(`<span class="b">${f.name}</span> が力をためた（威力 +${t.pow}　${(t.dur||1)+1}ターン）`);
+    draw();fxOn(f,"charge");
+    popOn(f,t.pow?"力+"+t.pow:"速+"+t.dex,"blk");SFX.open();
+    log(`<span class="b">${f.name}</span> が`+
+      (t.pow?`力をためた（威力 +${t.pow}　${(t.dur||1)+1}ターン）`:"")+
+      (t.dex?`${t.pow?"　":""}身を軽くした（速さ <span class="m">+${t.dex}</span>　この戦闘のあいだ）`:""));
     await wait(450);
   }else if(t.k==="cheer"){
     f.lastAid=t.n;aliveIn("front").forEach(x=>{addBuff(x,t.pow,t.dur||1);});
@@ -4723,6 +4744,18 @@ async function enemyAct(f){
       log(`<span class="b">${f.name}</span> が <span class="c">${FOE[t.who].n}</span> を ${n} 体 呼び寄せた`);
       await wait(700);
     }
+  }else if(t.k==="grow"){
+    /* 膨れ上がる。最大HPごと増える。
+       索敵に勝って先に動けば、膨れる前の小さいうちに落とせる。 */
+    /* 膨らむ量も深さで伸ばす。makeFoes が HP に掛けているのと同じ倍率。
+       これが無いと、深い階層ほど「膨れても大したことがない」ことになる。 */
+    const add=Math.round(t.hp*depthMul());
+    f.maxHP+=add; f.HP+=add; f.lastAid=t.n;
+    if(t.pow)addBuff(f,t.pow,t.dur||2);
+    draw();fxOn(f,"charge");popOn(f,"HP+"+add,"heal");SFX.buff();
+    log(`<span class="b">${f.name}</span> が <span class="c">膨れ上がった</span>`+
+      `　最大HP <span class="m">+${add}</span>`+(t.pow?`　威力 <span class="m">+${t.pow}</span>`:""));
+    await wait(700);
   }else if(t.k==="regen"){
     const hl=Math.min(t.heal,f.maxHP-f.HP);
     f.HP+=hl;draw();fxOn(f,"charge");popOn(f,"+"+hl,"heal");SFX.found();
@@ -4737,6 +4770,7 @@ async function enemyAct(f){
     if(t.weak){ailAdd(me,"weakp",t.weak*15,dur);msg.push(`威力 <span class="m">−${t.weak*15}%</span>`);}
     if(t.slow){ailAdd(me,"slow",t.slow,dur);msg.push(`DEX <span class="m">−${t.slow}</span>`);}
     if(t.blind){ailAdd(me,"blur",t.blind,dur);msg.push(`命中が <span class="m">${t.blind}</span> 遠のく`);}
+    if(t.poison){ailAdd(me,"poison",t.poison,dur);msg.push(`毎ターン <span class="m">${t.poison}</span> の毒`);}
     if(t.dice){ailAdd(me,"shrink",t.dice,dur);msg.push(`攻撃ダイス <span class="m">−${t.dice}</span>`);}
     draw();fxOn(me,"magic");
     popSelf(t.curse?"防御−":t.dice?"手数−":"威力−","each");SFX.atk("magic");

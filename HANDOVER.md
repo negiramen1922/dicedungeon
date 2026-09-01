@@ -1587,8 +1587,26 @@ return r<2?0.9:(r<5?1:(r<10?1.14:1.3));           // 区画をまたぐ伸びが
 **行動の値の名前を間違えやすい。** `veil` は `block`（前列全体の DEF）を取るのに
 `dur` を渡していて、戦闘のログに「防御 +undefined」と出た。
 **必ず一度は実際に戦って、ログを読むこと。**
-（`atk` は `dice` か `diceRand`、`guard`/`veil` は `block`、`buff`/`cheer` は `pow`、
-`regen` は `heal`、`summon` は `who`、`hex` は curse/weak/slow/blind/dice のどれか）
+| 手 | 要る値 | すること |
+|---|---|---|
+| `atk` | `dice` か `diceRand`（`pow` は増減） | 攻撃 |
+| `guard` | `block` | 自分の DEF |
+| `veil` | `block` | **前列すべて**の DEF |
+| `buff` | `pow` か `dex` | 自分の威力／速さ。`dex` はこの戦闘のあいだ続く |
+| `cheer` | `pow` | 前列すべての威力 |
+| `grow` | `hp` | **最大HPごと増える。** 深さ倍率が掛かる |
+| `regen` | `heal` | HP を戻す |
+| `summon` | `who` | 呼ぶ |
+| `hex` | curse/weak/slow/blind/dice/**poison** のどれか | 状態異常 |
+
+**`seq:n` は n 手番目に確定で出る。** `w` は要らない（乱数の候補からも外れる）。
+スプリガンの「膨れ上がる」がこれ。**索敵に勝てば膨れる前に落とせる**という遊びになる。
+
+〔直した〕`seq` に `!alone` が付いていて、**ひとりでいる敵の `seq` が黙って握り潰されて**
+いた。既存の `seq` 持ち（ゴブリンキャスター・シャーマン）は `solo` の手も持つので
+上の枝で返ってしまい、この条件が効いたことは一度も無かった。
+
+**`tools/sim.js` は `grow` を数えない。** スプリガンは実際より弱く出る。
 
 ### 1周の手応えの測り方（`tools/sim.js`）
 
