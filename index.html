@@ -965,6 +965,12 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0032b",tag:"bal",v:"α0.0032",d:"2026-09-01",n:"キングスライムを組み直しました",b:[
+   "<b>最初のボスなので、仕掛けを持たせず攻撃3つだけにしました。</b>のしかかる（3D 90%）・粘液を吐く（2D 50%・<b>当たると DEF が下がります</b>）・まとわりつく（3D 120%）",
+   "<b>HP を 260 から 340 に上げました。</b>そのかわり <b>連れているスライムを2体から1体に減らしています</b>",
+   "<b>HP が半分を切ると、一度だけ分裂します。</b>スライムが 1〜3 体増えます。前列が埋まっていれば後列にも出ます",
+   "守りを固める手と溶かす手は外しました。硬いだけで足踏みになっていたためです",
+ ]},
  {id:"v0032",tag:"up",v:"α0.0032",d:"2026-09-01",n:"ボスに段階と隙ができました",b:[
    "<b>ボスは HP が減ると別物になります。</b>行動表がまるごと入れ替わり、守りが薄くなるかわりに攻めが増えます",
    "キングスライム <b>核が浮かぶ</b>（HP50%）／サイクロプス <b>隻眼が据わる</b>（45%）／クイーンスパイダー <b>腹を裂く</b>（50%）",
@@ -3438,19 +3444,19 @@ const FOE={
          {n:"毒針を刺す",k:"hex",poison:5,dur:2,w:3},
          {n:"刺し続ける",k:"atk",dice:3,pct:-20,w:2}]},
  kingslime:{n:"キングスライム",d:"無数のスライムが寄り集まり、ひとつの意思を持つに至ったもの。潰しても中から次が出てくるので、核となる一体を見つけない限り終わらない。透き通った粘液は、まだ動いている。",mat:"kgel",weak:"bolt",resist:"blunt",elem:"water",art:"kingslime",snd:"blunt",
-   HP:260,STR:34,DEF:18,DEX:10,rank:"front",scout:1,
-   acts:[{n:"のしかかる",k:"atk",dice:2,pct:25,w:5},
-         {n:"分裂する",k:"summon",who:"slime",cd:5,w:3},
-         {n:"殻を固める",k:"guard",block:26,w:2},
-         {n:"粘液を撒く",k:"atk",dice:4,pct:-35,open:{t:1},w:3},
-         {n:"溶 か す",k:"hex",curse:8,dice:1,dur:2,w:3}],
-   phases:[{at:.5,n:"核 が 浮 か ぶ",d:"殻が薄れ、中の核が透けて見えている",
-     def:-9,str:8,
-     acts:[{n:"のしかかる",k:"atk",dice:2,pct:25,w:4},
-           {n:"分裂する",k:"summon",who:"slime",cd:3,w:3},
-           {n:"核 を 振 る",k:"atk",dice:3,pct:20,open:{t:2},w:4},
-           {n:"核 を 隠 す",k:"guard",block:14,w:1},
-           {n:"溶 か す",k:"hex",curse:8,dice:1,dur:2,w:3}]}]},
+   HP:340,STR:34,DEF:18,DEX:10,rank:"front",scout:1,
+   /* 最初のボス。仕掛けは持たせず、3つの攻撃だけで組む。
+      半分を切ったときに一度だけ分裂する（phases の forceAct）。 */
+   acts:[{n:"のしかかる",k:"atk",dice:3,pct:-10,w:5},
+         {n:"粘液を吐く",k:"atk",dice:2,pct:-50,ail:{curse:8,t:2},w:2},
+         {n:"まとわりつく",k:"atk",dice:3,pct:20,w:1},
+         {n:"分裂する",k:"summon",who:"slime",num:3,cd:99,hidden:true,w:0}],
+   phases:[{at:.5,n:"割 れ る",d:"体がひとりでに裂け、中から次が出てきた",
+     forceAct:"分裂する",
+     acts:[{n:"のしかかる",k:"atk",dice:3,pct:-10,w:5},
+           {n:"粘液を吐く",k:"atk",dice:2,pct:-50,ail:{curse:8,t:2},w:2},
+           {n:"まとわりつく",k:"atk",dice:3,pct:20,w:1},
+           {n:"分裂する",k:"summon",who:"slime",num:3,cd:99,hidden:true,w:0}]}]},
 
  /* ===== 原始の草原　2 階層：森 ===== */
  maneater:{n:"マンイーター",d:"獲物を待って動かない食人蔓。地に根を張っているあいだは微動だにせず、間合いに入ったものだけを一息に絡め取る。切っても、切った先から伸びようとする。",mat:"vine",elem:"earth",weak:"fire",resist:"pierce",art:"maneater",snd:"slash",
@@ -3761,6 +3767,9 @@ async function checkPhase(f){
   if(P.str)f.STR=Math.max(1,Math.round(f.STR*(1+P.str/100)));
   if(P.heal){f.HP=Math.min(f.maxHP,f.HP+Math.round(f.maxHP*P.heal));}
   f.turn=0;                                  /* seq を段階のはじめから数え直す */
+  /* forceAct … その段階に入った瞬間、次の手をこれに決める。
+     「HP が半分を切ったら一度だけ分裂する」のような一発ものに使う。 */
+  if(P.forceAct)f.forceNext=P.forceAct;
   f.tele=chooseTele(f);f.next=chooseTele(f);
   draw();drawOrder();
   SFX.crit();
@@ -3803,7 +3812,9 @@ function chooseTele(f){
       if(f.sumUsed&&a.once)return false;
       if(f.sumCd>0)return false;
       if(a.alone&&alive().filter(x=>x!==me).length>1)return false;
-      return aliveIn("front").length<3;
+      /* 前列が満杯でも、後列が空いていれば呼べる */
+      return aliveIn("front").length<3
+        ||(a.back!==false&&aliveIn("back").length<3);
     }
     if(AIDK.includes(a.k)&&f.lastAid===a.n)return false;   // 同じ強化・弱体は連続しない
     return true;
@@ -3832,6 +3843,9 @@ function telePreview(f,tt){
       sub:`${t.dice}d6 ・ 1ヒット ${per} ・ 最大 ${R.hi*t.dice}`+
         (t.drain?`　／　与えた分の ${Math.round(t.drain*100)}% を吸う`:"")+
         (t.open?`　／　<span style="color:#e0b83a">振ったあと 隙ができる</span>`:"")+
+        (t.ail?`　／　当たると ${[t.ail.curse&&`DEF −${t.ail.curse}`,t.ail.slow&&`DEX −${t.ail.slow}`,
+          t.ail.weak&&`威力 −${t.ail.weak}%`,t.ail.blind&&`命中 −${t.ail.blind}`,
+          t.ail.poison&&`毒 ${t.ail.poison}`].filter(Boolean).join("・")}`:"")+
         (far?`　／　後衛なので4割減`:""),danger:true};
   }
   if(t.k==="guard")return {txt:"◈ "+t.n,sub:`防御 +${t.block}（1ヒットごと）`,danger:false};
@@ -5114,6 +5128,22 @@ async function enemyAct(f){
       if(hl>0){f.HP+=hl;fxOn(f,"charge");popOn(f,"+"+hl,"heal");
         log(`<span class="b">${f.name}</span> が <span class="m">${hl}</span> 吸い取った`);}
     }
+    /* 攻撃そのものに状態異常を乗せる。当たったときだけ効く。
+       hex と違って「殴りながら崩す」手が書ける。
+         {k:"atk",dice:2,pct:-50,ail:{curse:8,t:2}} */
+    if(t.ail&&hits&&me.HP>0){
+      const A=t.ail, du=A.t||2, put=[];
+      if(A.curse){ailAdd(me,"break",A.curse,du);put.push(`DEF −${A.curse}`);}
+      if(A.slow){ailAdd(me,"slow",A.slow,du);put.push(`DEX −${A.slow}`);}
+      if(A.weak){ailAdd(me,"weakp",A.weak,du);put.push(`威力 −${A.weak}%`);}
+      if(A.blind){ailAdd(me,"blur",A.blind,du);put.push(`命中 −${A.blind}`);}
+      if(A.poison){ailAdd(me,"poison",A.poison,du);put.push(`毎ターン 毒 ${A.poison}`);}
+      if(put.length){
+        draw();popSelf("防御−","each");
+        log(`　${put.join("　")}　<span class="s">（${du+1}ターン）</span>`);
+        await wait(380);
+      }
+    }
     draw();
     if(hits){popSelf("−"+dmg);SFX.dmg();}
     if(me.counter&&dmg>0&&f.HP>0){
@@ -5152,7 +5182,10 @@ async function enemyAct(f){
     log(`<span class="b">${f.name}</span> が前列を鼓舞した（威力 +${t.pow}）`);await wait(500);
   }else if(t.k==="summon"){
     f.lastAid=t.n;f.sumUsed=true;f.sumCd=t.cd||0;
-    const n=Math.min(1+Math.floor(Math.random()*3),3-aliveIn("front").length);
+    /* 前列が埋まっていたら後列へ回す。num で 1dN を指定できる（既定 1d3） */
+    const roll=1+Math.floor(Math.random()*(t.num||3));
+    const n=Math.min(roll,(3-aliveIn("front").length)
+      +(t.back!==false?3-aliveIn("back").length:0));
     if(n<=0){log(`<span class="b">${f.name}</span> は呼んだが、誰も来なかった`);await wait(450);}
     else{
       const dm=depthMul();
@@ -5163,7 +5196,8 @@ async function enemyAct(f){
           name:base.n+" "+"ABCDEF"[foes.filter(x=>x.key===t.who).length],
           maxHP:hp,HP:hp,STR:Math.round(base.STR*(1+(dm-1)*0.6)),
           block:0,buffs:[],ail:[],stun:false,isFoe:true,
-          rank:"front",tele:null,next:null,lastAid:null,turn:0,sumCd:0,sumUsed:false};
+          rank:aliveIn("front").length<3?"front":"back",
+          tele:null,next:null,lastAid:null,turn:0,sumCd:0,sumUsed:false};
         nf.tele=chooseTele(nf);nf.next=chooseTele(nf);
         foes.push(nf);
         /* 呼ばれた者は この場ですぐ 順番に加わる */
@@ -5871,7 +5905,7 @@ const ENCS={
  b1:{n:"クイーンスパイダー",list:["qspider","cspider","cspider"]},
  b2:{n:"ゲートガーディアン",list:["gate","gargoyle","bigbat"]},
  b3:{n:"ディープワン",list:["deepone","sahagin","wraith"]},
- pb1:{n:"キングスライム",list:["kingslime","slime","slime"]},
+ pb1:{n:"キングスライム",list:["kingslime","slime"]},
  pb2:{n:"サイクロプス",list:["cyclops","orc","mandragora"]},
 };
 
