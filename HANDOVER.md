@@ -468,9 +468,9 @@ buildQueue()        // round===1 のときだけ scoutFirst を渡す
 **いまの職の等級表から** `x.mk===R.make` で引く。
 
 ```js
-f_fangwep:{kind:"forge",wep:true,make:"m_fang",need:{orcfang:3,claw2:2},cost:100}
-// GEAR.wep.knight に {id:"wk_fang",key:"fangaxe",tier:2,made:true,mk:"m_fang"}
-// GEAR.wep.archer に {id:"wa_fang",key:"fangbow",tier:2,made:true,mk:"m_fang"} …
+f_beastwep:{kind:"forge",wep:true,make:"m_beast",need:{orcfang:3,claw2:2},cost:100}
+// GEAR.wep.knight に {id:"wk_beast",key:"wildaxe",tier:2,made:true,mk:"m_beast"}
+// GEAR.wep.archer に {id:"wa_beast",key:"savagebow",tier:2,made:true,mk:"m_beast"} …
 ```
 
 **武器を足すときは4職ぶんそろえること。** 1つでも欠けるとその職では
