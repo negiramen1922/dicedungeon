@@ -965,6 +965,16 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0030c",tag:"up",v:"α0.0030",d:"2026-09-01",n:"曲が3つ増え、討伐の音が変わりました",b:[
+   "<b>苔むした洞窟</b>に「閉ざされし都」、<b>水没した回廊</b>に「五月雨」、<b>水没都市アトランティス</b>に「Whisper2」が付きました",
+   "<b>討伐したときの音</b>を差し替えました",
+   "音のファイルを <b>audio/bgm</b> と <b>audio/sfx</b> に分けました。遊ぶうえで変わることはありません",
+   "<span class=\"s\">世界樹の森はまだ無音です</span>",
+ ]},
+ {id:"v0030d",tag:"fix",v:"α0.0030",d:"2026-09-01",n:"水没した回廊で殿堂の曲が鳴っていました",b:[
+   "<b>水没した回廊に降りると、殿堂の曲（そろそろ帰ろっと！）が鳴っていました。</b>区画の鍵と画面の鍵が どちらも hall で、ぶつかっていたためです",
+   "回廊には専用の曲が付いたので、いまは「五月雨」が鳴ります",
+ ]},
  {id:"v0030",tag:"up",v:"α0.0030",d:"2026-09-01",n:"行商が3つの札に分かれ、鍛冶で武器が打てるようになりました",b:[
    "<b>行商の画面を 買う／売る／作る の3つの札に分けました。</b>これまで1枚の縦長で、こしらえるのは別の窓でした",
    "<b>素材は売るぶんだけ選べます。</b>これまでは「ぜんぶ売る」しかなく、レシピに使う素材まで一緒に消えていました",
@@ -1187,11 +1197,9 @@ const BGMDIR="audio/bgm/";
 const SFXDIR="audio/sfx/";
 
 /* ===== BGM =====
-   場面ごとに曲を割り当て、切り替えは showScreen() が引き受ける（bgmKey 参照）。
+   場面ごとに曲を1つ割り当て、切り替えは showScreen() が引き受ける（bgmKey 参照）。
    同じファイルなら鳴らし直さないので、殿堂→結果のように曲が共通の場面は繋がる。
-
-   **値を配列にすると、その場面に入るたび1曲えらぶ。**
-   えらんだ曲は1回の潜行のあいだ変わらない（BGMPICK に控える）。 */
+   探索の鍵は AREAS の鍵そのもの。 */
 const BGM={
   home  :"遥かなる伝説.mp3",              /* ホーム・キャラ作成・遊び方・見立て */
   hall  :"そろそろ帰ろっと！_M325.mp3",       /* 殿堂 */
@@ -1200,36 +1208,22 @@ const BGM={
   boss  :"深域で待つもの.mp3",              /* ボス戦 */
   plain :"PerituneMaterial_Wonder2_loop.mp3",   /* 原始の草原 */
   seed  :"樹木の息吹.mp3",                      /* 木漏れ日の森 */
-  city  :["閉ざされし都（inst_ver.）_2.mp3",     /* 水没都市アトランティス（3曲から1曲） */
-          "五月雨_2.mp3",
-          "PerituneMaterial_Whisper2.mp3"],
-  /* 苔むした洞窟・水没した回廊・世界樹の森は まだ曲がない */
+  cave  :"閉ざされし都（inst_ver.）_2.mp3",     /* 苔むした洞窟 */
+  hallw :"五月雨_2.mp3",                        /* 水没した回廊 */
+  city  :"PerituneMaterial_Whisper2.mp3",       /* 水没都市アトランティス */
+  /* 世界樹の森は まだ曲がない */
 };
 /* 設定画面に出す曲名。BGM に無い場面は無音 */
 const BGMN={
   home:"遥かなる伝説", hall:"そろそろ帰ろっと！", result:"そろそろ帰ろっと！",
   codex:"オルゴールファンタジー", boss:"深域で待つもの",
   plain:"Wonder2", seed:"樹木の息吹",
-  city:{"閉ざされし都（inst_ver.）_2.mp3":"閉ざされし都",
-        "五月雨_2.mp3":"五月雨",
-        "PerituneMaterial_Whisper2.mp3":"Whisper2"},
+  cave:"閉ざされし都", hallw:"五月雨", city:"Whisper2",
 };
-/* 配列の場面で、いま選んである曲。潜行を始めるたびに選び直す */
-let BGMPICK={};
-function bgmFile(key){
-  const v=BGM[key];
-  if(!v)return null;
-  if(!Array.isArray(v))return v;
-  if(!v.includes(BGMPICK[key]))BGMPICK[key]=v[Math.floor(Math.random()*v.length)];
-  return BGMPICK[key];
-}
-/* 設定画面に出す名前。配列の場面は いま鳴っている曲の名前を返す */
-function bgmName(key){
-  const t=BGMN[key];
-  if(!t)return null;
-  if(typeof t==="string")return t;
-  return t[bgmFile(key)]||null;
-}
+/* 区画の鍵 hall は「殿堂」とぶつかるので、曲だけ hallw に読み替える。
+   （AREAS.hall＝水没した回廊 と 画面の hall＝殿堂 が同じ綴りだった） */
+function bgmFile(key){ return BGM[key]||null; }
+function bgmName(key){ return BGMN[key]||null; }
 const Music=(()=>{
   let el=null, now=null, want=null, on=true, vol=.5, tok=0;
   function ensure(){
@@ -5735,8 +5729,10 @@ function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){
   const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 /* いまの場面に流す曲。BGM に無いものは無音になる */
 function bgmKey(id){
-  if(id==="fight")return RUN&&RUN.boss?"boss":(RUN?RUN.area:"home");
-  if(id==="floor")return RUN&&RUN.over?"result":(RUN?RUN.area:"home");
+  /* 区画の鍵をそのまま使うが、hall だけは殿堂の鍵とぶつかるので読み替える */
+  const area=()=>RUN?(RUN.area==="hall"?"hallw":RUN.area):"home";
+  if(id==="fight")return RUN&&RUN.boss?"boss":area();
+  if(id==="floor")return RUN&&RUN.over?"result":area();
   if(id==="hall")return "hall";
   if(id==="codex")return "codex";
   return "home";                        /* home・make・tut・quiz */
@@ -5998,7 +5994,6 @@ function startRun(){
   RUN={id:runNewId(),act:0,area:sel.area,seen:[],cur:null,curKey:null,path:[],
        over:false,cleared:false};
   owned=[];META.runs++;touchMeta();
-  BGMPICK={};                /* 曲が複数ある区画は、潜行ごとに選び直す */
   $("#log").innerHTML="";
   enterArea(sel.area,true);  /* 名前は出立の支度が終わってから出す */
   const n=(ORIG[sel.orig]&&ORIG[sel.orig].startGear)||1;
