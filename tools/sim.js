@@ -21,7 +21,10 @@
 const path = require("path");
 const {chromium} = require("/opt/node22/lib/node_modules/playwright");
 const URL = process.env.SIM_URL || "http://127.0.0.1:8765/index.html";
-const ROUTE = ["plain","cave","hall","city"];
+/* 道が2本ある。--forest で森の道を測る */
+const ROUTE = process.argv.includes("--forest")
+  ? ["plain","seed","wtree"]
+  : ["plain","cave","hall","city"];
 const TRIES = 200;
 
 const PAGE = ({route, tries, mode, plans}) => {
