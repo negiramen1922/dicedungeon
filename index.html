@@ -952,7 +952,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0030";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0031";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -965,6 +965,21 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0031",tag:"up",v:"α0.0031",d:"2026-09-01",n:"幸運を目の前で振るようになりました",b:[
+   "<b>キャラを作り終えるとき、幸運のダイスを実際に振って見せるようになりました。</b>自分では動かせない数字なので、黙って決まるのをやめました",
+   "<b>幸運に下地の +10 が付きました。</b>これまでは 4〜24 で、低いと宝箱がほぼ空振りだけの周になっていました。いまは <b>14〜34</b> です",
+ ]},
+ {id:"v0031b",tag:"bal",v:"α0.0031",d:"2026-09-01",n:"敵の攻撃の強弱を割合にしました",b:[
+   "<b>敵の重い一撃・軽い一撃を、固定値ではなく割合（%）で持つようにしました。</b>これまでは固定値だったので、深い区画ほど STR だけが伸びて、重い攻撃と軽い攻撃の差が薄れていました",
+   "たとえばワイルドベアの <b>抱き潰す</b> は「威力 +16」ではなく「<b>威力 140%</b>」になります",
+   "<b>原始の草原はほぼ変わりません。</b>深いところで 3〜8% ほど重くなります",
+   "敵の強化（雄叫び・低く唸る など）は これまでどおり固定値です",
+ ]},
+ {id:"v0031c",tag:"fix",v:"α0.0031",d:"2026-09-01",n:"行商で同じ道具が何度でも買えました",b:[
+   "<b>並んでいる道具を、金貨がある限り何個でも買えていました。</b>装備は1つ買うと売却済になるのに、道具だけ印が付いていませんでした",
+   "<b>1つの品につき1つまで</b>になります。傷薬を2つ欲しいときは、2つ並んでいる店を待つことになります",
+   "宝箱の <b>受け取る</b> だけ見た目が浮いていたので、ほかの窓の確認ボタンに揃えました",
+ ]},
  {id:"v0030i",tag:"up",v:"α0.0030",d:"2026-09-01",n:"レシピを組み直しました",b:[
    "<b>レシピが16件から30件になりました。</b>どの素材にも使い道ができています（これまで16種類が売るだけの素材でした）",
    "<b>作れるものの等級は、要る素材のいちばん深い等級に合わせました。</b>ボスしか落とさない素材（王の粘液・巨人の眼・大樹の芯・守護核）は1段上に数えます",
@@ -3283,7 +3298,10 @@ const CHESTGAIN=[
   {grade:1,gear:2,gold:1.5},    /* 大あたり　装備2つ・金貨 1.5倍 */
   {grade:2,gear:2,gold:2},      /* 超あたり　等級 +2・装備2つ・金貨 2倍 */
 ];
-function rollLuk(){const a=r6(),b=r6();return {v:(a+b)*2,d:[a,b]};}
+/* 生まれつきの幸運。2d6×2 に下地を足す。
+   下地が無いと 4 まで下がり、その周は宝箱がほぼ空振りだけになっていた。 */
+const LUKBASE=10;
+function rollLuk(){const a=r6(),b=r6();return {v:(a+b)*2+LUKBASE,d:[a,b]};}
 function newChar(){sel.luk=0;sel.lukD=null;}   /* 作り直すときだけ振り直す */
 let LUKGRADE=0;                  /* catPool("gear") の等級上限に足す一時値 */
 
@@ -3301,9 +3319,9 @@ const FOE={
          {n:"芽を飛ばす",k:"atk",dice:3,w:2}]},
  wslime:{n:"水スライム",d:"水を体に取り込んで透き通ったスライム。回廊の水路に湧き、冷たく、見た目よりずっと重い。動きはひどく鈍いが、そのぶん叩いても崩れない。押し流されると鎧の隙間から入り込んでくる。",mat:"gel",weak:"bolt",resist:"blunt",elem:"water",art:"wslime",snd:"blunt",
    HP:175,STR:36,DEF:22,DEX:5,rank:"front",scout:1,
-   acts:[{n:"押し流す",k:"atk",dice:2,pow:8,w:5},
+   acts:[{n:"押し流す",k:"atk",dice:2,pct:20,w:5},
          {n:"水を含む",k:"guard",block:16,w:3},
-         {n:"飲み込む",k:"atk",dice:1,pow:20,w:2}]},
+         {n:"飲み込む",k:"atk",dice:1,pct:55,w:2}]},
  rat:{n:"ラット",d:"暗い場所を好む大鼠。一匹では取るに足らないが、一匹を潰すと暗がりから次が湧いてくる。牙は細く鋭く、数だけはある。",mat:"tooth",weak:"slash",art:"rat",snd:"slash",HP:48,STR:23,DEF:4,DEX:36,rank:"front",scout:5,
    acts:[{n:"噛みつく",k:"atk",dice:3,w:6},
          {n:"跳ね回る",k:"guard",block:12,w:2},
@@ -3316,13 +3334,13 @@ const FOE={
    acts:[{n:"矢を放つ",k:"atk",dice:2,w:6},
          {n:"狙いを定める",k:"buff",pow:13,w:2}]},
  hobgoblin:{n:"ホブゴブリン",d:"群れを率いる大型のゴブリン。奪った鉄の斧と盾を使いこなし、仲間を叱咤して前へ押し出す。これを先に落とすと、残りは驚くほど脆い。",mat:"ear",weak:"pierce",resist:"slash",art:"hobgoblin",snd:"blunt",HP:150,STR:37,DEF:12,DEX:18,rank:"front",scout:3,
-   acts:[{n:"斧を振り下ろす",k:"atk",dice:2,pow:6,w:5},
+   acts:[{n:"斧を振り下ろす",k:"atk",dice:2,pct:15,w:5},
          {n:"盾を構える",k:"guard",block:11,w:3},
          {n:"雄叫び",k:"buff",pow:12,w:2}]},
  shaman:{n:"ゴブリンキャスター",d:"見よう見まねで術を覚えたゴブリン。誰に習ったわけでもないので詠唱は出鱈目で、ときどき自分の足元で暴発する。それでも当たれば効く。",mat:"ear",weak:"pierce",elem:"dark",art:"shaman",snd:"magic",HP:95,STR:27,DEF:5,DEX:23,rank:"back",scout:5,
    acts:[{n:"仲間を鼓舞する",k:"cheer",pow:10,dur:1,seq:1},
          {n:"力を奪う",k:"hex",weak:1,dur:2,seq:2},
-         {n:"ファイヤーボール",k:"atk",dice:2,pow:8,w:4,solo:true},
+         {n:"ファイヤーボール",k:"atk",dice:2,pct:30,w:4,solo:true},
          {n:"守りの霧",k:"veil",block:8,w:3,needFront:true}]},
 
  /* ===== 2 階層　石造りの回廊 ===== */
@@ -3331,11 +3349,11 @@ const FOE={
          {n:"殻を閉じる",k:"guard",block:16,w:3},
          {n:"礫を撒く",k:"atk",dice:3,w:2}]},
  golem:{n:"ゴーレム",d:"回廊を守るために作られたもの。誰が何のために作ったのかは、もう分からない。命じた者が絶えた今も、決められた道筋を歩き続けている。",mat:"frag",weak:"blunt",resist:"slash",elem:"earth",art:"golem",snd:"blunt",HP:220,STR:43,DEF:28,DEX:10,rank:"front",scout:0,
-   acts:[{n:"石 拳",k:"atk",dice:2,pow:6,w:4},
+   acts:[{n:"石 拳",k:"atk",dice:2,pct:15,w:4},
          {n:"身を固める",k:"guard",block:20,w:3},
          {n:"地を割る",k:"atk",dice:3,w:3}]},
  troll:{n:"トロル",d:"岩陰に潜む大喰らい。腕を落とされてもすぐ生え変わるので、削り合いでは決して勝てない。焼いた傷だけは戻せない。",mat:"claw",weak:"fire",resist:"blunt",art:"troll",snd:"blunt",HP:205,STR:47,DEF:16,DEX:12,rank:"front",scout:1,
-   acts:[{n:"叩きつける",k:"atk",dice:2,pow:8,w:5},
+   acts:[{n:"叩きつける",k:"atk",dice:2,pct:15,w:5},
          {n:"薙ぎ払う",k:"atk",dice:3,w:3},
          {n:"再生する",k:"regen",heal:26,w:2}]},
  dropbat:{n:"シズクコウモリ",d:"掘削跡の天井に、水の滴る音に紛れて下がる小さな蝙蝠。灯りを向けると一斉に散り、また同じ場所へ戻ってくる。羽は乾いてもなお水を弾く。",mat:"wetwing",weak:"light",resist:"pierce",elem:"dark",art:"dropbat",snd:"slash",
@@ -3345,13 +3363,13 @@ const FOE={
          {n:"逆さに下がる",k:"guard",block:14,w:2}]},
  cspider:{n:"ケイヴスパイダー",d:"掘削跡の梁に糸を張る大蜘蛛。獲物が触れると まず足を縛り、動けなくしてから ゆっくり降りてくる。糸は細いのに、指では切れない。",mat:"silk",weak:"slash",art:"cspider",snd:"slash",
    HP:88,STR:26,DEF:6,DEX:30,rank:"back",scout:5,
-   acts:[{n:"牙を立てる",k:"atk",dice:2,pow:6,w:5},
+   acts:[{n:"牙を立てる",k:"atk",dice:2,pct:25,w:5},
          {n:"糸を吐く",k:"hex",slow:10,dur:2,w:4},
          {n:"天井へ退く",k:"guard",block:16,w:2}]},
  qspider:{n:"クイーンスパイダー",d:"掘削跡の最奥に巣を構える母蜘蛛。人の背丈ほどの腹には数えきれない子が詰まっていて、傷を負うほど多く産み落とす。ここがゴブリンより先に住んでいた。",mat:"silk",weak:"slash",resist:"blunt",art:"qspider",snd:"slash",
    HP:420,STR:54,DEF:16,DEX:22,rank:"front",scout:2,
-   acts:[{n:"大顎で貫く",k:"atk",dice:2,pow:16,w:5},
-         {n:"巣を揺らす",k:"atk",dice:4,pow:-6,w:3},
+   acts:[{n:"大顎で貫く",k:"atk",dice:2,pct:30,w:5},
+         {n:"巣を揺らす",k:"atk",dice:4,pct:-10,w:3},
          {n:"子を放つ",k:"summon",who:"cspider",cd:5,w:3},
          {n:"糸で絡める",k:"hex",slow:12,curse:6,dur:2,w:2},
          {n:"巣に籠る",k:"guard",block:24,w:2}]},
@@ -3370,15 +3388,15 @@ const FOE={
          {n:"骨を鳴らす",k:"buff",pow:10,w:2},
          {n:"骨で受ける",k:"guard",block:12,w:2}]},
  skarcher:{n:"スケルトンアーチャー",d:"弓を持ったまま死んだ者。肉も目も失われているのに、狙いだけは生前のまま正確に残っている。何を見て狙っているのかは分からない。",mat:"bone",weak:"blunt",resist:"pierce",elem:"dark",art:"skarcher",snd:"bow",HP:140,STR:44,DEF:10,DEX:34,rank:"back",scout:5,
-   acts:[{n:"骨の矢",k:"atk",dice:2,pow:6,w:6},
+   acts:[{n:"骨の矢",k:"atk",dice:2,pct:15,w:6},
          {n:"狙いすます",k:"buff",pow:16,w:2}]},
  sahagin:{n:"サハギン",d:"水没したあとに移り住んだ魚人。三叉槍を巧みに使い、群れで押し包む。この都市を自分たちのものだと思っており、事実いまはそうである。",mat:"scale",weak:"bolt",resist:"water",elem:"water",art:"sahagin",snd:"slash",HP:215,STR:50,DEF:18,DEX:28,rank:"front",flex:true,scout:4,
-   acts:[{n:"三叉槍",k:"atk",dice:3,pow:6,pos:"front",w:5},
+   acts:[{n:"三叉槍",k:"atk",dice:3,pct:10,pos:"front",w:5},
          {n:"槍を投げる",k:"atk",dice:3,pos:"back",w:5},
          {n:"水を纏う",k:"guard",block:14,w:2},
          {n:"群れを呼ぶ",k:"cheer",pow:12,dur:1,w:2,needFront:true}]},
  wraith:{n:"レ イ ス",d:"沈んだ日の恨みだけが形を保っているもの。触れられたところから体温が失われ、しばらく指先が戻らない。残滓は冷たいままで、決して温まらない。",mat:"residue",weak:"light",resist:"slash",elem:"dark",art:"wraith",snd:"magic",HP:165,STR:44,DEF:10,DEX:30,rank:"back",scout:6,
-   acts:[{n:"呪いを注ぐ",k:"atk",dice:2,pow:8,w:5},
+   acts:[{n:"呪いを注ぐ",k:"atk",dice:2,pct:20,w:5},
          {n:"仲間を蝕む",k:"cheer",pow:14,w:3},
          {n:"呪 縛",k:"hex",curse:7,dur:2,w:3},
          {n:"霧に紛れる",k:"veil",block:10,w:2}]},
@@ -3392,31 +3410,31 @@ const FOE={
  wolf:{n:"ウ ル フ",d:"灰色の毛並みを持つ草原の狩人。一頭が正面から吠えているあいだに、残りが横へ回り込んでいる。一頭見えたなら、見えていないのが数頭いる。",mat:"pelt",weak:"fire",resist:"slash",art:"wolf",snd:"slash",
    HP:62,STR:26,DEF:4,DEX:32,rank:"front",scout:6,
    acts:[{n:"噛みつく",k:"atk",dice:3,w:5},
-         {n:"喉を狙う",k:"atk",dice:2,pow:8,w:3},
+         {n:"喉を狙う",k:"atk",dice:2,pct:30,w:3},
          {n:"低く唸る",k:"buff",pow:10,dur:1,w:2}]},
  boar:{n:"ワイルドボア",d:"太く曲がった一対の牙を持つ大猪。向きを変えるのが苦手で、狙いを定めるといちど大きく地を掻いてから真っ直ぐに走る。その一直線は若木なら薙ぎ倒す。",mat:"tusk",weak:"pierce",resist:"blunt",art:"boar",snd:"blunt",
    HP:130,STR:34,DEF:6,DEX:16,rank:"front",scout:2,
-   acts:[{n:"突進する",k:"atk",dice:2,pow:10,w:5},
+   acts:[{n:"突進する",k:"atk",dice:2,pct:30,w:5},
          {n:"地を掻く",k:"buff",pow:16,dur:1,w:3},
          {n:"牙を振る",k:"atk",dice:3,w:2}]},
  killerbee:{n:"キラービー",d:"草原に巣を張る大蜂。羽音のするほうを見上げたときには、もう囲まれている。腹の先の針は抜けたあとも刺さり続け、傷口から毒がまわる。",mat:"sting",weak:"blunt",art:"killerbee",snd:"slash",
    HP:32,STR:24,DEF:3,DEX:34,rank:"back",scout:4,
    acts:[{n:"飛びかかる",k:"atk",dice:2,w:5},
          {n:"毒針を刺す",k:"hex",poison:5,dur:2,w:3},
-         {n:"刺し続ける",k:"atk",dice:3,pow:-5,w:2}]},
+         {n:"刺し続ける",k:"atk",dice:3,pct:-20,w:2}]},
  kingslime:{n:"キングスライム",d:"無数のスライムが寄り集まり、ひとつの意思を持つに至ったもの。潰しても中から次が出てくるので、核となる一体を見つけない限り終わらない。透き通った粘液は、まだ動いている。",mat:"kgel",weak:"bolt",resist:"blunt",elem:"water",art:"kingslime",snd:"blunt",
    HP:260,STR:34,DEF:18,DEX:10,rank:"front",scout:1,
-   acts:[{n:"のしかかる",k:"atk",dice:2,pow:8,w:5},
+   acts:[{n:"のしかかる",k:"atk",dice:2,pct:25,w:5},
          {n:"分裂する",k:"summon",who:"slime",cd:6,w:3},
          {n:"殻を固める",k:"guard",block:26,w:3},
-         {n:"粘液を撒く",k:"atk",dice:4,pow:-12,w:3},
+         {n:"粘液を撒く",k:"atk",dice:4,pct:-35,w:3},
          {n:"溶 か す",k:"hex",curse:8,dice:1,dur:2,w:2}]},
 
  /* ===== 原始の草原　2 階層：森 ===== */
  maneater:{n:"マンイーター",d:"獲物を待って動かない食人蔓。地に根を張っているあいだは微動だにせず、間合いに入ったものだけを一息に絡め取る。切っても、切った先から伸びようとする。",mat:"vine",elem:"earth",weak:"fire",resist:"pierce",art:"maneater",snd:"slash",
    HP:100,STR:22,DEF:5,DEX:14,rank:"front",flex:true,scout:0,
    acts:[{n:"噛みつく",k:"atk",dice:3,pos:"front",w:6},
-         {n:"種を打つ",k:"atk",dice:2,pow:4,pos:"back",w:6},
+         {n:"種を打つ",k:"atk",dice:2,pct:20,pos:"back",w:6},
          {n:"根を張る",k:"guard",block:16,w:3}]},
  orc:{n:"オ ー ク",d:"森に住む大柄な亜人。人の言葉を少し解し、こちらの言うことも分かっているらしい。棍棒しか使わないが、その筋肉の塊の体では それで足りる。",mat:"orcfang",weak:"slash",art:"orc",snd:"blunt",
    HP:120,STR:33,DEF:8,DEX:20,rank:"front",scout:3,
@@ -3425,20 +3443,20 @@ const FOE={
          {n:"盾を構える",k:"guard",block:22,w:2}]},
  bear:{n:"ワイルドベア",d:"森の頂点に立つ獣。立ち上がると人の背を余裕で超え、厚い毛皮は並の刃を通さない。爪は重く硬いため、武具の芯として高く買われる。",mat:"claw2",weak:"pierce",resist:"blunt",art:"bear",snd:"slash",
    HP:175,STR:40,DEF:9,DEX:18,rank:"front",scout:3,
-   acts:[{n:"薙ぎ払う",k:"atk",dice:3,pow:8,w:5},
-         {n:"抱き潰す",k:"atk",dice:2,pow:16,w:3},
+   acts:[{n:"薙ぎ払う",k:"atk",dice:3,pct:20,w:5},
+         {n:"抱き潰す",k:"atk",dice:2,pct:40,w:3},
          {n:"立ち上がる",k:"buff",pow:18,dur:1,w:2},
          {n:"毛皮で受ける",k:"guard",block:24,w:2}]},
  mandragora:{n:"マンドラゴラ",d:"引き抜くと叫ぶ根。その声は空気そのものを裂き、聞いた者は耳から先に壊れていく。土に潜られると、次に顔を出すまで手が出せない。",mat:"root",elem:"earth",weak:"fire",resist:"dark",art:"mandragora",snd:"magic",
    HP:80,STR:28,DEF:5,DEX:26,rank:"back",scout:4,
-   acts:[{n:"叫 声",k:"atk",dice:2,pow:6,w:5},
+   acts:[{n:"叫 声",k:"atk",dice:2,pct:20,w:5},
          {n:"耳を裂く声",k:"hex",weak:1,dur:2,w:3},
          {n:"土に潜る",k:"guard",block:20,w:2}]},
  treant:{n:"トレント",d:"歩く古木。世界樹のマナを長く浴びた木が、あるとき根を抜いて動き出したものだと言われる。日を浴びているあいだは傷が塞がるが、火にだけはひどく弱い。",mat:"bark",weak:"fire",resist:"slash",elem:"earth",art:"treant",snd:"blunt",
    HP:210,STR:32,DEF:22,DEX:6,rank:"front",scout:1,
-   acts:[{n:"枝を振り下ろす",k:"atk",dice:2,pow:6,w:4},
+   acts:[{n:"枝を振り下ろす",k:"atk",dice:2,pct:20,w:4},
          {n:"樹皮を固める",k:"guard",block:30,w:3},
-         {n:"根で薙ぐ",k:"atk",dice:3,pow:-8,w:3},
+         {n:"根で薙ぐ",k:"atk",dice:3,pct:-25,w:3},
          {n:"陽を浴びる",k:"regen",heal:20,w:2}]},
  /* ── 世界樹の森（第3階層）── 妖精と、マナを浴びた木々 ── */
  wisp:{n:"ウィスプ",d:"世界樹のマナが宿って、ひとりでに灯った火。掴もうとすると すり抜けて背後に回り込む。ときおり旅人を道の外へ連れて行く。",mat:"mana",weak:"bolt",resist:"slash",elem:"light",art:"wisp",snd:"magic",
@@ -3448,20 +3466,20 @@ const FOE={
          {n:"目を焼く",k:"hex",blind:1,dur:2,w:1}]},
  dryad:{n:"ドライアド",d:"一本の木に宿った精。その木が枯れれば ともに消える。歌うような声を出すが、聞き入っていると こちらの足が勝手に木のほうへ向かう。",mat:"petal",weak:"fire",resist:"earth",elem:"earth",art:"dryad",snd:"magic",
    HP:150,STR:36,DEF:12,DEX:26,rank:"back",scout:5,
-   acts:[{n:"蔦を振るう",k:"atk",dice:2,pow:6,w:6},
+   acts:[{n:"蔦を振るう",k:"atk",dice:2,pct:15,w:6},
          {n:"惑いの歌",k:"hex",weak:2,dur:2,w:3},
          {n:"鼓舞の歌",k:"cheer",pow:12,dur:2,w:1}]},
  spriggan:{n:"スプリガン",d:"森の境を守る妖精。普段は岩と見分けがつかないほど小さいが、侵入者を見つけると膨れ上がって道を塞ぐ。膨れる前に仕留めれば、ただの小石でしかない。",mat:"fdust",weak:"blunt",resist:"pierce",elem:"earth",art:"spriggan",snd:"blunt",
    HP:100,STR:38,DEF:28,DEX:10,rank:"front",scout:1,
    acts:[{n:"膨れ上がる",k:"grow",hp:110,seq:1},
-         {n:"石の拳",k:"atk",dice:2,pow:8,w:6},
+         {n:"石の拳",k:"atk",dice:2,pct:20,w:6},
          {n:"背を固める",k:"guard",block:20,w:2},
-         {n:"岩を振り下ろす",k:"atk",dice:1,pow:20,w:2}]},
+         {n:"岩を振り下ろす",k:"atk",dice:1,pct:55,w:2}]},
  redcap:{n:"レッドキャップ",d:"血に染めた帽子をかぶった小妖精。帽子の色が褪せると死ぬと信じており、そのために刃物を手放さない。足が速く、走りながら斬りつけてくる。",mat:"fdust",weak:"light",resist:"dark",elem:"dark",art:"redcap",snd:"slash",
    HP:130,STR:40,DEF:10,DEX:38,rank:"front",scout:4,
    acts:[{n:"駆け抜ける",k:"atk",dice:3,w:5},
          {n:"帽子を絞る",k:"regen",heal:26,w:2},
-         {n:"疾 走 槍",k:"atk",dice:5,pow:-14,w:2}]},
+         {n:"疾 走 槍",k:"atk",dice:5,pct:-35,w:2}]},
  alraune:{n:"アルラウネ",d:"大輪の花の中央に人の上半身を持つ植物。根を張ったまま動かない。花粉には強い痺れがあり、近づいた獣がそのまま養分になる。",mat:"petal",weak:"fire",resist:"water",elem:"earth",art:"alraune",snd:"magic",
    HP:180,STR:36,DEF:14,DEX:12,rank:"back",scout:2,
    acts:[{n:"ツタのムチ",k:"atk",dice:3,w:6},
@@ -3471,7 +3489,7 @@ const FOE={
    HP:175,STR:47,DEF:16,DEX:30,rank:"back",scout:5,
    acts:[{n:"矢を射る",k:"atk",dice:3,w:5},
          {n:"引き絞る",k:"buff",pow:18,dur:1,w:3},
-         {n:"貫きの一矢",k:"atk",dice:1,pow:26,w:2}]},
+         {n:"貫きの一矢",k:"atk",dice:1,pct:55,w:2}]},
  harpy:{n:"ハーピー",d:"人の顔と鳥の体を持つ。高い梢に巣を作り、上から獲物に襲いかかる。甲高い声で仲間を呼ぶので、一羽を追うと数が増える。",mat:"quill",weak:"pierce",resist:"earth",art:"harpy",snd:"slash",
    HP:145,STR:42,DEF:8,DEX:40,rank:"front",flex:true,scout:6,
    acts:[{n:"鉤爪で裂く",k:"atk",dice:3,w:7},
@@ -3479,46 +3497,46 @@ const FOE={
          {n:"羽ばたく",k:"buff",dex:10,dur:2,w:2}]},
  sprout:{n:"世界樹の苗",d:"世界樹から落ちた種のうち、根を下ろす前に自ら歩き出したもの。全身からマナが漏れており、周りの草木が異様に育つ。森の奥ほど多い。",mat:"mana",weak:"fire",resist:"bolt",elem:"earth",art:"sprout",snd:"blunt",
    HP:230,STR:44,DEF:22,DEX:14,rank:"front",scout:2,
-   acts:[{n:"根で薙ぐ",k:"atk",dice:2,pow:12,w:6},
+   acts:[{n:"根で薙ぐ",k:"atk",dice:2,pct:25,w:6},
          {n:"マナを吸う",k:"regen",heal:40,w:2},
          {n:"芽吹かせる",k:"cheer",pow:16,dur:2,w:2}]},
  gant:{n:"ジャイアントアント",d:"腐葉土の下に巣を広げる大蟻。硬い外殻は生半可な刃を弾き、大顎は木の枝ほどなら音もなく断つ。巣穴の入口を踏み抜くと、一度に何匹も這い出てくる。",mat:"jaw",weak:"blunt",resist:"slash",art:"gant",snd:"blunt",
    HP:135,STR:30,DEF:20,DEX:14,rank:"front",scout:2,
-   acts:[{n:"大顎で挟む",k:"atk",dice:2,pow:6,w:5},
+   acts:[{n:"大顎で挟む",k:"atk",dice:2,pct:20,w:5},
          {n:"酸を吐く",k:"hex",curse:6,dur:2,w:2},
          {n:"外殻を閉じる",k:"guard",block:22,w:2}]},
  cyclops:{n:"サイクロプス",d:"一つ目の巨人。森の奥深くに一体で生息している。掴んだ岩をそのまま投げてくるが、投げる前に必ず大きく振りかぶる。",mat:"eye",weak:"pierce",resist:"blunt",elem:"earth",art:"cyclops",snd:"blunt",
    HP:400,STR:48,DEF:16,DEX:18,rank:"front",scout:4,
-   acts:[{n:"石棍棒を振るう",k:"atk",dice:3,pow:8,w:5},
-         {n:"大きく薙ぐ",k:"atk",dice:4,pow:-12,w:3},
+   acts:[{n:"石棍棒を振るう",k:"atk",dice:3,pct:15,w:5},
+         {n:"大きく薙ぐ",k:"atk",dice:4,pct:-25,w:3},
          {n:"睨みつける",k:"hex",weak:1,dur:2,w:3},
          {n:"岩を掴む",k:"buff",pow:20,dur:1,forceNext:"岩を投げる",w:2},
-         {n:"岩を投げる",k:"atk",diceRand:3,pow:20,hidden:true,w:0},
+         {n:"岩を投げる",k:"atk",diceRand:3,pct:40,hidden:true,w:0},
          {n:"身を守る",k:"guard",block:28,w:2}]},
 
  /* ===== ボス ===== */
  bshaman:{n:"ゴブリンシャーマン",d:"群れの奥に据えられた老いたゴブリン。骨と羽を並べて何かを唱えると、前の者たちが目に見えて奮い立つ。自分では前に出ないので、後ろに残っているうちは群れが崩れない。",mat:"ear",weak:"pierce",resist:"dark",elem:"dark",art:"bshaman",snd:"magic",HP:380,STR:50,DEF:15,DEX:26,rank:"back",scout:6,
    acts:[{n:"眷属を鼓舞する",k:"cheer",pow:16,dur:1,seq:1},
          {n:"力を奪う",k:"hex",weak:1,dur:2,seq:2},
-         {n:"呪いの奔流",k:"atk",dice:3,pow:6,w:4,solo:true},
+         {n:"呪いの奔流",k:"atk",dice:3,pct:10,w:4,solo:true},
          {n:"呪 縛",k:"hex",curse:7,dur:2,w:3,solo:true},
          {n:"力 を 奪 う",k:"hex",weak:1,dur:2,w:2,solo:true},
          {n:"骨の壁",k:"veil",block:12,w:2,needFront:true}]},
  elder:{n:"エルダートレント",d:"世界樹のもっとも近くに立つ古木。動き出してから幾百年、根を下ろすことなく森を巡っている。裂けた幹の奥で年輪が光っており、それが心の臓だと言われる。",mat:"heart",weak:"fire",resist:"slash",elem:"earth",art:"elder",snd:"blunt",
    HP:520,STR:58,DEF:30,DEX:12,rank:"front",scout:3,
-   acts:[{n:"大枝を振り下ろす",k:"atk",dice:3,pow:10,w:6},
+   acts:[{n:"大枝を振り下ろす",k:"atk",dice:3,pct:15,w:6},
          {n:"森を薙ぐ",k:"atk",dice:4,w:4},
          {n:"根を張り直す",k:"regen",heal:70,w:2},
          {n:"森を呼び覚ます",k:"cheer",pow:20,dur:2,w:2},
          {n:"樹皮を固める",k:"guard",block:26,w:1}]},
  gate:{n:"ゲートガーディアン",d:"回廊の最奥の門を守る守護者。胸に守護核を抱いている。門の向こうにはもう誰もいないが、閉ざす役目だけを ひとりで続けている。",mat:"core",weak:"blunt",resist:"slash",elem:"earth",art:"gate",snd:"blunt",HP:510,STR:58,DEF:31,DEX:14,rank:"front",scout:1,
    acts:[{n:"拳を振り下ろす",k:"atk",dice:3,w:5},
-         {n:"門を薙ぐ",k:"atk",dice:4,pow:-14,w:3},
+         {n:"門を薙ぐ",k:"atk",dice:4,pct:-25,w:3},
          {n:"門を閉ざす",k:"guard",block:24,w:3},
          {n:"石の咆哮",k:"cheer",pow:16,w:2}]},
  deepone:{n:"ディープワン",d:"深みから現れ、魚人たちの王を名乗ったもの。魚人よりひと回り大きく、鱗の下に別の何かが透けて見える。守護核を持つが、それをどこで得たのかは誰も知らない。",mat:"core",weak:"bolt",resist:"water",elem:"water",art:"deepone",snd:"blunt",HP:820,STR:78,DEF:30,DEX:24,rank:"front",scout:6,
-   acts:[{n:"王の三叉槍",k:"atk",dice:3,pow:12,w:5},
-         {n:"潮を呼ぶ",k:"atk",dice:5,pow:-18,w:3},
+   acts:[{n:"王の三叉槍",k:"atk",dice:3,pct:15,w:5},
+         {n:"潮を呼ぶ",k:"atk",dice:5,pct:-25,w:3},
          {n:"深みの呪い",k:"hex",curse:10,dur:2,w:2},
          {n:"水の帳",k:"guard",block:26,w:2},
          {n:"臣を励ます",k:"cheer",pow:18,w:2}]},
@@ -3719,8 +3737,7 @@ function telePreview(f,tt){
   const t=tt||f.tele;
   if(!t)return {txt:"—",sub:"",danger:false};
   if(t.k==="atk"){
-    let per=perHit(Math.max(1,Math.round((f.STR+(t.pow||0)+buffSum(f)-ailSum(f,"weak"))
-      *(1-Math.min(0.6,ailSum(f,"weakp")/100)))),defOf(me));
+    let per=perHit(powOf(f,{pct:t.pct||0,pow:t.pow||0}),defOf(me));
     const far=(f.rank==="front"&&me.rank==="back");
     if(far)per=Math.max(1,Math.round(per*0.6));
     const thr=threshold(f,me,{});
@@ -4030,7 +4047,11 @@ function powOf(u,opt){
   opt=opt||{};
   if(u.isFoe){
     const wk=ailSum(u,"weak"), wp=ailSum(u,"weakp");
-    return Math.max(1,Math.round((u.STR+(opt.pow||0)+buffSum(u)-wk)*(1-Math.min(0.6,wp/100))));
+    /* 敵の攻撃の強弱は割合で持つ（pct）。固定値だと 深い区画で
+       STR だけが伸びて、重い一撃と軽い一撃の差が薄れていた。
+       強化（buff / cheer）は固定値のまま。あちらは行動ごとの重みではない。 */
+    const st=Math.round(u.STR*(1+(opt.pct||0)/100));
+    return Math.max(1,Math.round((st+(opt.pow||0)+buffSum(u)-wk)*(1-Math.min(0.6,wp/100))));
   }
   let base=u[u.wep.stat];
   if(u===me){
@@ -4955,7 +4976,7 @@ async function enemyAct(f){
   const t=f.tele;
   if(t.k==="atk"){
     const reach=(f.rank==="front"&&me.rank==="back");   // 後衛には手が届きにくい
-    let per=perHit(powOf(f,{pow:t.pow||0}),defOf(me));
+    let per=perHit(powOf(f,{pct:t.pct||0,pow:t.pow||0}),defOf(me));
     if(reach)per=Math.max(1,Math.round(per*0.6));
     const rolls=[];for(let i=0;i<t.dice;i++)rolls.push(r6());
     const thr=threshold(f,me,{});
@@ -6823,7 +6844,9 @@ function confirmBuy(it,nd){
   openModal(h);
   $("#cbYes").onclick=()=>{
     me.gold-=it.cost;
-    if(it.cat==="item"){me.bag[it.key]=(me.bag[it.key]||0)+1;SFX.found();return shopModal(nd);}
+    if(it.cat==="item"){
+      me.bag[it.key]=(me.bag[it.key]||0)+1;it.sold=true;   /* 1ブロック1つまで */
+      SFX.found();return shopModal(nd);}
     const res=applyReward(it.cat,it.r);it.sold=true;SFX.found();
     if(res&&res.full)return swapModal(res.kind||"acc",res.full,()=>shopModal(nd));
     shopModal(nd);
@@ -7394,8 +7417,8 @@ async function openChest(nd,weak){
     <div class="cgi" style="border-top:1px solid #23261c;display:block;color:${lr.c}">
       幸運 ${lr.s}　<span style="color:var(--ink)">1d100 → ${lr.v}</span>
       <div style="font-size:11px;margin-top:3px;letter-spacing:.06em">${chestNote(lr.k)}</div></div>
-    <button class="go2" id="cGo" style="width:100%;margin-top:11px">
-      受 け 取 る</button></div>`;
+    <div class="ndbtn" style="margin-top:11px">
+      <button class="go2" id="cGo">受 け 取 る</button></div></div>`;
   $("#cSkip").style.display="none";
   return new Promise(res=>{
     $("#cGo").onclick=()=>{
@@ -8579,10 +8602,49 @@ function drawMake(){
   const pv=$("#mkPrev");
   if(pv)pv.onclick=()=>{mkStep--;drawMake();window.scrollTo(0,0);};
 }
+/* 生まれつきの幸運を、目の前で振って見せる。
+   ここだけは自分では動かせない数字なので、黙って決まると据わりが悪い。
+   宝箱と同じ器（#chestOv）と同じ札（.d100）を使い回している。 */
+async function lukRollOv(L){
+  const O=$("#chestOv");
+  chestSkip=false;
+  O.className="chestOv on";
+  O.innerHTML=`
+    <button class="cSkip" id="lkSkip">と ば す</button>
+    <div class="cTtl">生 ま れ つ き の 幸 運</div>
+    <div class="cLbl"><b>2d6</b> を振り　×2 して　下地 <b>${LUKBASE}</b> を足す</div>
+    <div id="lkSlot" style="display:flex;gap:14px;align-items:center;min-height:92px"></div>
+    <div id="lkEnd" style="min-height:52px;display:grid;place-items:center"></div>`;
+  $("#lkSkip").onclick=()=>{chestSkip=true;};
+  const slot=$("#lkSlot");
+  const mk=()=>{const e=document.createElement("div");
+    e.className="d100 roll";e.textContent="?";slot.appendChild(e);return e;};
+  const a=mk(), b=mk();
+  SFX.shake();
+  const spin=setInterval(()=>{a.textContent=r6();b.textContent=r6();},70);
+  await cwait(900);
+  clearInterval(spin);
+  /* 1つずつ止める。2つ目が止まるまで合計が読めないようにする */
+  a.textContent=L.d[0];a.className="d100 land";SFX.tick();
+  await cwait(380);
+  b.textContent=L.d[1];b.className="d100 land";SFX.tick();
+  await cwait(430);
+  const sum=L.d[0]+L.d[1];
+  $("#lkEnd").innerHTML=`<div class="cSum" style="color:#c9a227">
+    <span style="color:var(--ink)">${L.d[0]} ＋ ${L.d[1]} ＝ ${sum}　→　×2 ＋ ${LUKBASE}</span>　幸運 ${L.v}</div>`;
+  SFX.found();
+  await cwait(1100);
+  chestClose();
+}
 function drawMakeConfirm(){
   /* 幸運はここで一度だけ振る。「選び直す」で戻っても振り直さない。
      振り直せるのは家に戻ってキャラを作り直したときだけ（newChar）。 */
-  if(!sel.luk){const L=rollLuk();sel.luk=L.v;sel.lukD=L.d;}
+  if(!sel.luk){
+    const L=rollLuk();sel.luk=L.v;sel.lukD=L.d;
+    $("#mkBody").innerHTML="";          /* 振っているあいだは下を空にしておく */
+    lukRollOv(L).then(()=>drawMakeConfirm());
+    return;
+  }
   const m=makeMe();
   $("#mkBody").innerHTML=`
     <div class="qzres">
@@ -8601,7 +8663,7 @@ function drawMakeConfirm(){
       <div class="mkstat" style="margin-top:6px">${
         Object.keys(SK).map(k=>`<span>${SK[k].n} <b>${skillOf(k)}</b></span>`).join("")}</div>
       <div class="qzd" style="color:var(--ink)">${m.wep.n}　を手に始まる</div>
-      <div class="qzd" style="color:var(--ink)">幸運は生まれつき。<b>2d6×2</b> で
+      <div class="qzd" style="color:var(--ink)">幸運は生まれつき。<b>2d6×2 ＋${LUKBASE}</b> で
         [${(sel.lukD||[]).join("][")}] → <b style="color:#c9a227">${sel.luk}</b>。
         <br>1d100 を振り、<span style="color:${LUKRANK[1].c}">あたり</span>・<span
         style="color:${LUKRANK[2].c}">大あたり</span>・<span
