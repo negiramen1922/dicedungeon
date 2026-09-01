@@ -801,10 +801,16 @@ body.play .fh1{padding-right:62px}
 .tabs.chtabs .tabn{font-size:10px;letter-spacing:.02em;line-height:1.3;text-align:center;
   word-break:keep-all}
 .tabs.chtabs .tabc{font-size:9px}
+.tabs.chtabs.shtabs .tab{flex:1 1 30%}
+.mitem.selbar{display:flex;flex-wrap:wrap;gap:0;padding-top:4px;padding-bottom:6px}
+.selq{display:inline-block;margin:5px 6px 0 0;padding:2px 8px;font-size:11px;
+  border:1px solid var(--line);color:var(--dim);letter-spacing:.04em}
+.selq.on{border-color:#c9a227;color:#c9a227}
 .mitem.eqrow{display:grid;grid-template-columns:76px minmax(0,1fr);gap:0 8px;
   align-items:start;border-bottom:1px solid #23261d;padding:6px 0}
 .eqk{color:var(--brass);font-size:11px;letter-spacing:.06em;line-height:1.6;
   display:flex;align-items:center;gap:5px}
+.mitem.eqrow.selrow{grid-template-columns:108px minmax(0,1fr)}
 .eqv{min-width:0;line-height:1.7}
 .stbtn{margin:5px 6px 0 0;background:none;border:1px solid var(--line);
   color:var(--brass);font-family:inherit;font-size:11px;letter-spacing:.1em;
@@ -946,7 +952,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0029";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0030";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -959,6 +965,22 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0030",tag:"up",v:"α0.0030",d:"2026-09-01",n:"行商が3つの札に分かれ、鍛冶で武器が打てるようになりました",b:[
+   "<b>行商の画面を 買う／売る／作る の3つの札に分けました。</b>これまで1枚の縦長で、こしらえるのは別の窓でした",
+   "<b>素材は売るぶんだけ選べます。</b>これまでは「ぜんぶ売る」しかなく、レシピに使う素材まで一緒に消えていました",
+   "覚えているレシピが欲しがる素材には <b>レシピ印</b> が付きます。<b>「余りをぜんぶ選ぶ」</b>を押すと、レシピに要るぶんだけ残して選びます",
+   "<b>鍛冶で武器が打てるようになりました。</b>武器は職ごとに別物なので、同じレシピでも いまの職に合った得物ができます",
+   "<b>牙 の 得 物</b>（二等・オークの牙×3 熊の爪×2）と <b>大 樹 の 得 物</b>（三等・大樹の芯×2 古樹の皮×3）の2つです",
+   "<b>武器の品質は威力の倍率に乗ります。</b>ただし手数のぶん効きすぎるので、伸びは防具の4割です（上物 +6%・業物 +12%・会心 +20%）",
+   "<b>ハイポーション</b>を足しました。王の粘液×1 と 粘液×4 で作れます。<b>HP を最大の70%、MP を最大の50%</b> 戻します",
+   "もともと店に並んでいた「ハイポーション」（HP全快）は <b>フルポーション</b> に名を改めました",
+   "こしらえる一覧に <b>等級と、武器・防具・装飾の別</b>が出るようになりました。等級の浅い順に並びます",
+ ]},
+ {id:"v0030b",tag:"fix",v:"α0.0030",d:"2026-09-01",n:"効き目が2つある道具が、1つしか効いていませんでした",b:[
+   "<b>石蜜の焼き菓子</b>は「HP 40% と MP 14」と書いてありましたが、<b>HP しか戻っていませんでした</b>",
+   "<b>沈んだ街の宴</b>も「HP全快・威力+18・DEF+10」と書いてありながら、<b>HP しか戻っていませんでした</b>",
+   "道具の効き目を上から順に並べていて、1つ当たったところで打ち切っていたためです。ぜんぶ足すように直しました",
+ ]},
  {id:"v0029",tag:"up",v:"α0.0029",d:"2026-08-31",n:"世界樹の森が開きました",b:[
    "<b>開発中だった 世界樹の森 に降りられるようになりました。</b>木漏れ日の森を抜けた先、第3階層です",
    "新しい敵が9体。<b>ウィスプ・ドライアド・スプリガン・レッドキャップ・アルラウネ・ケンタウロス・ハーピー・世界樹の苗</b>、そしてボスの <b>エルダートレント</b>",
@@ -2066,6 +2088,16 @@ const WEP={
   rod:{snd:"magic",el:"none",n:"錫 杖",hands:2,mul:1.8,stat:"INT",type:"ranged",d:"打ち鳴らして術を練る"},
   archstaff:{snd:"magic",el:"none",n:"銀 の 杖",hands:3,mul:1.32,stat:"INT",type:"ranged",d:"魔力の通りの良い銀を使った杖"},
   relic:{snd:"magic",el:"none",n:"レリックオーブ",hands:5,mul:0.94,stat:"INT",type:"ranged",d:"誰の物だったか分からない"},
+
+  /* ---- 鍛冶で打つもの。店にも宝箱にも出ない ---- */
+  fangaxe:{snd:"slash",el:"slash",n:"牙 の 大 斧",hands:3,mul:1.42,stat:"STR",type:"melee",d:"獣の牙を刃に並べて植えた斧"},
+  fangbow:{snd:"bow",el:"pierce",n:"牙 の 弓",hands:3,mul:1.73,stat:"STR",type:"ranged",d:"牙を削り出した弓幹。よくしなる"},
+  fangedge:{snd:"slash",el:"slash",n:"牙 の 双 刃",hands:5,mul:1.04,stat:"STR",type:"melee",d:"研いだ牙を二本、そのまま握る"},
+  fangrod:{snd:"magic",el:"none",n:"牙 の 杖",hands:3,mul:1.47,stat:"INT",type:"ranged",d:"牙を頭に据えた杖。魔力の通りが良い"},
+  heartblade:{snd:"slash",el:"slash",n:"大 樹 の 剣",hands:3,mul:1.62,stat:"STR",type:"melee",d:"芯から削り出した刃。木とは思えぬ硬さ"},
+  heartbow:{snd:"bow",el:"pierce",n:"大 樹 の 弓",hands:3,mul:1.93,stat:"STR",type:"ranged",d:"年輪の光る白木。放つと風が鳴る"},
+  heartedge:{snd:"slash",el:"slash",n:"大 樹 の 刃",hands:5,mul:1.14,stat:"STR",type:"melee",d:"薄く裂いた芯材を重ねて鍛えた刃"},
+  heartstaff:{snd:"magic",el:"none",n:"大 樹 の 杖",hands:3,mul:1.66,stat:"INT",type:"ranged",d:"芯をそのまま握る。持つと脈を打つように熱い"},
 };
 
 /* ---- 素材（討伐で落ちる） ---- */
@@ -2216,7 +2248,7 @@ function accIcon(g){
 }
 function itemKindIcon(k){
   const it=ITEMS[k];if(!it)return "i_potion";
-  if(it.made&&it.heal!==undefined&&it.mp===undefined)return "i_food";
+  if(it.made&&it.heal!==undefined&&it.mp===undefined&&!it.mpr)return "i_food";
   if(it.made)return "i_food";
   if(it.dmg)return "i_bomb";
   if(it.cure)return "i_cure";
@@ -2438,6 +2470,8 @@ const RECIPES={
    need:{honey:2,carrot:1},d:"HP と MP を同時に戻す"},
  r_feast:{n:"沈 ん だ 街 の 宴",kind:"cook",make:"c_feast",cost:60,
    need:{spice:1,meat:2,fish:2},d:"HP 全快。威力も DEF も上がる"},
+ r_hipot:{n:"ハイポーションの製法",kind:"cook",make:"c_hipot",cost:50,
+   need:{kgel:1,gel:4},d:"王の粘液を薄めて煮詰める"},
  /* 鍛冶 */
  f_bonemail:{n:"骨 鎧 の 製 法",kind:"forge",make:"g_bone",cost:70,
    need:{bone:4,gel:2},d:"軽く丈夫な鎧を打つ"},
@@ -2453,12 +2487,17 @@ const RECIPES={
    need:{residue:3,bone:2},d:"魔力を高める護符"},
  f_corecrown:{n:"守 護 核 の 冠",kind:"forge",make:"y_core",cost:160,
    need:{core:1,frag:4},d:"作られたものの核を戴く"},
+ /* 武器。職ごとに別物なので make は「合印」で、実体は GEAR.wep から引く */
+ f_fangwep:{n:"牙 の 得 物 の 製 法",kind:"forge",wep:true,make:"m_fang",cost:100,
+   need:{orcfang:3,claw2:2},d:"牙と爪を刃に仕立てる。職に合った得物ができる"},
+ f_heartwep:{n:"大 樹 の 得 物 の 製 法",kind:"forge",wep:true,make:"m_heart",cost:200,
+   need:{heart:2,bark:3},d:"大樹の芯を削り出す。職に合った得物ができる"},
 };
 
 const ITEMS={
  potion:{n:"傷 薬",d:"HP を最大の 35% 回復する",cost:26,heal:.35,anywhere:true,tier:1},
  heal2:{n:"ヒールポーション",d:"HP を最大の 60% 回復する",cost:46,heal:.60,anywhere:true,tier:2},
- heal3:{n:"ハイポーション",d:"HP を全快させる",cost:88,heal:1.0,anywhere:true,tier:3},
+ heal3:{n:"フルポーション",d:"HP を全快させる",cost:88,heal:1.0,anywhere:true,tier:3},
  mana:{n:"マナポーション",d:"MP を 12 回復する",cost:30,mp:12,anywhere:true,tier:1},
  elixir:{n:"エリクサー",d:"MP を 30 回復する",cost:64,mp:30,anywhere:true,tier:3},
  dynamite:{n:"ダイナマイト",d:"敵1体に 70 の固定ダメージ。DEFを無視する",cost:44,dmg:70,target:true,tier:1},
@@ -2475,6 +2514,8 @@ const ITEMS={
  c_cake:{n:"石蜜の焼き菓子",d:"HP を 40% 、MP を 14 戻す",cost:66,heal:.40,mp:14,anywhere:true,tier:3,made:true},
  c_feast:{n:"沈んだ街の宴",d:"HP 全快。この戦闘の間 威力 +18 と DEF +10",cost:120,
    heal:1,pow:18,def:10,tier:3,made:true},
+ c_hipot:{n:"ハイポーション",d:"HP を最大の 70% 、MP を最大の 50% 戻す",cost:96,
+   heal:.70,mpr:.50,anywhere:true,tier:3,made:true},
  anti:{n:"アンチポーション",d:"自分の状態異常をすべて解く（毒・火傷・麻痺・盲目・混乱も）",
    cost:32,cure:true,anywhere:true,tier:2},
 };
@@ -2482,16 +2523,24 @@ const GEAR={
  wep:{
   knight:[{id:"wk1",n:"騎士の大剣",key:"greatsword",tier:1},{id:"wk2",n:"ロングスピア",key:"spear",tier:1},
           {id:"wk3",n:"鉄の片手剣",key:"finesword",tier:2},{id:"wk4",n:"ハルバード",key:"halberd",tier:2},
-          {id:"wk5",n:"ガラハッド",key:"kingblade",tier:3},{id:"wk6",n:"ジャッジメントブレード",key:"doomblade",tier:3}],
+          {id:"wk5",n:"ガラハッド",key:"kingblade",tier:3},{id:"wk6",n:"ジャッジメントブレード",key:"doomblade",tier:3},
+          {id:"wk_fang",n:"牙 の 大 斧",key:"fangaxe",tier:2,made:true,mk:"m_fang"},
+          {id:"wk_heart",n:"大 樹 の 剣",key:"heartblade",tier:3,made:true,mk:"m_heart"}],
   archer:[{id:"wa1",n:"ロングボウ",key:"heavybow",tier:1},{id:"wa2",n:"ショートボウ",key:"quickbow",tier:1},
           {id:"wa3",n:"狩人の弓",key:"huntbow",tier:2},{id:"wa4",n:"精霊弓",key:"spiritbow",tier:2},
-          {id:"wa5",n:"リピータークロスボウ",key:"stormbow",tier:3},{id:"wa6",n:"雷 弓",key:"piercebow",tier:3}],
+          {id:"wa5",n:"リピータークロスボウ",key:"stormbow",tier:3},{id:"wa6",n:"雷 弓",key:"piercebow",tier:3},
+          {id:"wa_fang",n:"牙 の 弓",key:"fangbow",tier:2,made:true,mk:"m_fang"},
+          {id:"wa_heart",n:"大 樹 の 弓",key:"heartbow",tier:3,made:true,mk:"m_heart"}],
   scout:[{id:"ws1",n:"双 短 剣",key:"twindagger",tier:1},{id:"ws2",n:"狼 牙",key:"fang",tier:1},
          {id:"ws3",n:"レイピア",key:"rapier",tier:2},{id:"ws4",n:"スティング",key:"clawblade",tier:2},
-         {id:"ws5",n:"シャドウ",key:"shadowfang",tier:3},{id:"ws6",n:"暗 殺 刀",key:"assassin",tier:3}],
+         {id:"ws5",n:"シャドウ",key:"shadowfang",tier:3},{id:"ws6",n:"暗 殺 刀",key:"assassin",tier:3},
+         {id:"ws_fang",n:"牙 の 双 刃",key:"fangedge",tier:2,made:true,mk:"m_fang"},
+         {id:"ws_heart",n:"大 樹 の 刃",key:"heartedge",tier:3,made:true,mk:"m_heart"}],
   mage:[{id:"wm1",n:"魔法の杖",key:"staff",tier:1},{id:"wm2",n:"魔法のオーブ",key:"orb",tier:1},
         {id:"wm3",n:"魔 導 書",key:"grimoire",tier:2},{id:"wm4",n:"錫 杖",key:"rod",tier:2},
-        {id:"wm5",n:"銀 の 杖",key:"archstaff",tier:3},{id:"wm6",n:"レリックオーブ",key:"relic",tier:3}],
+        {id:"wm5",n:"銀 の 杖",key:"archstaff",tier:3},{id:"wm6",n:"レリックオーブ",key:"relic",tier:3},
+        {id:"wm_fang",n:"牙 の 杖",key:"fangrod",tier:2,made:true,mk:"m_fang"},
+        {id:"wm_heart",n:"大 樹 の 杖",key:"heartstaff",tier:3,made:true,mk:"m_heart"}],
  },
  armor:[
   {id:"g1",n:"革 鎧",tier:1,st:{DEF:4},hp:20,d:"DEF +4　最大HP +20"},
@@ -3312,6 +3361,8 @@ function recalcMe(m,full){
   m.gearBlk=blk;
   m.bagPlus=bag;
   m.wep=WEP[m.eq.wep?m.eq.wep.key:m.baseWep];
+  /* 打った武器は品質のぶんだけ威力の倍率が違う。型そのものは書き換えない */
+  if(m.eq.wep&&m.eq.wep.mul)m.wep={...m.wep,mul:m.eq.wep.mul};
   const oldMax=m.maxHP||0;
   const pHP=(m.pass||[]).filter(p=>p.ef&&p.ef.k==="maxhp").reduce((a,p)=>a+p.ef.v,0)
     -(m.pass||[]).filter(p=>p.ef&&p.ef.k==="slim").length*10;
@@ -3855,10 +3906,22 @@ function craftQuality(r){
   if(r.crit)return CRAFTCRIT;
   return CRAFTQ[r.k];
 }
+/* 武器は「威力の倍率」しか持たない。品質をそのまま掛けると
+   手数のぶんだけ効きすぎる（一等が三等を軽く越える）ので、伸びは4割に落とす。
+     上物 +6%　業物 +12%　会心 +20%
+   防具・装飾は数字が足し算なので、そのまま掛ける。 */
+const WEPQ=0.4;
 /* 装備に品質の倍率をかける。名前に印を付けて、見て分かるようにする */
 function gearWithQuality(g,q){
   if(!q||q.mul<=1)return {...g};
   const out={...g, n:g.n+q.tag};
+  if(g.slot==="wep"&&WEP[g.key]){
+    const w=WEP[g.key];
+    out.mul=Math.round(w.mul*(1+(q.mul-1)*WEPQ)*100)/100;
+    out.d=`威力 ${Math.round(out.mul*100)}%（並 ${Math.round(w.mul*100)}%）`
+      +`　<span style="color:${q.c}">${q.n.replace(/ /g,"")}</span>`;
+    return out;
+  }
   if(g.st){out.st={};for(const k in g.st)out.st[k]=Math.round(g.st[k]*q.mul);}
   if(g.hp)out.hp=Math.round(g.hp*q.mul);
   if(g.blk)out.blk=Math.round(g.blk*q.mul);
@@ -6494,6 +6557,26 @@ function craftNeed(id){
   });
   return out;
 }
+/* レシピの作り先の実体を引く。
+   防具と装飾は id ひとつで決まるが、武器は職ごとに別物なので、
+   レシピは「合印（mk）」だけを持ち、実体は いまの職の等級表から探す。 */
+function craftMake(R){
+  if(typeof R==="string")R=RECIPES[R];
+  if(R.kind!=="forge")return null;
+  if(R.wep){
+    const g=(GEAR.wep[sel.job]||[]).find(x=>x.mk===R.make);
+    return g?{...g,slot:"wep"}:null;
+  }
+  return [].concat(GEAR.armor.map(x=>({...x,slot:"armor"})),
+                   GEAR.acc.map(x=>({...x,slot:"acc"}))).find(x=>x.id===R.make)||null;
+}
+/* そのレシピで出来るものの等級 */
+function craftTier(id){
+  const R=RECIPES[id];
+  if(R.kind==="cook")return ITEMS[R.make]?(ITEMS[R.make].tier||1):1;
+  const g=craftMake(R);
+  return g?(g.tier||1):1;
+}
 function canMake(id){
   const R=RECIPES[id];
   if(me.gold<craftCost(id))return false;
@@ -6546,21 +6629,24 @@ async function doCraft(id,nd){
     return backToFloorOrModal(nd,out);
   }
   /* 装備は実体を持つので、品質を数値そのものに乗せる */
-  const base=[].concat(GEAR.armor.map(x=>({...x,slot:"armor"})),
-                       GEAR.acc.map(x=>({...x,slot:"acc"}))).find(x=>x.id===R.make);
+  const base=craftMake(R);
   const g=gearWithQuality(base,q);
   out.push(`<span style="color:${q.c}">${q.n}</span>　<span class="gain">${g.n}</span>`);
   out.push(`　<span class="s">${g.d}</span>`);
   const res=applyReward("gear",g);
   SFX.found();
   chestClose();
-  if(res&&res.full)return swapModal(res.kind||"acc",res.full,()=>craftModal(nd));
+  if(res&&res.full)return swapModal(res.kind||"acc",res.full,()=>craftBack(nd));
   return backToFloorOrModal(nd,out);
 }
-/* 焚き火から来たか行商から来たかで、戻り先が違う */
+/* 焚き火から来たか行商から来たかで、戻り先が違う。
+   行商は「作る」の札に戻す */
+function craftBack(nd){
+  if(nd){shNow="make";shopModal(nd);}else craftModal(null);
+}
 function backToFloorOrModal(nd,out){
   resultModal(nd?"こしらえる — 行商の前で":"こしらえる — 焚き火のそばで",out,
-    [{n:"もう一度 こしらえる",cb:()=>craftModal(nd)},{n:"やめる",cb:()=>{ if(nd)shopModal(nd); }}]);
+    [{n:"もう一度 こしらえる",cb:()=>craftBack(nd)},{n:"やめる",cb:()=>{ if(nd)shopModal(nd); }}]);
 }
 function needText(id){
   const need=craftNeed(id);
@@ -6570,31 +6656,45 @@ function needText(id){
     return `<span style="color:${ok?"#8fa261":"#b1544a"}">${MATS[k].n} ${have}/${want}</span>`;
   }).join("　");
 }
+/* 覚えたレシピの一覧。焚き火でも行商の「作る」の札でも同じものを出す */
+function craftListHTML(){
+  const list=me.recipes.slice();
+  if(!list.length)
+    return `<div class="msub">レシピをまだ覚えていない。宝箱や事象、商人が持っている。</div>`;
+  let h=`<div class="msub">覚えたレシピ ${list.length} 件。素材と加工賃を払って作る。
+    <br>出来ばえは 鍛冶・料理 の技能で振る。上物・業物・会心なら数字が上に伸びる。</div><div class="acts">`;
+  /* 等級の浅いものから並べる。同じ等級なら 料理 → 鍛冶 */
+  list.slice().sort((a,b)=>(craftTier(a)-craftTier(b))
+    ||((RECIPES[a].kind==="cook"?0:1)-(RECIPES[b].kind==="cook"?0:1)))
+    .forEach(id=>{
+    const R=RECIPES[id];
+    const ok=canMake(id);
+    const out=R.kind==="cook"?ITEMS[R.make]:null;
+    const g=R.kind==="forge"?craftMake(R):null;
+    const cls=R.kind==="cook"?"cheal":"cgear";
+    const d=g?gearDesc(g):((out||{}).d||R.d);
+    h+=`<button class="act rew ${cls}${ok?"":" poor"}" data-r="${id}" ${ok?"":"disabled"}>
+      <span class="rcat">${R.kind==="cook"?"料 理":"鍛 冶"}</span>
+      <span class="an">${(out||g||{n:R.n}).n}</span>
+      <span class="cost">${craftCost(id)}</span>
+      <span class="ad">${d}</span>
+      <span class="rmeta">${tierTag(craftTier(id))}${
+        g?`<span class="tierb" style="color:#8b9080;border-color:#8b9080">${
+          SLOTN[g.slot]}</span>`:""}　${needText(id)}</span></button>`;
+  });
+  return h+`</div>`;
+}
+function bindCraftList(nd){
+  $("#mbox").querySelectorAll("[data-r]").forEach(b=>{
+    b.onclick=()=>{ if(canMake(b.dataset.r))doCraft(b.dataset.r,nd); };
+  });
+}
 /* 焚き火では鍋を火にかけられる */
 function craftModal(nd){
-  const list=me.recipes.slice();
   let h=`<div class="mtitle">こ し ら え る${nd?"　—　行 商 の 前 で":"　—　焚 き 火 の そ ば で"}</div>
     <div class="mgrow">金貨 <b style="color:#c9a227">${me.gold}</b>　　
       素材 ${matCount()} 個　　道具 ${bagCount()}/${bagMax()}</div>`;
-  if(!list.length){
-    h+=`<div class="msub">レシピをまだ覚えていない。宝箱や事象、商人が持っている。</div>`;
-  }else{
-    h+=`<div class="msub">覚えたレシピ ${list.length} 件。素材と加工賃を払って作る。</div><div class="acts">`;
-    list.forEach(id=>{
-      const R=RECIPES[id];
-      const ok=canMake(id);
-      const out=R.kind==="cook"?ITEMS[R.make]:null;
-      const g=R.kind==="forge"?[].concat(GEAR.armor,GEAR.acc).find(x=>x.id===R.make):null;
-      const cls=R.kind==="cook"?"cheal":"cgear";
-      h+=`<button class="act rew ${cls}${ok?"":" poor"}" data-r="${id}" ${ok?"":"disabled"}>
-        <span class="rcat">${R.kind==="cook"?"料 理":"鍛 冶"}</span>
-        <span class="an">${(out||g||{n:R.n}).n}</span>
-        <span class="cost">${craftCost(id)}</span>
-        <span class="ad">${(out||g||{}).d||R.d}</span>
-        <span class="rmeta">${needText(id)}</span></button>`;
-    });
-    h+=`</div>`;
-  }
+  h+=craftListHTML();
   h+=`<button class="act cancel wide" id="cChar" style="margin-top:6px">
     <span class="an">装備・状態を見る</span>
     <span class="ad">Lv ${me.lv}　HP ${me.HP}/${me.maxHP}　素材 ${matCount()} 個</span></button>`;
@@ -6602,28 +6702,32 @@ function craftModal(nd){
   openModal(h);
   const cch=$("#cChar");
   if(cch)cch.onclick=()=>charModal(()=>craftModal(nd));
-  $("#mbox").querySelectorAll("[data-r]").forEach(b=>{
-    b.onclick=()=>{ if(canMake(b.dataset.r))doCraft(b.dataset.r,nd); };
-  });
+  bindCraftList(nd);
   $("#mBack").onclick=()=>{if(nd)shopModal(nd);else closeModal();};
 }
-function shopModal(nd){
-  if(!RUN.stock)RUN.stock=makeStock();
-  if(RUN.shopRecipe===undefined){
-    const pool=Object.keys(RECIPES).filter(k=>!me.recipes.includes(k));
-    RUN.shopRecipe=(pool.length&&Math.random()<0.6)
-      ?{id:pool[Math.floor(Math.random()*pool.length)],cost:price(55),sold:false}:null;
-  }
+/* ---------- 行 商 ----------
+   買う・売る・作る の 3 つの札。
+   前は 1 枚の縦長で、素材を売るのは「ぜんぶ売る」ボタンひとつだった。
+   レシピに使う素材まで一緒に消えるので、売るぶんは一つずつ選べるようにする。 */
+const SHTABS=[{k:"buy",n:"買 う"},{k:"sell",n:"売 る"},{k:"make",n:"作 る"}];
+let shNow="buy";
+let SELLQ={};                      /* {素材:売る個数}。店を出るまで持つ */
+function sellCount(){return Object.values(SELLQ).reduce((a,b)=>a+b,0);}
+function sellValue(){
+  return Object.keys(SELLQ).reduce((a,k)=>a+(MATS[k]?MATS[k].v*SELLQ[k]:0),0);
+}
+/* 覚えているレシピが、その素材を いくつ欲しがっているか（いちばん多いものに合わせる） */
+function recipeWant(k){
+  return (me.recipes||[]).reduce((a,id)=>Math.max(a,craftNeed(id)[k]||0),0);
+}
+function shCount(k){
+  if(k==="buy") return `残り ${(RUN.stock||[]).filter(x=>!x.sold).length} 品`;
+  if(k==="sell")return `素材 ${matCount()} 個`;
+  return `レシピ ${me.recipes.length} 件`;
+}
+function shopBuyHTML(){
   const st=RUN.stock;
-  let h=`<div class="mtitle">行 商</div>
-    <div class="mgrow">所持金貨 <b style="color:#c9a227">${me.gold}</b>　　
-      HP ${me.HP}/${me.maxHP}　　道具 <b>${bagLabel()}</b></div>
-    <div class="msub">装備と道具を扱う。立ち去れば店は消える。</div>`+
-    (matCount()?`<button class="act cancel wide" id="mSell" style="margin-bottom:10px">
-      <span class="an">素材を売る　<span style="color:#c9a227">+${matValue()} 金貨</span></span>
-      <span class="ad">${Object.keys(me.mats).map(k=>MATS[k].n+"×"+me.mats[k]).join("　")}</span>
-      </button>`:"")+
-    `<div class="acts">`;
+  let h=`<div class="msub">装備と道具を扱う。立ち去れば店は消える。</div><div class="acts">`;
   st.forEach((it,i)=>{
     const C=it.cat==="item"?{n:"道 具",c:"cheal"}:CAT[it.cat];
     const full=(it.cat==="item")&&bagCount()>=bagMax();
@@ -6654,43 +6758,114 @@ function shopModal(nd){
       <span class="rmeta">${R.kind==="cook"?"料理":"鍛冶"}　必要 ${
         Object.keys(R.need).map(k=>MATS[k].n+"×"+R.need[k]).join("　")}</span></button>`;
   }
-  h+=`</div>
-    <button class="act cancel wide" id="mCraft" style="margin-top:4px">
-      <span class="an">こしらえる</span>
-      <span class="ad">覚えたレシピ ${me.recipes.length} 件　素材 ${matCount()} 個</span></button>
-    <button class="act cancel wide" id="mChar">
+  return h+`</div>`;
+}
+/* 売る札。素材ごとに 売る数 を決める。レシピで使うぶんには印を付ける */
+function shopSellHTML(){
+  const keys=Object.keys(me.mats||{}).filter(k=>me.mats[k]>0);
+  if(!keys.length)
+    return `<div class="mitem" style="color:#4d5346">売れる素材を持っていない</div>`;
+  let h=`<div class="msub">売るぶんだけ選ぶ。残したものは そのまま持っていける。
+    <br><span style="color:var(--brass)">レシピ印</span> が付いた素材は
+    いま覚えているレシピで使う。</div>`;
+  h+=`<div class="mitem selbar">
+    <button class="stbtn" data-all="rest">余りをぜんぶ選ぶ</button>
+    <button class="stbtn" data-all="max">ぜんぶ選ぶ</button>
+    <button class="stbtn drop" data-all="none">選び直す</button></div>`;
+  keys.forEach(k=>{
+    const q=SELLQ[k]||0, want=recipeWant(k);
+    h+=`<div class="mitem eqrow selrow">
+      <span class="eqk">${itemIcon(k,16)} ${MATS[k].n}</span>
+      <span class="eqv">所持 <b>${me.mats[k]}</b>　1つ ${MATS[k].v} 金貨${
+        want?`　<span style="color:var(--brass)">レシピ印　${want} 使う</span>`:""}
+        <br><span class="s">${MATS[k].d}</span>
+        <br><button class="stbtn" data-m="${k}" data-d="-1">−</button>
+        <span class="selq${q?" on":""}">売る ${q} / ${me.mats[k]}</span>
+        <button class="stbtn" data-m="${k}" data-d="1">＋</button>
+        <button class="stbtn" data-m="${k}" data-d="all">この素材ぜんぶ</button>
+        <button class="stbtn drop" data-m="${k}" data-d="0">残す</button>
+      </span></div>`;
+  });
+  h+=`<button class="act cancel wide${sellCount()?"":" poor"}" id="mDoSell"
+      style="margin-top:8px" ${sellCount()?"":"disabled"}>
+    <span class="an">選んだ ${sellCount()} 個を売る　<span style="color:#c9a227">+${
+      sellValue()} 金貨</span></span>
+    <span class="ad">売れば戻らない。手元に残る素材 ${matCount()-sellCount()} 個</span></button>`;
+  return h;
+}
+function shopModal(nd){
+  if(!RUN.stock)RUN.stock=makeStock();
+  if(RUN.shopRecipe===undefined){
+    const pool=Object.keys(RECIPES).filter(k=>!me.recipes.includes(k));
+    RUN.shopRecipe=(pool.length&&Math.random()<0.6)
+      ?{id:pool[Math.floor(Math.random()*pool.length)],cost:price(55),sold:false}:null;
+  }
+  if(!SHTABS.some(t=>t.k===shNow))shNow="buy";
+  let h=`<div class="mtitle">行 商</div>
+    <div class="mgrow">所持金貨 <b style="color:#c9a227">${me.gold}</b>　　
+      HP ${me.HP}/${me.maxHP}　　道具 <b>${bagLabel()}</b></div>
+    <div class="tabs chtabs shtabs">${SHTABS.map(t=>
+      `<button class="tab${t.k===shNow?" on":""}" data-sh="${t.k}">
+        <span class="tabn">${t.n}</span><span class="tabc">${shCount(t.k)}</span></button>`).join("")}</div>`;
+  h+= shNow==="buy" ?shopBuyHTML()
+    : shNow==="sell"?shopSellHTML()
+    :                craftListHTML();
+  h+=`<button class="act cancel wide" id="mChar" style="margin-top:6px">
       <span class="an">装備・状態を見る</span>
       <span class="ad">Lv ${me.lv}　HP ${me.HP}/${me.maxHP}　道具 ${bagCount()}/${bagMax()}</span></button>
     <button class="mclose" id="mLeave">立ち去る</button>`;
   openModal(h);
-  $("#mbox").querySelectorAll("[data-i]").forEach(b=>{
-    b.onclick=()=>{
-      const it=st[+b.dataset.i];
-      if(it.sold||me.gold<it.cost)return;
-      if(it.cat==="item"&&bagCount()>=bagMax())return;
-      me.gold-=it.cost;
-      if(it.cat==="item"){
-        me.gold+=it.cost;                      // いったん戻して確認へ
-        return confirmBuy(it,nd);
-      }
-      me.gold+=it.cost;
-      return confirmBuy(it,nd);
-    };
-  });
-  const cb=$("#mCraft");
-  if(cb)cb.onclick=()=>craftModal(nd);
+  $("#mbox").querySelectorAll("[data-sh]").forEach(b=>{
+    b.onclick=()=>{shNow=b.dataset.sh;SFX.click();shopModal(nd);};});
   const chb=$("#mChar");
   if(chb)chb.onclick=()=>charModal(()=>shopModal(nd));
-  const rb=$("#mbox").querySelector("[data-rec]");
-  if(rb)rb.onclick=()=>{
-    const R=RUN.shopRecipe;
-    if(me.gold<R.cost)return;
-    me.gold-=R.cost;me.recipes.push(R.id);markSeen(R.id);R.sold=true;SFX.found();shopModal(nd);};
-  const sb=$("#mSell");
-  if(sb)sb.onclick=()=>{
-    const v=matValue();me.gold+=v;me.mats={};SFX.found();shopModal(nd);};
+  if(shNow==="buy"){
+    const st=RUN.stock;
+    $("#mbox").querySelectorAll("[data-i]").forEach(b=>{
+      b.onclick=()=>{
+        const it=st[+b.dataset.i];
+        if(it.sold||me.gold<it.cost)return;
+        if(it.cat==="item"&&bagCount()>=bagMax())return;
+        return confirmBuy(it,nd);
+      };
+    });
+    const rb=$("#mbox").querySelector("[data-rec]");
+    if(rb)rb.onclick=()=>{
+      const R=RUN.shopRecipe;
+      if(me.gold<R.cost)return;
+      me.gold-=R.cost;me.recipes.push(R.id);markSeen(R.id);R.sold=true;SFX.found();shopModal(nd);};
+  }else if(shNow==="sell"){
+    $("#mbox").querySelectorAll("[data-m]").forEach(b=>{
+      b.onclick=()=>{
+        const k=b.dataset.m, have=me.mats[k]||0, d=b.dataset.d;
+        let q=SELLQ[k]||0;
+        if(d==="all")q=have; else if(d==="0")q=0;
+        else q=Math.max(0,Math.min(have,q+(+d)));
+        SELLQ[k]=q;SFX.click();shopModal(nd);};});
+    $("#mbox").querySelectorAll("[data-all]").forEach(b=>{
+      b.onclick=()=>{
+        const m=b.dataset.all;
+        SELLQ={};
+        if(m!=="none")Object.keys(me.mats).forEach(k=>{
+          const have=me.mats[k];
+          SELLQ[k]=(m==="max")?have:Math.max(0,have-recipeWant(k));
+        });
+        SFX.click();shopModal(nd);};});
+    const ds=$("#mDoSell");
+    if(ds)ds.onclick=()=>{
+      const v=sellValue(), c=sellCount();
+      if(!c)return;
+      Object.keys(SELLQ).forEach(k=>{
+        if(!SELLQ[k])return;
+        me.mats[k]=(me.mats[k]||0)-SELLQ[k];
+        if(me.mats[k]<=0)delete me.mats[k];
+      });
+      me.gold+=v;SELLQ={};SFX.found();shopModal(nd);};
+  }else{
+    bindCraftList(nd);
+  }
   $("#mLeave").onclick=()=>{
-    closeModal();nd.done=true;RUN.stock=null;
+    closeModal();nd.done=true;RUN.stock=null;SELLQ={};
     backToFloor("行 商",[`店をあとにした　<span class="s">（残り金貨 ${me.gold}）</span>`]);
   };
 }
@@ -6760,7 +6935,7 @@ function resolveEvent(nd,out){
   out.push(`<span class="gain">行商人が休んでいた</span>`);
   out.push(`　<span class="s">こんな所にも店を開くらしい</span>`);
   SFX.shop();
-  RUN.stock=null;RUN.shopRecipe=undefined;
+  RUN.stock=null;RUN.shopRecipe=undefined;SELLQ={};
   drawFloor();showScreen("floor");
   resultModal(nd.name,out,[{n:"店を覗く",cb:()=>shopModal(nd)}]);
 }
@@ -7151,7 +7326,8 @@ function chBodyEq(){
   <div class="mitem eqrow">
     <span class="eqk">${itemIcon(wepIcon(me.eq.wep?me.eq.wep.key:me.baseWep),16)} 武 器</span>
     <span class="eqv">${tierTag(me.eq.wep?me.eq.wep.tier:0)}${
-      w.el&&w.el!=="none"?elemTag(w.el):""} <b>${w.n}</b>　${w.d||""}
+      w.el&&w.el!=="none"?elemTag(w.el):""}${madeTag(me.eq.wep)} <b>${
+        me.eq.wep?me.eq.wep.n:w.n}</b>　${w.d||""}
       <br><span style="color:var(--ink)">攻撃ダイス ${w.hands}　威力 ${
         Math.round(statMul(w)*100)}%（${w.stat} ×${statMul(w).toFixed(2)}）　${
         w.type==="melee"?"近接・敵前列のみ":"遠隔・後列も狙える"}
@@ -7384,7 +7560,9 @@ function gearDesc(g){
   if(!g)return "";
   if(g.slot==="wep"&&WEP[g.key]){
     const w=WEP[g.key];
-    return `攻撃ダイス ${w.hands}　威力 ${Math.round(statMul(w)*100)}%　${
+    const mul=g.mul||w.mul||1;
+    return `攻撃ダイス ${w.hands}　威力 ${Math.round(mul*100)}%${
+      g.mul&&g.mul!==w.mul?`（並 ${Math.round(w.mul*100)}%）`:""}　${
       w.type==="melee"?"近接":"遠隔"}　${w.d||""}`;
   }
   return g.d||"";
@@ -7722,34 +7900,50 @@ async function doItem(k,tgt){
   busy=true;pending=null;
   me.bag[k]--;if(!me.bag[k])delete me.bag[k];
   $("#acts").innerHTML="";$("#prompt").textContent="";
-  if(it.heal){
-    const h=Math.min(Math.round(me.maxHP*it.heal),me.maxHP-me.HP);
-    me.HP+=h;draw();fxOn(me,"charge");popSelf("+"+h,"heal");SFX.found();
-    log(`<span class="a">${it.n}</span> を使った　HP <span class="m">+${h}</span>`);
-  }else if(it.mp){
-    const g=Math.min(Math.round(it.mp*(it.made&&cookMax()?1.3:1)),me.maxMP-me.MP);
-    me.MP+=g;draw();fxOn(me,"charge");popSelf("MP+"+g,"blk");SFX.open();
-    log(`<span class="a">${it.n}</span> を使った　MP <span class="m">+${g}</span>`);
-  }else if(it.cure){
+  /* 効き目は足し算。石蜜の焼き菓子や宴のように 2 つ以上を持つ品があるので、
+     ここは else でつなげない（つないでいたので HP しか戻っていなかった）。 */
+  if(it.heal||it.mp||it.mpr){
+    const parts=[];
+    if(it.heal){
+      const h=Math.min(Math.round(me.maxHP*it.heal),me.maxHP-me.HP);
+      me.HP+=h;parts.push(`HP <span class="m">+${h}</span>`);popSelf("+"+h,"heal");
+    }
+    let g=0;
+    if(it.mpr)g+=Math.round(me.maxMP*it.mpr);
+    if(it.mp) g+=Math.round(it.mp*(it.made&&cookMax()?1.3:1));
+    if(g){
+      g=Math.min(g,me.maxMP-me.MP);
+      me.MP+=g;parts.push(`MP <span class="m">+${g}</span>`);
+      if(!it.heal)popSelf("MP+"+g,"blk");
+    }
+    draw();fxOn(me,"charge");SFX.found();
+    log(`<span class="a">${it.n}</span> を使った　`+parts.join("　"));
+  }
+  if(it.pow){
+    me.tmpPow=(me.tmpPow||0)+it.pow;draw();fxOn(me,"charge");popSelf("威力+"+it.pow,"blk");SFX.open();
+    log(`<span class="a">${it.n}</span>　この戦闘の間 威力 <span class="m">+${it.pow}</span>`);
+  }
+  if(it.def){
+    me.tmpDef=(me.tmpDef||0)+it.def;draw();fxOn(me,"guard");popSelf("防御+"+it.def,"blk");SFX.open();
+    log(`<span class="a">${it.n}</span>　この戦闘の間 防御 <span class="m">+${it.def}</span>`);
+  }
+  if(it.cure){
     const had=(me.ail||[]).map(a=>AIL[a.k].n);
     me.ail=[];draw();fxOn(me,"charge");
     popSelf(had.length?"解 除":"変化なし","blk");SFX.found();
     log(`<span class="a">${it.n}</span> を使った　`+
       (had.length?`<span class="m">${[...new Set(had)].join("・")}</span> を解いた`
                  :`解くべきものはなかった`));
-  }else if(it.half){
+  }
+  if(it.half){
     me.half=true;draw();fxOn(me,"guard");popSelf("半減","blk");SFX.buff();
     log(`<span class="a">${it.n}</span> を使った　次の被害が半分になる`);
-  }else if(it.pow){
-    me.tmpPow=(me.tmpPow||0)+it.pow;draw();fxOn(me,"charge");popSelf("威力+"+it.pow,"blk");SFX.open();
-    log(`<span class="a">${it.n}</span> を使った　この戦闘の間 威力 <span class="m">+${it.pow}</span>`);
-  }else if(it.def){
-    me.tmpDef=(me.tmpDef||0)+it.def;draw();fxOn(me,"guard");popSelf("防御+"+it.def,"blk");SFX.open();
-    log(`<span class="a">${it.n}</span> を使った　この戦闘の間 防御 <span class="m">+${it.def}</span>`);
-  }else if(it.stun&&tgt){
+  }
+  if(it.stun&&tgt){
     tgt.stun=true;draw();fxOn(tgt,"guard");popOn(tgt,"行動不能","blk");SFX.open();
     log(`<span class="a">${it.n}</span> が <span class="b">${tgt.name}</span> を捕らえた`);
-  }else if(it.dmg){
+  }
+  if(it.dmg){
     const list=it.all?alive().filter(f=>f!==me&&f.rank===(tgt?tgt.rank:"front")):[tgt];
     for(const t of list){
       if(!t)continue;
