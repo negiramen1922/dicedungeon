@@ -5424,10 +5424,10 @@ let RUN=null, curScreen="home";
 const ENCS={
  /* 1 階層 */
  /* 単体（1〜2段目） */
- s_sl:{n:"うごめく粘体",list:["slime"]},
  s_gb:{n:"はぐれ見張り",list:["goblin"]},
  s_rt:{n:"うろつく鼠",list:["rat"]},
  s_ga:{n:"物陰の射手",list:["garcher"]},
+ s_gc:{n:"岩陰の術師",list:["shaman"]},
  /* ── 世界樹の森 ── */
  w_wi:{n:"漂う灯",list:["wisp"]},
  w_sp:{n:"苔むした岩",list:["spriggan"]},
@@ -5455,12 +5455,12 @@ const ENCS={
  s_sk:{n:"さまよう骨",list:["skeleton"]},
  s_sa:{n:"はぐれ魚人",list:["sahagin"]},
  s_wr:{n:"淀んだ影",list:["wraith"]},
- sl1:{n:"うごめく粘体",list:["slime","slime"]},
  rt1:{n:"鼠の群れ",list:["rat","rat","rat"]},
+ gc1:{n:"鼠と見張り",list:["goblin","rat"]},
+ gc2:{n:"術師つき",list:["goblin","shaman"]},
  gb1:{n:"見張り二人",list:["goblin","goblin"]},
  gb2:{n:"射手つき",list:["goblin","garcher"]},
  gr1:{n:"鼠を連れて",list:["goblin","rat","rat"]},
- gs1:{n:"粘体と見張り",list:["slime","goblin"]},
  hb1:{n:"ホブと射手",list:["hobgoblin","garcher"]},
  hb2:{n:"重装の壁",list:["hobgoblin","hobgoblin"]},
  sh1:{n:"呪術師の陣",list:["goblin","goblin","shaman"]},
@@ -5583,8 +5583,8 @@ const AREAS={
    x:72,y:37,land:"cave",
    d:"外縁の掘削跡。湿った岩肌と苔。人の手が入った最後の場所。",
    to:["hall"],
-   solo:["s_sl","s_gb","s_rt","s_ga"],
-   easy:["gb1","sl1","gb2"], norm:["rt1","gr1","gs1","gb2"], hard:["hb1","sh2","hb2"],
+   solo:["s_gb","s_rt","s_ga","s_gc"],
+   easy:["gb1","gc1","gb2"], norm:["rt1","gr1","gc2","gb2"], hard:["hb1","sh2","hb2"],
    elite:["sh1","hb2"], boss:"b1"},
  hall:{n:"水 没 し た 回 廊",tier:3,art:"atlantis",
    x:72,y:59,land:"water",
