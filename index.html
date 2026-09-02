@@ -965,6 +965,14 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0032d",tag:"bal",v:"α0.0032",d:"2026-09-02",n:"サイクロプスを組み直しました",b:[
+   "<b>見せ場だった「振りかぶって岩を投げる」が、6回に1回しか見られませんでした。</b>しかも投げるダイスが 1〜3 のばらつきで、溜めても1ダイスで終わることがありました",
+   "<b>岩を掴む を 20% にし、投げるほうを確定3D・威力150% にしました。</b>掴んだ次のターンは必ず投げます。投げたあとは大きく隙ができます",
+   "<b>睨みつける が「恐 怖」を与えるようになりました。</b>2ターンのあいだ 命中が 1 遠のきます。これまでは威力−15%だけで、一つ目の巨人に睨まれた感じがしませんでした",
+   "<b>HP が半分を切ると 大 咆 哮 を上げます。</b>3ターンのあいだ 威力が 30% 上がります。前列の仲間にも乗ります",
+   "身を守る は 防+28 から <b>防+10</b> に。巨人が縮こまるほど硬くなるのは変でした",
+   "<b>新しい状態「恐 怖」</b>と、<b>割合で上がる強化</b>を仕組みとして足しました",
+ ]},
  {id:"v0032c",tag:"up",v:"α0.0032",d:"2026-09-01",n:"構えが 殴られるまで残るようになりました",b:[
    "<b>防御して身を固めたのに誰も殴ってこなかった回、その構えは無駄になっていました。</b>自分の手番が来るたび、必ず解けていたためです",
    "<b>殴られるまで残るようになりました。</b>相手が守りや溜めに回った回でも、構えた1手が無駄になりません",
@@ -2466,6 +2474,9 @@ const PXAIL={
    [4,5,4,3,"#a86f22"],[3,2,2,1,"#14160f"]],
  blur:[[1,2,6,4,"#8a7f9c"],[2,3,4,2,"#e9e4d4"],[3,4,2,1,"#14160f"],
    [0,0,8,1,"#5a5468"],[0,7,8,1,"#5a5468"],[1,1,2,1,"#5a5468"],[5,5,2,1,"#5a5468"]],
+ fear:[[2,0,4,1,"#8a6b9c"],[1,1,6,4,"#8a6b9c"],[2,2,1,2,"#14160f"],[5,2,1,2,"#14160f"],
+   [2,5,4,1,"#5c4870"],[1,6,1,1,"#5c4870"],[3,6,1,1,"#5c4870"],[5,6,1,1,"#5c4870"],
+   [0,2,1,3,"#5c4870"],[7,2,1,3,"#5c4870"]],
  charm:[[2,1,2,2,"#c96e8a"],[4,1,2,2,"#c96e8a"],[1,3,6,2,"#c96e8a"],
    [2,5,4,2,"#a8506b"],[3,7,2,1,"#a8506b"]],
  /* 萎縮：欠けたサイコロ */
@@ -2498,6 +2509,7 @@ const AIL={
  weakp:{n:"弱体",c:"#a68bbf",d:"威力が割合で下がる"},
  break:{n:"防壊",c:"#c98a3a",d:"DEF が下がる"},
  blur:{n:"盲目",c:"#8a7f9c",d:"命中閾値が上がる"},
+ fear:{n:"恐怖",c:"#8a6b9c",d:"竦んで命中閾値が上がる"},
  charm:{n:"混乱",c:"#c96e8a",d:"味方を襲うようになる"},
  shrink:{n:"萎縮",c:"#9c8a7f",d:"攻撃ダイスが減る"},
 };
@@ -3542,19 +3554,22 @@ const FOE={
          {n:"外殻を閉じる",k:"guard",block:22,w:2}]},
  cyclops:{n:"サイクロプス",d:"一つ目の巨人。森の奥深くに一体で生息している。掴んだ岩をそのまま投げてくるが、投げる前に必ず大きく振りかぶる。",mat:"eye",weak:"pierce",resist:"blunt",elem:"earth",art:"cyclops",snd:"blunt",
    HP:400,STR:48,DEF:16,DEX:18,rank:"front",scout:4,
-   acts:[{n:"石棍棒を振るう",k:"atk",dice:3,pct:15,w:5},
-         {n:"大きく薙ぐ",k:"atk",dice:4,pct:-25,open:{t:1},w:3},
-         {n:"睨みつける",k:"hex",weak:1,dur:2,w:3},
+   /* 見せ場は「振りかぶって投げる」。掴んだ次のターンは必ず投げ（forceNext）、
+      投げたあとは大きく隙ができる。 */
+   acts:[{n:"石棍棒を振るう",k:"atk",dice:3,pct:10,w:4},
+         {n:"睨みつける",k:"hex",fear:1,dur:2,w:2},
+         {n:"身を守る",k:"guard",block:10,w:2},
          {n:"岩を掴む",k:"buff",pow:20,dur:1,forceNext:"岩を投げる",w:2},
-         {n:"岩を投げる",k:"atk",diceRand:3,pct:40,hidden:true,open:{t:2},w:0},
-         {n:"身を守る",k:"guard",block:28,w:2}],
-   phases:[{at:.45,n:"隻 眼 が 据 わ る",d:"瞬きをやめた。もう外さない",
-     def:-6,str:10,
-     acts:[{n:"石棍棒を振るう",k:"atk",dice:3,pct:20,w:6},
-           {n:"踏 み 潰 す",k:"atk",dice:2,pct:35,open:{t:2},w:3},
-           {n:"睨みつける",k:"hex",weak:1,blind:1,dur:2,w:3},
-           {n:"岩を掴む",k:"buff",pow:24,dur:1,forceNext:"岩を投げる",w:3},
-           {n:"岩を投げる",k:"atk",diceRand:3,pct:40,hidden:true,open:{t:2},w:0}]}]},
+         {n:"岩を投げる",k:"atk",dice:3,pct:50,hidden:true,open:{t:2},w:0},
+         {n:"大 咆 哮",k:"cheer",pctUp:30,dur:3,hidden:true,w:0}],
+   phases:[{at:.5,n:"隻 眼 が 据 わ る",d:"傷が深い。天を仰いで吼えた",
+     forceAct:"大 咆 哮",
+     acts:[{n:"石棍棒を振るう",k:"atk",dice:3,pct:10,w:4},
+           {n:"睨みつける",k:"hex",fear:1,dur:2,w:2},
+           {n:"身を守る",k:"guard",block:10,w:2},
+           {n:"岩を掴む",k:"buff",pow:20,dur:1,forceNext:"岩を投げる",w:2},
+           {n:"岩を投げる",k:"atk",dice:3,pct:50,hidden:true,open:{t:2},w:0},
+           {n:"大 咆 哮",k:"cheer",pctUp:30,dur:3,hidden:true,w:0}]}]},
 
  /* ===== ボス ===== */
  bshaman:{n:"ゴブリンシャーマン",d:"群れの奥に据えられた老いたゴブリン。骨と羽を並べて何かを唱えると、前の者たちが目に見えて奮い立つ。自分では前に出ないので、後ろに残っているうちは群れが崩れない。",mat:"ear",weak:"pierce",resist:"dark",elem:"dark",art:"bshaman",snd:"magic",HP:380,STR:50,DEF:15,DEX:26,rank:"back",scout:6,
@@ -3859,13 +3874,15 @@ function telePreview(f,tt){
   if(t.k==="buff")return {txt:"▲ "+t.n,
     sub:t.pow?`自分の威力 +${t.pow}　${(t.dur||1)+1}ターン`
              :`自分の速さ +${t.dex}　この戦闘のあいだ`,danger:false};
-  if(t.k==="cheer")return {txt:"▲ "+t.n,sub:`前列すべての威力 +${t.pow}`,danger:false};
+  if(t.k==="cheer")return {txt:"▲ "+t.n,
+    sub:`前列すべての威力 ${t.pctUp?`+${t.pctUp}%　${(t.dur||1)+1}ターン`:`+${t.pow}`}`,danger:false};
   if(t.k==="summon")return {txt:"✚ "+t.n,
     sub:`${FOE[t.who].n} を 1〜3 体 呼ぶ`,danger:true};
   if(t.k==="regen")return {txt:"✚ "+t.n,sub:`自分の HP を ${t.heal} 回復する`,danger:false};
   if(t.k==="hex")return {txt:"✦ "+t.n,
     sub:[t.curse?`こちらのDEF −${t.curse}`:"",t.weak?`こちらの威力 −15%`:"",
       t.slow?`こちらのDEX −${t.slow}`:"",t.blind?`こちらの命中閾値 +${t.blind}`:"",
+      t.fear?`恐 怖　こちらの命中閾値 +${t.fear}`:"",
       t.poison?`毎ターン ${t.poison} の毒`:""]
       .filter(Boolean).join("　")+
       `　${(t.dur||2)+1}ターン`+(t.dice?`　＋ ${t.dice}d6 の侵蝕`:""),danger:true};
@@ -4210,6 +4227,7 @@ function threshold(u,tgt,opt){
   opt=opt||{};
   let t=4;
   t+=ailSum(u,"blur");                   /* 盲目：狙いが定まらない */
+  t+=ailSum(u,"fear");                   /* 恐怖：竦んで手元が狂う */
   if(!u.isFoe&&tgt.key){
     const c=codexLv(tgt.key);
     if(c>=2)t-=1;      /* 3戦 */
@@ -5155,6 +5173,7 @@ async function enemyAct(f){
       if(A.slow){ailAdd(me,"slow",A.slow,du);put.push(`DEX −${A.slow}`);}
       if(A.weak){ailAdd(me,"weakp",A.weak,du);put.push(`威力 −${A.weak}%`);}
       if(A.blind){ailAdd(me,"blur",A.blind,du);put.push(`命中 −${A.blind}`);}
+      if(A.fear){ailAdd(me,"fear",A.fear,du);put.push(`恐怖 命中 −${A.fear}`);}
       if(A.poison){ailAdd(me,"poison",A.poison,du);put.push(`毎ターン 毒 ${A.poison}`);}
       if(put.length){
         draw();popSelf("防御−","each");
@@ -5183,21 +5202,29 @@ async function enemyAct(f){
   }else if(t.k==="buff"){
     f.lastAid=t.n;
     if(t.pow)addBuff(f,t.pow,t.dur||1);
+    /* 割合で上げる強化。掛けた時点の STR から量を出して、持続は固定値と同じ器に入れる。
+       深さで STR が伸びても、上がり幅が置いていかれない。 */
+    if(t.pctUp)addBuff(f,Math.round(f.STR*t.pctUp/100),t.dur||1);
     /* 素早さを上げる手。持続の器が無いので この戦闘のあいだ ずっと乗る。
        threshold が tgt.DEX をそのまま見るので、上げた瞬間から当てにくくなる。
        行動順は次のラウンドの buildQueue から効く。 */
     if(t.dex)f.DEX+=t.dex;
     if(t.forceNext)f.forceNext=t.forceNext;
     draw();fxOn(f,"charge");
-    popOn(f,t.pow?"力+"+t.pow:"速+"+t.dex,"blk");SFX.open();
+    popOn(f,t.pctUp?"力+"+t.pctUp+"%":t.pow?"力+"+t.pow:"速+"+t.dex,"blk");SFX.open();
     log(`<span class="b">${f.name}</span> が`+
+      (t.pctUp?`吼えた（威力 <span class="m">+${t.pctUp}%</span>　${(t.dur||1)+1}ターン）`:"")+
       (t.pow?`力をためた（威力 +${t.pow}　${(t.dur||1)+1}ターン）`:"")+
       (t.dex?`${t.pow?"　":""}身を軽くした（速さ <span class="m">+${t.dex}</span>　この戦闘のあいだ）`:""));
     await wait(450);
   }else if(t.k==="cheer"){
-    f.lastAid=t.n;aliveIn("front").forEach(x=>{addBuff(x,t.pow,t.dur||1);});
-    draw();aliveIn("front").forEach(x=>{fxOn(x,"charge");popOn(x,"力+"+t.pow,"blk");});SFX.open();
-    log(`<span class="b">${f.name}</span> が前列を鼓舞した（威力 +${t.pow}）`);await wait(500);
+    f.lastAid=t.n;
+    aliveIn("front").forEach(x=>{
+      addBuff(x,t.pctUp?Math.round(x.STR*t.pctUp/100):t.pow,t.dur||1);});
+    draw();aliveIn("front").forEach(x=>{fxOn(x,"charge");
+      popOn(x,t.pctUp?"力+"+t.pctUp+"%":"力+"+t.pow,"blk");});SFX.open();
+    log(`<span class="b">${f.name}</span> が前列を鼓舞した（威力 `+
+      (t.pctUp?`<span class="m">+${t.pctUp}%</span>　${(t.dur||1)+1}ターン`:`+${t.pow}`)+`）`);await wait(500);
   }else if(t.k==="summon"){
     f.lastAid=t.n;f.sumUsed=true;f.sumCd=t.cd||0;
     /* 前列が埋まっていたら後列へ回す。num で 1dN を指定できる（既定 1d3） */
@@ -5251,6 +5278,7 @@ async function enemyAct(f){
     if(t.weak){ailAdd(me,"weakp",t.weak*15,dur);msg.push(`威力 <span class="m">−${t.weak*15}%</span>`);}
     if(t.slow){ailAdd(me,"slow",t.slow,dur);msg.push(`DEX <span class="m">−${t.slow}</span>`);}
     if(t.blind){ailAdd(me,"blur",t.blind,dur);msg.push(`命中が <span class="m">${t.blind}</span> 遠のく`);}
+    if(t.fear){ailAdd(me,"fear",t.fear,dur);msg.push(`竦んで 命中が <span class="m">${t.fear}</span> 遠のく`);}
     if(t.poison){ailAdd(me,"poison",t.poison,dur);msg.push(`毎ターン <span class="m">${t.poison}</span> の毒`);}
     if(t.dice){ailAdd(me,"shrink",t.dice,dur);msg.push(`攻撃ダイス <span class="m">−${t.dice}</span>`);}
     draw();fxOn(me,"magic");
