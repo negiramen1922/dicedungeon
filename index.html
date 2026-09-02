@@ -973,6 +973,14 @@ const NEWS=[
    "身を守る は 防+28 から <b>防+10</b> に。巨人が縮こまるほど硬くなるのは変でした",
    "<b>新しい状態「恐 怖」</b>と、<b>割合で上がる強化</b>を仕組みとして足しました",
  ]},
+ {id:"v0032e",tag:"bal",v:"α0.0032",d:"2026-09-02",n:"クイーンスパイダーが卵を産むようになりました",b:[
+   "<b>手を4つに絞りました。</b>大顎で噛みつく（3D 90%）・糸で絡める（<b>DEX −10 と 威力 −10%</b>）・糸で守る（DEF +10）・<b>産 卵</b>",
+   "<b>産卵で「蜘 蛛 の 卵」が 1〜2 個 置かれます。</b>卵は攻撃してきませんが、<b>2手ほどで割れてケイヴスパイダーになります</b>",
+   "<b>割れる前に潰せば、それきりで済みます。</b>柔らかい（HP 40）ので1〜2撃で割れます。母を殴り続けるか、卵を先に潰すかの選択になります",
+   "<b>産卵は、場に子蜘蛛と卵が合わせて1体以下のときにしか出ません。</b>放っておいて無限に増えることはありません",
+   "<b>HP が半分を切ると 腹 を 割 く。</b>一度だけ、ケイヴスパイダーを 1〜3 体 産み落とします",
+   "<b>巣に籠る（DEF +24）をやめました。</b>硬いだけで足踏みになっていたためです。母ひとりぶんの手応えは 60 から 49 に下がり、そのぶん子の数で押してきます",
+ ]},
  {id:"v0032c",tag:"up",v:"α0.0032",d:"2026-09-01",n:"構えが 殴られるまで残るようになりました",b:[
    "<b>防御して身を固めたのに誰も殴ってこなかった回、その構えは無駄になっていました。</b>自分の手番が来るたび、必ず解けていたためです",
    "<b>殴られるまで残るようになりました。</b>相手が守りや溜めに回った回でも、構えた1手が無駄になりません",
@@ -987,7 +995,7 @@ const NEWS=[
  ]},
  {id:"v0032",tag:"up",v:"α0.0032",d:"2026-09-01",n:"ボスに段階と隙ができました",b:[
    "<b>ボスは HP が減ると別物になります。</b>行動表がまるごと入れ替わり、守りが薄くなるかわりに攻めが増えます",
-   "キングスライム <b>核が浮かぶ</b>（HP50%）／サイクロプス <b>隻眼が据わる</b>（45%）／クイーンスパイダー <b>腹を裂く</b>（50%）",
+   "キングスライム <b>核が浮かぶ</b>（HP50%）／サイクロプス <b>隻眼が据わる</b>（45%）／クイーンスパイダー <b>腹を割く</b>（50%）",
    "エルダートレント <b>年輪が燃える</b>（40%・もう傷を塞ぎません）／ゲートガーディアン <b>核を剥き出す</b>（50%）",
    "<b>ディープワンだけ二段あります。</b><b>鱗が裂ける</b>（60%）で臣を呼びはじめ、<b>王が立つ</b>（25%）で守りを捨てます",
    "<b>大振りの技を振ったあと、ボスは無防備になります。</b>防御が落ち、当てやすくなります。予告に「<b>振ったあと 隙ができる</b>」と出るので、<b>待って叩けます</b>",
@@ -1786,6 +1794,13 @@ const PXFOE={
   [5,4,2,2,"#c9a227"],[9,4,2,2,"#c9a227"],[6,5,1,1,"#14160f"],[10,5,1,1,"#14160f"],
   [6,6,1,1,"#b1544a"],[9,6,1,1,"#b1544a"],
   [3,8,10,9,"#5c4666"],[4,10,8,6,"#4a3a52"],[6,12,4,3,"#e0d0a8"]],
+ qegg:[[7,0,2,2,"#b8b2a0"],
+  [6,2,4,1,"#d8d2be"],[5,3,6,2,"#e4dfcc"],
+  [4,5,8,9,"#e4dfcc"],[10,5,2,9,"#cfc8b2"],
+  [5,14,6,2,"#d8d2be"],[6,16,4,1,"#c9c3b2"],
+  [6,7,4,1,"#3a2c40"],[5,8,6,3,"#3a2c40"],[6,11,4,1,"#3a2c40"],
+  [6,9,1,1,"#b1544a"],[9,9,1,1,"#b1544a"],
+  [4,6,8,1,"#f2eee0"],[4,12,8,1,"#f2eee0"]],
  gant:[[4,0,1,3,"#2a2018"],[11,0,1,3,"#2a2018"],
   [5,3,6,5,"#4a3a2a"],
   [6,4,2,2,"#c9a227"],[9,4,2,2,"#c9a227"],[6,5,1,1,"#14160f"],[10,5,1,1,"#14160f"],
@@ -3402,17 +3417,22 @@ const FOE={
          {n:"天井へ退く",k:"guard",block:16,w:2}]},
  qspider:{n:"クイーンスパイダー",d:"掘削跡の最奥に巣を構える母蜘蛛。人の背丈ほどの腹には数えきれない子が詰まっていて、傷を負うほど多く産み落とす。ここがゴブリンより先に住んでいた。",mat:"silk",weak:"slash",resist:"blunt",art:"qspider",snd:"slash",
    HP:420,STR:54,DEF:16,DEX:22,rank:"front",scout:2,
-   acts:[{n:"大顎で貫く",k:"atk",dice:2,pct:30,w:5},
-         {n:"巣を揺らす",k:"atk",dice:4,pct:-10,open:{t:1},w:3},
-         {n:"子を放つ",k:"summon",who:"cspider",cd:5,open:{t:1},w:3},
-         {n:"糸で絡める",k:"hex",slow:12,curse:6,dur:2,w:2},
-         {n:"巣に籠る",k:"guard",block:24,w:2}],
-   phases:[{at:.5,n:"腹 を 裂 く",d:"腹の中の子を、傷ごと吐き出しはじめた",
-     def:-5,str:6,
-     acts:[{n:"大顎で貫く",k:"atk",dice:2,pct:55,w:5},
-           {n:"子を放つ",k:"summon",who:"cspider",cd:2,open:{t:1},w:5},
-           {n:"糸で絡める",k:"hex",slow:12,curse:6,dur:2,w:3},
-           {n:"巣 ご と 振 る",k:"atk",dice:4,pct:-10,open:{t:2},w:4}]}]},
+   acts:[{n:"大顎で噛みつく",k:"atk",dice:3,pct:-10,w:5},
+         {n:"糸で絡める",k:"hex",slow:10,weakPct:10,dur:2,w:3},
+         {n:"糸で守る",k:"guard",block:10,w:2},
+         {n:"産 卵",k:"summon",who:"qegg",num:2,cd:5,ifUnder:2,count:["cspider","qegg"],w:1}],
+   phases:[{at:.5,n:"腹 を 割 く",d:"腹の皮が裂け、抱えていたものが零れ落ちた",
+     acts:[{n:"大顎で噛みつく",k:"atk",dice:3,pct:-10,w:5},
+           {n:"糸で絡める",k:"hex",slow:10,weakPct:10,dur:2,w:3},
+           {n:"糸で守る",k:"guard",block:10,w:2},
+           {n:"産 卵",k:"summon",who:"qegg",num:2,cd:5,ifUnder:2,count:["cspider","qegg"],w:1},
+           {n:"腹 を 割 く",k:"summon",who:"cspider",num:3,cd:0,hidden:true,w:0}],
+     forceAct:"腹 を 割 く"}]},
+ qegg:{n:"蜘 蛛 の 卵",d:"クイーンスパイダーが糸で吊るした卵嚢。薄い殻ごしに、中のものが身をよじっているのが見える。割れてしまう前なら、叩けばそれきりで済む。",mat:"silk",weak:"slash",art:"qegg",snd:"slash",
+   HP:40,STR:1,DEF:2,DEX:6,rank:"front",scout:1,
+   acts:[{n:"う ご め く",k:"idle",d:"殻の中で、何かが向きを変えた",seq:1,w:0},
+         {n:"殻 が き し む",k:"idle",d:"表面に細い筋が走った",seq:2,w:0},
+         {n:"孵 る",k:"hatch",who:"cspider",seq:3,w:0}]},
  bigbat:{n:"オオコウモリ",d:"洞窟や遺跡の暗がりに、逆さまに下がって眠る大蝙蝠。灯りを嫌い、近づいた者の血を吸う。翼の膜は薄く丈夫で、防具の裏地にちょうどいい。",mat:"wing",weak:"light",resist:"pierce",elem:"dark",art:"bigbat",snd:"slash",HP:98,STR:33,DEF:6,DEX:42,rank:"front",scout:6,
    acts:[{n:"血を吸う",k:"atk",dice:3,drain:.5,w:6},
          {n:"かく乱する",k:"buff",pow:8,w:2}]},
@@ -3833,6 +3853,9 @@ function chooseTele(f){
     if(a.k==="summon"){
       if(f.sumUsed&&a.once)return false;
       if(f.sumCd>0)return false;
+      /* すでに子が出ているなら呼ばない（数えるのは count、既定は呼ぶ相手） */
+      if(a.ifUnder){const ks=a.count||[a.who];
+        if(alive().filter(x=>x.isFoe&&ks.includes(x.key)).length>=a.ifUnder)return false;}
       if(a.alone&&alive().filter(x=>x!==me).length>1)return false;
       /* 前列が満杯でも、後列が空いていれば呼べる */
       return aliveIn("front").length<3
@@ -3877,16 +3900,20 @@ function telePreview(f,tt){
   if(t.k==="cheer")return {txt:"▲ "+t.n,
     sub:`前列すべての威力 ${t.pctUp?`+${t.pctUp}%　${(t.dur||1)+1}ターン`:`+${t.pow}`}`,danger:false};
   if(t.k==="summon")return {txt:"✚ "+t.n,
-    sub:`${FOE[t.who].n} を 1〜3 体 呼ぶ`,danger:true};
+    sub:`${FOE[t.who].n} を 1〜${t.num||3} 体 呼ぶ`,danger:true};
   if(t.k==="regen")return {txt:"✚ "+t.n,sub:`自分の HP を ${t.heal} 回復する`,danger:false};
   if(t.k==="hex")return {txt:"✦ "+t.n,
     sub:[t.curse?`こちらのDEF −${t.curse}`:"",t.weak?`こちらの威力 −15%`:"",
+      t.weakPct?`こちらの威力 −${t.weakPct}%`:"",
       t.slow?`こちらのDEX −${t.slow}`:"",t.blind?`こちらの命中閾値 +${t.blind}`:"",
       t.fear?`恐 怖　こちらの命中閾値 +${t.fear}`:"",
       t.poison?`毎ターン ${t.poison} の毒`:""]
       .filter(Boolean).join("　")+
       `　${(t.dur||2)+1}ターン`+(t.dice?`　＋ ${t.dice}d6 の侵蝕`:""),danger:true};
   if(t.k==="veil")return {txt:"◈ "+t.n,sub:`前列すべてに DEF +${t.block}`,danger:false};
+  if(t.k==="idle")return {txt:"◦ "+t.n,sub:t.d||"",danger:false};
+  if(t.k==="hatch")return {txt:"✚ "+t.n,
+    sub:`<span style="color:#e0b83a">${FOE[t.who].n} が出てくる</span>　割れる前に潰せる`,danger:true};
   if(t.k==="grow")return {txt:"▲ "+t.n,
     sub:`最大HP +${Math.round(t.hp*depthMul())}`+(t.pow?`　威力 +${t.pow}`:"")+
       `　膨れる前に倒せば これは起きない`,danger:false};
@@ -3947,6 +3974,8 @@ function actIcon(t){
   if(t&&t.k==="hex")return {g:"✦",c:"hex"};
   if(t&&t.k==="regen")return {g:"✚",c:"buf"};
   if(t&&t.k==="summon")return {g:"✚",c:"hex"};
+  if(t&&t.k==="hatch")return {g:"✚",c:"hex",n:"孵る"};
+  if(t&&t.k==="idle")return {g:"◦",c:"me",n:"待ち"};
   if(!t)return {g:"…",c:"me",n:"—"};
   if(t.k==="atk")return {g:"⚔",c:"atk",n:"攻撃"};
   if(t.k==="guard"||t.k==="veil")return {g:"◈",c:"def",n:"防御"};
@@ -5276,6 +5305,7 @@ async function enemyAct(f){
     const dur=t.dur||2, msg=[];
     if(t.curse){ailAdd(me,"break",t.curse,dur);msg.push(`DEF <span class="m">−${t.curse}</span>`);}
     if(t.weak){ailAdd(me,"weakp",t.weak*15,dur);msg.push(`威力 <span class="m">−${t.weak*15}%</span>`);}
+    if(t.weakPct){ailAdd(me,"weakp",t.weakPct,dur);msg.push(`威力 <span class="m">−${t.weakPct}%</span>`);}
     if(t.slow){ailAdd(me,"slow",t.slow,dur);msg.push(`DEX <span class="m">−${t.slow}</span>`);}
     if(t.blind){ailAdd(me,"blur",t.blind,dur);msg.push(`命中が <span class="m">${t.blind}</span> 遠のく`);}
     if(t.fear){ailAdd(me,"fear",t.fear,dur);msg.push(`竦んで 命中が <span class="m">${t.fear}</span> 遠のく`);}
@@ -5286,6 +5316,25 @@ async function enemyAct(f){
     log(`<span class="b">${f.name}</span> の <span class="c">${t.n}</span>　`+
       (msg.length?msg.join("　")+`　<span class="s">（${dur+1}ターン）</span>`:"効き目がなかった"));
     await wait(620);
+  }else if(t.k==="idle"){
+    /* 卵のように、ただ場に在るだけの相手。手番は使うが何もしない */
+    draw();fxOn(f,"charge");
+    log(`<span class="b">${f.name}</span>　<span class="s">${t.d||"は じっとしている"}</span>`);
+    await wait(520);
+  }else if(t.k==="hatch"){
+    /* 割れて中身が出る。殻そのものは消え、同じ立ち位置を中身が引き継ぐ */
+    const dm=depthMul(), base=FOE[t.who], hp=Math.round(base.HP*dm);
+    const nf={...base,id:foes.length,key:t.who,
+      name:base.n+" "+"ABCDEF"[foes.filter(x=>x.key===t.who).length],
+      maxHP:hp,HP:hp,STR:Math.round(base.STR*(1+(dm-1)*0.6)),
+      block:0,buffs:[],ail:[],stun:false,isFoe:true,rank:f.rank,
+      tele:null,next:null,lastAid:null,turn:0,sumCd:0,sumUsed:false};
+    f.HP=0;                                   // 殻は割れて残らない
+    nf.tele=chooseTele(nf);nf.next=chooseTele(nf);
+    foes.push(nf);queue.push(nf);
+    draw();drawOrder();fxOn(nf,"charge");SFX.found();
+    log(`<span class="c">${f.name}</span> が割れ、<span class="b">${nf.name}</span> が這い出した`);
+    await wait(700);
   }else if(t.k==="veil"){
     aliveIn("front").forEach(x=>{x.block+=t.block;});
     draw();aliveIn("front").forEach(x=>{fxOn(x,"guard");popOn(x,"+"+t.block,"blk");});SFX.open();
