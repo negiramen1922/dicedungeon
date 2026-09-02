@@ -973,6 +973,13 @@ const NEWS=[
    "身を守る は 防+28 から <b>防+10</b> に。巨人が縮こまるほど硬くなるのは変でした",
    "<b>新しい状態「恐 怖」</b>と、<b>割合で上がる強化</b>を仕組みとして足しました",
  ]},
+ {id:"v0032i",tag:"bal",v:"α0.0032",d:"2026-09-02",n:"ディープワンを組み直しました",b:[
+   "<b>手を4つにしました。</b>トライデント（3D 120%）・水 の 奔 流（5D 50%・<b>当たると DEF −15</b>）・水 の 膜（DEF +20）・大 海（4D 70%・<b>DEX −10 と DEF −8</b>）",
+   "<b>段階を二段から一段にしました。</b>HP が半分を切ると <b>深 き 者 の 呼 び 声</b>。鱗が青黒く染まり、<b>STR +30%・DEF +10・DEX +10</b>",
+   "<b>そこから3手番目にかならず トライデントの乱撃（10D 30%）。</b>数で押してくる一撃です",
+   "<b>臣を呼ぶ・臣を励ますはやめました。</b>連れているのは<b>サハギン1体だけ</b>になり、レイスはいなくなりました（どちらも都市の他の部屋には出ます）",
+   "<b>エルダートレントの供もドライアド1体だけになりました。</b>ウィスプはいなくなりました",
+ ]},
  {id:"v0032h",tag:"up",v:"α0.0032",d:"2026-09-02",n:"ゲートガーディアンが3体がかりになりました",b:[
    "<b>本体の左右に ガーディアンハンド が付きました。</b>拳は自分から殴ってきませんが、<b>本体を狙うと HP の多いほうの拳が割って入ります</b>",
    "<b>つまり、両の拳を壊すまで本体には一切届きません。</b>合計HPの 55% が拳で、残り 45% が本体です",
@@ -1020,7 +1027,7 @@ const NEWS=[
    "<b>ボスは HP が減ると別物になります。</b>行動表がまるごと入れ替わり、守りが薄くなるかわりに攻めが増えます",
    "キングスライム <b>核が浮かぶ</b>（HP50%）／サイクロプス <b>隻眼が据わる</b>（45%）／クイーンスパイダー <b>腹を割く</b>（50%）",
    "エルダートレント <b>森が花をつける</b>（50%）／ゲートガーディアン <b>拳が砕ける</b>（両の拳を壊したとき）",
-   "<b>ディープワンだけ二段あります。</b><b>鱗が裂ける</b>（60%）で臣を呼びはじめ、<b>王が立つ</b>（25%）で守りを捨てます",
+   "ディープワン <b>深き者の呼び声</b>（50%）",
    "<b>大振りの技を振ったあと、ボスは無防備になります。</b>防御が落ち、当てやすくなります。予告に「<b>振ったあと 隙ができる</b>」と出るので、<b>待って叩けます</b>",
    "段階に入るとボスの DEF も落ちます。押し切るのが速くなるぶん、受ける被害も 1.2〜1.4倍 になります",
  ]},
@@ -3669,23 +3676,17 @@ const FOE={
    HP:200,STR:1,DEF:20,DEX:1,rank:"front",scout:1,noAct:true,partOf:"gate",nm:["右","左"],
    acts:[{n:"動 か な い",k:"idle",d:"ただ そこに在る",w:1}]},
  deepone:{n:"ディープワン",d:"深みから現れ、魚人たちの王を名乗ったもの。魚人よりひと回り大きく、鱗の下に別の何かが透けて見える。守護核を持つが、それをどこで得たのかは誰も知らない。",mat:"core",weak:"bolt",resist:"water",elem:"water",art:"deepone",snd:"blunt",HP:820,STR:78,DEF:30,DEX:24,rank:"front",scout:6,
-   acts:[{n:"王の三叉槍",k:"atk",dice:3,pct:15,w:5},
-         {n:"潮を呼ぶ",k:"atk",dice:5,pct:-25,open:{t:1},w:3},
-         {n:"深みの呪い",k:"hex",curse:10,dur:2,w:2},
-         {n:"水の帳",k:"guard",block:26,w:2},
-         {n:"臣を励ます",k:"cheer",pow:18,w:2}],
-   phases:[{at:.6,n:"鱗 が 裂 け る",d:"鱗の下の 別の何かが 動きはじめた",
-     def:-8,str:6,
-     acts:[{n:"王の三叉槍",k:"atk",dice:3,pct:25,w:6},
-           {n:"潮を呼ぶ",k:"atk",dice:5,pct:-25,open:{t:1},w:3},
-           {n:"深みの呪い",k:"hex",curse:10,dur:2,w:2},
-           {n:"臣を呼ぶ",k:"summon",who:"sahagin",cd:4,w:3},
-           {n:"臣を励ます",k:"cheer",pow:18,w:2}]},
-    {at:.25,n:"王 が 立 つ",d:"名乗りをやめた。ここから先は ただの深みのもの",
-     def:-10,str:10,heal:.08,
-     acts:[{n:"深 淵 の 一 突",k:"atk",dice:2,pct:45,open:{t:2},w:5},
-           {n:"潮 に 沈 め る",k:"atk",dice:5,pct:-30,open:{t:1},w:4},
-           {n:"深みの呪い",k:"hex",curse:14,slow:10,dur:2,w:3}]}]},
+   acts:[{n:"トライデント",k:"atk",dice:3,pct:20,w:5},
+         {n:"水 の 奔 流",k:"atk",dice:5,pct:-50,ail:{curse:15,t:2},w:3},
+         {n:"水 の 膜",k:"guard",block:20,w:3},
+         {n:"大 海",k:"atk",dice:4,pct:-30,ail:{slow:10,curse:8,t:2},w:1}],
+   phases:[{at:.5,n:"深 き 者 の 呼 び 声",d:"鱗が青黒く染まり、禍々しくなる",
+     str:30,def:10,dex:10,
+     acts:[{n:"トライデント",k:"atk",dice:3,pct:20,w:5},
+           {n:"水 の 奔 流",k:"atk",dice:5,pct:-50,ail:{curse:15,t:2},w:3},
+           {n:"水 の 膜",k:"guard",block:20,w:3},
+           {n:"大 海",k:"atk",dice:4,pct:-30,ail:{slow:10,curse:8,t:2},w:1},
+           {n:"トライデントの乱撃",k:"atk",dice:10,pct:-70,seq:3}]}]},
 };
 
 
@@ -3904,6 +3905,7 @@ async function checkPhase(f){
   if(P.acts)f.acts=P.acts;
   if(P.def)f.DEF=Math.max(0,f.DEF+P.def);
   if(P.str)f.STR=Math.max(1,Math.round(f.STR*(1+P.str/100)));
+  if(P.dex)f.DEX=Math.max(1,f.DEX+P.dex);
   if(P.heal){f.HP=Math.min(f.maxHP,f.HP+Math.round(f.maxHP*P.heal));}
   f.turn=0;                                  /* seq を段階のはじめから数え直す */
   /* forceAct … その段階に入った瞬間、次の手をこれに決める。
@@ -6025,7 +6027,7 @@ const ENCS={
  w_ce1:{n:"蹄 の 音",list:["centaur"]},
  w_sd3:{n:"岩と木の声",list:["spriggan","dryad"]},
  w_sp2:{n:"ふたつの岩",list:["spriggan","spriggan"]},
- wb:{n:"エルダートレント",list:["elder","dryad","wisp"]},
+ wb:{n:"エルダートレント",list:["elder","dryad"]},
  s_bt:{n:"羽ばたく影",list:["bigbat"]},
  s_ws:{n:"水路の粘体",list:["wslime"]},
  ws1:{n:"満ちる水路",list:["wslime","wslime"]},
@@ -6122,7 +6124,7 @@ const ENCS={
  /* ボス */
  b1:{n:"クイーンスパイダー",list:["qspider","cspider","cspider"]},
  b2:{n:"ゲートガーディアン",list:["gate","ghand","ghand"]},
- b3:{n:"ディープワン",list:["deepone","sahagin","wraith"]},
+ b3:{n:"ディープワン",list:["deepone","sahagin"]},
  pb1:{n:"キングスライム",list:["kingslime","slime"]},
  pb2:{n:"サイクロプス",list:["cyclops","orc","mandragora"]},
 };
