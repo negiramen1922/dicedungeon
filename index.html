@@ -997,6 +997,14 @@ const NEWS=[
    "身を守る は 防+28 から <b>防+10</b> に。巨人が縮こまるほど硬くなるのは変でした",
    "<b>新しい状態「恐 怖」</b>と、<b>割合で上がる強化</b>を仕組みとして足しました",
  ]},
+ {id:"v0034e",tag:"up",v:"α0.0034",d:"2026-09-02",n:"状態異常に対する手ができました",b:[
+   "<b>これまで 状態異常を解く手は アンチポーション1つだけでした。</b>スキルは0、敵にいたっては解く手を持っていませんでした。デバフは22手も飛んでくるのに、こちらの答えが道具1つだけでした",
+   "<b>共通スキル 気 を 静 め る（MP2・再使用待ち2）。</b>状態異常を <b>1つ</b> 解きます。いちばん長く残っているものから",
+   "<b>道具 薬 草 の 束（一等・14金）。</b>状態異常を 1つ解きます。<b>レシピでも作れます</b>（香草×2 ＋ 粘液×1・10金）。アンチポーション（二等32金・全解除）が高くて序盤に手が無かったところを埋めます",
+   "<b>ゴブリンシャーマンが 祓 う を覚えました。</b>眷属ひとりの状態異常をすべて解きます。<b>こちらのデバフを撒く手に、はじめて意味が出ます</b>",
+   "<b>レイスが 弱りに食らいつく を覚えました。</b>状態異常を受けている相手には <b>威力 +40%</b>（1ヒット 69 → 104）。<b>デバフを放置する重さ</b>が出ます",
+   "<span class=\"s\">CON のような「デバフ耐性」の能力値は入れていません。持っているだけで何も決められないより、解く手・防ぐ手を増やすほうが遊びになると判断しました</span>",
+ ]},
  {id:"v0034d",tag:"bal",v:"α0.0034",d:"2026-09-02",n:"シールドが 最大HPの割合になりました",b:[
    "<b>敵の攻撃を割合（%）で書くようにしたのと同じく、シールドも「最大HPの n%」で書けるようにしました。</b>固定値でも書けるので、両方が混ぜて使えます",
    "<b>防御する … 最大HPの 9%。</b>Lv13 で 18 → <b>36</b> になります",
@@ -2647,7 +2655,7 @@ function itemKindIcon(k){
   if(it.made&&it.heal!==undefined&&it.mp===undefined&&!it.mpr)return "i_food";
   if(it.made)return "i_food";
   if(it.dmg)return "i_bomb";
-  if(it.cure)return "i_cure";
+  if(it.cure||it.cure1)return "i_cure";
   if(it.mp)return "i_mana";
   if(it.heal)return "i_potion";
   return "i_buff";
@@ -2925,6 +2933,8 @@ const RECIPES={
    need:{honey:2,carrot:1},d:"HP と MP を同時に戻す"},
  r_feast:{n:"沈 ん だ 街 の 宴",kind:"cook",make:"c_feast",cost:60,
    need:{spice:1,meat:2,fish:2},d:"HP 全快。威力も DEF も上がる"},
+ r_herbs:{n:"薬 草 の 束",kind:"cook",make:"herbs",cost:10,
+   need:{herb:2,gel:1},d:"香草を粘液で練り固める。噛めば痺れが引く"},
  r_hipot:{n:"ハイポーションの製法",kind:"cook",make:"c_hipot",cost:50,
    need:{kgel:1,gel:4},d:"王の粘液を薄めて煮詰める"},
  /* ---- 鍛冶 ----
@@ -3011,6 +3021,8 @@ const ITEMS={
    heal:.70,mpr:.50,anywhere:true,tier:3,made:true},
  anti:{n:"アンチポーション",d:"自分の状態異常をすべて解く（毒・火傷・麻痺・盲目・混乱も）",
    cost:32,cure:true,anywhere:true,tier:2},
+ herbs:{n:"薬 草 の 束",d:"自分の状態異常を 1 つ解く（いちばん長く残っているもの）",
+   cost:14,cure1:true,anywhere:true,tier:1},
 };
 const GEAR={
  wep:{
@@ -3246,6 +3258,8 @@ const REW={
     d:"シールド 最大HPの 8%（2ターンのあいだ 毎ターン）"},
    {id:"a4",n:"集 中",kind:"focus",mp:2,cd:3,thr:1,dur:1,
     d:"命中閾値 −1（2ターンのあいだ）"},
+   {id:"a5",n:"気 を 静 め る",kind:"cure",mp:2,cd:2,cure1:true,
+    d:"自分の状態異常を 1 つ解く（いちばん長く残っているもの）"},
   ],
   knight:[
    {id:"ak1",n:"盾 構",kind:"guard",mp:3,cd:2,blockPct:12,
@@ -3713,6 +3727,7 @@ const FOE={
          {n:"群 れ る",k:"cheer",pctUp:12,dur:2,w:2,needFront:true}]},
  wraith:{n:"レ イ ス",d:"沈んだ日の恨みだけが形を保っているもの。触れられたところから体温が失われ、しばらく指先が戻らない。残滓は冷たいままで、決して温まらない。",mat:"residue",weak:"light",resist:"slash",elem:"dark",art:"wraith",snd:"magic",HP:165,STR:44,DEF:10,DEX:30,rank:"back",scout:6,
    acts:[{n:"呪いを注ぐ",k:"atk",dice:2,pct:20,w:5},
+         {n:"弱りに食らいつく",k:"atk",dice:2,pct:20,vsAil:40,w:3},
          {n:"仲間を蝕む",k:"cheer",pow:14,w:3},
          {n:"呪 縛",k:"hex",curse:7,dur:2,w:3},
          {n:"霧に紛れる",k:"veil",block:10,w:2}]},
@@ -3849,7 +3864,8 @@ const FOE={
 
  /* ===== ボス ===== */
  bshaman:{n:"ゴブリンシャーマン",d:"群れの奥に据えられた老いたゴブリン。骨と羽を並べて何かを唱えると、前の者たちが目に見えて奮い立つ。自分では前に出ないので、後ろに残っているうちは群れが崩れない。",mat:"ear",weak:"pierce",resist:"dark",elem:"dark",art:"bshaman",snd:"magic",HP:380,STR:50,DEF:15,DEX:26,rank:"back",scout:6,
-   acts:[{n:"眷属を鼓舞する",k:"cheer",pow:16,dur:1,seq:1},
+   acts:[{n:"祓 う",k:"cleanse",w:3},
+         {n:"眷属を鼓舞する",k:"cheer",pow:16,dur:1,seq:1},
          {n:"力を奪う",k:"hex",weak:1,dur:2,seq:2},
          {n:"呪いの奔流",k:"atk",dice:3,pct:10,w:4,solo:true},
          {n:"呪 縛",k:"hex",curse:7,dur:2,w:3,solo:true},
@@ -4182,6 +4198,9 @@ function chooseTele(f){
     if(a.k==="cheer")return aliveIn("front").length>0;
     /* 癒やす手は、深く傷ついた味方がいるときだけ出す。
        元気な相手に撃って手番を捨てられると、置いた意味がなくなる。 */
+    /* 祓う手は、状態異常を背負った味方がいるときだけ出す */
+    if(a.k==="cleanse")
+      return alive().some(x=>x!==f&&(x.ail||[]).length>0);
     if(a.k==="mend"){
       if(a.once&&f.mendUsed)return false;
       if(a.max&&(f.mendN||0)>=a.max)return false;
@@ -4217,7 +4236,8 @@ function telePreview(f,tt){
   const t=tt||f.tele;
   if(!t)return {txt:"—",sub:"",danger:false};
   if(t.k==="atk"){
-    let per=perHit(powOf(f,{pct:t.pct||0,pow:t.pow||0}),defOf(me));
+    const b0=(t.vsAil&&(me.ail||[]).length)?t.vsAil:0;
+    let per=perHit(powOf(f,{pct:(t.pct||0)+b0,pow:t.pow||0}),defOf(me));
     const far=(f.rank==="front"&&me.rank==="back");
     if(far)per=Math.max(1,Math.round(per*0.6));
     const thr=threshold(f,me,{});
@@ -4229,6 +4249,7 @@ function telePreview(f,tt){
         Math.max(0,R.hi-sh)*t.dice}`+
         (t.drain?`　／　与えた分の ${Math.round(t.drain*100)}% を吸う`:"")+
         (t.open?`　／　<span style="color:#e0b83a">振ったあと 隙ができる</span>`:"")+
+        (t.vsAil?`　／　<span style="color:#e0b83a">弱っている相手には 威力 +${t.vsAil}%</span>`:"")+
         (t.ail?`　／　当たると ${[t.ail.curse&&`DEF −${t.ail.curse}`,t.ail.slow&&`DEX −${t.ail.slow}`,
           t.ail.weak&&`威力 −${t.ail.weak}%`,t.ail.blind&&`命中 −${t.ail.blind}`,
           t.ail.poison&&`毒 ${t.ail.poison}`].filter(Boolean).join("・")}`:"")+
@@ -4256,6 +4277,8 @@ function telePreview(f,tt){
   if(t.k==="veil")return {txt:"◈ "+t.n,
     sub:`前列すべてに シールド ${t.block?t.block:`最大HPの ${t.blockPct}%`}`,danger:false};
   if(t.k==="idle")return {txt:"◦ "+t.n,sub:t.d||"",danger:false};
+  if(t.k==="cleanse")return {txt:"✦ "+t.n,
+    sub:`味方ひとりの 状態異常を すべて解く`,danger:true};
   if(t.k==="mend")return {txt:"✚ "+t.n,
     sub:(t.full?`<span style="color:#e0b83a">味方ひとりの HP を すべて 戻す</span>`
                :`味方ひとりの HP を ${t.heal} 戻す`)+
@@ -4329,6 +4352,7 @@ function actIcon(t){
   if(t&&t.k==="hatch")return {g:"✚",c:"hex",n:"孵る"};
   if(t&&t.k==="heal")return {g:"✚",c:"buf",n:"癒し"};
   if(t&&t.k==="mend")return {g:"✚",c:"buf",n:"癒し"};
+  if(t&&t.k==="cleanse")return {g:"✦",c:"buf",n:"祓い"};
   if(t&&t.k==="idle")return {g:"◦",c:"me",n:"待ち"};
   if(!t)return {g:"…",c:"me",n:"—"};
   if(t.k==="atk")return {g:"⚔",c:"atk",n:"攻撃"};
@@ -5375,6 +5399,18 @@ async function resolvePlayer(a,target){
       log(`<span class="a">${me.name}</span> は狙いを定めた（命中閾値 −${s.thr}　${(s.dur||1)+1}ターン）`);
       await wait(650);}
     else if(s.kind==="buff"){me.half=true;draw();fxOn(me,"charge");popSelf("半減","blk");SFX.buff();await wait(650);}
+    else if(s.kind==="cure"){
+      const one=(me.ail||[]).slice().sort((a,b)=>b.t-a.t)[0];
+      if(one){
+        me.ail=me.ail.filter(a=>a!==one);draw();fxOn(me,"charge");
+        popSelf(AIL[one.k].n,"blk");SFX.found();
+        log(`<span class="a">${me.name}</span> は息を整えた　<span class="m">${AIL[one.k].n}</span> が解けた`);
+      }else{
+        draw();popSelf("変化なし","blk");
+        log(`<span class="a">${me.name}</span> は息を整えた　解くべきものはなかった`);
+      }
+      await wait(650);
+    }
     else if(s.kind==="heal"){
       const h=Math.min(Math.round(me.maxHP*s.heal),me.maxHP-me.HP);
       me.HP+=h;draw();fxOn(me,"charge");popSelf("+"+h,"heal");SFX.found();
@@ -5598,7 +5634,12 @@ async function enemyAct(f){
   };
   if(t.k==="atk"){
     const reach=(f.rank==="front"&&me.rank==="back");   // 後衛には手が届きにくい
-    let per=perHit(powOf(f,{pct:t.pct||0,pow:t.pow||0}),defOf(me));
+    /* vsAil … 相手が状態異常を背負っているときだけ 威力が乗る。
+       デバフを放置する重さを作るための札 */
+    const bonus=(t.vsAil&&(me.ail||[]).length)?t.vsAil:0;
+    if(bonus)log(`<span class="b">${f.name}</span> は弱ったところを狙っている　`+
+      `<span class="m">威力 +${bonus}%</span>`);
+    let per=perHit(powOf(f,{pct:(t.pct||0)+bonus,pow:t.pow||0}),defOf(me));
     if(reach)per=Math.max(1,Math.round(per*0.6));
     const rolls=[];for(let i=0;i<t.dice;i++)rolls.push(r6());
     const thr=threshold(f,me,{});
@@ -5773,6 +5814,19 @@ async function enemyAct(f){
     log(`<span class="b">${f.name}</span> の <span class="c">${t.n}</span>　`+
       (msg.length?msg.join("　")+`　<span class="s">（${dur+1}ターン）</span>`:"効き目がなかった"));
     await wait(620);
+  }else if(t.k==="cleanse"){
+    /* 味方ひとりの状態異常を解く。いちばん多く背負っている者を選ぶ */
+    const c=alive().filter(x=>x!==f&&(x.ail||[]).length)
+      .sort((a,b)=>(b.ail||[]).length-(a.ail||[]).length)[0];
+    if(!c){log(`<span class="b">${f.name}</span> が祓ったが、祓うものが無かった`);await wait(450);}
+    else{
+      f.lastAid=t.n;
+      const had=[...new Set(c.ail.map(a=>AIL[a.k].n))];
+      c.ail=[];draw();fxOn(c,"charge");popOn(c,"解 除","blk");SFX.found();
+      log(`<span class="b">${f.name}</span> の <span class="c">${t.n}</span>　`+
+        `<span class="b">${c.name}</span> の <span class="m">${had.join("・")}</span> が解けた`);
+      await wait(700);
+    }
   }else if(t.k==="mend"){
     /* 味方ひとりを癒やす。いちばん深く傷ついている者を選ぶ。
        full なら満タンまで戻す。once なら1戦に1回だけ。 */
@@ -8971,6 +9025,18 @@ async function doItem(k,tgt){
   if(it.def){
     me.tmpDef=(me.tmpDef||0)+it.def;draw();fxOn(me,"guard");popSelf("防御+"+it.def,"blk");SFX.open();
     log(`<span class="a">${it.n}</span>　この戦闘の間 防御 <span class="m">+${it.def}</span>`);
+  }
+  if(it.cure1){
+    /* いちばん長く残っているものを1つだけ解く。序盤の答えとして安い */
+    const one=(me.ail||[]).slice().sort((a,b)=>b.t-a.t)[0];
+    if(one){
+      me.ail=me.ail.filter(a=>a!==one);draw();fxOn(me,"charge");
+      popSelf(AIL[one.k].n,"blk");SFX.found();
+      log(`<span class="a">${it.n}</span> を使った　<span class="m">${AIL[one.k].n}</span> を解いた`);
+    }else{
+      draw();popSelf("変化なし","blk");
+      log(`<span class="a">${it.n}</span> を使った　解くべきものはなかった`);
+    }
   }
   if(it.cure){
     const had=(me.ail||[]).map(a=>AIL[a.k].n);
