@@ -341,11 +341,35 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .eltag{display:inline-block;font-size:9px;letter-spacing:0;border:1px solid;
   padding:0 4px;margin:0 3px;line-height:1.5;vertical-align:1px}
 .celrow{display:flex;gap:3px;justify-content:center;margin-top:2px}
-.ailb{display:inline-flex;align-items:center;gap:1px;border:1px solid;
+.ailb{display:inline-flex;align-items:center;gap:2px;border:1px solid;
   padding:1px 3px 1px 2px;margin:1px;background:#14160f;line-height:1}
-.ailb b{font-size:9px;font-family:"DotGothic16",ui-monospace,monospace;letter-spacing:0}
-.ailb i{font-size:7px;font-style:normal;color:#6f7a63;letter-spacing:0;
+.ailb b{font-size:10px;font-family:"DotGothic16",ui-monospace,monospace;letter-spacing:0}
+.ailb i{font-size:8px;font-style:normal;color:#c9c3b2;letter-spacing:0;
+  background:#2a2c22;padding:0 2px;border-radius:2px;
   font-family:"DotGothic16",ui-monospace,monospace}
+/* 押したときに出る「効いているもの」の一覧 */
+.stlist{display:flex;flex-direction:column;gap:2px;margin:4px 0}
+.strow{display:grid;grid-template-columns:16px 74px 68px 74px 1fr;align-items:center;
+  gap:6px;font-size:11px;letter-spacing:0;padding:2px 4px;background:#191c14;
+  border-left:2px solid #3a3f30}
+.strow.good{border-left-color:#8fa261} .strow.bad{border-left-color:#b1544a}
+.strow .si{display:flex;align-items:center}
+.strow b{font-size:11px}
+.strow .sv{font-family:"DotGothic16",ui-monospace,monospace;font-size:11px}
+.strow .st{font-size:10px;color:#9aa08c;font-family:"DotGothic16",ui-monospace,monospace}
+.strow .sd{font-size:10px;color:#6f7a63}
+.stnone{font-size:11px;color:#6f7a63;margin:4px 0}
+.thrrow{display:grid;grid-template-columns:auto 120px 1fr;gap:8px;align-items:center}
+.thrbig{font-size:30px;line-height:1;color:#c9a227;
+  font-family:"DotGothic16",ui-monospace,monospace}
+.thrnm{font-size:10px;color:#9aa08c;letter-spacing:0;line-height:1.4}
+.thrnm b{color:#c9c3b2;font-size:12px}
+.thrwhy{font-size:10px;color:#6f7a63;letter-spacing:0;line-height:1.6}
+@media(max-width:640px){ .thrrow{grid-template-columns:auto 1fr} .thrwhy{grid-column:1/-1} }
+@media(max-width:640px){
+  .strow{grid-template-columns:16px 1fr auto auto;row-gap:0}
+  .strow .sd{display:none}
+}
 .celrow{display:flex;gap:1px;justify-content:center;flex-wrap:wrap;margin-top:2px}
 .elw,.elr{font-size:8px;letter-spacing:0;border:1px solid;padding:0 3px;line-height:1.5}
 .elw{color:#e0a05a;border-color:#e0a05a}
@@ -972,6 +996,14 @@ const NEWS=[
    "<b>HP が半分を切ると 大 咆 哮 を上げます。</b>3ターンのあいだ 威力が 30% 上がります。前列の仲間にも乗ります",
    "身を守る は 防+28 から <b>防+10</b> に。巨人が縮こまるほど硬くなるのは変でした",
    "<b>新しい状態「恐 怖」</b>と、<b>割合で上がる強化</b>を仕組みとして足しました",
+ ]},
+ {id:"v0033e",tag:"up",v:"α0.0033",d:"2026-09-02",n:"効いているものが見えるようになりました",b:[
+   "<b>いま何が効いているのか、盤のどこにも出ていないものがありました。</b>狙い・纏い・獣の力・気迫・金の力・持続の構え・反撃・疾走・誓い の9つは、効いているのに札が出ていませんでした",
+   "<b>残りターン数も出ます。</b>これまで状態異常にしか付いておらず、<b>威力アップなどの強化には残り何ターンか出ていませんでした</b>",
+   "<b>装備・状態 の「ステータス」に <span class=\"c\">効 い て い る も の</span> が付きました。</b>名前・効き目・残りターン・何が起きるか を字で読めます",
+   "<b>同じところに <span class=\"c\">命 中 閾 値</span> も付きました。</b>相手ごとに「<b>いくつ以上で当たるか</b>」と「<b>当たる率</b>」を大きく出し、<b>その数字を何がいくつ動かしているか</b>（基本 +4／格闘 −1／相手の速さ +2 …）を並べます",
+   "<b>敵を押したときにも同じ一覧が出ます。</b>DEF が下がっているのか、威力が上がっているのか、あと何ターンなのかが分かります",
+   "<span class=\"s\">数字の効き目はどこも変えていません。見えていなかったものを出しただけです</span>",
  ]},
  {id:"v0033d",tag:"fix",v:"α0.0033",d:"2026-09-02",n:"索敵に負けても先に動けることがありました",b:[
    "<b>「こちらが出遅れた」と出ているのに、こちらの手番から始まることがありました。</b>先手・後手が入れ替わるのは <b>片方だけが成功したとき</b>だけだったためです",
@@ -2664,23 +2696,72 @@ function badge(icon,label,color,num,turns){
     `${icon}${num!==undefined&&num!==null&&num!==""?`<b style="color:${color}">${num}</b>`:""}`+
     `${turns!==undefined?`<i>${turns}</i>`:""}</span>`;
 }
-function ailText(u){
-  const out=[];
+/* ===== 効いているもの、を一か所で数える =====
+   盤の小さな札（ailText）と、押したときの一覧（ailList）は 同じここから作る。
+   前は札のほうにしか無い状態がいくつもあり
+   （狙い・纏い・獣の力・気迫・金の力・持続の構え・反撃・疾走・誓い）、
+   効いているのに画面のどこにも出ないものがあった。
+   残りターン数も、前は状態異常にしか出ていなかった。            */
+function stateRows(u){
+  const R=[];
   (u.ail||[]).forEach(a=>{
     const A=AIL[a.k];
-    out.push(badge(ailIcon(a.k),A.n,A.c,(a.k==="palsy"?"":a.v),a.t+1));
+    R.push({icon:ailIcon(a.k),n:A.n,c:A.c,good:false,d:A.d,
+      v:(a.k==="palsy"?"":(a.k==="weakp"?`−${a.v}%`:`−${a.v}`)),t:a.t+1});
   });
-  /* 有利な状態も同じ形で並べる */
   if(u===me){
-    if(me.block)out.push(badge(ailIcon("up_def"),"防御","#8fd0ff",me.block));
-    if(me.half)out.push(badge(ailIcon("up_half"),"半減","#9fd8ff",""));
-    if(me.tmpPow)out.push(badge(ailIcon("up_pow"),"威力","#ff8b5a",me.tmpPow));
-    if(me.tmpDef)out.push(badge(ailIcon("up_def"),"防御","#8fd0ff",me.tmpDef));
+    if(me.block)R.push({icon:ailIcon("up_def"),n:"構 え",c:"#8fd0ff",good:true,
+      v:"+"+me.block,d:"1ヒットごとの軽減。殴られるまで残る"});
+    if(me.holdDef)R.push({icon:ailIcon("up_def"),n:"持続の構え",c:"#8fd0ff",good:true,
+      v:"+"+me.holdDef.v,t:me.holdDef.t+1,d:"手番のはじめに構えが戻る"});
+    if(me.half)R.push({icon:ailIcon("up_half"),n:"見 切 り",c:"#9fd8ff",good:true,
+      v:"",d:"次に受けるダメージが半分になる"});
+    if(me.tmpPow)R.push({icon:ailIcon("up_pow"),n:"威 力",c:"#ff8b5a",good:true,
+      v:"+"+me.tmpPow,d:"この戦闘のあいだ 威力が上がる"});
+    if(me.tmpDef)R.push({icon:ailIcon("up_def"),n:"防 御",c:"#8fd0ff",good:true,
+      v:"+"+me.tmpDef,d:"この戦闘のあいだ DEF が上がる"});
+    if(me.selfPow)R.push({icon:ailIcon("up_pow"),n:"気 迫",c:"#ff8b5a",good:true,
+      v:"+"+me.selfPow.v+"%",t:me.selfPow.t+1,d:"威力が割合で上がる"});
+    if(me.goldPow)R.push({icon:ailIcon("up_pow"),n:"金 の 力",c:"#e9c46a",good:true,
+      v:"+"+me.goldPow.v+"%",t:me.goldPow.t+1,d:"持っている金貨のぶん 威力が上がる"});
+    if(me.beast)R.push({icon:ailIcon("up_pow"),n:"獣 の 力",c:"#d98f3f",good:true,
+      v:(me.beast.pow?`威力 +${me.beast.pow}%`:"")+(me.beast.dex?`　速 +${me.beast.dex}`:""),
+      t:me.beast.t+1,d:"獣に近づく"});
+    if(me.focus)R.push({icon:ailIcon("up_dice"),n:"狙 い",c:"#c9a227",good:true,
+      v:"閾値 −"+me.focus.v,t:me.focus.t+1,d:"当たりやすくなる"});
+    if(me.coat)R.push({icon:ailIcon("up_pow"),n:"纏 い",c:(ELEM[me.coat.el]||{}).c||"#9fd8ff",good:true,
+      v:(ELEM[me.coat.el]||{}).n||"",t:me.coat.t+1,d:"攻撃に属性が乗る"});
+    if(me.counter)R.push({icon:ailIcon("up_def"),n:"反 撃",c:"#8fd0ff",good:true,
+      v:Math.round(me.counter*100)+"%",d:"殴られたぶんを返す。この手番だけ"});
+    if(me.dexUp)R.push({icon:ailIcon("up_dice"),n:"疾 走",c:"#8fa261",good:true,
+      v:"速 +"+me.dexUp,d:"この戦闘のあいだ 速さが上がる"});
+    if(me.vow&&me.vow.id!=null)R.push({icon:ailIcon("up_pow"),n:"誓 い",c:"#c96e8a",good:true,
+      v:"",d:"決めた相手しか狙えない"});
   }else{
-    if(u.block)out.push(badge(ailIcon("up_def"),"防御","#8fd0ff",u.block));
-    if(buffSum(u))out.push(badge(ailIcon("up_pow"),"威力","#ff8b5a",buffSum(u)));
+    if(u.block)R.push({icon:ailIcon("up_def"),n:"構 え",c:"#8fd0ff",good:true,
+      v:"+"+u.block,d:"1ヒットごとの軽減"});
+    if(buffSum(u))R.push({icon:ailIcon("up_pow"),n:"威 力",c:"#ff8b5a",good:true,
+      v:"+"+buffSum(u),t:(u.buffs||[]).reduce((a,b)=>Math.max(a,b.t),0),
+      d:"攻撃が重くなっている"});
   }
-  return out.join("");
+  return R;
+}
+/* 盤に出す小さな札 */
+function ailText(u){
+  return stateRows(u).map(r=>badge(r.icon,r.n,r.c,r.v,r.t)).join("");
+}
+/* 押したときに出す一覧。名前と効き目と残りターンを字で出す */
+function ailList(u){
+  const R=stateRows(u);
+  if(!R.length)return `<div class="stnone">効いているものは無い</div>`;
+  return `<div class="stlist">`+R.map(r=>
+    `<div class="strow ${r.good?"good":"bad"}">`+
+      `<span class="si">${r.icon}</span>`+
+      `<b style="color:${r.c}">${r.n}</b>`+
+      `<span class="sv" style="color:${r.c}">${r.v==null?"":r.v}</span>`+
+      `<span class="st">${r.t!=null?`あと ${r.t} ターン`:"—"}</span>`+
+      `<span class="sd">${r.d||""}</span>`+
+    `</div>`).join("")+`</div>`;
 }
 /* 手番のはじめに継続ダメージを与える。倒れたら true */
 async function ailDot(u){
@@ -4515,6 +4596,48 @@ function threshold(u,tgt,opt){
   }
   return Math.max(2,Math.min(6,t));
 }
+/* 命中閾値が いくつになっているのか、何がそれを動かしているのかを並べて返す。
+   threshold() と同じ順で同じものを足すこと。片方だけ直すと嘘の内訳が出る。 */
+function thrWhy(tgt,opt){
+  opt=opt||{};
+  const T=[{n:"基 本",v:4}];
+  const bl=ailSum(me,"blur"), fe=ailSum(me,"fear");
+  if(bl)T.push({n:"盲 目",v:bl});
+  if(fe)T.push({n:"恐 怖",v:fe});
+  const sk=skillHit(wepSkill());
+  if(sk)T.push({n:SK[wepSkill()].n.replace(/ /g,""),v:-sk});
+  if(tgt&&tgt.key){
+    const c=codexLv(tgt.key);
+    if(c>=2)T.push({n:"図鑑 3戦",v:-1});
+    if(c>=3)T.push({n:"図鑑 6戦",v:-1});
+  }
+  if(me.wep.type==="ranged"&&me.rank==="front")T.push({n:"近すぎる",v:1});
+  if(me.wep.type==="ranged"&&tgt&&tgt.rank==="back")T.push({n:"後列は遠い",v:1});
+  if(opt.thr)T.push({n:"技 の 補 正",v:-opt.thr});
+  if(me.focus)T.push({n:"狙 い",v:-me.focus.v});
+  if(passOn("rank")>0&&tgt&&tgt.maxHP<me.maxHP)T.push({n:"格 下",v:-1});
+  if(tgt){
+    const d=Math.floor(Math.max(1,tgt.DEX-ailSum(tgt,"slow"))/15);
+    if(d)T.push({n:"相手の速さ",v:d});
+  }
+  const raw=T.reduce((a,x)=>a+x.v,0);
+  return {parts:T,raw,thr:Math.max(2,Math.min(6,raw))};
+}
+/* 相手ごとの命中閾値を、内訳つきで大きく出す */
+function thrPanel(){
+  if(typeof foes==="undefined"||!foes||!foes.length)return "";
+  const live=alive().filter(f=>f!==me);
+  if(!live.length)return "";
+  return `<div class="msec">命 中 閾 値</div>`+live.map(f=>{
+    const w=thrWhy(f,{});
+    return `<div class="mitem thrrow">
+      <span class="thrbig">${w.thr}</span>
+      <span class="thrnm">以上で当たる<br><b>${Math.round((7-w.thr)/6*100)}%</b>　対 ${f.name}</span>
+      <span class="thrwhy">${w.parts.map(x=>
+        `${x.n} <b style="color:${x.v>0?"#b1544a":"#8fa261"}">${x.v>0?"+":""}${x.v}</b>`).join("　")}${
+        w.raw!==w.thr?`　<span style="color:#c9a227">（2〜6 に収めて ${w.thr}）</span>`:""}</span>
+    </div>`;}).join("");
+}
 /* 技能 40 を並として、25 ごとに命中閾値が 1 動く。
    技能 15 → −1（当てにくい）　40 → 0　65 → +1　90 → +2 */
 function skillHit(k){ return Math.round((skillOf(k)-40)/25); }
@@ -5275,7 +5398,8 @@ function foeModal(f){
       ${ek.resist?`　<span class="elr">耐 ${ELEM[ek.resist].n}</span>`:""}
     </div>
     ${FOE[f.key]&&FOE[f.key].d?`<div class="mitem cxlore">${FOE[f.key].d}</div>`:""}
-    ${ailText(f)?`<div class="mitem">${ailText(f)}</div>`:""}
+    <div class="msec">効 い て い る も の</div>
+    ${ailList(f)}
     <div class="msec">こ の タ ー ン</div>
     <div class="mitem ${p.danger?"warn":""}"><b>${p.txt}</b><br>
       <span class="s">${p.sub}</span></div>
@@ -8177,7 +8301,10 @@ function chBodyEq(){
 function chBodySt(){
   const c=lukCuts(me.LUK);
   const cap=me.DEX>=STATMAX.DEX;
-  return `<div class="msec">ス テ ー タ ス</div>
+  return `<div class="msec">効 い て い る も の</div>
+  ${ailList(me)}
+  ${thrPanel()}
+  <div class="msec">ス テ ー タ ス</div>
   <div class="mstat">
     <span>経験 <b>${me.exp}</b>/${expCap()}</span>
     <span>STR <b>${me.STR}</b></span>
