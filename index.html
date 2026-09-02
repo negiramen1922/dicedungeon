@@ -976,7 +976,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0033";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0034";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -996,6 +996,14 @@ const NEWS=[
    "<b>HP が半分を切ると 大 咆 哮 を上げます。</b>3ターンのあいだ 威力が 30% 上がります。前列の仲間にも乗ります",
    "身を守る は 防+28 から <b>防+10</b> に。巨人が縮こまるほど硬くなるのは変でした",
    "<b>新しい状態「恐 怖」</b>と、<b>割合で上がる強化</b>を仕組みとして足しました",
+ ]},
+ {id:"v0034",tag:"bal",v:"α0.0034",d:"2026-09-02",n:"敵も深さで速くなるようになりました",b:[
+   "<b>これまで敵は HP と 攻撃力だけが深さで伸びていて、素早さ（DEX）は伸びていませんでした。</b>こちらの DEX だけが青天井に育つので、<b>スカウトは木漏れ日の森の時点で 敵の命中閾値が全部 6 に張り付いていました</b>（当たる率 17%）",
+   "<b>敵の DEX も、HP や攻撃力と同じ倍率で深さで伸びます。</b>速い敵は 深いところでは本当に速く、遅い敵は遅いままです",
+   "<b>素早さの差が命中閾値を動かす幅を、15 きざみから 25 きざみにしました。</b>階段がゆるやかになり、伸ばしたぶんが天井で消えることが減ります",
+   "<b>ナイトとウィザードの当たりにくさは ほぼ変わりません</b>（43〜50% → 50%）。<b>アーチャーとスカウトは 17% から 23〜31% になります</b>。避けきる相手ではなくなりますが、それでも殴られる回数はナイトの半分ほどです",
+   "<b>そのかわり、遅い職は深いところで先に動きにくくなります。</b>水没都市でナイトが素早さ勝ちする部屋は 13% → 0% です（索敵に勝てば1ラウンド目は先に動けます）",
+   "<span class=\"s\">敵の攻撃の重さ（被/T）そのものは変えていません。当たる回数が変わります</span>",
  ]},
  {id:"v0033e",tag:"up",v:"α0.0033",d:"2026-09-02",n:"効いているものが見えるようになりました",b:[
    "<b>いま何が効いているのか、盤のどこにも出ていないものがありました。</b>狙い・纏い・獣の力・気迫・金の力・持続の構え・反撃・疾走・誓い の9つは、効いているのに札が出ていませんでした",
@@ -3986,6 +3994,10 @@ function makeFoes(){
       name:f.n+(same>1?" "+((f.nm&&f.nm[nth])||"ABC"[nth]):""),
       maxHP:Math.round(f.HP*dm),HP:Math.round(f.HP*dm),
       STR:Math.round(f.STR*(1+(dm-1)*0.6)),
+      /* DEX も深さで伸ばす。前は HP と STR だけ伸ばしていたので、
+         こちらの DEX だけが青天井に育ち、スカウトは木漏れ日の森の時点で
+         敵の命中閾値が全部 6 に張り付いていた（当たる率 17%）。 */
+      DEX:Math.round(f.DEX*(1+(dm-1)*0.6)),
       rank:(f.flex?(Math.random()<0.5?"front":"back"):f.rank),turn:0,
       block:0,buffs:[],ail:[],stun:false,isFoe:true,tele:null,lastAid:null,sumCd:0,sumUsed:false};
   });
@@ -4560,6 +4572,12 @@ function knownElem(key,kind){
   if(r&&r[kind])return r[kind];
   return codexLv(key)>=5?(FOE[key]&&FOE[key][kind])||null:null;
 }
+/* 素早さの差が命中閾値を動かす幅。
+   25 ごとに 1 動き、上限は +2。
+   前は 15 ごとで上限が無く、DEX が伸びる職（スカウト・アーチャー）だと
+   すぐ天井（6）に張り付いて、そこから DEX が伸びても何も変わらなかった。 */
+const DEXSTEP=25, DEXCAP=2;
+function dexStep(d){ return Math.max(0,Math.min(DEXCAP,Math.floor(d/DEXSTEP))); }
 function threshold(u,tgt,opt){
   opt=opt||{};
   let t=4;
@@ -4589,10 +4607,10 @@ function threshold(u,tgt,opt){
        差にすると自分の DEX がまた命中に効いてしまい、
        DEX から命中を剥がした意味が薄れるため。
        鈍足をかければ相手の DEX が下がるので、そのぶん当てやすくなる。 */
-    t+=Math.floor(Math.max(1,tgt.DEX-ailSum(tgt,"slow"))/15);
+    t+=dexStep(Math.max(1,tgt.DEX-ailSum(tgt,"slow")));
   }else{
     const td=(tgt===me)?dexOf():Math.max(1,tgt.DEX-ailSum(tgt,"slow"));
-    t+=Math.max(0,Math.floor((td-u.DEX)/15));            /* こちらの回避 */
+    t+=dexStep(td-u.DEX);                                /* こちらの回避 */
   }
   return Math.max(2,Math.min(6,t));
 }
@@ -4617,7 +4635,7 @@ function thrWhy(tgt,opt){
   if(me.focus)T.push({n:"狙 い",v:-me.focus.v});
   if(passOn("rank")>0&&tgt&&tgt.maxHP<me.maxHP)T.push({n:"格 下",v:-1});
   if(tgt){
-    const d=Math.floor(Math.max(1,tgt.DEX-ailSum(tgt,"slow"))/15);
+    const d=dexStep(Math.max(1,tgt.DEX-ailSum(tgt,"slow")));
     if(d)T.push({n:"相手の速さ",v:d});
   }
   const raw=T.reduce((a,x)=>a+x.v,0);
@@ -5626,6 +5644,7 @@ async function enemyAct(f){
         const nf={...base,id:foes.length,key:t.who,
           name:base.n+" "+"ABCDEF"[foes.filter(x=>x.key===t.who).length],
           maxHP:hp,HP:hp,STR:Math.round(base.STR*(1+(dm-1)*0.6)),
+          DEX:Math.round(base.DEX*(1+(dm-1)*0.6)),
           block:0,buffs:[],ail:[],stun:false,isFoe:true,owner:f.id,
           rank:aliveIn("front").length<3?"front":"back",
           tele:null,next:null,lastAid:null,turn:0,sumCd:0,sumUsed:false};
@@ -5709,6 +5728,7 @@ async function enemyAct(f){
     const nf={...base,id:foes.length,key:t.who,
       name:base.n+" "+"ABCDEF"[foes.filter(x=>x.key===t.who).length],
       maxHP:hp,HP:hp,STR:Math.round(base.STR*(1+(dm-1)*0.6)),
+      DEX:Math.round(base.DEX*(1+(dm-1)*0.6)),
       block:0,buffs:[],ail:[],stun:false,isFoe:true,rank:f.rank,
       tele:null,next:null,lastAid:null,turn:0,sumCd:0,sumUsed:false};
     f.HP=0;                                   // 殻は割れて残らない
