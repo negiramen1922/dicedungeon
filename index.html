@@ -341,11 +341,35 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .eltag{display:inline-block;font-size:9px;letter-spacing:0;border:1px solid;
   padding:0 4px;margin:0 3px;line-height:1.5;vertical-align:1px}
 .celrow{display:flex;gap:3px;justify-content:center;margin-top:2px}
-.ailb{display:inline-flex;align-items:center;gap:1px;border:1px solid;
+.ailb{display:inline-flex;align-items:center;gap:2px;border:1px solid;
   padding:1px 3px 1px 2px;margin:1px;background:#14160f;line-height:1}
-.ailb b{font-size:9px;font-family:"DotGothic16",ui-monospace,monospace;letter-spacing:0}
-.ailb i{font-size:7px;font-style:normal;color:#6f7a63;letter-spacing:0;
+.ailb b{font-size:10px;font-family:"DotGothic16",ui-monospace,monospace;letter-spacing:0}
+.ailb i{font-size:8px;font-style:normal;color:#c9c3b2;letter-spacing:0;
+  background:#2a2c22;padding:0 2px;border-radius:2px;
   font-family:"DotGothic16",ui-monospace,monospace}
+/* 押したときに出る「効いているもの」の一覧 */
+.stlist{display:flex;flex-direction:column;gap:2px;margin:4px 0}
+.strow{display:grid;grid-template-columns:16px 74px 68px 74px 1fr;align-items:center;
+  gap:6px;font-size:11px;letter-spacing:0;padding:2px 4px;background:#191c14;
+  border-left:2px solid #3a3f30}
+.strow.good{border-left-color:#8fa261} .strow.bad{border-left-color:#b1544a}
+.strow .si{display:flex;align-items:center}
+.strow b{font-size:11px}
+.strow .sv{font-family:"DotGothic16",ui-monospace,monospace;font-size:11px}
+.strow .st{font-size:10px;color:#9aa08c;font-family:"DotGothic16",ui-monospace,monospace}
+.strow .sd{font-size:10px;color:#6f7a63}
+.stnone{font-size:11px;color:#6f7a63;margin:4px 0}
+.thrrow{display:grid;grid-template-columns:auto 120px 1fr;gap:8px;align-items:center}
+.thrbig{font-size:30px;line-height:1;color:#c9a227;
+  font-family:"DotGothic16",ui-monospace,monospace}
+.thrnm{font-size:10px;color:#9aa08c;letter-spacing:0;line-height:1.4}
+.thrnm b{color:#c9c3b2;font-size:12px}
+.thrwhy{font-size:10px;color:#6f7a63;letter-spacing:0;line-height:1.6}
+@media(max-width:640px){ .thrrow{grid-template-columns:auto 1fr} .thrwhy{grid-column:1/-1} }
+@media(max-width:640px){
+  .strow{grid-template-columns:16px 1fr auto auto;row-gap:0}
+  .strow .sd{display:none}
+}
 .celrow{display:flex;gap:1px;justify-content:center;flex-wrap:wrap;margin-top:2px}
 .elw,.elr{font-size:8px;letter-spacing:0;border:1px solid;padding:0 3px;line-height:1.5}
 .elw{color:#e0a05a;border-color:#e0a05a}
@@ -973,9 +997,30 @@ const NEWS=[
    "身を守る は 防+28 から <b>防+10</b> に。巨人が縮こまるほど硬くなるのは変でした",
    "<b>新しい状態「恐 怖」</b>と、<b>割合で上がる強化</b>を仕組みとして足しました",
  ]},
+ {id:"v0033e",tag:"up",v:"α0.0033",d:"2026-09-02",n:"効いているものが見えるようになりました",b:[
+   "<b>いま何が効いているのか、盤のどこにも出ていないものがありました。</b>狙い・纏い・獣の力・気迫・金の力・持続の構え・反撃・疾走・誓い の9つは、効いているのに札が出ていませんでした",
+   "<b>残りターン数も出ます。</b>これまで状態異常にしか付いておらず、<b>威力アップなどの強化には残り何ターンか出ていませんでした</b>",
+   "<b>装備・状態 の「ステータス」に <span class=\"c\">効 い て い る も の</span> が付きました。</b>名前・効き目・残りターン・何が起きるか を字で読めます",
+   "<b>同じところに <span class=\"c\">命 中 閾 値</span> も付きました。</b>相手ごとに「<b>いくつ以上で当たるか</b>」と「<b>当たる率</b>」を大きく出し、<b>その数字を何がいくつ動かしているか</b>（基本 +4／格闘 −1／相手の速さ +2 …）を並べます",
+   "<b>敵を押したときにも同じ一覧が出ます。</b>DEF が下がっているのか、威力が上がっているのか、あと何ターンなのかが分かります",
+   "<span class=\"s\">数字の効き目はどこも変えていません。見えていなかったものを出しただけです</span>",
+ ]},
+ {id:"v0033d",tag:"fix",v:"α0.0033",d:"2026-09-02",n:"索敵に負けても先に動けることがありました",b:[
+   "<b>「こちらが出遅れた」と出ているのに、こちらの手番から始まることがありました。</b>先手・後手が入れ替わるのは <b>片方だけが成功したとき</b>だけだったためです",
+   "たとえば <b>こちらが 成功・相手が ハード成功</b> のとき、画面には「出遅れた」と出るのに順番は素早さのままでした",
+   "<b>索敵に勝ったほうが先手、負けたほうが後手</b>になります。引き分けのときだけ、これまでどおり素早さの順です",
+   "<span class=\"s\">両方とも失敗したときは「互いに気づかなかった」と出ます（これまでは「互いに気づいた」と出ていました）</span>",
+ ]},
+ {id:"v0033c",tag:"up",v:"α0.0033",d:"2026-09-02",n:"ロックシェルで2つ作れるようになりました",b:[
+   "<b>殻 の 盾</b>（三等・防具）… ロックシェル×3 ＋ 石片×3。<b>DEF +13　最大HP +55　DEX −2</b>、そして <b>防御したときの軽減が +4</b>",
+   "<b>穿 ち の 指 輪</b>（三等・装飾）… ロックシェル×2 ＋ トロルの爪×2。<b>STR +9　DEX +4</b>、そして <b>相手の DEF を 25% 貫きます</b>",
+   "<b>装備で「相手の DEF を割合で貫く」のはこれが初めてです。</b>硬い相手ほど効きます（ゴーレム・ゲートガーディアンのような DEF 30 前後の相手）",
+   "<span class=\"s\">爪の指輪（STR +13　DEX +6）とは、柔らかい相手なら爪、硬い相手なら穿ち、という住み分けになります</span>",
+ ]},
  {id:"v0033b",tag:"up",v:"α0.0033",d:"2026-09-02",n:"アトランティスに3体が加わりました",b:[
-   "<b>サハギンの司祭</b>（後列）。<b>癒 し の 潮 で 味方ひとりの HP をすべて戻します</b>。<b>1戦に1回だけ</b>、しかも <b>誰かが残り6割を切ったときにしか撃ちません</b>",
-   "<span class=\"s\">1回きりにしてあるのは、後列に隠れて何度も治されると 近接しか持たない者が勝てなくなるためです</span>",
+   "<b>サハギンの司祭</b>（後列）。<b>癒 し の 潮 で 味方ひとりの HP をすべて戻します</b>。<b>3ターンおき・1戦に2回まで</b>、しかも <b>誰かが残り6割を切ったときにしか撃ちません</b>",
+   "<span class=\"s\">回数を切ってあるのは、後列に隠れて何度も治されると 近接しか持たない者が勝てなくなるためです</span>",
+   "<b>司祭の出る部屋は精鋭だけです。</b>癒しの潮のぶん、部屋の見た目の HP より戦いが長くなります",
    "<b>深 淵 の 魚</b>（前列）。<b>喰 ら い つ く は 2D 130%</b> で、都市でいちばん重い一撃です。硬くはありません（DEF 12）",
    "<b>ボーンフィッシュ</b>（前列）。速くて脆い（DEX 38・DEF 8）。群 れ る で前列の威力を上げます。素材は骨です",
    "部屋が7つ増えました。<b>骨 の 魚</b>（単体）／<b>深みの大魚</b>（軽い）／<b>骨魚の群れ</b>・<b>司祭と魚人</b>（普通）／<b>大 魚 と 骨</b>・<b>潮 を 招 く</b>（重い）／<b>深みの饗宴</b>（精鋭）",
@@ -2651,23 +2696,72 @@ function badge(icon,label,color,num,turns){
     `${icon}${num!==undefined&&num!==null&&num!==""?`<b style="color:${color}">${num}</b>`:""}`+
     `${turns!==undefined?`<i>${turns}</i>`:""}</span>`;
 }
-function ailText(u){
-  const out=[];
+/* ===== 効いているもの、を一か所で数える =====
+   盤の小さな札（ailText）と、押したときの一覧（ailList）は 同じここから作る。
+   前は札のほうにしか無い状態がいくつもあり
+   （狙い・纏い・獣の力・気迫・金の力・持続の構え・反撃・疾走・誓い）、
+   効いているのに画面のどこにも出ないものがあった。
+   残りターン数も、前は状態異常にしか出ていなかった。            */
+function stateRows(u){
+  const R=[];
   (u.ail||[]).forEach(a=>{
     const A=AIL[a.k];
-    out.push(badge(ailIcon(a.k),A.n,A.c,(a.k==="palsy"?"":a.v),a.t+1));
+    R.push({icon:ailIcon(a.k),n:A.n,c:A.c,good:false,d:A.d,
+      v:(a.k==="palsy"?"":(a.k==="weakp"?`−${a.v}%`:`−${a.v}`)),t:a.t+1});
   });
-  /* 有利な状態も同じ形で並べる */
   if(u===me){
-    if(me.block)out.push(badge(ailIcon("up_def"),"防御","#8fd0ff",me.block));
-    if(me.half)out.push(badge(ailIcon("up_half"),"半減","#9fd8ff",""));
-    if(me.tmpPow)out.push(badge(ailIcon("up_pow"),"威力","#ff8b5a",me.tmpPow));
-    if(me.tmpDef)out.push(badge(ailIcon("up_def"),"防御","#8fd0ff",me.tmpDef));
+    if(me.block)R.push({icon:ailIcon("up_def"),n:"構 え",c:"#8fd0ff",good:true,
+      v:"+"+me.block,d:"1ヒットごとの軽減。殴られるまで残る"});
+    if(me.holdDef)R.push({icon:ailIcon("up_def"),n:"持続の構え",c:"#8fd0ff",good:true,
+      v:"+"+me.holdDef.v,t:me.holdDef.t+1,d:"手番のはじめに構えが戻る"});
+    if(me.half)R.push({icon:ailIcon("up_half"),n:"見 切 り",c:"#9fd8ff",good:true,
+      v:"",d:"次に受けるダメージが半分になる"});
+    if(me.tmpPow)R.push({icon:ailIcon("up_pow"),n:"威 力",c:"#ff8b5a",good:true,
+      v:"+"+me.tmpPow,d:"この戦闘のあいだ 威力が上がる"});
+    if(me.tmpDef)R.push({icon:ailIcon("up_def"),n:"防 御",c:"#8fd0ff",good:true,
+      v:"+"+me.tmpDef,d:"この戦闘のあいだ DEF が上がる"});
+    if(me.selfPow)R.push({icon:ailIcon("up_pow"),n:"気 迫",c:"#ff8b5a",good:true,
+      v:"+"+me.selfPow.v+"%",t:me.selfPow.t+1,d:"威力が割合で上がる"});
+    if(me.goldPow)R.push({icon:ailIcon("up_pow"),n:"金 の 力",c:"#e9c46a",good:true,
+      v:"+"+me.goldPow.v+"%",t:me.goldPow.t+1,d:"持っている金貨のぶん 威力が上がる"});
+    if(me.beast)R.push({icon:ailIcon("up_pow"),n:"獣 の 力",c:"#d98f3f",good:true,
+      v:(me.beast.pow?`威力 +${me.beast.pow}%`:"")+(me.beast.dex?`　速 +${me.beast.dex}`:""),
+      t:me.beast.t+1,d:"獣に近づく"});
+    if(me.focus)R.push({icon:ailIcon("up_dice"),n:"狙 い",c:"#c9a227",good:true,
+      v:"閾値 −"+me.focus.v,t:me.focus.t+1,d:"当たりやすくなる"});
+    if(me.coat)R.push({icon:ailIcon("up_pow"),n:"纏 い",c:(ELEM[me.coat.el]||{}).c||"#9fd8ff",good:true,
+      v:(ELEM[me.coat.el]||{}).n||"",t:me.coat.t+1,d:"攻撃に属性が乗る"});
+    if(me.counter)R.push({icon:ailIcon("up_def"),n:"反 撃",c:"#8fd0ff",good:true,
+      v:Math.round(me.counter*100)+"%",d:"殴られたぶんを返す。この手番だけ"});
+    if(me.dexUp)R.push({icon:ailIcon("up_dice"),n:"疾 走",c:"#8fa261",good:true,
+      v:"速 +"+me.dexUp,d:"この戦闘のあいだ 速さが上がる"});
+    if(me.vow&&me.vow.id!=null)R.push({icon:ailIcon("up_pow"),n:"誓 い",c:"#c96e8a",good:true,
+      v:"",d:"決めた相手しか狙えない"});
   }else{
-    if(u.block)out.push(badge(ailIcon("up_def"),"防御","#8fd0ff",u.block));
-    if(buffSum(u))out.push(badge(ailIcon("up_pow"),"威力","#ff8b5a",buffSum(u)));
+    if(u.block)R.push({icon:ailIcon("up_def"),n:"構 え",c:"#8fd0ff",good:true,
+      v:"+"+u.block,d:"1ヒットごとの軽減"});
+    if(buffSum(u))R.push({icon:ailIcon("up_pow"),n:"威 力",c:"#ff8b5a",good:true,
+      v:"+"+buffSum(u),t:(u.buffs||[]).reduce((a,b)=>Math.max(a,b.t),0),
+      d:"攻撃が重くなっている"});
   }
-  return out.join("");
+  return R;
+}
+/* 盤に出す小さな札 */
+function ailText(u){
+  return stateRows(u).map(r=>badge(r.icon,r.n,r.c,r.v,r.t)).join("");
+}
+/* 押したときに出す一覧。名前と効き目と残りターンを字で出す */
+function ailList(u){
+  const R=stateRows(u);
+  if(!R.length)return `<div class="stnone">効いているものは無い</div>`;
+  return `<div class="stlist">`+R.map(r=>
+    `<div class="strow ${r.good?"good":"bad"}">`+
+      `<span class="si">${r.icon}</span>`+
+      `<b style="color:${r.c}">${r.n}</b>`+
+      `<span class="sv" style="color:${r.c}">${r.v==null?"":r.v}</span>`+
+      `<span class="st">${r.t!=null?`あと ${r.t} ターン`:"—"}</span>`+
+      `<span class="sd">${r.d||""}</span>`+
+    `</div>`).join("")+`</div>`;
 }
 /* 手番のはじめに継続ダメージを与える。倒れたら true */
 async function ailDot(u){
@@ -2835,6 +2929,10 @@ const RECIPES={
    need:{scale:4,wing:2},d:"水を弾く鎧を仕立てる"},
  f_stoneplate:{n:"石 甲 の 製 法",kind:"forge",make:"g_stone",cost:130,
    need:{frag:5,claw:2},d:"重いが硬い板金を組む"},
+ f_shellshield:{n:"殻 の 盾",kind:"forge",make:"g_shell",cost:130,
+   need:{rshell:3,frag:3},d:"喰われた石ごと殻を打ち直す。守りに寄せた一枚"},
+ f_borering:{n:"穿 ち の 指 輪",kind:"forge",make:"y_bore",cost:120,
+   need:{rshell:2,claw:2},d:"石を穿つ顎を仕込む。相手の守りを削り取る"},
  f_clawring:{n:"爪 の 指 輪",kind:"forge",make:"y_claw",cost:110,
    need:{claw:2,tooth:3},d:"攻めに寄せた指輪"},
  f_wingcharm:{n:"翼 の 護 符",kind:"forge",make:"y_wing",cost:110,
@@ -2923,6 +3021,7 @@ const GEAR={
   {id:"g_petal",n:"花 弁 の 衣",tier:3,made:true,st:{DEF:6,DEX:12},hp:34,d:"DEF +6　DEX +12　最大HP +34"},
   {id:"g_scale",n:"鱗 鎧",tier:3,made:true,st:{DEF:12,DEX:4},hp:62,bag:1,d:"DEF +12　DEX +4　最大HP +62　道具 +1"},
   {id:"g_stone",n:"石 甲",tier:3,made:true,st:{DEF:17,DEX:-4},hp:85,d:"DEF +17　最大HP +85　DEX −4"},
+  {id:"g_shell",n:"殻 の 盾",tier:3,made:true,st:{DEF:13,DEX:-2},hp:55,blk:4,d:"DEF +13　最大HP +55　DEX −2　防御したときの軽減 +4"},
   {id:"g6",n:"蒼竜の鎧",tier:3,st:{DEF:11},hp:70,d:"DEF +11　最大HP +70"},
  ],
  acc:[
@@ -2955,6 +3054,7 @@ const GEAR={
   {id:"y17",n:"星詠みの環",tier:3,st:{INT:10,DEX:4},d:"INT +10　DEX +4"},
   {id:"y18",n:"疾風の護符",tier:3,st:{DEX:11},hp:-12,d:"DEX +11　最大HP −12"},
   {id:"y_claw",n:"爪 の 指 輪",tier:3,made:true,st:{STR:13,DEX:6},d:"STR +13　DEX +6"},
+  {id:"y_bore",n:"穿 ち の 指 輪",tier:3,made:true,st:{STR:9,DEX:4},pen:25,d:"STR +9　DEX +4　相手の DEF を 25% 貫く"},
   {id:"y_wing",n:"翼 の 護 符",tier:3,made:true,st:{DEX:13},hp:28,d:"DEX +13　最大HP +28"},
   {id:"y_fdust",n:"妖精の護符",tier:3,made:true,st:{INT:12,DEX:6},d:"INT +12　DEX +6"},
   {id:"y_hoof",n:"疾走の蹄環",tier:3,made:true,st:{DEX:12},hp:24,d:"DEX +12　最大HP +24"},
@@ -3566,7 +3666,7 @@ const FOE={
  spriest:{n:"サハギンの司祭",d:"群れの後ろで潮を招くもの。手にした巻貝を吹くと、傷ついた同胞の鱗が音もなく閉じていく。潮を招けるのは一度きりで、そのあとは槍を持つ者と変わらない。",mat:"scale",weak:"bolt",resist:"water",elem:"water",art:"spriest",snd:"magic",
    HP:185,STR:46,DEF:14,DEX:30,rank:"back",scout:5,
    acts:[{n:"潮 を 撃 つ",k:"atk",dice:3,pct:-10,w:4},
-         {n:"癒 し の 潮",k:"mend",full:true,once:true,at:.6,w:3},
+         {n:"癒 し の 潮",k:"mend",full:true,cd:3,max:2,at:.6,w:3},
          {n:"水 の 加 護",k:"veil",block:12,w:2,needFront:true}]},
  abyssfish:{n:"深 淵 の 魚",d:"灯りに寄ってくる大魚。都市が沈むより前から深みにいたもので、開いた口は人の背丈ほどある。硬くはないが、噛まれれば骨まで届く。",mat:"scale",weak:"bolt",resist:"water",elem:"water",art:"abyssfish",snd:"blunt",
    HP:260,STR:58,DEF:12,DEX:20,rank:"front",scout:2,
@@ -3826,13 +3926,14 @@ function makeMe(){
 function recalcMe(m,full){
   m=m||me;
   const st={STR:0,DEX:0,INT:0,VIT:0,DEF:0,LUK:0};
-  let hp=0,blk=0,bag=0;
+  let hp=0,blk=0,bag=0,pen=0;
   [m.eq.armor].concat(m.eq.acc||[]).forEach(g=>{
     if(!g)return;
     if(g.st)for(const q in g.st)st[q]+=g.st[q];
     if(g.hp)hp+=g.hp;
     if(g.blk)blk+=g.blk;
     if(g.bag)bag+=g.bag;
+    if(g.pen)pen+=g.pen;        /* 相手の DEF を割合で貫く */
   });
   m.raw={};
   ["STR","DEX","INT","VIT","DEF"].forEach(k=>{
@@ -3844,6 +3945,7 @@ function recalcMe(m,full){
   m.LUK=Math.max(0,Math.min(LUKMAX,(m.base.LUK||0)+st.LUK));
   m.gearBlk=blk;
   m.bagPlus=bag;
+  m.gearPen=pen;
   m.wep=WEP[m.eq.wep?m.eq.wep.key:m.baseWep];
   /* 打った武器は品質のぶんだけ威力の倍率が違う。型そのものは書き換えない */
   if(m.eq.wep&&m.eq.wep.mul)m.wep={...m.wep,mul:m.eq.wep.mul};
@@ -4041,6 +4143,8 @@ function chooseTele(f){
        元気な相手に撃って手番を捨てられると、置いた意味がなくなる。 */
     if(a.k==="mend"){
       if(a.once&&f.mendUsed)return false;
+      if(a.max&&(f.mendN||0)>=a.max)return false;
+      if(f.mendCd>0)return false;
       return alive().some(x=>x!==f&&x.HP<x.maxHP*(a.at||1));
     }
     if(a.k==="summon"){
@@ -4109,7 +4213,8 @@ function telePreview(f,tt){
   if(t.k==="mend")return {txt:"✚ "+t.n,
     sub:(t.full?`<span style="color:#e0b83a">味方ひとりの HP を すべて 戻す</span>`
                :`味方ひとりの HP を ${t.heal} 戻す`)+
-        (t.once?"　1戦に1回だけ":"")+
+        (t.once?"　1戦に1回だけ":"")+(t.max?`　1戦に${t.max}回まで`:"")+
+        (t.cd?`　${t.cd}ターンおき`:"")+
         (t.at?`　残り ${Math.round(t.at*100)}% を切った味方がいるときだけ`:""),danger:true};
   if(t.k==="heal")return {txt:"✚ "+t.n,
     sub:`<span style="color:#e0b83a">呼んだ相手の HP を 最大の ${Math.round((t.pct||.1)*100)}% 戻す</span>　開く前に摘める`,danger:true};
@@ -4490,6 +4595,48 @@ function threshold(u,tgt,opt){
     t+=Math.max(0,Math.floor((td-u.DEX)/15));            /* こちらの回避 */
   }
   return Math.max(2,Math.min(6,t));
+}
+/* 命中閾値が いくつになっているのか、何がそれを動かしているのかを並べて返す。
+   threshold() と同じ順で同じものを足すこと。片方だけ直すと嘘の内訳が出る。 */
+function thrWhy(tgt,opt){
+  opt=opt||{};
+  const T=[{n:"基 本",v:4}];
+  const bl=ailSum(me,"blur"), fe=ailSum(me,"fear");
+  if(bl)T.push({n:"盲 目",v:bl});
+  if(fe)T.push({n:"恐 怖",v:fe});
+  const sk=skillHit(wepSkill());
+  if(sk)T.push({n:SK[wepSkill()].n.replace(/ /g,""),v:-sk});
+  if(tgt&&tgt.key){
+    const c=codexLv(tgt.key);
+    if(c>=2)T.push({n:"図鑑 3戦",v:-1});
+    if(c>=3)T.push({n:"図鑑 6戦",v:-1});
+  }
+  if(me.wep.type==="ranged"&&me.rank==="front")T.push({n:"近すぎる",v:1});
+  if(me.wep.type==="ranged"&&tgt&&tgt.rank==="back")T.push({n:"後列は遠い",v:1});
+  if(opt.thr)T.push({n:"技 の 補 正",v:-opt.thr});
+  if(me.focus)T.push({n:"狙 い",v:-me.focus.v});
+  if(passOn("rank")>0&&tgt&&tgt.maxHP<me.maxHP)T.push({n:"格 下",v:-1});
+  if(tgt){
+    const d=Math.floor(Math.max(1,tgt.DEX-ailSum(tgt,"slow"))/15);
+    if(d)T.push({n:"相手の速さ",v:d});
+  }
+  const raw=T.reduce((a,x)=>a+x.v,0);
+  return {parts:T,raw,thr:Math.max(2,Math.min(6,raw))};
+}
+/* 相手ごとの命中閾値を、内訳つきで大きく出す */
+function thrPanel(){
+  if(typeof foes==="undefined"||!foes||!foes.length)return "";
+  const live=alive().filter(f=>f!==me);
+  if(!live.length)return "";
+  return `<div class="msec">命 中 閾 値</div>`+live.map(f=>{
+    const w=thrWhy(f,{});
+    return `<div class="mitem thrrow">
+      <span class="thrbig">${w.thr}</span>
+      <span class="thrnm">以上で当たる<br><b>${Math.round((7-w.thr)/6*100)}%</b>　対 ${f.name}</span>
+      <span class="thrwhy">${w.parts.map(x=>
+        `${x.n} <b style="color:${x.v>0?"#b1544a":"#8fa261"}">${x.v>0?"+":""}${x.v}</b>`).join("　")}${
+        w.raw!==w.thr?`　<span style="color:#c9a227">（2〜6 に収めて ${w.thr}）</span>`:""}</span>
+    </div>`;}).join("");
 }
 /* 技能 40 を並として、25 ごとに命中閾値が 1 動く。
    技能 15 → −1（当てにくい）　40 → 0　65 → +1　90 → +2 */
@@ -4958,7 +5105,7 @@ async function playerAttack(targets,opt){
       pow+=add;
       if(add)log(`<span class="c">火事場の力</span> 失った HP のぶん 威力 <span class="m">+${add}</span>`);
     }
-    const pen=Math.min(1,(opt.pen||0)+passOn("pen")/100);
+    const pen=Math.min(1,(opt.pen||0)+(passOn("pen")+(me.gearPen||0))/100);
     const per=perHit(pow,Math.round(defOf(t)*(1-pen)));
     let vals=(opt.even?rolls.filter(v=>v%2===0):rolls.filter(v=>v>=thr)).sort((a,b)=>a-b);
     /* 一つも当たらなかったとき、もう一度だけ振る */
@@ -5251,7 +5398,8 @@ function foeModal(f){
       ${ek.resist?`　<span class="elr">耐 ${ELEM[ek.resist].n}</span>`:""}
     </div>
     ${FOE[f.key]&&FOE[f.key].d?`<div class="mitem cxlore">${FOE[f.key].d}</div>`:""}
-    ${ailText(f)?`<div class="mitem">${ailText(f)}</div>`:""}
+    <div class="msec">効 い て い る も の</div>
+    ${ailList(f)}
     <div class="msec">こ の タ ー ン</div>
     <div class="mitem ${p.danger?"warn":""}"><b>${p.txt}</b><br>
       <span class="s">${p.sub}</span></div>
@@ -5336,7 +5484,7 @@ async function runQueue(){
 
 /* ---------- 敵1体の行動 ---------- */
 async function enemyAct(f){
-  f.block=0;tickBuffs(f);if(f.sumCd>0)f.sumCd--;   // 構えとバフはここで切れる
+  f.block=0;tickBuffs(f);if(f.sumCd>0)f.sumCd--;if(f.mendCd>0)f.mendCd--;   // 構えとバフはここで切れる
   draw();
   await wait(260);
   if(await ailDot(f)){draw();return;}
@@ -5532,7 +5680,7 @@ async function enemyAct(f){
       .sort((a,b)=>(a.HP/a.maxHP)-(b.HP/b.maxHP))[0];
     if(!c){log(`<span class="b">${f.name}</span> は潮を招いたが、癒す相手がいない`);await wait(450);}
     else{
-      f.lastAid=t.n;f.mendUsed=true;
+      f.lastAid=t.n;f.mendUsed=true;f.mendN=(f.mendN||0)+1;f.mendCd=t.cd||0;
       const hl=t.full?c.maxHP-c.HP:Math.min(t.heal||0,c.maxHP-c.HP);
       c.HP+=hl;draw();fxOn(c,"charge");popOn(c,"+"+hl,"heal");SFX.found();
       log(`<span class="b">${f.name}</span> の <span class="c">${t.n}</span>　`+
@@ -6152,9 +6300,9 @@ const ENCS={
  s_bf:{n:"骨 の 魚",list:["bonefish"]},
  c_af:{n:"深みの大魚",list:["abyssfish"]},
  c_bf2:{n:"骨魚の群れ",list:["bonefish","bonefish"]},
- c_spa:{n:"司祭と魚人",list:["sahagin","spriest"]},
+ c_spa:{n:"司祭と魚人",list:["sahagin","spriest","bonefish"]},
  c_afb:{n:"大 魚 と 骨",list:["abyssfish","bonefish"]},
- c_spw:{n:"潮 を 招 く",list:["sahagin","spriest","wraith"]},
+ c_spw:{n:"潮 と 骨",list:["sahagin","bonefish"]},
  c_af3:{n:"深みの饗宴",list:["abyssfish","bonefish","spriest"]},
  s_sa:{n:"はぐれ魚人",list:["sahagin"]},
  s_wr:{n:"淀んだ影",list:["wraith"]},
@@ -6330,9 +6478,9 @@ const AREAS={
    to:[],
    solo:["s_wr","c_ar","s_sk","s_bf"],
    easy:["c_wa","s_sa","wr1","c_af"],
-   norm:["c_ar2","sk2","c_sw","sk1","c_bf2","c_spa"],
+   norm:["c_ar2","sk2","c_sw","sk1","c_bf2"],
    hard:["sg2","c_bwa","sg1","c_afb","c_spw"],
-   elite:["sg3","sk3","wr2","c_af3"], boss:"b3"},
+   elite:["sg3","sk3","wr2","c_af3","c_spa"], boss:"b3"},
 };
 /* ---------- 世 界 地 図 ----------
    区画のつながりを土地として描く。上が地上、下ほど深く、
@@ -8153,7 +8301,10 @@ function chBodyEq(){
 function chBodySt(){
   const c=lukCuts(me.LUK);
   const cap=me.DEX>=STATMAX.DEX;
-  return `<div class="msec">ス テ ー タ ス</div>
+  return `<div class="msec">効 い て い る も の</div>
+  ${ailList(me)}
+  ${thrPanel()}
+  <div class="msec">ス テ ー タ ス</div>
   <div class="mstat">
     <span>経験 <b>${me.exp}</b>/${expCap()}</span>
     <span>STR <b>${me.STR}</b></span>
@@ -8805,13 +8956,18 @@ async function doScout(){
   const a=await side("scMine",me.name,mine,"mine");
   const b=await side("scFoe",lead.name+(foes.length>1?` ほか ${foes.length-1}`:""),theirs,"foe");
   scoutBonus=Math.max(0,Math.min(3,a-b));
-  /* 片方だけが成功したときは、1ラウンド目だけ素早さを飛び越えて先に動く。
-     気配に気づいたほうが先に身構える、という理屈。 */
-  scoutFirst = (a>0&&b<=0) ? "me" : (b>0&&a<=0) ? "foe" : null;
+  /* 索敵に勝ったほうが、1ラウンド目だけ素早さを飛び越えて先に動く。
+     前は「片方だけが成功したとき」だけ入れ替えていたので、
+     両方成功して相手のほうが上（こちら成功・相手ハード成功）だと、
+     画面に「こちらが出遅れた」と出るのに順番は素早さのままだった。
+     出ている言葉と起きることが食い違うので、勝ち負けで揃えた。 */
+  scoutFirst = (a>b) ? "me" : (b>a) ? "foe" : null;
 
   const diff=a-b;
   const vd=diff>=3?"完全に出し抜いた":diff===2?"はっきり先を取った"
-    :diff===1?"わずかに先に気づいた":diff===0?"互いに気づいた":"こちらが出遅れた";
+    :diff===1?"わずかに先に気づいた"
+    :diff===0?(a>0?"互いに気づいた":"互いに気づかなかった")
+    :"こちらが出遅れた";
   $("#scEnd").innerHTML=
     `<div class="scDiff" style="color:${scoutBonus?"#8fa261":"#7d6b68"}">${vd}</div>`+
     (scoutBonus?`<div class="scGain">最初の攻撃に 攻撃ダイス <b>+${scoutBonus}</b></div>`
