@@ -997,6 +997,14 @@ const NEWS=[
    "身を守る は 防+28 から <b>防+10</b> に。巨人が縮こまるほど硬くなるのは変でした",
    "<b>新しい状態「恐 怖」</b>と、<b>割合で上がる強化</b>を仕組みとして足しました",
  ]},
+ {id:"v0034b",tag:"up",v:"α0.0034",d:"2026-09-02",n:"長引くと 双方 当たりやすくなります",b:[
+   "<b>硬い者どうしが延々と当たらない、という膠着をほどくためのものです。</b><b>5ラウンドごとに 双方の命中閾値が −1</b>、下げるのは <b>−2 まで</b>",
+   "1〜5ラウンド目は これまでどおり。<b>6ラウンド目から −1、11ラウンド目から −2</b> です",
+   "<b>こちらにも敵にも同じだけ効きます。</b>粘るほど、決着は早く、そのぶん血なまぐさくなります",
+   "たとえばナイト対ガーゴイルは <b>50% → 67%（6R〜）→ 83%（11R〜）</b>、スカウトなら <b>33% → 50% → 67%</b>",
+   "<b>段が下りた回はログに出ます。</b>黙って当たりやすくなると気づけないためです",
+   "<span class=\"s\">ボス戦は10〜14ラウンドかかるので、後半はこれが効いた状態になります</span>",
+ ]},
  {id:"v0034",tag:"bal",v:"α0.0034",d:"2026-09-02",n:"敵も深さで速くなるようになりました",b:[
    "<b>これまで敵は HP と 攻撃力だけが深さで伸びていて、素早さ（DEX）は伸びていませんでした。</b>こちらの DEX だけが青天井に育つので、<b>スカウトは木漏れ日の森の時点で 敵の命中閾値が全部 6 に張り付いていました</b>（当たる率 17%）",
    "<b>敵の DEX も、HP や攻撃力と同じ倍率で深さで伸びます。</b>速い敵は 深いところでは本当に速く、遅い敵は遅いままです",
@@ -4578,9 +4586,15 @@ function knownElem(key,kind){
    すぐ天井（6）に張り付いて、そこから DEX が伸びても何も変わらなかった。 */
 const DEXSTEP=25, DEXCAP=2;
 function dexStep(d){ return Math.max(0,Math.min(DEXCAP,Math.floor(d/DEXSTEP))); }
+/* 長引くほど、双方の命中閾値が下がる。
+   硬い者どうしが延々と当たらない、という膠着をほどくためのもの。
+   5ラウンドごとに 1、下げるのは 2 まで。こちらにも敵にも同じだけ効く。 */
+const DRAGEVERY=5, DRAGCAP=2;
+function dragEase(){ return Math.min(DRAGCAP,Math.floor((Math.max(1,round||1)-1)/DRAGEVERY)); }
 function threshold(u,tgt,opt){
   opt=opt||{};
   let t=4;
+  t-=dragEase();                         /* 長引くほど 双方が当てやすくなる */
   t+=ailSum(u,"blur");                   /* 盲目：狙いが定まらない */
   t+=ailSum(u,"fear");                   /* 恐怖：竦んで手元が狂う */
   if(!u.isFoe&&tgt.key){
@@ -4619,6 +4633,8 @@ function threshold(u,tgt,opt){
 function thrWhy(tgt,opt){
   opt=opt||{};
   const T=[{n:"基 本",v:4}];
+  const de=dragEase();
+  if(de)T.push({n:"長 引 き",v:-de});
   const bl=ailSum(me,"blur"), fe=ailSum(me,"fear");
   if(bl)T.push({n:"盲 目",v:bl});
   if(fe)T.push({n:"恐 怖",v:fe});
@@ -5748,7 +5764,11 @@ async function enemyAct(f){
 async function endRound(){
   me.sk.forEach(s=>{if(s.cdLeft>0)s.cdLeft--;});
   me.MP=Math.min(me.maxMP,me.MP+1);
+  const de0=dragEase();
   round++;me.hurtThisRound=false;
+  /* 段が1つ下りた回だけ知らせる。黙って当たりやすくなると気づけない */
+  if(dragEase()>de0)
+    log(`<span class="c">長 引 き</span> 双方の命中閾値が <span class="m">−${dragEase()}</span>（${DRAGCAP}まで）`);
   foes.forEach(f=>{if(f.HP>0){f.tele=f.next||chooseTele(f);f.next=chooseTele(f);}});
   buildQueue();
   draw();
