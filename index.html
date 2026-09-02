@@ -973,6 +973,14 @@ const NEWS=[
    "身を守る は 防+28 から <b>防+10</b> に。巨人が縮こまるほど硬くなるのは変でした",
    "<b>新しい状態「恐 怖」</b>と、<b>割合で上がる強化</b>を仕組みとして足しました",
  ]},
+ {id:"v0032h",tag:"up",v:"α0.0032",d:"2026-09-02",n:"ゲートガーディアンが3体がかりになりました",b:[
+   "<b>本体の左右に ガーディアンハンド が付きました。</b>拳は自分から殴ってきませんが、<b>本体を狙うと HP の多いほうの拳が割って入ります</b>",
+   "<b>つまり、両の拳を壊すまで本体には一切届きません。</b>合計HPの 55% が拳で、残り 45% が本体です",
+   "本体の手は 拳を振り下ろす（2D 140%）・突 進（3D 70%）・ハンドガード（DEF +20）、そして <b>3手番目にかならず 連 撃（6D 40%）</b>",
+   "<b>両の拳が砕けると 拳 が 砕 け る。</b>拳を使う手が消え、<b>コアビーム</b>（6D 30%）と <b>プロテクション</b>（DEF +30）に変わります",
+   "<b>本体を倒せば拳も一緒に崩れます。</b>拳だけが残って戦いが終わらない、ということは起きません",
+   "<b>連れていたガーゴイルとオオコウモリはいなくなりました。</b>拳がその役目を持ちます（どちらも回廊の他の部屋には出るので、素材は変わらず取れます）",
+ ]},
  {id:"v0032f",tag:"bal",v:"α0.0032",d:"2026-09-02",n:"エルダートレントが花を咲かせるようになりました",b:[
    "<b>手を4つに絞りました。</b>大枝を振り下ろす（3D 110%）・樹皮を固める（DEF +20）・森を薙ぐ（4D 100%・振ったあと隙）・<b>根 を 貼 る</b>（自分の威力 +20%・2ターン）",
    "<b>いつでも傷を塞げるのをやめました。</b>これまでは最初から 根を張り直す（HP +70）を持っていて、削っても戻る足踏みになっていました",
@@ -1011,7 +1019,7 @@ const NEWS=[
  {id:"v0032",tag:"up",v:"α0.0032",d:"2026-09-01",n:"ボスに段階と隙ができました",b:[
    "<b>ボスは HP が減ると別物になります。</b>行動表がまるごと入れ替わり、守りが薄くなるかわりに攻めが増えます",
    "キングスライム <b>核が浮かぶ</b>（HP50%）／サイクロプス <b>隻眼が据わる</b>（45%）／クイーンスパイダー <b>腹を割く</b>（50%）",
-   "エルダートレント <b>森が花をつける</b>（50%）／ゲートガーディアン <b>核を剥き出す</b>（50%）",
+   "エルダートレント <b>森が花をつける</b>（50%）／ゲートガーディアン <b>拳が砕ける</b>（両の拳を壊したとき）",
    "<b>ディープワンだけ二段あります。</b><b>鱗が裂ける</b>（60%）で臣を呼びはじめ、<b>王が立つ</b>（25%）で守りを捨てます",
    "<b>大振りの技を振ったあと、ボスは無防備になります。</b>防御が落ち、当てやすくなります。予告に「<b>振ったあと 隙ができる</b>」と出るので、<b>待って叩けます</b>",
    "段階に入るとボスの DEF も落ちます。押し切るのが速くなるぶん、受ける被害も 1.2〜1.4倍 になります",
@@ -1809,6 +1817,14 @@ const PXFOE={
   [5,4,2,2,"#c9a227"],[9,4,2,2,"#c9a227"],[6,5,1,1,"#14160f"],[10,5,1,1,"#14160f"],
   [6,6,1,1,"#b1544a"],[9,6,1,1,"#b1544a"],
   [3,8,10,9,"#5c4666"],[4,10,8,6,"#4a3a52"],[6,12,4,3,"#e0d0a8"]],
+ ghand:[[4,2,9,5,"#6b6b76"],
+  [5,2,1,5,"#3a3a44"],[8,2,1,5,"#3a3a44"],[11,2,1,5,"#3a3a44"],
+  [4,1,9,1,"#5c5c66"],
+  [3,7,11,7,"#5c5c66"],[3,7,11,1,"#7a7a86"],
+  [2,9,7,3,"#7a7a86"],[2,9,1,3,"#4a4a52"],
+  [11,9,2,2,"#8a8a96"],
+  [4,14,9,2,"#4a4a52"],
+  [5,16,7,4,"#3a3a44"],[6,17,5,2,"#5c5c66"]],
  hflower:[[7,13,2,7,"#4a6330"],
   [3,15,4,2,"#5a7a3a"],[9,15,4,2,"#5a7a3a"],
   [2,16,1,1,"#4a6330"],[13,16,1,1,"#4a6330"],
@@ -3639,18 +3655,19 @@ const FOE={
    HP:45,STR:1,DEF:4,DEX:8,rank:"front",scout:1,
    acts:[{n:"つ ぼ み",k:"idle",d:"根もとで蕾がふくらんでいる",seq:1,w:0},
          {n:"花 が ひ ら く",k:"heal",pct:.1,seq:2,w:0}]},
- gate:{n:"ゲートガーディアン",d:"回廊の最奥の門を守る守護者。胸に守護核を抱いている。門の向こうにはもう誰もいないが、閉ざす役目だけを ひとりで続けている。",mat:"core",weak:"blunt",resist:"slash",elem:"earth",art:"gate",snd:"blunt",HP:510,STR:58,DEF:31,DEX:14,rank:"front",scout:1,
-   acts:[{n:"拳を振り下ろす",k:"atk",dice:3,w:5},
-         {n:"門を薙ぐ",k:"atk",dice:4,pct:-25,open:{t:1},w:3},
-         {n:"門を閉ざす",k:"guard",block:24,w:3},
-         {n:"石の咆哮",k:"cheer",pow:16,w:2}],
-   phases:[{at:.5,n:"核 を 剥 き 出 す",d:"胸の石が割れ、守護核が露わになった",
-     def:-14,str:10,
-     acts:[{n:"拳を振り下ろす",k:"atk",dice:3,pct:10,w:5},
-           {n:"核 を 撃 つ",k:"atk",dice:2,pct:35,open:{t:2},w:3},
-           {n:"門を薙ぐ",k:"atk",dice:4,pct:-25,open:{t:1},w:3},
-           {n:"門を閉ざす",k:"guard",block:24,w:3},
-           {n:"石の咆哮",k:"cheer",pow:22,w:2}]}]},
+ gate:{n:"ゲートガーディアン",d:"回廊の最奥の門を守る守護者。胸に守護核を抱いている。門の向こうにはもう誰もいないが、閉ざす役目だけを ひとりで続けている。両の拳は本体とは別に動き、狙われた本体の前に必ず割って入る。",mat:"core",weak:"blunt",resist:"slash",elem:"earth",art:"gate",snd:"blunt",
+   HP:330,STR:58,DEF:31,DEX:14,rank:"front",scout:1,guardKey:"ghand",
+   acts:[{n:"拳を振り下ろす",k:"atk",dice:2,pct:40,w:5},
+         {n:"突 進",k:"atk",dice:3,pct:-30,w:4},
+         {n:"ハンドガード",k:"guard",block:20,w:4},
+         {n:"連 撃",k:"atk",dice:6,pct:-60,seq:3}],
+   phases:[{noParts:true,n:"拳 が 砕 け る",d:"支えを失い、胸の守護核がむき出しになった",
+     acts:[{n:"突 進",k:"atk",dice:3,pct:-30,w:4},
+           {n:"コアビーム",k:"atk",dice:6,pct:-70,w:3},
+           {n:"プロテクション",k:"guard",block:30,w:2}]}]},
+ ghand:{n:"ガーディアンハンド",d:"ゲートガーディアンの拳。腕から離れて宙に浮き、本体が狙われるたびに割って入る。自分から殴ることはない。砕けば本体の手が三つ死ぬ。",weak:"blunt",resist:"slash",elem:"earth",art:"ghand",snd:"blunt",
+   HP:200,STR:1,DEF:20,DEX:1,rank:"front",scout:1,noAct:true,partOf:"gate",nm:["右","左"],
+   acts:[{n:"動 か な い",k:"idle",d:"ただ そこに在る",w:1}]},
  deepone:{n:"ディープワン",d:"深みから現れ、魚人たちの王を名乗ったもの。魚人よりひと回り大きく、鱗の下に別の何かが透けて見える。守護核を持つが、それをどこで得たのかは誰も知らない。",mat:"core",weak:"bolt",resist:"water",elem:"water",art:"deepone",snd:"blunt",HP:820,STR:78,DEF:30,DEX:24,rank:"front",scout:6,
    acts:[{n:"王の三叉槍",k:"atk",dice:3,pct:15,w:5},
          {n:"潮を呼ぶ",k:"atk",dice:5,pct:-25,open:{t:1},w:3},
@@ -3779,14 +3796,49 @@ function depthMul(){
 }
 function makeFoes(){
   const dm=depthMul();
-  return ENCS[sel.enc].list.map((k,i)=>{
+  const list=ENCS[sel.enc].list;
+  const out=list.map((k,i)=>{
     const f=FOE[k];
-    return {...f,id:i,key:k,name:f.n+(ENCS[sel.enc].list.filter(x=>x===k).length>1?" "+"ABC"[i]:""),
+    /* 同じ相手が並ぶときの呼び分け。nm を持つ相手はそれを使う（右／左 など）。
+       前は列そのものの番号 i を使っていたので、
+       ["gate","ghand","ghand"] のような組では B・C から始まっていた。 */
+    const same=list.filter(x=>x===k).length;
+    const nth=list.slice(0,i).filter(x=>x===k).length;
+    return {...f,id:i,key:k,
+      name:f.n+(same>1?" "+((f.nm&&f.nm[nth])||"ABC"[nth]):""),
       maxHP:Math.round(f.HP*dm),HP:Math.round(f.HP*dm),
       STR:Math.round(f.STR*(1+(dm-1)*0.6)),
       rank:(f.flex?(Math.random()<0.5?"front":"back"):f.rank),turn:0,
       block:0,buffs:[],ail:[],stun:false,isFoe:true,tele:null,lastAid:null,sumCd:0,sumUsed:false};
   });
+  /* 「部位」を本体に結びつける。FOE では本体の鍵を文字で持っておき、ここで id に直す */
+  out.forEach(f=>{
+    if(typeof f.partOf==="string"){
+      const b=out.find(x=>x.key===f.partOf);
+      f.partOf=b?b.id:null;
+    }
+  });
+  return out;
+}
+/* かばう … 守り手（部位）を連れている相手を狙うと、いちばん HP の多い守り手が身代わりになる */
+function coverOf(t){
+  if(!t||!t.isFoe||!t.guardKey)return t;
+  const gs=alive().filter(f=>f.isFoe&&f.key===t.guardKey&&f.partOf===t.id);
+  if(!gs.length)return t;
+  return gs.slice().sort((a,b)=>b.HP-a.HP)[0];
+}
+/* 狙い先をまとめて守り手に振り替える。重なった先は1つにまとめる */
+function coverList(ts){
+  const said=new Set(), out=[];
+  ts.forEach(t=>{
+    const c=coverOf(t);
+    if(c!==t&&!said.has(c.id)){
+      said.add(c.id);
+      log(`<span class="c">${c.name}</span> が <span class="b">${t.name}</span> を かばった`);
+    }
+    if(c.HP>0&&!out.includes(c))out.push(c);
+  });
+  return out;
 }
 const alive=()=>foes.filter(f=>f.HP>0);
 const onBoard=()=>foes.filter(f=>f.HP>0);
@@ -3827,9 +3879,27 @@ const AIDK=["buff","cheer","hex","veil"];
    **入れ替えたら予告も引き直すこと。**古い予告のまま殴られると、
    画面に出ていた技と違うものが飛んでくる。                        */
 async function checkPhase(f){
-  if(!f||!f.isFoe||!f.phases||f.HP<=0||over)return false;
+  if(!f||!f.isFoe||over)return false;
+  /* 部位を叩いたときは、本体のほうを見に行く */
+  if(f.partOf!=null&&typeof f.partOf==="number"){
+    const body=foes.find(x=>x.id===f.partOf);
+    return (body&&body.HP>0)?checkPhase(body):false;
+  }
+  /* 本体が落ちたら、繋がっている部位も一緒に崩れる */
+  if(f.HP<=0){
+    const ps=foes.filter(x=>x.partOf===f.id&&x.HP>0);
+    if(ps.length){
+      ps.forEach(x=>{x.HP=0;});draw();
+      log(`<span class="b">${f.name}</span> が落ち、<span class="c">${ps.map(x=>x.name).join("・")}</span> も崩れ落ちた`);
+    }
+    return false;
+  }
+  if(!f.phases)return false;
   const i=f.ph||0, P=f.phases[i];
-  if(!P||f.HP>f.maxHP*P.at)return false;
+  if(!P)return false;
+  /* noParts … HP ではなく「部位が全部落ちたら」で入れ替わる段階 */
+  if(P.noParts){ if(foes.some(x=>x.partOf===f.id&&x.HP>0))return false; }
+  else if(f.HP>f.maxHP*P.at)return false;
   f.ph=i+1;
   if(P.acts)f.acts=P.acts;
   if(P.def)f.DEF=Math.max(0,f.DEF+P.def);
@@ -3863,8 +3933,13 @@ function chooseTele(f){
      前は !alone を付けていたが、solo の手を持つ敵は上の枝で返ってしまうので
      この条件は効いたことがなく、solo を持たない敵（スプリガン）の
      seq だけを黙って握り潰していた。 */
-  const seq=f.acts.find(a=>a.seq===(f.turn||0)+1);
-  if(seq){f.turn=(f.turn||0)+1;return {...seq};}
+  /* chooseTele が返した N 番目の結果が、そのままその敵の N 手番目の行動になる
+     （tele と next を先に1つずつ引いてあるため）。
+     前は seq が当たったときだけ数えていたので、seq:3 だけを持つ手は
+     turn が 1 から進まず、永久に出番が来なかった。 */
+  f.turn=(f.turn||0)+1;
+  const seq=f.acts.find(a=>a.seq===f.turn);
+  if(seq)return {...seq};
   if(f.forceNext){
     const fa=f.acts.find(a=>a.n===f.forceNext);
     f.forceNext=null;
@@ -4692,6 +4767,10 @@ function log(html,cls){
 let killedThisAttack=false,sawSix=false;
 async function playerAttack(targets,opt){
   opt=opt||{};
+  /* 守り手のいる相手は直接殴れない。ここで狙い先ごと振り替える。
+     命中閾値も守り手のもので出したいので、ダイスを振る前に済ませておく。 */
+  targets=coverList(targets);
+  if(!targets.length)return;
   killedThisAttack=false;sawSix=false;me.attackedLast=true;
   let n=Math.max(1,me.wep.hands+(opt.dice||0)+scoutBonus+passOn("dice")
     -ailSum(me,"shrink"));
@@ -5096,7 +5175,9 @@ function foeModal(f){
    索敵で片方だけ成功したときの 1ラウンド目に使う。 */
 function orderOf(first){
   const dx=u=>(u===me?dexOf():Math.max(1,u.DEX-ailSum(u,"slow")));
-  const list=[me,...alive()].sort((a,b)=>{
+  /* noAct … 手番を持たない相手（ガーディアンハンドのような「部位」）。
+     盤には立つし狙えるが、順番には並ばない。 */
+  const list=[me,...alive().filter(f=>!f.noAct)].sort((a,b)=>{
     const d=dx(b)-dx(a);
     if(d)return d;
     return a===me?-1:1;
@@ -6040,7 +6121,7 @@ const ENCS={
  f_be2:{n:"二 頭 の 熊",list:["bear","bear"]},
  /* ボス */
  b1:{n:"クイーンスパイダー",list:["qspider","cspider","cspider"]},
- b2:{n:"ゲートガーディアン",list:["gate","gargoyle","bigbat"]},
+ b2:{n:"ゲートガーディアン",list:["gate","ghand","ghand"]},
  b3:{n:"ディープワン",list:["deepone","sahagin","wraith"]},
  pb1:{n:"キングスライム",list:["kingslime","slime"]},
  pb2:{n:"サイクロプス",list:["cyclops","orc","mandragora"]},
@@ -8529,7 +8610,7 @@ async function doItem(k,tgt){
     log(`<span class="a">${it.n}</span> が <span class="b">${tgt.name}</span> を捕らえた`);
   }
   if(it.dmg){
-    const list=it.all?alive().filter(f=>f!==me&&f.rank===(tgt?tgt.rank:"front")):[tgt];
+    const list=coverList(it.all?alive().filter(f=>f!==me&&f.rank===(tgt?tgt.rank:"front")):[tgt]);
     for(const t of list){
       if(!t)continue;
       const d=it.dmg+Math.round(it.dmg*0.25*RUN.act);
