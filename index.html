@@ -973,6 +973,14 @@ const NEWS=[
    "身を守る は 防+28 から <b>防+10</b> に。巨人が縮こまるほど硬くなるのは変でした",
    "<b>新しい状態「恐 怖」</b>と、<b>割合で上がる強化</b>を仕組みとして足しました",
  ]},
+ {id:"v0033b",tag:"up",v:"α0.0033",d:"2026-09-02",n:"アトランティスに3体が加わりました",b:[
+   "<b>サハギンの司祭</b>（後列）。<b>癒 し の 潮 で 味方ひとりの HP をすべて戻します</b>。<b>1戦に1回だけ</b>、しかも <b>誰かが残り6割を切ったときにしか撃ちません</b>",
+   "<span class=\"s\">1回きりにしてあるのは、後列に隠れて何度も治されると 近接しか持たない者が勝てなくなるためです</span>",
+   "<b>深 淵 の 魚</b>（前列）。<b>喰 ら い つ く は 2D 130%</b> で、都市でいちばん重い一撃です。硬くはありません（DEF 12）",
+   "<b>ボーンフィッシュ</b>（前列）。速くて脆い（DEX 38・DEF 8）。群 れ る で前列の威力を上げます。素材は骨です",
+   "部屋が7つ増えました。<b>骨 の 魚</b>（単体）／<b>深みの大魚</b>（軽い）／<b>骨魚の群れ</b>・<b>司祭と魚人</b>（普通）／<b>大 魚 と 骨</b>・<b>潮 を 招 く</b>（重い）／<b>深みの饗宴</b>（精鋭）",
+   "都市の敵が4種から7種になりました。<b>後列に隠れる相手を先に潰す</b>という判断が、ここで初めて要ります",
+ ]},
  {id:"v0033",tag:"up",v:"α0.0033",d:"2026-09-02",n:"回廊にストーンワームが棲みつきました",b:[
    "<b>ストーンワーム</b>を足しました。回廊の石を喰って穴を穿つ虫です。素材は <b>ロックシェル</b>",
    "<b>喰った石を殻にしているので、打撃が通りません</b>（打撃耐性）。回廊は打撃弱点ばかりだったので、<b>ここだけ武器を選びます</b>。刺突が弱点です",
@@ -1913,6 +1921,31 @@ const PXFOE={
   [0,9,3,3,"#6fae9a"],[13,9,3,3,"#6fae9a"],
   [15,1,1,14,"#8a6f2a"],[14,0,3,1,"#c9c3b2"],
   [3,15,4,5,"#3f6f60"],[9,15,4,5,"#3f6f60"]],
+ spriest:[[4,2,8,6,"#4f8a7a"],
+  [3,0,2,3,"#6fae9a"],[11,0,2,3,"#6fae9a"],
+  [3,1,10,2,"#3f5f8a"],
+  [5,4,2,2,"#c9a227"],[9,4,2,2,"#c9a227"],[6,5,1,1,"#14160f"],[10,5,1,1,"#14160f"],
+  [6,7,4,1,"#3f6f60"],
+  [2,8,12,8,"#3f5f8a"],[4,10,8,5,"#31496b"],
+  [6,10,4,4,"#9dc0d6"],[7,11,2,2,"#e0d0a0"],
+  [15,1,1,13,"#8a6f2a"],[14,0,3,2,"#9dc0d6"],
+  [4,16,3,4,"#31496b"],[9,16,3,4,"#31496b"]],
+ abyssfish:[[8,0,1,4,"#3f6478"],[6,0,3,1,"#e9c46a"],[7,1,1,1,"#e9c46a"],
+  [5,4,8,2,"#2f4a5c"],[4,6,9,8,"#2f4a5c"],[5,14,8,2,"#2f4a5c"],
+  [5,6,7,7,"#3f6478"],
+  [1,6,4,8,"#14181c"],
+  [1,5,5,1,"#2f4a5c"],[1,14,5,1,"#2f4a5c"],
+  [1,6,1,1,"#e9e4d4"],[2,7,1,1,"#e9e4d4"],[3,6,1,1,"#e9e4d4"],[4,7,1,1,"#e9e4d4"],
+  [1,13,1,1,"#e9e4d4"],[2,12,1,1,"#e9e4d4"],[3,13,1,1,"#e9e4d4"],[4,12,1,1,"#e9e4d4"],
+  [8,7,2,2,"#e9c46a"],[9,8,1,1,"#14160f"],
+  [13,9,1,3,"#2f4a5c"],
+  [14,5,2,5,"#3f6478"],[14,11,2,5,"#3f6478"],
+  [7,16,4,2,"#2f4a5c"]],
+ bonefish:[[2,7,4,5,"#d9d3c0"],[2,8,1,2,"#14160f"],[1,9,1,2,"#e9e4d4"],
+  [6,8,7,1,"#d9d3c0"],[6,11,7,1,"#d9d3c0"],[6,9,7,2,"#a8a294"],
+  [6,5,1,3,"#d9d3c0"],[8,5,1,3,"#d9d3c0"],[10,5,1,3,"#d9d3c0"],
+  [6,12,1,3,"#d9d3c0"],[8,12,1,3,"#d9d3c0"],[10,12,1,3,"#d9d3c0"],
+  [13,4,3,5,"#d9d3c0"],[13,11,3,5,"#d9d3c0"],[12,8,2,4,"#a8a294"]],
  wraith:[[4,2,8,6,"#5c6b8a"],[5,4,2,2,"#9dc0d6"],[9,4,2,2,"#9dc0d6"],
   [6,5,1,1,"#14160f"],[10,5,1,1,"#14160f"],
   [3,8,10,8,"#4a5670"],[5,9,6,6,"#3a4459"],
@@ -3530,6 +3563,19 @@ const FOE={
          {n:"槍を投げる",k:"atk",dice:3,pos:"back",w:5},
          {n:"水を纏う",k:"guard",block:14,w:2},
          {n:"群れを呼ぶ",k:"cheer",pow:12,dur:1,w:2,needFront:true}]},
+ spriest:{n:"サハギンの司祭",d:"群れの後ろで潮を招くもの。手にした巻貝を吹くと、傷ついた同胞の鱗が音もなく閉じていく。潮を招けるのは一度きりで、そのあとは槍を持つ者と変わらない。",mat:"scale",weak:"bolt",resist:"water",elem:"water",art:"spriest",snd:"magic",
+   HP:185,STR:46,DEF:14,DEX:30,rank:"back",scout:5,
+   acts:[{n:"潮 を 撃 つ",k:"atk",dice:3,pct:-10,w:4},
+         {n:"癒 し の 潮",k:"mend",full:true,once:true,at:.6,w:3},
+         {n:"水 の 加 護",k:"veil",block:12,w:2,needFront:true}]},
+ abyssfish:{n:"深 淵 の 魚",d:"灯りに寄ってくる大魚。都市が沈むより前から深みにいたもので、開いた口は人の背丈ほどある。硬くはないが、噛まれれば骨まで届く。",mat:"scale",weak:"bolt",resist:"water",elem:"water",art:"abyssfish",snd:"blunt",
+   HP:260,STR:58,DEF:12,DEX:20,rank:"front",scout:2,
+   acts:[{n:"喰 ら い つ く",k:"atk",dice:2,pct:30,w:5},
+         {n:"潜 る",k:"guard",block:14,w:2}]},
+ bonefish:{n:"ボーンフィッシュ",d:"肉の落ちた魚が、骨だけで泳ぎ続けている。一匹では大したことはないが、都市の水路にはいくらでもいる。",mat:"bone",weak:"blunt",resist:"pierce",elem:"dark",art:"bonefish",snd:"slash",
+   HP:130,STR:36,DEF:8,DEX:38,rank:"front",scout:3,
+   acts:[{n:"骨 の 牙",k:"atk",dice:3,w:5},
+         {n:"群 れ る",k:"cheer",pctUp:12,dur:2,w:2,needFront:true}]},
  wraith:{n:"レ イ ス",d:"沈んだ日の恨みだけが形を保っているもの。触れられたところから体温が失われ、しばらく指先が戻らない。残滓は冷たいままで、決して温まらない。",mat:"residue",weak:"light",resist:"slash",elem:"dark",art:"wraith",snd:"magic",HP:165,STR:44,DEF:10,DEX:30,rank:"back",scout:6,
    acts:[{n:"呪いを注ぐ",k:"atk",dice:2,pct:20,w:5},
          {n:"仲間を蝕む",k:"cheer",pow:14,w:3},
@@ -3991,6 +4037,12 @@ function chooseTele(f){
     if(a.noFront&&aliveIn("front").filter(x=>x!==f).length>0)return false;
     if(a.pos&&a.pos!==f.rank)return false;          // 立ち位置で使い分ける
     if(a.k==="cheer")return aliveIn("front").length>0;
+    /* 癒やす手は、深く傷ついた味方がいるときだけ出す。
+       元気な相手に撃って手番を捨てられると、置いた意味がなくなる。 */
+    if(a.k==="mend"){
+      if(a.once&&f.mendUsed)return false;
+      return alive().some(x=>x!==f&&x.HP<x.maxHP*(a.at||1));
+    }
     if(a.k==="summon"){
       if(f.sumUsed&&a.once)return false;
       if(f.sumCd>0)return false;
@@ -4054,6 +4106,11 @@ function telePreview(f,tt){
       `　${(t.dur||2)+1}ターン`+(t.dice?`　＋ ${t.dice}d6 の侵蝕`:""),danger:true};
   if(t.k==="veil")return {txt:"◈ "+t.n,sub:`前列すべてに DEF +${t.block}`,danger:false};
   if(t.k==="idle")return {txt:"◦ "+t.n,sub:t.d||"",danger:false};
+  if(t.k==="mend")return {txt:"✚ "+t.n,
+    sub:(t.full?`<span style="color:#e0b83a">味方ひとりの HP を すべて 戻す</span>`
+               :`味方ひとりの HP を ${t.heal} 戻す`)+
+        (t.once?"　1戦に1回だけ":"")+
+        (t.at?`　残り ${Math.round(t.at*100)}% を切った味方がいるときだけ`:""),danger:true};
   if(t.k==="heal")return {txt:"✚ "+t.n,
     sub:`<span style="color:#e0b83a">呼んだ相手の HP を 最大の ${Math.round((t.pct||.1)*100)}% 戻す</span>　開く前に摘める`,danger:true};
   if(t.k==="hatch")return {txt:"✚ "+t.n,
@@ -4120,6 +4177,7 @@ function actIcon(t){
   if(t&&t.k==="summon")return {g:"✚",c:"hex"};
   if(t&&t.k==="hatch")return {g:"✚",c:"hex",n:"孵る"};
   if(t&&t.k==="heal")return {g:"✚",c:"buf",n:"癒し"};
+  if(t&&t.k==="mend")return {g:"✚",c:"buf",n:"癒し"};
   if(t&&t.k==="idle")return {g:"◦",c:"me",n:"待ち"};
   if(!t)return {g:"…",c:"me",n:"—"};
   if(t.k==="atk")return {g:"⚔",c:"atk",n:"攻撃"};
@@ -5467,6 +5525,20 @@ async function enemyAct(f){
     log(`<span class="b">${f.name}</span> の <span class="c">${t.n}</span>　`+
       (msg.length?msg.join("　")+`　<span class="s">（${dur+1}ターン）</span>`:"効き目がなかった"));
     await wait(620);
+  }else if(t.k==="mend"){
+    /* 味方ひとりを癒やす。いちばん深く傷ついている者を選ぶ。
+       full なら満タンまで戻す。once なら1戦に1回だけ。 */
+    const c=alive().filter(x=>x!==f&&x.HP<x.maxHP)
+      .sort((a,b)=>(a.HP/a.maxHP)-(b.HP/b.maxHP))[0];
+    if(!c){log(`<span class="b">${f.name}</span> は潮を招いたが、癒す相手がいない`);await wait(450);}
+    else{
+      f.lastAid=t.n;f.mendUsed=true;
+      const hl=t.full?c.maxHP-c.HP:Math.min(t.heal||0,c.maxHP-c.HP);
+      c.HP+=hl;draw();fxOn(c,"charge");popOn(c,"+"+hl,"heal");SFX.found();
+      log(`<span class="b">${f.name}</span> の <span class="c">${t.n}</span>　`+
+        `<span class="b">${c.name}</span> の傷が${t.full?"すべて":""}塞がった　HP <span class="m">+${hl}</span>`);
+      await wait(760);
+    }
   }else if(t.k==="heal"){
     /* 呼ばれた側が、呼んだ側を癒やす。咲いたら散る（wither） */
     const o=foes.find(x=>x.id===f.owner&&x.HP>0);
@@ -6077,6 +6149,13 @@ const ENCS={
  rw3:{n:"虫 と 巨 人",list:["rockworm","golem"]},
  rw4:{n:"石喰いの巣",list:["rockworm","rockworm","gargoyle"]},
  s_sk:{n:"さまよう骨",list:["skeleton"]},
+ s_bf:{n:"骨 の 魚",list:["bonefish"]},
+ c_af:{n:"深みの大魚",list:["abyssfish"]},
+ c_bf2:{n:"骨魚の群れ",list:["bonefish","bonefish"]},
+ c_spa:{n:"司祭と魚人",list:["sahagin","spriest"]},
+ c_afb:{n:"大 魚 と 骨",list:["abyssfish","bonefish"]},
+ c_spw:{n:"潮 を 招 く",list:["sahagin","spriest","wraith"]},
+ c_af3:{n:"深みの饗宴",list:["abyssfish","bonefish","spriest"]},
  s_sa:{n:"はぐれ魚人",list:["sahagin"]},
  s_wr:{n:"淀んだ影",list:["wraith"]},
  rt1:{n:"鼠の群れ",list:["rat","rat","rat"]},
@@ -6249,11 +6328,11 @@ const AREAS={
    x:72,y:82,land:"water",
    d:"かつて栄えた地下都市。水が満ち、住人だったものが残っている。",
    to:[],
-   solo:["s_wr","c_ar","s_sk"],
-   easy:["c_wa","s_sa","wr1"],
-   norm:["c_ar2","sk2","c_sw","sk1"],
-   hard:["sg2","c_bwa","sg1"],
-   elite:["sg3","sk3","wr2"], boss:"b3"},
+   solo:["s_wr","c_ar","s_sk","s_bf"],
+   easy:["c_wa","s_sa","wr1","c_af"],
+   norm:["c_ar2","sk2","c_sw","sk1","c_bf2","c_spa"],
+   hard:["sg2","c_bwa","sg1","c_afb","c_spw"],
+   elite:["sg3","sk3","wr2","c_af3"], boss:"b3"},
 };
 /* ---------- 世 界 地 図 ----------
    区画のつながりを土地として描く。上が地上、下ほど深く、
