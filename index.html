@@ -952,7 +952,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0031";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0032";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -965,6 +965,72 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0032d",tag:"bal",v:"α0.0032",d:"2026-09-02",n:"サイクロプスを組み直しました",b:[
+   "<b>見せ場だった「振りかぶって岩を投げる」が、6回に1回しか見られませんでした。</b>しかも投げるダイスが 1〜3 のばらつきで、溜めても1ダイスで終わることがありました",
+   "<b>岩を掴む を 20% にし、投げるほうを確定3D・威力150% にしました。</b>掴んだ次のターンは必ず投げます。投げたあとは大きく隙ができます",
+   "<b>睨みつける が「恐 怖」を与えるようになりました。</b>2ターンのあいだ 命中が 1 遠のきます。これまでは威力−15%だけで、一つ目の巨人に睨まれた感じがしませんでした",
+   "<b>HP が半分を切ると 大 咆 哮 を上げます。</b>3ターンのあいだ 威力が 30% 上がります。前列の仲間にも乗ります",
+   "身を守る は 防+28 から <b>防+10</b> に。巨人が縮こまるほど硬くなるのは変でした",
+   "<b>新しい状態「恐 怖」</b>と、<b>割合で上がる強化</b>を仕組みとして足しました",
+ ]},
+ {id:"v0032i",tag:"bal",v:"α0.0032",d:"2026-09-02",n:"ディープワンを組み直しました",b:[
+   "<b>手を4つにしました。</b>トライデント（3D 120%）・水 の 奔 流（5D 50%・<b>当たると DEF −15</b>）・水 の 膜（DEF +20）・大 海（4D 70%・<b>DEX −10 と DEF −8</b>）",
+   "<b>段階を二段から一段にしました。</b>HP が半分を切ると <b>深 き 者 の 呼 び 声</b>。鱗が青黒く染まり、<b>STR +18%・DEF +10・DEX +10</b>",
+   "<b>そこから3手番目にかならず トライデントの乱撃（10D 30%）。</b>数で押してくる一撃です",
+   "<b>臣を呼ぶ・臣を励ますはやめました。</b>連れているのは<b>サハギン1体だけ</b>になり、レイスはいなくなりました（どちらも都市の他の部屋には出ます）",
+   "<b>エルダートレントの供もドライアド1体だけになりました。</b>ウィスプはいなくなりました",
+ ]},
+ {id:"v0032h",tag:"up",v:"α0.0032",d:"2026-09-02",n:"ゲートガーディアンが3体がかりになりました",b:[
+   "<b>本体の左右に ガーディアンハンド が付きました。</b>拳は自分から殴ってきませんが、<b>本体を狙うと HP の多いほうの拳が割って入ります</b>",
+   "<b>つまり、両の拳を壊すまで本体には一切届きません。</b>合計HPの 55% が拳で、残り 45% が本体です",
+   "本体の手は 拳を振り下ろす（2D 190%）・突 進（3D 100%）・ハンドガード（DEF +20）、そして <b>3手番目にかならず 連 撃（6D 40%）</b>",
+   "<b>両の拳が砕けると 拳 が 砕 け る。</b>拳を使う手が消え、<b>コアビーム</b>（6D 60%）と <b>プロテクション</b>（DEF +30）に変わります。<b>手応えは落ちません</b>（117 → 119）",
+   "<b>本体を倒せば拳も一緒に崩れます。</b>拳だけが残って戦いが終わらない、ということは起きません",
+   "<b>連れていたガーゴイルとオオコウモリはいなくなりました。</b>拳がその役目を持ちます（どちらも回廊の他の部屋には出るので、素材は変わらず取れます）",
+ ]},
+ {id:"v0032f",tag:"bal",v:"α0.0032",d:"2026-09-02",n:"エルダートレントが花を咲かせるようになりました",b:[
+   "<b>手を4つに絞りました。</b>大枝を振り下ろす（3D 110%）・樹皮を固める（DEF +20）・森を薙ぐ（4D 100%・振ったあと隙）・<b>根 を 貼 る</b>（自分の威力 +20%・2ターン）",
+   "<b>いつでも傷を塞げるのをやめました。</b>これまでは最初から 根を張り直す（HP +70）を持っていて、削っても戻る足踏みになっていました",
+   "<b>HP が半分を切ると 森 が 花 を つ け る。</b>ここから <b>ヒールフラワー</b> を咲かせるようになります",
+   "<b>ヒールフラワーは、咲いた次の手番に古木の HP を最大の 10%（114）戻して散ります。</b>蕾のうちに摘めば、それきり咲きません（HP 45・柔らかい）",
+   "<b>花は 1〜2 つ 同時に咲きます。</b>単体攻撃では1手番にひとつしか摘めないので、もう片方は必ず開きます",
+   "<b>ここは範囲攻撃を持っている者が得をする場面です。</b>薙ぎ払い・アローレイン・インフェルノ／アースクエイクは<b>前列をまとめて薙ぐので、花を2つとも摘みながら古木にも当たります</b>",
+   "<b>花は前列にしか咲きません。</b>後列に隠れて摘めない、ということは起きません",
+   "<b>年輪が燃える は取りやめました。</b>数字が動くだけの段階でした",
+   "<span class=\"s\">古木ひとりぶんの手応えは 126 → 115。段階に入ると 97 まで下がりますが、放っておくと 6〜7手番に1度 114 ずつ戻されます</span>",
+ ]},
+ {id:"v0032g",tag:"fix",v:"α0.0032",d:"2026-09-02",n:"敵の強化の持続が1ターン長く出ていました",b:[
+   "<b>敵が自分や味方を強化したとき、予告とログに 実際より1ターン長い数字が出ていました。</b>2ターンぶんの強化が「3ターン」と書かれていました",
+   "効き目そのものは変わりません。<b>書かれている数字のほうを直しました</b>（サイクロプスの 大 咆 哮 は「4ターン」→ 正しくは <b>3ターン</b>）",
+ ]},
+ {id:"v0032e",tag:"bal",v:"α0.0032",d:"2026-09-02",n:"クイーンスパイダーが卵を産むようになりました",b:[
+   "<b>手を4つに絞りました。</b>大顎で噛みつく（3D 90%）・糸で絡める（<b>DEX −10 と 威力 −10%</b>）・糸で守る（DEF +20）・<b>産 卵</b>",
+   "<b>産卵で「蜘 蛛 の 卵」が 1〜2 個 置かれます。</b>卵は攻撃してきませんが、<b>2手ほどで割れてケイヴスパイダーになります</b>",
+   "<b>割れる前に潰せば、それきりで済みます。</b>柔らかい（HP 40）ので1〜2撃で割れます。母を殴り続けるか、卵を先に潰すかの選択になります",
+   "<b>産卵は、場に子蜘蛛と卵が合わせて1体以下のときにしか出ません。</b>放っておいて無限に増えることはありません",
+   "<b>HP が半分を切ると 腹 を 割 く。</b>一度だけ、ケイヴスパイダーを 1〜3 体 産み落とします",
+   "<b>巣に籠る（DEF +24）は 糸で守る（DEF +20）になりました。</b>母ひとりぶんの手応えは 60 から 49 に下がり、そのぶん子の数で押してきます",
+ ]},
+ {id:"v0032c",tag:"up",v:"α0.0032",d:"2026-09-01",n:"構えが 殴られるまで残るようになりました",b:[
+   "<b>防御して身を固めたのに誰も殴ってこなかった回、その構えは無駄になっていました。</b>自分の手番が来るたび、必ず解けていたためです",
+   "<b>殴られるまで残るようになりました。</b>相手が守りや溜めに回った回でも、構えた1手が無駄になりません",
+   "<b>殴られれば解けます。</b>安全な回に積み重ねても意味はありません（積むだけ手番が減ります）",
+   "<b>スライムが「粘液を吐く」を覚えました。</b>当たると DEF が下がります。キングスライムと同じ手の、弱い版です",
+ ]},
+ {id:"v0032b",tag:"bal",v:"α0.0032",d:"2026-09-01",n:"キングスライムを組み直しました",b:[
+   "<b>最初のボスなので、仕掛けを持たせず攻撃3つだけにしました。</b>のしかかる（3D 90%）・粘液を吐く（2D 50%・<b>当たると DEF が下がります</b>）・まとわりつく（3D 120%）",
+   "<b>HP を 260 から 340 に上げました。</b>そのかわり <b>連れているスライムを2体から1体に減らしています</b>",
+   "<b>HP が半分を切ると、一度だけ分裂します。</b>スライムが 1〜3 体増えます。前列が埋まっていれば後列にも出ます",
+   "守りを固める手と溶かす手は外しました。硬いだけで足踏みになっていたためです",
+ ]},
+ {id:"v0032",tag:"up",v:"α0.0032",d:"2026-09-01",n:"ボスに段階と隙ができました",b:[
+   "<b>ボスは HP が減ると別物になります。</b>行動表がまるごと入れ替わり、守りが薄くなるかわりに攻めが増えます",
+   "キングスライム <b>核が浮かぶ</b>（HP50%）／サイクロプス <b>隻眼が据わる</b>（45%）／クイーンスパイダー <b>腹を割く</b>（50%）",
+   "エルダートレント <b>森が花をつける</b>（50%）／ゲートガーディアン <b>拳が砕ける</b>（両の拳を壊したとき）",
+   "ディープワン <b>深き者の呼び声</b>（50%）",
+   "<b>大振りの技を振ったあと、ボスは無防備になります。</b>防御が落ち、当てやすくなります。予告に「<b>振ったあと 隙ができる</b>」と出るので、<b>待って叩けます</b>",
+   "段階に入るとボスの DEF も落ちます。押し切るのが速くなるぶん、受ける被害も 1.2〜1.4倍 になります",
+ ]},
  {id:"v0031",tag:"up",v:"α0.0031",d:"2026-09-01",n:"幸運を目の前で振るようになりました",b:[
    "<b>キャラを作り終えるとき、幸運のダイスを実際に振って見せるようになりました。</b>自分では動かせない数字なので、黙って決まるのをやめました",
    "<b>幸運に下地の +10 が付きました。</b>これまでは 4〜24 で、低いと宝箱がほぼ空振りだけの周になっていました。いまは <b>14〜34</b> です",
@@ -1758,6 +1824,29 @@ const PXFOE={
   [5,4,2,2,"#c9a227"],[9,4,2,2,"#c9a227"],[6,5,1,1,"#14160f"],[10,5,1,1,"#14160f"],
   [6,6,1,1,"#b1544a"],[9,6,1,1,"#b1544a"],
   [3,8,10,9,"#5c4666"],[4,10,8,6,"#4a3a52"],[6,12,4,3,"#e0d0a8"]],
+ ghand:[[4,2,9,5,"#6b6b76"],
+  [5,2,1,5,"#3a3a44"],[8,2,1,5,"#3a3a44"],[11,2,1,5,"#3a3a44"],
+  [4,1,9,1,"#5c5c66"],
+  [3,7,11,7,"#5c5c66"],[3,7,11,1,"#7a7a86"],
+  [2,9,7,3,"#7a7a86"],[2,9,1,3,"#4a4a52"],
+  [11,9,2,2,"#8a8a96"],
+  [4,14,9,2,"#4a4a52"],
+  [5,16,7,4,"#3a3a44"],[6,17,5,2,"#5c5c66"]],
+ hflower:[[7,13,2,7,"#4a6330"],
+  [3,15,4,2,"#5a7a3a"],[9,15,4,2,"#5a7a3a"],
+  [2,16,1,1,"#4a6330"],[13,16,1,1,"#4a6330"],
+  [6,2,4,1,"#e8a0bc"],[5,3,6,1,"#e8a0bc"],[4,4,8,1,"#e8a0bc"],
+  [3,5,10,5,"#e8a0bc"],[4,10,8,1,"#e8a0bc"],
+  [5,11,6,1,"#d0748f"],[6,12,4,1,"#d0748f"],
+  [2,6,1,3,"#d0748f"],[13,6,1,3,"#d0748f"],
+  [6,5,4,4,"#f2e6b0"],[7,6,2,2,"#e9c46a"]],
+ qegg:[[7,0,2,2,"#b8b2a0"],
+  [6,2,4,1,"#d8d2be"],[5,3,6,2,"#e4dfcc"],
+  [4,5,8,9,"#e4dfcc"],[10,5,2,9,"#cfc8b2"],
+  [5,14,6,2,"#d8d2be"],[6,16,4,1,"#c9c3b2"],
+  [6,7,4,1,"#3a2c40"],[5,8,6,3,"#3a2c40"],[6,11,4,1,"#3a2c40"],
+  [6,9,1,1,"#b1544a"],[9,9,1,1,"#b1544a"],
+  [4,6,8,1,"#f2eee0"],[4,12,8,1,"#f2eee0"]],
  gant:[[4,0,1,3,"#2a2018"],[11,0,1,3,"#2a2018"],
   [5,3,6,5,"#4a3a2a"],
   [6,4,2,2,"#c9a227"],[9,4,2,2,"#c9a227"],[6,5,1,1,"#14160f"],[10,5,1,1,"#14160f"],
@@ -2446,6 +2535,9 @@ const PXAIL={
    [4,5,4,3,"#a86f22"],[3,2,2,1,"#14160f"]],
  blur:[[1,2,6,4,"#8a7f9c"],[2,3,4,2,"#e9e4d4"],[3,4,2,1,"#14160f"],
    [0,0,8,1,"#5a5468"],[0,7,8,1,"#5a5468"],[1,1,2,1,"#5a5468"],[5,5,2,1,"#5a5468"]],
+ fear:[[2,0,4,1,"#8a6b9c"],[1,1,6,4,"#8a6b9c"],[2,2,1,2,"#14160f"],[5,2,1,2,"#14160f"],
+   [2,5,4,1,"#5c4870"],[1,6,1,1,"#5c4870"],[3,6,1,1,"#5c4870"],[5,6,1,1,"#5c4870"],
+   [0,2,1,3,"#5c4870"],[7,2,1,3,"#5c4870"]],
  charm:[[2,1,2,2,"#c96e8a"],[4,1,2,2,"#c96e8a"],[1,3,6,2,"#c96e8a"],
    [2,5,4,2,"#a8506b"],[3,7,2,1,"#a8506b"]],
  /* 萎縮：欠けたサイコロ */
@@ -2478,6 +2570,7 @@ const AIL={
  weakp:{n:"弱体",c:"#a68bbf",d:"威力が割合で下がる"},
  break:{n:"防壊",c:"#c98a3a",d:"DEF が下がる"},
  blur:{n:"盲目",c:"#8a7f9c",d:"命中閾値が上がる"},
+ fear:{n:"恐怖",c:"#8a6b9c",d:"竦んで命中閾値が上がる"},
  charm:{n:"混乱",c:"#c96e8a",d:"味方を襲うようになる"},
  shrink:{n:"萎縮",c:"#9c8a7f",d:"攻撃ダイスが減る"},
 };
@@ -2538,6 +2631,7 @@ async function ailDot(u){
   log(`<span class="${u===me?"a":"b"}">${u.name}</span> は `+
     (ps&&bn?"毒と火傷":ps?"毒":"火傷")+` で <span class="m">${d}</span> 失った`);
   draw();await wait(420);
+  if(u.isFoe&&u.HP>0)await checkPhase(u);
   return u.HP<=0;
 }
 
@@ -3310,6 +3404,7 @@ const FOE={
  /* ===== 1 階層　苔むした坑道 ===== */
  slime:{n:"スライム",d:"核を持たない不定形の生きもの。口も胃も無く、触れたものを体ごと包んで粘液で消化してしまう。その粘液は薄めれば薬になるため、駆け出しの稼ぎ口として重宝される。",mat:"gel",weak:"bolt",resist:"blunt",art:"slime",snd:"blunt",HP:95,STR:22,DEF:14,DEX:6,rank:"front",scout:0,
    acts:[{n:"体当たり",k:"atk",dice:2,w:5},
+         {n:"粘液を吐く",k:"atk",dice:2,pct:-50,ail:{curse:5,t:2},w:2},
          {n:"殻を閉じる",k:"guard",block:20,w:3},
          {n:"のびる",k:"atk",dice:3,w:2}]},
  gslime:{n:"草スライム",d:"草ばかりを食んで緑に染まったスライム。草原の色に紛れているので、踏むまで気づかない。粘体にしては跳ねるように速く、逃げても先回りされる。乾いた草を溜め込んだ体は、火がつくとよく燃える。",mat:"gel",weak:"fire",resist:"blunt",art:"gslime",snd:"blunt",
@@ -3368,11 +3463,22 @@ const FOE={
          {n:"天井へ退く",k:"guard",block:16,w:2}]},
  qspider:{n:"クイーンスパイダー",d:"掘削跡の最奥に巣を構える母蜘蛛。人の背丈ほどの腹には数えきれない子が詰まっていて、傷を負うほど多く産み落とす。ここがゴブリンより先に住んでいた。",mat:"silk",weak:"slash",resist:"blunt",art:"qspider",snd:"slash",
    HP:420,STR:54,DEF:16,DEX:22,rank:"front",scout:2,
-   acts:[{n:"大顎で貫く",k:"atk",dice:2,pct:30,w:5},
-         {n:"巣を揺らす",k:"atk",dice:4,pct:-10,w:3},
-         {n:"子を放つ",k:"summon",who:"cspider",cd:5,w:3},
-         {n:"糸で絡める",k:"hex",slow:12,curse:6,dur:2,w:2},
-         {n:"巣に籠る",k:"guard",block:24,w:2}]},
+   acts:[{n:"大顎で噛みつく",k:"atk",dice:3,pct:-10,w:5},
+         {n:"糸で絡める",k:"hex",slow:10,weakPct:10,dur:2,w:3},
+         {n:"糸で守る",k:"guard",block:20,w:2},
+         {n:"産 卵",k:"summon",who:"qegg",num:2,cd:5,ifUnder:2,count:["cspider","qegg"],w:1}],
+   phases:[{at:.5,n:"腹 を 割 く",d:"腹の皮が裂け、抱えていたものが零れ落ちた",
+     acts:[{n:"大顎で噛みつく",k:"atk",dice:3,pct:-10,w:5},
+           {n:"糸で絡める",k:"hex",slow:10,weakPct:10,dur:2,w:3},
+           {n:"糸で守る",k:"guard",block:20,w:2},
+           {n:"産 卵",k:"summon",who:"qegg",num:2,cd:5,ifUnder:2,count:["cspider","qegg"],w:1},
+           {n:"腹 を 割 く",k:"summon",who:"cspider",num:3,cd:0,hidden:true,w:0}],
+     forceAct:"腹 を 割 く"}]},
+ qegg:{n:"蜘 蛛 の 卵",d:"クイーンスパイダーが糸で吊るした卵嚢。薄い殻ごしに、中のものが身をよじっているのが見える。割れてしまう前なら、叩けばそれきりで済む。",mat:"silk",weak:"slash",art:"qegg",snd:"slash",
+   HP:40,STR:1,DEF:2,DEX:6,rank:"front",scout:1,
+   acts:[{n:"う ご め く",k:"idle",d:"殻の中で、何かが向きを変えた",seq:1,w:0},
+         {n:"殻 が き し む",k:"idle",d:"表面に細い筋が走った",seq:2,w:0},
+         {n:"孵 る",k:"hatch",who:"cspider",seq:3,w:0}]},
  bigbat:{n:"オオコウモリ",d:"洞窟や遺跡の暗がりに、逆さまに下がって眠る大蝙蝠。灯りを嫌い、近づいた者の血を吸う。翼の膜は薄く丈夫で、防具の裏地にちょうどいい。",mat:"wing",weak:"light",resist:"pierce",elem:"dark",art:"bigbat",snd:"slash",HP:98,STR:33,DEF:6,DEX:42,rank:"front",scout:6,
    acts:[{n:"血を吸う",k:"atk",dice:3,drain:.5,w:6},
          {n:"かく乱する",k:"buff",pow:8,w:2}]},
@@ -3423,12 +3529,19 @@ const FOE={
          {n:"毒針を刺す",k:"hex",poison:5,dur:2,w:3},
          {n:"刺し続ける",k:"atk",dice:3,pct:-20,w:2}]},
  kingslime:{n:"キングスライム",d:"無数のスライムが寄り集まり、ひとつの意思を持つに至ったもの。潰しても中から次が出てくるので、核となる一体を見つけない限り終わらない。透き通った粘液は、まだ動いている。",mat:"kgel",weak:"bolt",resist:"blunt",elem:"water",art:"kingslime",snd:"blunt",
-   HP:260,STR:34,DEF:18,DEX:10,rank:"front",scout:1,
-   acts:[{n:"のしかかる",k:"atk",dice:2,pct:25,w:5},
-         {n:"分裂する",k:"summon",who:"slime",cd:6,w:3},
-         {n:"殻を固める",k:"guard",block:26,w:3},
-         {n:"粘液を撒く",k:"atk",dice:4,pct:-35,w:3},
-         {n:"溶 か す",k:"hex",curse:8,dice:1,dur:2,w:2}]},
+   HP:340,STR:34,DEF:18,DEX:10,rank:"front",scout:1,
+   /* 最初のボス。仕掛けは持たせず、3つの攻撃だけで組む。
+      半分を切ったときに一度だけ分裂する（phases の forceAct）。 */
+   acts:[{n:"のしかかる",k:"atk",dice:3,pct:-10,w:5},
+         {n:"粘液を吐く",k:"atk",dice:2,pct:-50,ail:{curse:8,t:2},w:2},
+         {n:"まとわりつく",k:"atk",dice:3,pct:20,w:1},
+         {n:"分裂する",k:"summon",who:"slime",num:3,cd:99,hidden:true,w:0}],
+   phases:[{at:.5,n:"割 れ る",d:"体がひとりでに裂け、中から次が出てきた",
+     forceAct:"分裂する",
+     acts:[{n:"のしかかる",k:"atk",dice:3,pct:-10,w:5},
+           {n:"粘液を吐く",k:"atk",dice:2,pct:-50,ail:{curse:8,t:2},w:2},
+           {n:"まとわりつく",k:"atk",dice:3,pct:20,w:1},
+           {n:"分裂する",k:"summon",who:"slime",num:3,cd:99,hidden:true,w:0}]}]},
 
  /* ===== 原始の草原　2 階層：森 ===== */
  maneater:{n:"マンイーター",d:"獲物を待って動かない食人蔓。地に根を張っているあいだは微動だにせず、間合いに入ったものだけを一息に絡め取る。切っても、切った先から伸びようとする。",mat:"vine",elem:"earth",weak:"fire",resist:"pierce",art:"maneater",snd:"slash",
@@ -3507,12 +3620,22 @@ const FOE={
          {n:"外殻を閉じる",k:"guard",block:22,w:2}]},
  cyclops:{n:"サイクロプス",d:"一つ目の巨人。森の奥深くに一体で生息している。掴んだ岩をそのまま投げてくるが、投げる前に必ず大きく振りかぶる。",mat:"eye",weak:"pierce",resist:"blunt",elem:"earth",art:"cyclops",snd:"blunt",
    HP:400,STR:48,DEF:16,DEX:18,rank:"front",scout:4,
-   acts:[{n:"石棍棒を振るう",k:"atk",dice:3,pct:15,w:5},
-         {n:"大きく薙ぐ",k:"atk",dice:4,pct:-25,w:3},
-         {n:"睨みつける",k:"hex",weak:1,dur:2,w:3},
+   /* 見せ場は「振りかぶって投げる」。掴んだ次のターンは必ず投げ（forceNext）、
+      投げたあとは大きく隙ができる。 */
+   acts:[{n:"石棍棒を振るう",k:"atk",dice:3,pct:10,w:4},
+         {n:"睨みつける",k:"hex",fear:1,dur:2,w:2},
+         {n:"身を守る",k:"guard",block:10,w:2},
          {n:"岩を掴む",k:"buff",pow:20,dur:1,forceNext:"岩を投げる",w:2},
-         {n:"岩を投げる",k:"atk",diceRand:3,pct:40,hidden:true,w:0},
-         {n:"身を守る",k:"guard",block:28,w:2}]},
+         {n:"岩を投げる",k:"atk",dice:3,pct:50,hidden:true,open:{t:2},w:0},
+         {n:"大 咆 哮",k:"cheer",pctUp:30,dur:3,hidden:true,w:0}],
+   phases:[{at:.5,n:"隻 眼 が 据 わ る",d:"傷が深い。天を仰いで吼えた",
+     forceAct:"大 咆 哮",
+     acts:[{n:"石棍棒を振るう",k:"atk",dice:3,pct:10,w:4},
+           {n:"睨みつける",k:"hex",fear:1,dur:2,w:2},
+           {n:"身を守る",k:"guard",block:10,w:2},
+           {n:"岩を掴む",k:"buff",pow:20,dur:1,forceNext:"岩を投げる",w:2},
+           {n:"岩を投げる",k:"atk",dice:3,pct:50,hidden:true,open:{t:2},w:0},
+           {n:"大 咆 哮",k:"cheer",pctUp:30,dur:3,hidden:true,w:0}]}]},
 
  /* ===== ボス ===== */
  bshaman:{n:"ゴブリンシャーマン",d:"群れの奥に据えられた老いたゴブリン。骨と羽を並べて何かを唱えると、前の者たちが目に見えて奮い立つ。自分では前に出ないので、後ろに残っているうちは群れが崩れない。",mat:"ear",weak:"pierce",resist:"dark",elem:"dark",art:"bshaman",snd:"magic",HP:380,STR:50,DEF:15,DEX:26,rank:"back",scout:6,
@@ -3524,22 +3647,46 @@ const FOE={
          {n:"骨の壁",k:"veil",block:12,w:2,needFront:true}]},
  elder:{n:"エルダートレント",d:"世界樹のもっとも近くに立つ古木。動き出してから幾百年、根を下ろすことなく森を巡っている。裂けた幹の奥で年輪が光っており、それが心の臓だと言われる。",mat:"heart",weak:"fire",resist:"slash",elem:"earth",art:"elder",snd:"blunt",
    HP:520,STR:58,DEF:30,DEX:12,rank:"front",scout:3,
-   acts:[{n:"大枝を振り下ろす",k:"atk",dice:3,pct:15,w:6},
-         {n:"森を薙ぐ",k:"atk",dice:4,w:4},
-         {n:"根を張り直す",k:"regen",heal:70,w:2},
-         {n:"森を呼び覚ます",k:"cheer",pow:20,dur:2,w:2},
-         {n:"樹皮を固める",k:"guard",block:26,w:1}]},
- gate:{n:"ゲートガーディアン",d:"回廊の最奥の門を守る守護者。胸に守護核を抱いている。門の向こうにはもう誰もいないが、閉ざす役目だけを ひとりで続けている。",mat:"core",weak:"blunt",resist:"slash",elem:"earth",art:"gate",snd:"blunt",HP:510,STR:58,DEF:31,DEX:14,rank:"front",scout:1,
-   acts:[{n:"拳を振り下ろす",k:"atk",dice:3,w:5},
-         {n:"門を薙ぐ",k:"atk",dice:4,pct:-25,w:3},
-         {n:"門を閉ざす",k:"guard",block:24,w:3},
-         {n:"石の咆哮",k:"cheer",pow:16,w:2}]},
+   acts:[{n:"大枝を振り下ろす",k:"atk",dice:3,pct:10,w:5},
+         {n:"樹皮を固める",k:"guard",block:20,w:3},
+         {n:"森を薙ぐ",k:"atk",dice:4,open:{t:1},w:3},
+         {n:"根 を 貼 る",k:"buff",pctUp:20,dur:2,w:2}],
+   phases:[{at:.5,n:"森 が 花 を つ け る",d:"根もとの土が盛り上がり、蕾が首をもたげた",
+     acts:[{n:"大枝を振り下ろす",k:"atk",dice:3,pct:10,w:5},
+           {n:"樹皮を固める",k:"guard",block:20,w:3},
+           {n:"森を薙ぐ",k:"atk",dice:4,open:{t:1},w:3},
+           {n:"花 を 咲 か せ る",k:"summon",who:"hflower",num:2,cd:2,
+            ifUnder:2,back:false,w:3},
+           {n:"根 を 貼 る",k:"buff",pctUp:20,dur:2,w:2}]}]},
+ hflower:{n:"ヒールフラワー",d:"エルダートレントが根もとに咲かせる花。開くと甘い匂いを放ち、古木の裂けた幹がゆっくりと塞がっていく。蕾のうちに摘めば、それきり咲かない。",mat:"petal",weak:"fire",art:"hflower",snd:"magic",
+   HP:45,STR:1,DEF:4,DEX:8,rank:"front",scout:1,
+   acts:[{n:"つ ぼ み",k:"idle",d:"根もとで蕾がふくらんでいる",seq:1,w:0},
+         {n:"花 が ひ ら く",k:"heal",pct:.1,seq:2,w:0}]},
+ gate:{n:"ゲートガーディアン",d:"回廊の最奥の門を守る守護者。胸に守護核を抱いている。門の向こうにはもう誰もいないが、閉ざす役目だけを ひとりで続けている。両の拳は本体とは別に動き、狙われた本体の前に必ず割って入る。",mat:"core",weak:"blunt",resist:"slash",elem:"earth",art:"gate",snd:"blunt",
+   HP:330,STR:58,DEF:31,DEX:14,rank:"front",scout:1,guardKey:"ghand",
+   acts:[{n:"拳を振り下ろす",k:"atk",dice:2,pct:90,w:5},
+         {n:"突 進",k:"atk",dice:3,w:4},
+         {n:"ハンドガード",k:"guard",block:20,w:4},
+         {n:"連 撃",k:"atk",dice:6,pct:-60,seq:3}],
+   phases:[{noParts:true,n:"拳 が 砕 け る",d:"支えを失い、胸の守護核がむき出しになった",
+     acts:[{n:"突 進",k:"atk",dice:3,w:4},
+           {n:"コアビーム",k:"atk",dice:6,pct:-40,w:3},
+           {n:"プロテクション",k:"guard",block:30,w:2}]}]},
+ ghand:{n:"ガーディアンハンド",d:"ゲートガーディアンの拳。腕から離れて宙に浮き、本体が狙われるたびに割って入る。自分から殴ることはない。砕けば本体の手が三つ死ぬ。",weak:"blunt",resist:"slash",elem:"earth",art:"ghand",snd:"blunt",
+   HP:200,STR:1,DEF:20,DEX:1,rank:"front",scout:1,noAct:true,partOf:"gate",nm:["右","左"],
+   acts:[{n:"動 か な い",k:"idle",d:"ただ そこに在る",w:1}]},
  deepone:{n:"ディープワン",d:"深みから現れ、魚人たちの王を名乗ったもの。魚人よりひと回り大きく、鱗の下に別の何かが透けて見える。守護核を持つが、それをどこで得たのかは誰も知らない。",mat:"core",weak:"bolt",resist:"water",elem:"water",art:"deepone",snd:"blunt",HP:820,STR:78,DEF:30,DEX:24,rank:"front",scout:6,
-   acts:[{n:"王の三叉槍",k:"atk",dice:3,pct:15,w:5},
-         {n:"潮を呼ぶ",k:"atk",dice:5,pct:-25,w:3},
-         {n:"深みの呪い",k:"hex",curse:10,dur:2,w:2},
-         {n:"水の帳",k:"guard",block:26,w:2},
-         {n:"臣を励ます",k:"cheer",pow:18,w:2}]},
+   acts:[{n:"トライデント",k:"atk",dice:3,pct:20,w:5},
+         {n:"水 の 奔 流",k:"atk",dice:5,pct:-50,ail:{curse:15,t:2},w:3},
+         {n:"水 の 膜",k:"guard",block:20,w:3},
+         {n:"大 海",k:"atk",dice:4,pct:-30,ail:{slow:10,curse:8,t:2},w:1}],
+   phases:[{at:.5,n:"深 き 者 の 呼 び 声",d:"鱗が青黒く染まり、禍々しくなる",
+     str:18,def:10,dex:10,
+     acts:[{n:"トライデント",k:"atk",dice:3,pct:20,w:5},
+           {n:"水 の 奔 流",k:"atk",dice:5,pct:-50,ail:{curse:15,t:2},w:3},
+           {n:"水 の 膜",k:"guard",block:20,w:3},
+           {n:"大 海",k:"atk",dice:4,pct:-30,ail:{slow:10,curse:8,t:2},w:1},
+           {n:"トライデントの乱撃",k:"atk",dice:10,pct:-70,seq:3}]}]},
 };
 
 
@@ -3650,14 +3797,49 @@ function depthMul(){
 }
 function makeFoes(){
   const dm=depthMul();
-  return ENCS[sel.enc].list.map((k,i)=>{
+  const list=ENCS[sel.enc].list;
+  const out=list.map((k,i)=>{
     const f=FOE[k];
-    return {...f,id:i,key:k,name:f.n+(ENCS[sel.enc].list.filter(x=>x===k).length>1?" "+"ABC"[i]:""),
+    /* 同じ相手が並ぶときの呼び分け。nm を持つ相手はそれを使う（右／左 など）。
+       前は列そのものの番号 i を使っていたので、
+       ["gate","ghand","ghand"] のような組では B・C から始まっていた。 */
+    const same=list.filter(x=>x===k).length;
+    const nth=list.slice(0,i).filter(x=>x===k).length;
+    return {...f,id:i,key:k,
+      name:f.n+(same>1?" "+((f.nm&&f.nm[nth])||"ABC"[nth]):""),
       maxHP:Math.round(f.HP*dm),HP:Math.round(f.HP*dm),
       STR:Math.round(f.STR*(1+(dm-1)*0.6)),
       rank:(f.flex?(Math.random()<0.5?"front":"back"):f.rank),turn:0,
       block:0,buffs:[],ail:[],stun:false,isFoe:true,tele:null,lastAid:null,sumCd:0,sumUsed:false};
   });
+  /* 「部位」を本体に結びつける。FOE では本体の鍵を文字で持っておき、ここで id に直す */
+  out.forEach(f=>{
+    if(typeof f.partOf==="string"){
+      const b=out.find(x=>x.key===f.partOf);
+      f.partOf=b?b.id:null;
+    }
+  });
+  return out;
+}
+/* かばう … 守り手（部位）を連れている相手を狙うと、いちばん HP の多い守り手が身代わりになる */
+function coverOf(t){
+  if(!t||!t.isFoe||!t.guardKey)return t;
+  const gs=alive().filter(f=>f.isFoe&&f.key===t.guardKey&&f.partOf===t.id);
+  if(!gs.length)return t;
+  return gs.slice().sort((a,b)=>b.HP-a.HP)[0];
+}
+/* 狙い先をまとめて守り手に振り替える。重なった先は1つにまとめる */
+function coverList(ts){
+  const said=new Set(), out=[];
+  ts.forEach(t=>{
+    const c=coverOf(t);
+    if(c!==t&&!said.has(c.id)){
+      said.add(c.id);
+      log(`<span class="c">${c.name}</span> が <span class="b">${t.name}</span> を かばった`);
+    }
+    if(c.HP>0&&!out.includes(c))out.push(c);
+  });
+  return out;
 }
 const alive=()=>foes.filter(f=>f.HP>0);
 const onBoard=()=>foes.filter(f=>f.HP>0);
@@ -3685,6 +3867,60 @@ function canTarget(f){
 
 /* ---------- 予告 ---------- */
 const AIDK=["buff","cheer","hex","veil"];
+/* ===== ボスの段階 =====
+   HP がしきい値を切ったら、行動表ごと入れ替える。1段につき1回だけ。
+   通常の敵と同じ表を最後まで回すと、ボスが「大きいだけの敵」になっていた。
+
+     phases:[{at:.5, n:"名 乗 り", d:"何が起きたか", acts:[...],
+              def:-8, str:20, heal:.1}]
+       at   … 最大HPに対する割合。これを切ると入れ替わる
+       acts … 差し替える行動表（元の表は捨てる）
+       def  … DEF の増減　str … STR の増減（%）　heal … 最大HPに対する回復
+
+   **入れ替えたら予告も引き直すこと。**古い予告のまま殴られると、
+   画面に出ていた技と違うものが飛んでくる。                        */
+async function checkPhase(f){
+  if(!f||!f.isFoe||over)return false;
+  /* 部位を叩いたときは、本体のほうを見に行く */
+  if(f.partOf!=null&&typeof f.partOf==="number"){
+    const body=foes.find(x=>x.id===f.partOf);
+    return (body&&body.HP>0)?checkPhase(body):false;
+  }
+  /* 本体が落ちたら、繋がっている部位も一緒に崩れる */
+  if(f.HP<=0){
+    const ps=foes.filter(x=>x.partOf===f.id&&x.HP>0);
+    if(ps.length){
+      ps.forEach(x=>{x.HP=0;});draw();
+      log(`<span class="b">${f.name}</span> が落ち、<span class="c">${ps.map(x=>x.name).join("・")}</span> も崩れ落ちた`);
+    }
+    return false;
+  }
+  if(!f.phases)return false;
+  const i=f.ph||0, P=f.phases[i];
+  if(!P)return false;
+  /* noParts … HP ではなく「部位が全部落ちたら」で入れ替わる段階 */
+  if(P.noParts){ if(foes.some(x=>x.partOf===f.id&&x.HP>0))return false; }
+  else if(f.HP>f.maxHP*P.at)return false;
+  f.ph=i+1;
+  if(P.acts)f.acts=P.acts;
+  if(P.def)f.DEF=Math.max(0,f.DEF+P.def);
+  if(P.str)f.STR=Math.max(1,Math.round(f.STR*(1+P.str/100)));
+  if(P.dex)f.DEX=Math.max(1,f.DEX+P.dex);
+  if(P.heal){f.HP=Math.min(f.maxHP,f.HP+Math.round(f.maxHP*P.heal));}
+  f.turn=0;                                  /* seq を段階のはじめから数え直す */
+  /* forceAct … その段階に入った瞬間、次の手をこれに決める。
+     「HP が半分を切ったら一度だけ分裂する」のような一発ものに使う。 */
+  if(P.forceAct)f.forceNext=P.forceAct;
+  f.tele=chooseTele(f);f.next=chooseTele(f);
+  draw();drawOrder();
+  SFX.crit();
+  ovMsg(`<span class="k">${f.name}</span><br>${P.n}`,true);
+  log(`<span class="b">${f.name}</span>　─── <span class="c">${P.n}</span>　`+
+    `<span class="s">${P.d||""}</span>`);
+  await wait(1250);
+  ovHide();
+  return true;
+}
 function chooseTele(f){
   /* 決まった順番の行動（seq）。味方が絶えたら solo の行動だけを回す */
   const alone=aliveIn("front").filter(x=>x!==f).length===0;
@@ -3699,8 +3935,13 @@ function chooseTele(f){
      前は !alone を付けていたが、solo の手を持つ敵は上の枝で返ってしまうので
      この条件は効いたことがなく、solo を持たない敵（スプリガン）の
      seq だけを黙って握り潰していた。 */
-  const seq=f.acts.find(a=>a.seq===(f.turn||0)+1);
-  if(seq){f.turn=(f.turn||0)+1;return {...seq};}
+  /* chooseTele が返した N 番目の結果が、そのままその敵の N 手番目の行動になる
+     （tele と next を先に1つずつ引いてあるため）。
+     前は seq が当たったときだけ数えていたので、seq:3 だけを持つ手は
+     turn が 1 から進まず、永久に出番が来なかった。 */
+  f.turn=(f.turn||0)+1;
+  const seq=f.acts.find(a=>a.seq===f.turn);
+  if(seq)return {...seq};
   if(f.forceNext){
     const fa=f.acts.find(a=>a.n===f.forceNext);
     f.forceNext=null;
@@ -3716,8 +3957,13 @@ function chooseTele(f){
     if(a.k==="summon"){
       if(f.sumUsed&&a.once)return false;
       if(f.sumCd>0)return false;
+      /* すでに子が出ているなら呼ばない（数えるのは count、既定は呼ぶ相手） */
+      if(a.ifUnder){const ks=a.count||[a.who];
+        if(alive().filter(x=>x.isFoe&&ks.includes(x.key)).length>=a.ifUnder)return false;}
       if(a.alone&&alive().filter(x=>x!==me).length>1)return false;
-      return aliveIn("front").length<3;
+      /* 前列が満杯でも、後列が空いていれば呼べる */
+      return aliveIn("front").length<3
+        ||(a.back!==false&&aliveIn("back").length<3);
     }
     if(AIDK.includes(a.k)&&f.lastAid===a.n)return false;   // 同じ強化・弱体は連続しない
     return true;
@@ -3745,23 +3991,36 @@ function telePreview(f,tt){
     return {txt:"⚔ "+t.n,
       sub:`${t.dice}d6 ・ 1ヒット ${per} ・ 最大 ${R.hi*t.dice}`+
         (t.drain?`　／　与えた分の ${Math.round(t.drain*100)}% を吸う`:"")+
+        (t.open?`　／　<span style="color:#e0b83a">振ったあと 隙ができる</span>`:"")+
+        (t.ail?`　／　当たると ${[t.ail.curse&&`DEF −${t.ail.curse}`,t.ail.slow&&`DEX −${t.ail.slow}`,
+          t.ail.weak&&`威力 −${t.ail.weak}%`,t.ail.blind&&`命中 −${t.ail.blind}`,
+          t.ail.poison&&`毒 ${t.ail.poison}`].filter(Boolean).join("・")}`:"")+
         (far?`　／　後衛なので4割減`:""),danger:true};
   }
   if(t.k==="guard")return {txt:"◈ "+t.n,sub:`防御 +${t.block}（1ヒットごと）`,danger:false};
   if(t.k==="buff")return {txt:"▲ "+t.n,
-    sub:t.pow?`自分の威力 +${t.pow}　${(t.dur||1)+1}ターン`
+    sub:t.pctUp?`自分の威力 +${t.pctUp}%　${t.dur||1}ターン`
+       :t.pow?`自分の威力 +${t.pow}　${t.dur||1}ターン`
              :`自分の速さ +${t.dex}　この戦闘のあいだ`,danger:false};
-  if(t.k==="cheer")return {txt:"▲ "+t.n,sub:`前列すべての威力 +${t.pow}`,danger:false};
+  if(t.k==="cheer")return {txt:"▲ "+t.n,
+    sub:`前列すべての威力 ${t.pctUp?`+${t.pctUp}%　${t.dur||1}ターン`:`+${t.pow}`}`,danger:false};
   if(t.k==="summon")return {txt:"✚ "+t.n,
-    sub:`${FOE[t.who].n} を 1〜3 体 呼ぶ`,danger:true};
+    sub:`${FOE[t.who].n} を 1〜${t.num||3} 体 呼ぶ`,danger:true};
   if(t.k==="regen")return {txt:"✚ "+t.n,sub:`自分の HP を ${t.heal} 回復する`,danger:false};
   if(t.k==="hex")return {txt:"✦ "+t.n,
     sub:[t.curse?`こちらのDEF −${t.curse}`:"",t.weak?`こちらの威力 −15%`:"",
+      t.weakPct?`こちらの威力 −${t.weakPct}%`:"",
       t.slow?`こちらのDEX −${t.slow}`:"",t.blind?`こちらの命中閾値 +${t.blind}`:"",
+      t.fear?`恐 怖　こちらの命中閾値 +${t.fear}`:"",
       t.poison?`毎ターン ${t.poison} の毒`:""]
       .filter(Boolean).join("　")+
       `　${(t.dur||2)+1}ターン`+(t.dice?`　＋ ${t.dice}d6 の侵蝕`:""),danger:true};
   if(t.k==="veil")return {txt:"◈ "+t.n,sub:`前列すべてに DEF +${t.block}`,danger:false};
+  if(t.k==="idle")return {txt:"◦ "+t.n,sub:t.d||"",danger:false};
+  if(t.k==="heal")return {txt:"✚ "+t.n,
+    sub:`<span style="color:#e0b83a">呼んだ相手の HP を 最大の ${Math.round((t.pct||.1)*100)}% 戻す</span>　開く前に摘める`,danger:true};
+  if(t.k==="hatch")return {txt:"✚ "+t.n,
+    sub:`<span style="color:#e0b83a">${FOE[t.who].n} が出てくる</span>　割れる前に潰せる`,danger:true};
   if(t.k==="grow")return {txt:"▲ "+t.n,
     sub:`最大HP +${Math.round(t.hp*depthMul())}`+(t.pow?`　威力 +${t.pow}`:"")+
       `　膨れる前に倒せば これは起きない`,danger:false};
@@ -3822,6 +4081,9 @@ function actIcon(t){
   if(t&&t.k==="hex")return {g:"✦",c:"hex"};
   if(t&&t.k==="regen")return {g:"✚",c:"buf"};
   if(t&&t.k==="summon")return {g:"✚",c:"hex"};
+  if(t&&t.k==="hatch")return {g:"✚",c:"hex",n:"孵る"};
+  if(t&&t.k==="heal")return {g:"✚",c:"buf",n:"癒し"};
+  if(t&&t.k==="idle")return {g:"◦",c:"me",n:"待ち"};
   if(!t)return {g:"…",c:"me",n:"—"};
   if(t.k==="atk")return {g:"⚔",c:"atk",n:"攻撃"};
   if(t.k==="guard"||t.k==="veil")return {g:"◈",c:"def",n:"防御"};
@@ -4102,6 +4364,7 @@ function threshold(u,tgt,opt){
   opt=opt||{};
   let t=4;
   t+=ailSum(u,"blur");                   /* 盲目：狙いが定まらない */
+  t+=ailSum(u,"fear");                   /* 恐怖：竦んで手元が狂う */
   if(!u.isFoe&&tgt.key){
     const c=codexLv(tgt.key);
     if(c>=2)t-=1;      /* 3戦 */
@@ -4239,7 +4502,8 @@ function drawActs(){
     add("bag","道 具 を 使 う",`持ち物 ${bagLabel()}`,false,()=>bagPanel());
   }
   if(vowGone())$("#prompt").textContent="▸ 討つと告げた相手は もういない";
-  add("def","防 御 す る",`DEF +${blockValue()}（1ヒットごと）　MP +${GUARD_MP}　再使用待ち −1`,false,
+  add("def","防 御 す る",`DEF +${blockValue()}（1ヒットごと）　MP +${GUARD_MP}　再使用待ち −1`
+    +`　<span style="color:#8fd0ff">殴られるまで残る</span>`,false,
     ()=>doAct({kind:"guard",block:blockValue()}));
   if(me.rank==="front")
     add("mv","後ろへ下がる","後衛へ ・ 敵前列からの被害 4割減 ・ 近接は使えない",false,
@@ -4505,6 +4769,10 @@ function log(html,cls){
 let killedThisAttack=false,sawSix=false;
 async function playerAttack(targets,opt){
   opt=opt||{};
+  /* 守り手のいる相手は直接殴れない。ここで狙い先ごと振り替える。
+     命中閾値も守り手のもので出したいので、ダイスを振る前に済ませておく。 */
+  targets=coverList(targets);
+  if(!targets.length)return;
   killedThisAttack=false;sawSix=false;me.attackedLast=true;
   let n=Math.max(1,me.wep.hands+(opt.dice||0)+scoutBonus+passOn("dice")
     -ailSum(me,"shrink"));
@@ -4635,6 +4903,7 @@ async function playerAttack(targets,opt){
       await wait(170);
     }
     t.HP=endHP;
+    await checkPhase(t);       /* しきい値を切ったらボスが段階を上げる */
     const pin=passOn("pin");
     if(pin>0&&vals.length>=pin&&t.HP>0){
       ailAdd(t,"slow",8,2);
@@ -4908,7 +5177,9 @@ function foeModal(f){
    索敵で片方だけ成功したときの 1ラウンド目に使う。 */
 function orderOf(first){
   const dx=u=>(u===me?dexOf():Math.max(1,u.DEX-ailSum(u,"slow")));
-  const list=[me,...alive()].sort((a,b)=>{
+  /* noAct … 手番を持たない相手（ガーディアンハンドのような「部位」）。
+     盤には立つし狙えるが、順番には並ばない。 */
+  const list=[me,...alive().filter(f=>!f.noAct)].sort((a,b)=>{
     const d=dx(b)-dx(a);
     if(d)return d;
     return a===me?-1:1;
@@ -4929,7 +5200,14 @@ async function runQueue(){
     if(u.HP<=0){qi++;continue;}
     if(u===me){
       if(me.again){me.again=false;log(`<span class="a">${me.name}</span> は続けて動く`);busy=false;draw();drawActs();return;}
-      me.block=0;me.counter=0;me.selfDef=0;
+      /* 構えは「殴られて初めて減る」。誰も殴ってこなかった回は そのまま残す。
+         前は自分の手番のたびに必ず 0 に戻していたので、相手が守りや溜めに
+         回った回は、防御に使った1手が丸ごと消えていた。
+         殴られれば落ちるので、安全な回に積み重ねても意味は無い（積むだけ無駄になる）。 */
+      if(me.blockSpent){me.block=0;me.blockSpent=false;}
+      else if(me.block>0)log(`<span class="a">${me.name}</span> の構えはまだ解けていない　`+
+        `<span class="c">DEF +${me.block}</span>`);
+      me.counter=0;me.selfDef=0;
       if(me.holdDef){
         me.holdDef.t--;
         if(me.holdDef.t<0)me.holdDef=null;
@@ -4974,6 +5252,19 @@ async function enemyAct(f){
     draw();fxOn(f,"guard");popOn(f,"麻 痺","blk");
     log(`<span class="b">${f.name}</span> は痺れて動けない`);await wait(500);return;}
   const t=f.tele;
+  /* 大振りの技は、振ったあと隙ができる。
+     防壊（DEF が下がる）と鈍足（当てやすくなる）を自分にかける。
+     予告に「そのあと隙ができる」と出るので、待って叩ける。 */
+  const opening=async()=>{
+    if(!t.open)return;
+    const o=t.open, dur=o.t||1;
+    ailAdd(f,"break",o.def||Math.max(4,Math.round(f.DEF*0.6)),dur);
+    ailAdd(f,"slow",o.slow||14,dur);
+    draw();fxOn(f,"charge");popOn(f,"無 防 備","weakhit");
+    log(`　<span class="b">${f.name}</span> は振り抜いて <span class="c">無防備</span>　`+
+      `<span class="s">（${dur+1}ターン）</span>`);
+    await wait(420);
+  };
   if(t.k==="atk"){
     const reach=(f.rank==="front"&&me.rank==="back");   // 後衛には手が届きにくい
     let per=perHit(powOf(f,{pct:t.pct||0,pow:t.pow||0}),defOf(me));
@@ -4994,7 +5285,10 @@ async function enemyAct(f){
     }
     const startHP=me.HP, endHP=Math.max(0,endHP0);
     me.taken=(me.taken||0)+Math.max(0,startHP-endHP);
-    if(startHP>endHP)me.hurtThisRound=true;
+    if(startHP>endHP){
+      me.hurtThisRound=true;
+      if(me.block>0)me.blockSpent=true;    /* 構えが実際に働いた */
+    }
     if(hits){
       const shown=Math.min(hits,5);
       for(let i=0;i<shown;i++){
@@ -5012,6 +5306,23 @@ async function enemyAct(f){
       const hl=Math.min(Math.round(dmg*t.drain),f.maxHP-f.HP);
       if(hl>0){f.HP+=hl;fxOn(f,"charge");popOn(f,"+"+hl,"heal");
         log(`<span class="b">${f.name}</span> が <span class="m">${hl}</span> 吸い取った`);}
+    }
+    /* 攻撃そのものに状態異常を乗せる。当たったときだけ効く。
+       hex と違って「殴りながら崩す」手が書ける。
+         {k:"atk",dice:2,pct:-50,ail:{curse:8,t:2}} */
+    if(t.ail&&hits&&me.HP>0){
+      const A=t.ail, du=A.t||2, put=[];
+      if(A.curse){ailAdd(me,"break",A.curse,du);put.push(`DEF −${A.curse}`);}
+      if(A.slow){ailAdd(me,"slow",A.slow,du);put.push(`DEX −${A.slow}`);}
+      if(A.weak){ailAdd(me,"weakp",A.weak,du);put.push(`威力 −${A.weak}%`);}
+      if(A.blind){ailAdd(me,"blur",A.blind,du);put.push(`命中 −${A.blind}`);}
+      if(A.fear){ailAdd(me,"fear",A.fear,du);put.push(`恐怖 命中 −${A.fear}`);}
+      if(A.poison){ailAdd(me,"poison",A.poison,du);put.push(`毎ターン 毒 ${A.poison}`);}
+      if(put.length){
+        draw();popSelf("防御−","each");
+        log(`　${put.join("　")}　<span class="s">（${du+1}ターン）</span>`);
+        await wait(380);
+      }
     }
     draw();
     if(hits){popSelf("−"+dmg);SFX.dmg();}
@@ -5034,24 +5345,35 @@ async function enemyAct(f){
   }else if(t.k==="buff"){
     f.lastAid=t.n;
     if(t.pow)addBuff(f,t.pow,t.dur||1);
+    /* 割合で上げる強化。掛けた時点の STR から量を出して、持続は固定値と同じ器に入れる。
+       深さで STR が伸びても、上がり幅が置いていかれない。 */
+    if(t.pctUp)addBuff(f,Math.round(f.STR*t.pctUp/100),t.dur||1);
     /* 素早さを上げる手。持続の器が無いので この戦闘のあいだ ずっと乗る。
        threshold が tgt.DEX をそのまま見るので、上げた瞬間から当てにくくなる。
        行動順は次のラウンドの buildQueue から効く。 */
     if(t.dex)f.DEX+=t.dex;
     if(t.forceNext)f.forceNext=t.forceNext;
     draw();fxOn(f,"charge");
-    popOn(f,t.pow?"力+"+t.pow:"速+"+t.dex,"blk");SFX.open();
+    popOn(f,t.pctUp?"力+"+t.pctUp+"%":t.pow?"力+"+t.pow:"速+"+t.dex,"blk");SFX.open();
     log(`<span class="b">${f.name}</span> が`+
-      (t.pow?`力をためた（威力 +${t.pow}　${(t.dur||1)+1}ターン）`:"")+
+      (t.pctUp?`力を漲らせた（威力 <span class="m">+${t.pctUp}%</span>　${t.dur||1}ターン）`:"")+
+      (t.pow?`力をためた（威力 +${t.pow}　${t.dur||1}ターン）`:"")+
       (t.dex?`${t.pow?"　":""}身を軽くした（速さ <span class="m">+${t.dex}</span>　この戦闘のあいだ）`:""));
     await wait(450);
   }else if(t.k==="cheer"){
-    f.lastAid=t.n;aliveIn("front").forEach(x=>{addBuff(x,t.pow,t.dur||1);});
-    draw();aliveIn("front").forEach(x=>{fxOn(x,"charge");popOn(x,"力+"+t.pow,"blk");});SFX.open();
-    log(`<span class="b">${f.name}</span> が前列を鼓舞した（威力 +${t.pow}）`);await wait(500);
+    f.lastAid=t.n;
+    aliveIn("front").forEach(x=>{
+      addBuff(x,t.pctUp?Math.round(x.STR*t.pctUp/100):t.pow,t.dur||1);});
+    draw();aliveIn("front").forEach(x=>{fxOn(x,"charge");
+      popOn(x,t.pctUp?"力+"+t.pctUp+"%":"力+"+t.pow,"blk");});SFX.open();
+    log(`<span class="b">${f.name}</span> が前列を鼓舞した（威力 `+
+      (t.pctUp?`<span class="m">+${t.pctUp}%</span>　${t.dur||1}ターン`:`+${t.pow}`)+`）`);await wait(500);
   }else if(t.k==="summon"){
     f.lastAid=t.n;f.sumUsed=true;f.sumCd=t.cd||0;
-    const n=Math.min(1+Math.floor(Math.random()*3),3-aliveIn("front").length);
+    /* 前列が埋まっていたら後列へ回す。num で 1dN を指定できる（既定 1d3） */
+    const roll=1+Math.floor(Math.random()*(t.num||3));
+    const n=Math.min(roll,(3-aliveIn("front").length)
+      +(t.back!==false?3-aliveIn("back").length:0));
     if(n<=0){log(`<span class="b">${f.name}</span> は呼んだが、誰も来なかった`);await wait(450);}
     else{
       const dm=depthMul();
@@ -5061,8 +5383,9 @@ async function enemyAct(f){
         const nf={...base,id:foes.length,key:t.who,
           name:base.n+" "+"ABCDEF"[foes.filter(x=>x.key===t.who).length],
           maxHP:hp,HP:hp,STR:Math.round(base.STR*(1+(dm-1)*0.6)),
-          block:0,buffs:[],ail:[],stun:false,isFoe:true,
-          rank:"front",tele:null,next:null,lastAid:null,turn:0,sumCd:0,sumUsed:false};
+          block:0,buffs:[],ail:[],stun:false,isFoe:true,owner:f.id,
+          rank:aliveIn("front").length<3?"front":"back",
+          tele:null,next:null,lastAid:null,turn:0,sumCd:0,sumUsed:false};
         nf.tele=chooseTele(nf);nf.next=chooseTele(nf);
         foes.push(nf);
         /* 呼ばれた者は この場ですぐ 順番に加わる */
@@ -5096,8 +5419,10 @@ async function enemyAct(f){
     const dur=t.dur||2, msg=[];
     if(t.curse){ailAdd(me,"break",t.curse,dur);msg.push(`DEF <span class="m">−${t.curse}</span>`);}
     if(t.weak){ailAdd(me,"weakp",t.weak*15,dur);msg.push(`威力 <span class="m">−${t.weak*15}%</span>`);}
+    if(t.weakPct){ailAdd(me,"weakp",t.weakPct,dur);msg.push(`威力 <span class="m">−${t.weakPct}%</span>`);}
     if(t.slow){ailAdd(me,"slow",t.slow,dur);msg.push(`DEX <span class="m">−${t.slow}</span>`);}
     if(t.blind){ailAdd(me,"blur",t.blind,dur);msg.push(`命中が <span class="m">${t.blind}</span> 遠のく`);}
+    if(t.fear){ailAdd(me,"fear",t.fear,dur);msg.push(`竦んで 命中が <span class="m">${t.fear}</span> 遠のく`);}
     if(t.poison){ailAdd(me,"poison",t.poison,dur);msg.push(`毎ターン <span class="m">${t.poison}</span> の毒`);}
     if(t.dice){ailAdd(me,"shrink",t.dice,dur);msg.push(`攻撃ダイス <span class="m">−${t.dice}</span>`);}
     draw();fxOn(me,"magic");
@@ -5105,11 +5430,42 @@ async function enemyAct(f){
     log(`<span class="b">${f.name}</span> の <span class="c">${t.n}</span>　`+
       (msg.length?msg.join("　")+`　<span class="s">（${dur+1}ターン）</span>`:"効き目がなかった"));
     await wait(620);
+  }else if(t.k==="heal"){
+    /* 呼ばれた側が、呼んだ側を癒やす。咲いたら散る（wither） */
+    const o=foes.find(x=>x.id===f.owner&&x.HP>0);
+    if(!o){log(`<span class="b">${f.name}</span> は咲いたが、力を送る相手がいない`);await wait(520);}
+    else{
+      const hl=Math.min(Math.round(o.maxHP*(t.pct||.1)),o.maxHP-o.HP);
+      o.HP+=hl;draw();fxOn(o,"charge");popOn(o,"+"+hl,"heal");SFX.found();
+      log(`<span class="c">${f.name}</span> が開き、<span class="b">${o.name}</span> の傷が塞がった　HP <span class="m">+${hl}</span>`);
+      await wait(700);
+    }
+    if(t.wither!==false){f.HP=0;draw();}
+  }else if(t.k==="idle"){
+    /* 卵のように、ただ場に在るだけの相手。手番は使うが何もしない */
+    draw();fxOn(f,"charge");
+    log(`<span class="b">${f.name}</span>　<span class="s">${t.d||"は じっとしている"}</span>`);
+    await wait(520);
+  }else if(t.k==="hatch"){
+    /* 割れて中身が出る。殻そのものは消え、同じ立ち位置を中身が引き継ぐ */
+    const dm=depthMul(), base=FOE[t.who], hp=Math.round(base.HP*dm);
+    const nf={...base,id:foes.length,key:t.who,
+      name:base.n+" "+"ABCDEF"[foes.filter(x=>x.key===t.who).length],
+      maxHP:hp,HP:hp,STR:Math.round(base.STR*(1+(dm-1)*0.6)),
+      block:0,buffs:[],ail:[],stun:false,isFoe:true,rank:f.rank,
+      tele:null,next:null,lastAid:null,turn:0,sumCd:0,sumUsed:false};
+    f.HP=0;                                   // 殻は割れて残らない
+    nf.tele=chooseTele(nf);nf.next=chooseTele(nf);
+    foes.push(nf);queue.push(nf);
+    draw();drawOrder();fxOn(nf,"charge");SFX.found();
+    log(`<span class="c">${f.name}</span> が割れ、<span class="b">${nf.name}</span> が這い出した`);
+    await wait(700);
   }else if(t.k==="veil"){
     aliveIn("front").forEach(x=>{x.block+=t.block;});
     draw();aliveIn("front").forEach(x=>{fxOn(x,"guard");popOn(x,"+"+t.block,"blk");});SFX.open();
     log(`<span class="b">${f.name}</span> が霧を張った（前列に防御 +${t.block}／ヒット）`);await wait(500);
   }
+  await opening();          /* 大振りの技は、振り抜いたあと隙になる */
 }
 
 async function endRound(){
@@ -5671,7 +6027,7 @@ const ENCS={
  w_ce1:{n:"蹄 の 音",list:["centaur"]},
  w_sd3:{n:"岩と木の声",list:["spriggan","dryad"]},
  w_sp2:{n:"ふたつの岩",list:["spriggan","spriggan"]},
- wb:{n:"エルダートレント",list:["elder","dryad","wisp"]},
+ wb:{n:"エルダートレント",list:["elder","dryad"]},
  s_bt:{n:"羽ばたく影",list:["bigbat"]},
  s_ws:{n:"水路の粘体",list:["wslime"]},
  ws1:{n:"満ちる水路",list:["wslime","wslime"]},
@@ -5767,9 +6123,9 @@ const ENCS={
  f_be2:{n:"二 頭 の 熊",list:["bear","bear"]},
  /* ボス */
  b1:{n:"クイーンスパイダー",list:["qspider","cspider","cspider"]},
- b2:{n:"ゲートガーディアン",list:["gate","gargoyle","bigbat"]},
- b3:{n:"ディープワン",list:["deepone","sahagin","wraith"]},
- pb1:{n:"キングスライム",list:["kingslime","slime","slime"]},
+ b2:{n:"ゲートガーディアン",list:["gate","ghand","ghand"]},
+ b3:{n:"ディープワン",list:["deepone","sahagin"]},
+ pb1:{n:"キングスライム",list:["kingslime","slime"]},
  pb2:{n:"サイクロプス",list:["cyclops","orc","mandragora"]},
 };
 
@@ -8256,11 +8612,12 @@ async function doItem(k,tgt){
     log(`<span class="a">${it.n}</span> が <span class="b">${tgt.name}</span> を捕らえた`);
   }
   if(it.dmg){
-    const list=it.all?alive().filter(f=>f!==me&&f.rank===(tgt?tgt.rank:"front")):[tgt];
+    const list=coverList(it.all?alive().filter(f=>f!==me&&f.rank===(tgt?tgt.rank:"front")):[tgt]);
     for(const t of list){
       if(!t)continue;
       const d=it.dmg+Math.round(it.dmg*0.25*RUN.act);
       t.HP=Math.max(0,t.HP-d);
+      await checkPhase(t);
       fxOn(t,"blunt");popOn(t,"−"+d);SFX.dmg();
       log(`<span class="a">${it.n}</span> → <span class="b">${t.name}</span>　`+
         `<span class="m">${d}</span>（防御を無視）`);
@@ -8365,7 +8722,7 @@ function prepareBattle(){
   foes=makeFoes();
   if(RUN&&RUN.elite)foes.forEach(f=>{
     f.maxHP=Math.round(f.maxHP*1.4);f.HP=f.maxHP;f.STR=Math.round(f.STR*1.15);});
-  foes.forEach(f=>{f.tele=chooseTele(f);f.next=chooseTele(f);});
+  foes.forEach(f=>{f.ph=0;f.acts=FOE[f.key].acts;f.tele=chooseTele(f);f.next=chooseTele(f);});
   if(passOn("charmStart")>0&&foes.length){
     const v=foes[Math.floor(Math.random()*foes.length)];
     ailAdd(v,"palsy",0,0);
@@ -8375,7 +8732,7 @@ function prepareBattle(){
   fleeUsed=false;foeStart=foes.length;
   queue=[me,...foes];qi=-1;
   scoutFirst=null;
-  me.block=0;me.half=false;me.rank="front";me.tmpPow=0;me.tmpDef=0;me.ail=[];me.counter=0;me.focus=null;me.dexUp=0;me.again=null;me.selfDef=0;me.endured=false;me.coat=null;me.beast=null;me.goldPow=null;me.selfPow=null;me.taken=0;
+  me.block=0;me.blockSpent=false;me.half=false;me.rank="front";me.tmpPow=0;me.tmpDef=0;me.ail=[];me.counter=0;me.focus=null;me.dexUp=0;me.again=null;me.selfDef=0;me.endured=false;me.coat=null;me.beast=null;me.goldPow=null;me.selfPow=null;me.taken=0;
   me.sk.forEach(k=>k.cdLeft=0);
   $("#acts").innerHTML="";
   $("#stageLbl").textContent=`${RUN.act+1}階層　${RUN.cur?RUN.cur.name:""}`+
