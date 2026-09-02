@@ -997,6 +997,15 @@ const NEWS=[
    "身を守る は 防+28 から <b>防+10</b> に。巨人が縮こまるほど硬くなるのは変でした",
    "<b>新しい状態「恐 怖」</b>と、<b>割合で上がる強化</b>を仕組みとして足しました",
  ]},
+ {id:"v0034c",tag:"up",v:"α0.0034",d:"2026-09-02",n:"防御が シールドになりました",b:[
+   "<b>防御で得るものが DEF ではなく シールドになりました。</b>DEF とは別の器で、<b>1ヒットごとに その数だけ ダメージを相殺します</b>",
+   "<b>あふれたぶんは そのまま HP に入ります。</b>シールド 7 に 10 のダメージなら、7 を消して 3 が HP へ",
+   "<b>いちばん変わるのは「削り切れる」ことです。</b>これまで DEF には「威力の 25% までしか削れない」下限があり、<b>大きい一撃には構えても必ず通っていました</b>。シールドにはその下限がありません",
+   "<b>連撃に弱い・単発に弱い といった偏りはありません。</b>1ヒットごとに引くので、どちらにも同じだけ効きます",
+   "<b>見切りは そのままダメージを半分にします。</b>半分にしてから シールドが相殺します（同じ出目で 147 → 見切り 75 → シールド18 と重ねて 21）",
+   "<b>カウンターは シールドで消したぶんも返します。</b>受け止めた一撃こそ返せるようにしました",
+   "<span class=\"s\">数字（防御値・敵の guard の値）は変えていません。器の形だけを変えています</span>",
+ ]},
  {id:"v0034b",tag:"up",v:"α0.0034",d:"2026-09-02",n:"長引くと 双方 当たりやすくなります",b:[
    "<b>硬い者どうしが延々と当たらない、という膠着をほどくためのものです。</b><b>5ラウンドごとに 双方の命中閾値が −1</b>、下げるのは <b>−2 まで</b>",
    "1〜5ラウンド目は これまでどおり。<b>6ラウンド目から −1、11ラウンド目から −2</b> です",
@@ -2726,8 +2735,8 @@ function stateRows(u){
       v:(a.k==="palsy"?"":(a.k==="weakp"?`−${a.v}%`:`−${a.v}`)),t:a.t+1});
   });
   if(u===me){
-    if(me.block)R.push({icon:ailIcon("up_def"),n:"構 え",c:"#8fd0ff",good:true,
-      v:"+"+me.block,d:"1ヒットごとの軽減。殴られるまで残る"});
+    if(me.block)R.push({icon:ailIcon("up_def"),n:"シールド",c:"#8fd0ff",good:true,
+      v:me.block,d:"1ヒットごと この数だけ相殺する。殴られるまで残る"});
     if(me.holdDef)R.push({icon:ailIcon("up_def"),n:"持続の構え",c:"#8fd0ff",good:true,
       v:"+"+me.holdDef.v,t:me.holdDef.t+1,d:"手番のはじめに構えが戻る"});
     if(me.half)R.push({icon:ailIcon("up_half"),n:"見 切 り",c:"#9fd8ff",good:true,
@@ -2754,8 +2763,8 @@ function stateRows(u){
     if(me.vow&&me.vow.id!=null)R.push({icon:ailIcon("up_pow"),n:"誓 い",c:"#c96e8a",good:true,
       v:"",d:"決めた相手しか狙えない"});
   }else{
-    if(u.block)R.push({icon:ailIcon("up_def"),n:"構 え",c:"#8fd0ff",good:true,
-      v:"+"+u.block,d:"1ヒットごとの軽減"});
+    if(u.block)R.push({icon:ailIcon("up_def"),n:"シールド",c:"#8fd0ff",good:true,
+      v:u.block,d:"1ヒットごと この数だけ相殺する"});
     if(buffSum(u))R.push({icon:ailIcon("up_pow"),n:"威 力",c:"#ff8b5a",good:true,
       v:"+"+buffSum(u),t:(u.buffs||[]).reduce((a,b)=>Math.max(a,b.t),0),
       d:"攻撃が重くなっている"});
@@ -4201,8 +4210,11 @@ function telePreview(f,tt){
     if(far)per=Math.max(1,Math.round(per*0.6));
     const thr=threshold(f,me,{});
     const R=hitRange(per,t.dice,thr);
+    /* シールドは1ヒットごとに引かれる。予告の数字にも織り込む */
+    const sh=shieldOf(me), perS=Math.max(0,per-sh);
     return {txt:"⚔ "+t.n,
-      sub:`${t.dice}d6 ・ 1ヒット ${per} ・ 最大 ${R.hi*t.dice}`+
+      sub:`${t.dice}d6 ・ 1ヒット ${sh?`<span style="color:#8fd0ff">${perS}</span>（盾 −${sh}）`:per} ・ 最大 ${
+        Math.max(0,R.hi-sh)*t.dice}`+
         (t.drain?`　／　与えた分の ${Math.round(t.drain*100)}% を吸う`:"")+
         (t.open?`　／　<span style="color:#e0b83a">振ったあと 隙ができる</span>`:"")+
         (t.ail?`　／　当たると ${[t.ail.curse&&`DEF −${t.ail.curse}`,t.ail.slow&&`DEX −${t.ail.slow}`,
@@ -4210,7 +4222,8 @@ function telePreview(f,tt){
           t.ail.poison&&`毒 ${t.ail.poison}`].filter(Boolean).join("・")}`:"")+
         (far?`　／　後衛なので4割減`:""),danger:true};
   }
-  if(t.k==="guard")return {txt:"◈ "+t.n,sub:`防御 +${t.block}（1ヒットごと）`,danger:false};
+  if(t.k==="guard")return {txt:"◈ "+t.n,
+    sub:`シールド ${t.block}（1ヒットごとに相殺する）`,danger:false};
   if(t.k==="buff")return {txt:"▲ "+t.n,
     sub:t.pctUp?`自分の威力 +${t.pctUp}%　${t.dur||1}ターン`
        :t.pow?`自分の威力 +${t.pow}　${t.dur||1}ターン`
@@ -4228,7 +4241,7 @@ function telePreview(f,tt){
       t.poison?`毎ターン ${t.poison} の毒`:""]
       .filter(Boolean).join("　")+
       `　${(t.dur||2)+1}ターン`+(t.dice?`　＋ ${t.dice}d6 の侵蝕`:""),danger:true};
-  if(t.k==="veil")return {txt:"◈ "+t.n,sub:`前列すべてに DEF +${t.block}`,danger:false};
+  if(t.k==="veil")return {txt:"◈ "+t.n,sub:`前列すべてに シールド ${t.block}`,danger:false};
   if(t.k==="idle")return {txt:"◦ "+t.n,sub:t.d||"",danger:false};
   if(t.k==="mend")return {txt:"✚ "+t.n,
     sub:(t.full?`<span style="color:#e0b83a">味方ひとりの HP を すべて 戻す</span>`
@@ -4737,8 +4750,15 @@ function gearWithQuality(g,q){
   out.d=d.join("　")+`　<span style="color:${q.c}">${q.n.replace(/ /g,"")}</span>`;
   return out;
 }
+/* シールド。DEF とは別の器で、1ヒットごとに その数だけ相殺する。
+   DEF は「威力の25%までしか削れない」下限があるが、シールドには無い。
+   だから シールド7 に 10 が来れば 7 を消して 3 が HP に入る。
+   ためた総量から引く器ではないので、連撃に弱いも単発に弱いも無い。 */
+function shieldOf(u){ return Math.max(0,u.block||0); }
+/* 1ヒットぶんのダメージからシールドを引く */
+function afterShield(d,u){ return Math.max(0,d-shieldOf(u)); }
 function defOf(u){
-  let d=u.DEF+(u.block||0)+(u===me?passOn("guard")+(me.tmpDef||0)-passOn("light")*10
+  let d=u.DEF+(u===me?passOn("guard")+(me.tmpDef||0)-passOn("light")*10
     +passOn("allround")*3+(me.selfDef||0):0);
   if(u===me)d+=passOn("grace")*4;
   if(u===me&&passOn("clean")>0&&!me.hurtThisRound)d+=passOn("clean");
@@ -4778,7 +4798,7 @@ function drawActs(){
     add("bag","道 具 を 使 う",`持ち物 ${bagLabel()}`,false,()=>bagPanel());
   }
   if(vowGone())$("#prompt").textContent="▸ 討つと告げた相手は もういない";
-  add("def","防 御 す る",`DEF +${blockValue()}（1ヒットごと）　MP +${GUARD_MP}　再使用待ち −1`
+  add("def","防 御 す る",`シールド ${blockValue()}（1ヒットごとに相殺）　MP +${GUARD_MP}　再使用待ち −1`
     +`　<span style="color:#8fd0ff">殴られるまで残る</span>`,false,
     ()=>doAct({kind:"guard",block:blockValue()}));
   if(me.rank==="front")
@@ -5160,7 +5180,8 @@ async function playerAttack(targets,opt){
       rolls.push(...extra);
       vals=(opt.even?extra.filter(v=>v%2===0):extra.filter(v=>v>=thr)).sort((a,b)=>a-b);
     }
-    const each=vals.map(v=>hitDmg(per,v,opt.even?2:thr));
+    const sh=shieldOf(t);
+    const each=vals.map(v=>Math.max(0,hitDmg(per,v,opt.even?2:thr)-sh));
     const base=per*hits;
     const atkEl=opt.el||(me.coat&&me.coat.el)||me.wep.el||"none";
     const em=elemMul(atkEl,t);
@@ -5204,7 +5225,7 @@ async function playerAttack(targets,opt){
       `${n}d6・${thr}以上 <span class="m">${hits}ヒット</span>　`+
       `基礎 ${per} → ${vals.map((v,i)=>`${v}の目 ${each[i]}`).join("　")}`+
       (sixes&&opt.six?`　6の目 ${sixes}×${opt.six}`:"")+
-      (t.block?`　<span class="c">相手の軽減 −${t.block}/ヒット</span>`:"")+
+      (t.block?`　<span class="c">相手のシールド −${t.block}/ヒット</span>`:"")+
       (em>1?`　<span class="m">${ELEM[atkEl].n} が弱点　×${em.toFixed(2)}</span>`
         :em<1?`　<span class="c">${ELEM[atkEl].n} に耐性　×${em.toFixed(2)}</span>`:"")+
       `　→ <span class="m">${dmg}</span>`+(t.HP<=0?`　<span class="b">撃破</span>`:""));
@@ -5553,8 +5574,14 @@ async function enemyAct(f){
     ovHide();
     const ev=rolls.filter(v=>v>=thr).sort((a,b)=>a-b);
     const evals=ev.map(v=>hitDmg(per,v,thr));
-    let dmg=Math.round(evals.reduce((a,b)=>a+b,0)*orgMul("inMul"));
-    if(me.half){dmg=Math.round(dmg/2);me.half=false;}
+    /* 見切りは まずダメージを半分にする。そのあとシールドが相殺する */
+    let raw=Math.round(evals.reduce((a,b)=>a+b,0)*orgMul("inMul"));
+    let evs=evals.map(v=>Math.round(v*orgMul("inMul")));
+    if(me.half){evs=evs.map(v=>Math.round(v/2));raw=Math.round(raw/2);me.half=false;}
+    const sh=shieldOf(me);
+    const evShown=evs.map(v=>Math.max(0,v-sh));
+    let dmg=evShown.reduce((a,b)=>a+b,0);
+    const soaked=raw-dmg;
     let endHP0=me.HP-dmg;
     if(endHP0<=0&&passOn("endure")>0&&!me.endured){
       me.endured=true;endHP0=1;
@@ -5564,15 +5591,17 @@ async function enemyAct(f){
     me.taken=(me.taken||0)+Math.max(0,startHP-endHP);
     if(startHP>endHP){
       me.hurtThisRound=true;
-      if(me.block>0)me.blockSpent=true;    /* 構えが実際に働いた */
     }
+    /* シールドは 殴られたら役目を終える。丸ごと受け止めた回も使ったことにする */
+    if(hits&&me.block>0)me.blockSpent=true;
+    if(soaked>0){popSelf("盾 −"+soaked,"blk");}
     if(hits){
       const shown=Math.min(hits,5);
       for(let i=0;i<shown;i++){
         await lungeUnit(f);
         SFX.atk(f.snd);
         fxOn(me,f.snd);
-        const v=(i===shown-1)?evals.slice(i).reduce((a,b)=>a+b,0):evals[i];
+        const v=(i===shown-1)?evShown.slice(i).reduce((a,b)=>a+b,0):evShown[i];
         popSelf("−"+v,"each");
         setHPBar(me,startHP-(startHP-endHP)*(i+1)/shown);
         await wait(160);
@@ -5603,8 +5632,10 @@ async function enemyAct(f){
     }
     draw();
     if(hits){popSelf("−"+dmg);SFX.dmg();}
-    if(me.counter&&dmg>0&&f.HP>0){
-      const back=Math.max(1,Math.round(dmg*me.counter));
+    /* 反撃は シールドで消したぶんも含めて返す。
+       受け止めた一撃こそ返したいので、HP が減った量ではなく 来た量で測る。 */
+    if(me.counter&&raw>0&&f.HP>0){
+      const back=Math.max(1,Math.round(raw*me.counter));
       f.HP=Math.max(0,f.HP-back);
       fxOn(f,"slash");popOn(f,"−"+back,"each");SFX.dmg();
       log(`　<span class="a">反撃</span>　<span class="b">${f.name}</span> に <span class="m">${back}</span>`);
