@@ -1002,7 +1002,8 @@ const NEWS=[
    "<b>防御する … 最大HPの 9%。</b>Lv13 で 18 → <b>36</b> になります",
    "<b>盾 構 12%（48）／鉄 壁 20%（80）／カウンター 10%（40）／鉄 壁（共通）8%（32）を2ターン</b>",
    "<b>1手番を防御に使うと、最大HPの 6.5〜11.8% を受け止めます</b>（前は 3.3〜5.9%）。ようやく1手番ぶんの重みになりました",
-   "<b>殻の盾のシールドが +4 から +8 になりました。</b>装備は固定値のままです",
+   "<b>シールドは「最大HP × 倍率」だけで決まります。</b>最大HP は もともと <b>素のHP ＋ 装備のHP ＋ パッシブのHP</b> なので、<b>HP を上げる装備を着ればシールドも厚くなります</b>（石甲 HP+85 で 36 → 44）",
+   "<b>殻の盾は「防御するシールド +3%」になりました。</b>固定値を足すのではなく 倍率そのものを押し上げます。HP+55 と合わせて 36 → <b>54</b>",
    "<b>〔修正〕鉄 壁（共通）の「2ターンのあいだ」が ずっと効いていませんでした。</b>持続の指定がどこからも読まれておらず、1ターンぶんで消えていました",
    "<span class=\"s\">敵の guard・veil は据え置きです。下限が外れたぶん、同じ値でも前より効きます</span>",
  ]},
@@ -3055,7 +3056,7 @@ const GEAR={
   {id:"g_petal",n:"花 弁 の 衣",tier:3,made:true,st:{DEF:6,DEX:12},hp:34,d:"DEF +6　DEX +12　最大HP +34"},
   {id:"g_scale",n:"鱗 鎧",tier:3,made:true,st:{DEF:12,DEX:4},hp:62,bag:1,d:"DEF +12　DEX +4　最大HP +62　道具 +1"},
   {id:"g_stone",n:"石 甲",tier:3,made:true,st:{DEF:17,DEX:-4},hp:85,d:"DEF +17　最大HP +85　DEX −4"},
-  {id:"g_shell",n:"殻 の 盾",tier:3,made:true,st:{DEF:13,DEX:-2},hp:55,blk:8,d:"DEF +13　最大HP +55　DEX −2　シールド +8"},
+  {id:"g_shell",n:"殻 の 盾",tier:3,made:true,st:{DEF:13,DEX:-2},hp:55,blkPct:3,d:"DEF +13　最大HP +55　DEX −2　防御するシールド +3%"},
   {id:"g6",n:"蒼竜の鎧",tier:3,st:{DEF:11},hp:70,d:"DEF +11　最大HP +70"},
  ],
  acc:[
@@ -3960,12 +3961,13 @@ function makeMe(){
 function recalcMe(m,full){
   m=m||me;
   const st={STR:0,DEX:0,INT:0,VIT:0,DEF:0,LUK:0};
-  let hp=0,blk=0,bag=0,pen=0;
+  let hp=0,blk=0,blkp=0,bag=0,pen=0;
   [m.eq.armor].concat(m.eq.acc||[]).forEach(g=>{
     if(!g)return;
     if(g.st)for(const q in g.st)st[q]+=g.st[q];
     if(g.hp)hp+=g.hp;
-    if(g.blk)blk+=g.blk;
+    if(g.blk)blk+=g.blk;            /* 固定値のシールド */
+    if(g.blkPct)blkp+=g.blkPct;     /* 防御するの割合そのものを押し上げる */
     if(g.bag)bag+=g.bag;
     if(g.pen)pen+=g.pen;        /* 相手の DEF を割合で貫く */
   });
@@ -3978,6 +3980,7 @@ function recalcMe(m,full){
   /* 幸運は伸びない。生まれの値と装備だけで決まる */
   m.LUK=Math.max(0,Math.min(LUKMAX,(m.base.LUK||0)+st.LUK));
   m.gearBlk=blk;
+  m.gearBlkPct=blkp;
   m.bagPlus=bag;
   m.gearPen=pen;
   m.wep=WEP[m.eq.wep?m.eq.wep.key:m.baseWep];
@@ -4782,9 +4785,15 @@ function defOf(u){
 function shieldAmount(u,t){
   return Math.max(0,Math.round((t.block||0)+(u.maxHP||0)*((t.blockPct||0)/100)));
 }
-const GUARDPCT=9;      /* 防御する … 最大HPの 9% */
+/* 防御する … 最大HPの GUARDPCT%。
+   maxHP は計算のうえで すでに「素のHP ＋ 装備のHP ＋ パッシブのHP」なので、
+   これだけで「元のHP＋増えたぶん ×倍率」になっている。
+   装備で守りを厚くしたいときは、固定値を足すのではなく
+   この割合そのものを押し上げる（blkPct）。単位が揃っていないと足せないため。 */
+const GUARDPCT=9;
+function guardPct(){ return Math.max(0,GUARDPCT+(me.gearBlkPct||0)); }
 function blockValue(){
-  return shieldAmount(me,{blockPct:GUARDPCT})+(me.blkBonus||0)+(me.gearBlk||0);
+  return Math.max(1,Math.round(me.maxHP*guardPct()/100)+(me.gearBlk||0)+(me.blkBonus||0));
 }
 const GUARD_MP=4;
 
@@ -8407,7 +8416,7 @@ function chBodySt(){
     <span${cap?' style="color:#c9a227"':""}>DEX <b${cap?' style="color:#c9a227"':""}>${
       me.DEX}</b>${cap?`<span class="s">/${STATMAX.DEX}</span>`:""}</span>
     <span>INT <b>${me.INT}</b></span><span>VIT <b>${me.VIT}</b></span>
-    <span>DEF <b>${me.DEF}</b></span><span>防御時 <b>+${blockValue()}</b></span>
+    <span>DEF <b>${me.DEF}</b></span><span>シールド <b>${blockValue()}</b><span class="s">（最大HPの${guardPct()}%）</span></span>
     <span style="color:#c9a227">幸運 <b style="color:#c9a227">${me.LUK}</b></span></div>
   <div class="msec">技 能　<span style="color:var(--dim);letter-spacing:0">1d100 で振る</span></div>
   <div class="mitem">${skillLine("　")}
