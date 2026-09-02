@@ -997,6 +997,15 @@ const NEWS=[
    "身を守る は 防+28 から <b>防+10</b> に。巨人が縮こまるほど硬くなるのは変でした",
    "<b>新しい状態「恐 怖」</b>と、<b>割合で上がる強化</b>を仕組みとして足しました",
  ]},
+ {id:"v0034d",tag:"bal",v:"α0.0034",d:"2026-09-02",n:"シールドが 最大HPの割合になりました",b:[
+   "<b>敵の攻撃を割合（%）で書くようにしたのと同じく、シールドも「最大HPの n%」で書けるようにしました。</b>固定値でも書けるので、両方が混ぜて使えます",
+   "<b>防御する … 最大HPの 9%。</b>Lv13 で 18 → <b>36</b> になります",
+   "<b>盾 構 12%（48）／鉄 壁 20%（80）／カウンター 10%（40）／鉄 壁（共通）8%（32）を2ターン</b>",
+   "<b>1手番を防御に使うと、最大HPの 6.5〜11.8% を受け止めます</b>（前は 3.3〜5.9%）。ようやく1手番ぶんの重みになりました",
+   "<b>殻の盾のシールドが +4 から +8 になりました。</b>装備は固定値のままです",
+   "<b>〔修正〕鉄 壁（共通）の「2ターンのあいだ」が ずっと効いていませんでした。</b>持続の指定がどこからも読まれておらず、1ターンぶんで消えていました",
+   "<span class=\"s\">敵の guard・veil は据え置きです。下限が外れたぶん、同じ値でも前より効きます</span>",
+ ]},
  {id:"v0034c",tag:"up",v:"α0.0034",d:"2026-09-02",n:"防御が シールドになりました",b:[
    "<b>防御で得るものが DEF ではなく シールドになりました。</b>DEF とは別の器で、<b>1ヒットごとに その数だけ ダメージを相殺します</b>",
    "<b>あふれたぶんは そのまま HP に入ります。</b>シールド 7 に 10 のダメージなら、7 を消して 3 が HP へ",
@@ -3046,7 +3055,7 @@ const GEAR={
   {id:"g_petal",n:"花 弁 の 衣",tier:3,made:true,st:{DEF:6,DEX:12},hp:34,d:"DEF +6　DEX +12　最大HP +34"},
   {id:"g_scale",n:"鱗 鎧",tier:3,made:true,st:{DEF:12,DEX:4},hp:62,bag:1,d:"DEF +12　DEX +4　最大HP +62　道具 +1"},
   {id:"g_stone",n:"石 甲",tier:3,made:true,st:{DEF:17,DEX:-4},hp:85,d:"DEF +17　最大HP +85　DEX −4"},
-  {id:"g_shell",n:"殻 の 盾",tier:3,made:true,st:{DEF:13,DEX:-2},hp:55,blk:4,d:"DEF +13　最大HP +55　DEX −2　防御したときの軽減 +4"},
+  {id:"g_shell",n:"殻 の 盾",tier:3,made:true,st:{DEF:13,DEX:-2},hp:55,blk:8,d:"DEF +13　最大HP +55　DEX −2　シールド +8"},
   {id:"g6",n:"蒼竜の鎧",tier:3,st:{DEF:11},hp:70,d:"DEF +11　最大HP +70"},
  ],
  acc:[
@@ -3232,18 +3241,18 @@ const REW={
     d:"最大HPの 30% を回復する"},
    {id:"a2",n:"見切り",kind:"buff",mp:3,cd:3,half:true,
     d:"次に受けるダメージを 半分にする"},
-   {id:"a3",n:"鉄 壁",kind:"guard",mp:3,cd:2,block:10,hold:1,
-    d:"DEF +10（2ターンのあいだ）"},
+   {id:"a3",n:"鉄 壁",kind:"guard",mp:3,cd:2,blockPct:8,hold:1,
+    d:"シールド 最大HPの 8%（2ターンのあいだ 毎ターン）"},
    {id:"a4",n:"集 中",kind:"focus",mp:2,cd:3,thr:1,dur:1,
     d:"命中閾値 −1（2ターンのあいだ）"},
   ],
   knight:[
-   {id:"ak1",n:"盾 構",kind:"guard",mp:3,cd:2,block:14,
-    d:"DEF +14（次のターンまで）"},
-   {id:"ak2",n:"鉄 壁",kind:"guard",mp:5,cd:3,block:26,
-    d:"DEF +26（次のターンまで）。守りに徹する"},
-   {id:"ak3",n:"カウンター",kind:"guard",mp:4,cd:3,block:12,counter:0.4,
-    d:"DEF +12　受けたダメージの 40% を返す"},
+   {id:"ak1",n:"盾 構",kind:"guard",mp:3,cd:2,blockPct:12,
+    d:"シールド 最大HPの 12%（殴られるまで残る）"},
+   {id:"ak2",n:"鉄 壁",kind:"guard",mp:5,cd:3,blockPct:20,
+    d:"シールド 最大HPの 20%。守りに徹する"},
+   {id:"ak3",n:"カウンター",kind:"guard",mp:4,cd:3,blockPct:10,counter:0.4,
+    d:"シールド 最大HPの 10%　受けたダメージの 40% を返す"},
    {id:"ak4",n:"渾 身",kind:"atk",mp:6,cd:4,fixDice:2,powMul:1.5,
     d:"攻撃ダイスを 2 に絞り、威力を 1.5 倍にする"},
    {id:"ak5",n:"兜割り",kind:"atk",mp:4,cd:3,powMul:1.15,ail:[{k:"break",v:10,t:2}],
@@ -4223,7 +4232,7 @@ function telePreview(f,tt){
         (far?`　／　後衛なので4割減`:""),danger:true};
   }
   if(t.k==="guard")return {txt:"◈ "+t.n,
-    sub:`シールド ${t.block}（1ヒットごとに相殺する）`,danger:false};
+    sub:`シールド ${shieldAmount(f,t)}（1ヒットごとに相殺する）`,danger:false};
   if(t.k==="buff")return {txt:"▲ "+t.n,
     sub:t.pctUp?`自分の威力 +${t.pctUp}%　${t.dur||1}ターン`
        :t.pow?`自分の威力 +${t.pow}　${t.dur||1}ターン`
@@ -4241,7 +4250,8 @@ function telePreview(f,tt){
       t.poison?`毎ターン ${t.poison} の毒`:""]
       .filter(Boolean).join("　")+
       `　${(t.dur||2)+1}ターン`+(t.dice?`　＋ ${t.dice}d6 の侵蝕`:""),danger:true};
-  if(t.k==="veil")return {txt:"◈ "+t.n,sub:`前列すべてに シールド ${t.block}`,danger:false};
+  if(t.k==="veil")return {txt:"◈ "+t.n,
+    sub:`前列すべてに シールド ${t.block?t.block:`最大HPの ${t.blockPct}%`}`,danger:false};
   if(t.k==="idle")return {txt:"◦ "+t.n,sub:t.d||"",danger:false};
   if(t.k==="mend")return {txt:"✚ "+t.n,
     sub:(t.full?`<span style="color:#e0b83a">味方ひとりの HP を すべて 戻す</span>`
@@ -4766,7 +4776,16 @@ function defOf(u){
   d=Math.max(0,d-ailSum(u,"break"));   /* 防壊は敵にも自分にも同じように効く */
   return d;
 }   // 構えは防御値に上乗せされる
-function blockValue(){return 5+Math.floor(me.VIT/7)+(me.blkBonus||0)+(me.gearBlk||0);}
+/* シールドの量。固定値（block）と 最大HPに対する割合（blockPct）の
+   両方を書ける。割合で書けば深さによらず同じ重みになり、
+   固定値で書けば「深いところでは薄くなる」ものが作れる。 */
+function shieldAmount(u,t){
+  return Math.max(0,Math.round((t.block||0)+(u.maxHP||0)*((t.blockPct||0)/100)));
+}
+const GUARDPCT=9;      /* 防御する … 最大HPの 9% */
+function blockValue(){
+  return shieldAmount(me,{blockPct:GUARDPCT})+(me.blkBonus||0)+(me.gearBlk||0);
+}
 const GUARD_MP=4;
 
 /* ---------- 行動一覧 ---------- */
@@ -5304,9 +5323,14 @@ async function resolvePlayer(a,target){
     }
     log(`<span class="a">${me.name}</span> が <span class="c">${s.n}</span>（MP −${s.mp}）`);
     if(s.kind==="guard"){
-      me.block+=s.block;
+      const amt=shieldAmount(me,s);
+      me.block+=amt;
+      /* hold は「そのあと何ターン 毎ターン張り直すか」。
+         書かれていたのに どこからも me.holdDef に入れていなかったので、
+         鉄壁の「2ターンのあいだ」がずっと効いていなかった。 */
+      if(s.hold)me.holdDef={v:amt,t:s.hold};
       if(s.counter)me.counter=s.counter;
-      draw();fxOn(me,"guard");popSelf("+"+s.block,"blk");SFX.open();
+      draw();fxOn(me,"guard");popSelf("+"+amt,"blk");SFX.open();
       if(s.counter)log(`<span class="a">${me.name}</span> は反撃の構えを取った（受けた分の ${
         Math.round(s.counter*100)}% を返す）`);
       await wait(650);}
@@ -5503,8 +5527,8 @@ async function runQueue(){
          回った回は、防御に使った1手が丸ごと消えていた。
          殴られれば落ちるので、安全な回に積み重ねても意味は無い（積むだけ無駄になる）。 */
       if(me.blockSpent){me.block=0;me.blockSpent=false;}
-      else if(me.block>0)log(`<span class="a">${me.name}</span> の構えはまだ解けていない　`+
-        `<span class="c">DEF +${me.block}</span>`);
+      else if(me.block>0)log(`<span class="a">${me.name}</span> のシールドはまだ残っている　`+
+        `<span class="c">${me.block}／ヒット</span>`);
       me.counter=0;me.selfDef=0;
       if(me.holdDef){
         me.holdDef.t--;
@@ -5648,8 +5672,9 @@ async function enemyAct(f){
       (me.block?`　<span class="c">軽減 −${me.block}/ヒット</span>`:"")+`　→ <span class="m">${dmg}</span>`);
     await wait(430);
   }else if(t.k==="guard"){
-    f.block+=t.block;draw();fxOn(f,"guard");popOn(f,"+"+t.block,"blk");SFX.open();
-    log(`<span class="b">${f.name}</span> は身を固めた（防御 +${f.block}／ヒット）`);await wait(450);
+    const amt=shieldAmount(f,t);
+    f.block+=amt;draw();fxOn(f,"guard");popOn(f,"+"+amt,"blk");SFX.open();
+    log(`<span class="b">${f.name}</span> は身を固めた（<span class="c">シールド ${f.block}</span>／ヒット）`);await wait(450);
   }else if(t.k==="buff"){
     f.lastAid=t.n;
     if(t.pow)addBuff(f,t.pow,t.dur||1);
@@ -5785,9 +5810,9 @@ async function enemyAct(f){
     log(`<span class="c">${f.name}</span> が割れ、<span class="b">${nf.name}</span> が這い出した`);
     await wait(700);
   }else if(t.k==="veil"){
-    aliveIn("front").forEach(x=>{x.block+=t.block;});
-    draw();aliveIn("front").forEach(x=>{fxOn(x,"guard");popOn(x,"+"+t.block,"blk");});SFX.open();
-    log(`<span class="b">${f.name}</span> が霧を張った（前列に防御 +${t.block}／ヒット）`);await wait(500);
+    aliveIn("front").forEach(x=>{const a=shieldAmount(x,t);x.block+=a;});
+    draw();aliveIn("front").forEach(x=>{fxOn(x,"guard");popOn(x,"+"+shieldAmount(x,t),"blk");});SFX.open();
+    log(`<span class="b">${f.name}</span> が霧を張った（前列に <span class="c">シールド</span>／ヒット）`);await wait(500);
   }
   await opening();          /* 大振りの技は、振り抜いたあと隙になる */
 }
