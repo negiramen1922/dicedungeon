@@ -973,9 +973,16 @@ const NEWS=[
    "身を守る は 防+28 から <b>防+10</b> に。巨人が縮こまるほど硬くなるのは変でした",
    "<b>新しい状態「恐 怖」</b>と、<b>割合で上がる強化</b>を仕組みとして足しました",
  ]},
+ {id:"v0033c",tag:"up",v:"α0.0033",d:"2026-09-02",n:"ロックシェルで2つ作れるようになりました",b:[
+   "<b>殻 の 盾</b>（三等・防具）… ロックシェル×3 ＋ 石片×3。<b>DEF +13　最大HP +55　DEX −2</b>、そして <b>防御したときの軽減が +4</b>",
+   "<b>穿 ち の 指 輪</b>（三等・装飾）… ロックシェル×2 ＋ トロルの爪×2。<b>STR +9　DEX +4</b>、そして <b>相手の DEF を 25% 貫きます</b>",
+   "<b>装備で「相手の DEF を割合で貫く」のはこれが初めてです。</b>硬い相手ほど効きます（ゴーレム・ゲートガーディアンのような DEF 30 前後の相手）",
+   "<span class=\"s\">爪の指輪（STR +13　DEX +6）とは、柔らかい相手なら爪、硬い相手なら穿ち、という住み分けになります</span>",
+ ]},
  {id:"v0033b",tag:"up",v:"α0.0033",d:"2026-09-02",n:"アトランティスに3体が加わりました",b:[
-   "<b>サハギンの司祭</b>（後列）。<b>癒 し の 潮 で 味方ひとりの HP をすべて戻します</b>。<b>1戦に1回だけ</b>、しかも <b>誰かが残り6割を切ったときにしか撃ちません</b>",
-   "<span class=\"s\">1回きりにしてあるのは、後列に隠れて何度も治されると 近接しか持たない者が勝てなくなるためです</span>",
+   "<b>サハギンの司祭</b>（後列）。<b>癒 し の 潮 で 味方ひとりの HP をすべて戻します</b>。<b>3ターンおき・1戦に2回まで</b>、しかも <b>誰かが残り6割を切ったときにしか撃ちません</b>",
+   "<span class=\"s\">回数を切ってあるのは、後列に隠れて何度も治されると 近接しか持たない者が勝てなくなるためです</span>",
+   "<b>司祭の出る部屋は精鋭だけです。</b>癒しの潮のぶん、部屋の見た目の HP より戦いが長くなります",
    "<b>深 淵 の 魚</b>（前列）。<b>喰 ら い つ く は 2D 130%</b> で、都市でいちばん重い一撃です。硬くはありません（DEF 12）",
    "<b>ボーンフィッシュ</b>（前列）。速くて脆い（DEX 38・DEF 8）。群 れ る で前列の威力を上げます。素材は骨です",
    "部屋が7つ増えました。<b>骨 の 魚</b>（単体）／<b>深みの大魚</b>（軽い）／<b>骨魚の群れ</b>・<b>司祭と魚人</b>（普通）／<b>大 魚 と 骨</b>・<b>潮 を 招 く</b>（重い）／<b>深みの饗宴</b>（精鋭）",
@@ -2835,6 +2842,10 @@ const RECIPES={
    need:{scale:4,wing:2},d:"水を弾く鎧を仕立てる"},
  f_stoneplate:{n:"石 甲 の 製 法",kind:"forge",make:"g_stone",cost:130,
    need:{frag:5,claw:2},d:"重いが硬い板金を組む"},
+ f_shellshield:{n:"殻 の 盾",kind:"forge",make:"g_shell",cost:130,
+   need:{rshell:3,frag:3},d:"喰われた石ごと殻を打ち直す。守りに寄せた一枚"},
+ f_borering:{n:"穿 ち の 指 輪",kind:"forge",make:"y_bore",cost:120,
+   need:{rshell:2,claw:2},d:"石を穿つ顎を仕込む。相手の守りを削り取る"},
  f_clawring:{n:"爪 の 指 輪",kind:"forge",make:"y_claw",cost:110,
    need:{claw:2,tooth:3},d:"攻めに寄せた指輪"},
  f_wingcharm:{n:"翼 の 護 符",kind:"forge",make:"y_wing",cost:110,
@@ -2923,6 +2934,7 @@ const GEAR={
   {id:"g_petal",n:"花 弁 の 衣",tier:3,made:true,st:{DEF:6,DEX:12},hp:34,d:"DEF +6　DEX +12　最大HP +34"},
   {id:"g_scale",n:"鱗 鎧",tier:3,made:true,st:{DEF:12,DEX:4},hp:62,bag:1,d:"DEF +12　DEX +4　最大HP +62　道具 +1"},
   {id:"g_stone",n:"石 甲",tier:3,made:true,st:{DEF:17,DEX:-4},hp:85,d:"DEF +17　最大HP +85　DEX −4"},
+  {id:"g_shell",n:"殻 の 盾",tier:3,made:true,st:{DEF:13,DEX:-2},hp:55,blk:4,d:"DEF +13　最大HP +55　DEX −2　防御したときの軽減 +4"},
   {id:"g6",n:"蒼竜の鎧",tier:3,st:{DEF:11},hp:70,d:"DEF +11　最大HP +70"},
  ],
  acc:[
@@ -2955,6 +2967,7 @@ const GEAR={
   {id:"y17",n:"星詠みの環",tier:3,st:{INT:10,DEX:4},d:"INT +10　DEX +4"},
   {id:"y18",n:"疾風の護符",tier:3,st:{DEX:11},hp:-12,d:"DEX +11　最大HP −12"},
   {id:"y_claw",n:"爪 の 指 輪",tier:3,made:true,st:{STR:13,DEX:6},d:"STR +13　DEX +6"},
+  {id:"y_bore",n:"穿 ち の 指 輪",tier:3,made:true,st:{STR:9,DEX:4},pen:25,d:"STR +9　DEX +4　相手の DEF を 25% 貫く"},
   {id:"y_wing",n:"翼 の 護 符",tier:3,made:true,st:{DEX:13},hp:28,d:"DEX +13　最大HP +28"},
   {id:"y_fdust",n:"妖精の護符",tier:3,made:true,st:{INT:12,DEX:6},d:"INT +12　DEX +6"},
   {id:"y_hoof",n:"疾走の蹄環",tier:3,made:true,st:{DEX:12},hp:24,d:"DEX +12　最大HP +24"},
@@ -3566,7 +3579,7 @@ const FOE={
  spriest:{n:"サハギンの司祭",d:"群れの後ろで潮を招くもの。手にした巻貝を吹くと、傷ついた同胞の鱗が音もなく閉じていく。潮を招けるのは一度きりで、そのあとは槍を持つ者と変わらない。",mat:"scale",weak:"bolt",resist:"water",elem:"water",art:"spriest",snd:"magic",
    HP:185,STR:46,DEF:14,DEX:30,rank:"back",scout:5,
    acts:[{n:"潮 を 撃 つ",k:"atk",dice:3,pct:-10,w:4},
-         {n:"癒 し の 潮",k:"mend",full:true,once:true,at:.6,w:3},
+         {n:"癒 し の 潮",k:"mend",full:true,cd:3,max:2,at:.6,w:3},
          {n:"水 の 加 護",k:"veil",block:12,w:2,needFront:true}]},
  abyssfish:{n:"深 淵 の 魚",d:"灯りに寄ってくる大魚。都市が沈むより前から深みにいたもので、開いた口は人の背丈ほどある。硬くはないが、噛まれれば骨まで届く。",mat:"scale",weak:"bolt",resist:"water",elem:"water",art:"abyssfish",snd:"blunt",
    HP:260,STR:58,DEF:12,DEX:20,rank:"front",scout:2,
@@ -3826,13 +3839,14 @@ function makeMe(){
 function recalcMe(m,full){
   m=m||me;
   const st={STR:0,DEX:0,INT:0,VIT:0,DEF:0,LUK:0};
-  let hp=0,blk=0,bag=0;
+  let hp=0,blk=0,bag=0,pen=0;
   [m.eq.armor].concat(m.eq.acc||[]).forEach(g=>{
     if(!g)return;
     if(g.st)for(const q in g.st)st[q]+=g.st[q];
     if(g.hp)hp+=g.hp;
     if(g.blk)blk+=g.blk;
     if(g.bag)bag+=g.bag;
+    if(g.pen)pen+=g.pen;        /* 相手の DEF を割合で貫く */
   });
   m.raw={};
   ["STR","DEX","INT","VIT","DEF"].forEach(k=>{
@@ -3844,6 +3858,7 @@ function recalcMe(m,full){
   m.LUK=Math.max(0,Math.min(LUKMAX,(m.base.LUK||0)+st.LUK));
   m.gearBlk=blk;
   m.bagPlus=bag;
+  m.gearPen=pen;
   m.wep=WEP[m.eq.wep?m.eq.wep.key:m.baseWep];
   /* 打った武器は品質のぶんだけ威力の倍率が違う。型そのものは書き換えない */
   if(m.eq.wep&&m.eq.wep.mul)m.wep={...m.wep,mul:m.eq.wep.mul};
@@ -4041,6 +4056,8 @@ function chooseTele(f){
        元気な相手に撃って手番を捨てられると、置いた意味がなくなる。 */
     if(a.k==="mend"){
       if(a.once&&f.mendUsed)return false;
+      if(a.max&&(f.mendN||0)>=a.max)return false;
+      if(f.mendCd>0)return false;
       return alive().some(x=>x!==f&&x.HP<x.maxHP*(a.at||1));
     }
     if(a.k==="summon"){
@@ -4109,7 +4126,8 @@ function telePreview(f,tt){
   if(t.k==="mend")return {txt:"✚ "+t.n,
     sub:(t.full?`<span style="color:#e0b83a">味方ひとりの HP を すべて 戻す</span>`
                :`味方ひとりの HP を ${t.heal} 戻す`)+
-        (t.once?"　1戦に1回だけ":"")+
+        (t.once?"　1戦に1回だけ":"")+(t.max?`　1戦に${t.max}回まで`:"")+
+        (t.cd?`　${t.cd}ターンおき`:"")+
         (t.at?`　残り ${Math.round(t.at*100)}% を切った味方がいるときだけ`:""),danger:true};
   if(t.k==="heal")return {txt:"✚ "+t.n,
     sub:`<span style="color:#e0b83a">呼んだ相手の HP を 最大の ${Math.round((t.pct||.1)*100)}% 戻す</span>　開く前に摘める`,danger:true};
@@ -4958,7 +4976,7 @@ async function playerAttack(targets,opt){
       pow+=add;
       if(add)log(`<span class="c">火事場の力</span> 失った HP のぶん 威力 <span class="m">+${add}</span>`);
     }
-    const pen=Math.min(1,(opt.pen||0)+passOn("pen")/100);
+    const pen=Math.min(1,(opt.pen||0)+(passOn("pen")+(me.gearPen||0))/100);
     const per=perHit(pow,Math.round(defOf(t)*(1-pen)));
     let vals=(opt.even?rolls.filter(v=>v%2===0):rolls.filter(v=>v>=thr)).sort((a,b)=>a-b);
     /* 一つも当たらなかったとき、もう一度だけ振る */
@@ -5336,7 +5354,7 @@ async function runQueue(){
 
 /* ---------- 敵1体の行動 ---------- */
 async function enemyAct(f){
-  f.block=0;tickBuffs(f);if(f.sumCd>0)f.sumCd--;   // 構えとバフはここで切れる
+  f.block=0;tickBuffs(f);if(f.sumCd>0)f.sumCd--;if(f.mendCd>0)f.mendCd--;   // 構えとバフはここで切れる
   draw();
   await wait(260);
   if(await ailDot(f)){draw();return;}
@@ -5532,7 +5550,7 @@ async function enemyAct(f){
       .sort((a,b)=>(a.HP/a.maxHP)-(b.HP/b.maxHP))[0];
     if(!c){log(`<span class="b">${f.name}</span> は潮を招いたが、癒す相手がいない`);await wait(450);}
     else{
-      f.lastAid=t.n;f.mendUsed=true;
+      f.lastAid=t.n;f.mendUsed=true;f.mendN=(f.mendN||0)+1;f.mendCd=t.cd||0;
       const hl=t.full?c.maxHP-c.HP:Math.min(t.heal||0,c.maxHP-c.HP);
       c.HP+=hl;draw();fxOn(c,"charge");popOn(c,"+"+hl,"heal");SFX.found();
       log(`<span class="b">${f.name}</span> の <span class="c">${t.n}</span>　`+
@@ -6152,9 +6170,9 @@ const ENCS={
  s_bf:{n:"骨 の 魚",list:["bonefish"]},
  c_af:{n:"深みの大魚",list:["abyssfish"]},
  c_bf2:{n:"骨魚の群れ",list:["bonefish","bonefish"]},
- c_spa:{n:"司祭と魚人",list:["sahagin","spriest"]},
+ c_spa:{n:"司祭と魚人",list:["sahagin","spriest","bonefish"]},
  c_afb:{n:"大 魚 と 骨",list:["abyssfish","bonefish"]},
- c_spw:{n:"潮 を 招 く",list:["sahagin","spriest","wraith"]},
+ c_spw:{n:"潮 と 骨",list:["sahagin","bonefish"]},
  c_af3:{n:"深みの饗宴",list:["abyssfish","bonefish","spriest"]},
  s_sa:{n:"はぐれ魚人",list:["sahagin"]},
  s_wr:{n:"淀んだ影",list:["wraith"]},
@@ -6330,9 +6348,9 @@ const AREAS={
    to:[],
    solo:["s_wr","c_ar","s_sk","s_bf"],
    easy:["c_wa","s_sa","wr1","c_af"],
-   norm:["c_ar2","sk2","c_sw","sk1","c_bf2","c_spa"],
+   norm:["c_ar2","sk2","c_sw","sk1","c_bf2"],
    hard:["sg2","c_bwa","sg1","c_afb","c_spw"],
-   elite:["sg3","sk3","wr2","c_af3"], boss:"b3"},
+   elite:["sg3","sk3","wr2","c_af3","c_spa"], boss:"b3"},
 };
 /* ---------- 世 界 地 図 ----------
    区画のつながりを土地として描く。上が地上、下ほど深く、
