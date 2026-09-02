@@ -952,7 +952,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0032";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0033";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -972,6 +972,14 @@ const NEWS=[
    "<b>HP が半分を切ると 大 咆 哮 を上げます。</b>3ターンのあいだ 威力が 30% 上がります。前列の仲間にも乗ります",
    "身を守る は 防+28 から <b>防+10</b> に。巨人が縮こまるほど硬くなるのは変でした",
    "<b>新しい状態「恐 怖」</b>と、<b>割合で上がる強化</b>を仕組みとして足しました",
+ ]},
+ {id:"v0033",tag:"up",v:"α0.0033",d:"2026-09-02",n:"回廊にストーンワームが棲みつきました",b:[
+   "<b>ストーンワーム</b>を足しました。回廊の石を喰って穴を穿つ虫です。素材は <b>ロックシェル</b>",
+   "<b>喰った石を殻にしているので、打撃が通りません</b>（打撃耐性）。回廊は打撃弱点ばかりだったので、<b>ここだけ武器を選びます</b>。刺突が弱点です",
+   "<b>HP が半分を切ると 殻 を 締 め る。</b>DEF が 10 から 20 に上がります。<b>先に削り切らないと硬くなります</b>",
+   "手は 体 当 た り（3D 100%）と 糸 を 吐 く（DEX −12・2ターン）の2つです",
+   "部屋が5つ増えました。<b>石を穿つ音</b>（単体）／<b>壁を喰うもの</b>・<b>虫 と 水</b>（普通）／<b>虫 と 巨 人</b>（重い）／<b>石喰いの巣</b>（精鋭）",
+   "<span class=\"s\">段階（HPを切ると変わる仕組み）を、ボス以外に使ったのはこれが初めてです。ふつうの敵なので、盤いっぱいの名乗りは出しません</span>",
  ]},
  {id:"v0032i",tag:"bal",v:"α0.0032",d:"2026-09-02",n:"ディープワンを組み直しました",b:[
    "<b>手を4つにしました。</b>トライデント（3D 120%）・水 の 奔 流（5D 50%・<b>当たると DEF −15</b>）・水 の 膜（DEF +20）・大 海（4D 70%・<b>DEX −10 と DEF −8</b>）",
@@ -1824,6 +1832,16 @@ const PXFOE={
   [5,4,2,2,"#c9a227"],[9,4,2,2,"#c9a227"],[6,5,1,1,"#14160f"],[10,5,1,1,"#14160f"],
   [6,6,1,1,"#b1544a"],[9,6,1,1,"#b1544a"],
   [3,8,10,9,"#5c4666"],[4,10,8,6,"#4a3a52"],[6,12,4,3,"#e0d0a8"]],
+ rockworm:[[5,0,6,2,"#4a4a52"],
+  [4,2,8,4,"#6b6b76"],[3,3,10,2,"#7a7a86"],
+  [6,2,4,2,"#22222a"],[7,1,1,1,"#8a7f75"],[9,1,1,1,"#8a7f75"],[6,4,1,1,"#8a7f75"],[10,4,1,1,"#8a7f75"],
+  [3,6,10,1,"#3a3a44"],
+  [3,7,10,3,"#6b6b76"],[4,7,8,1,"#8a8a96"],
+  [3,10,10,1,"#3a3a44"],
+  [4,11,9,3,"#7a7a86"],[5,11,7,1,"#8a8a96"],
+  [4,14,9,1,"#3a3a44"],
+  [5,15,8,3,"#6b6b76"],
+  [5,18,8,1,"#3a3a44"],[6,19,6,1,"#5c5c66"]],
  ghand:[[4,2,9,5,"#6b6b76"],
   [5,2,1,5,"#3a3a44"],[8,2,1,5,"#3a3a44"],[11,2,1,5,"#3a3a44"],
   [4,1,9,1,"#5c5c66"],
@@ -2420,6 +2438,9 @@ const PXITEM={
 };
 /* 素材 21種 */
 const PXMAT={
+ rshell:[[2,1,6,1,"#8a8a96"],[1,2,8,2,"#7a7a86"],[0,4,10,3,"#6b6b76"],
+   [1,7,8,2,"#5c5c66"],[3,9,4,1,"#4a4a52"],
+   [1,4,8,1,"#8a8a96"],[2,6,6,1,"#4a4a52"],[4,2,1,6,"#5c5c66"]],
  gel:[[3,3,4,3,"#6f9a7a"],[2,5,6,3,"#54806a"],[1,8,8,2,"#3f6353"],[4,4,2,1,"#8fbfa2"]],
  tooth:[[4,0,2,5,"#e9e4d4"],[3,5,4,3,"#c9c3b2"],[4,8,2,2,"#a8a294"]],
  silk:[[1,1,8,1,"#e9e4d4"],[2,3,6,1,"#d9d3c0"],[1,5,8,1,"#e9e4d4"],
@@ -2690,6 +2711,7 @@ const MATS={
  wetwing:{n:"濡 れ 羽",v:16,k:"m",d:"乾いても水を弾く"},
  silk:{n:"蜘 蛛 の 糸",v:14,k:"m",d:"細いのに、指では切れない"},
  swing:{n:"石の羽",v:21,k:"m",d:"飛べるはずのない重さ"},
+ rshell:{n:"ロックシェル",v:22,k:"m",d:"石を喰って身にまとった殻。叩いても割れない"},
  bone:{n:"古い骨",v:19,k:"m",d:"まだ動きたがっている"},
  scale:{n:"魚人の鱗",v:26,k:"m",d:"水を弾く。加工が難しい"},
  residue:{n:"残 滓",v:28,k:"m",d:"触れると指先が冷たくなる"},
@@ -3482,6 +3504,13 @@ const FOE={
  bigbat:{n:"オオコウモリ",d:"洞窟や遺跡の暗がりに、逆さまに下がって眠る大蝙蝠。灯りを嫌い、近づいた者の血を吸う。翼の膜は薄く丈夫で、防具の裏地にちょうどいい。",mat:"wing",weak:"light",resist:"pierce",elem:"dark",art:"bigbat",snd:"slash",HP:98,STR:33,DEF:6,DEX:42,rank:"front",scout:6,
    acts:[{n:"血を吸う",k:"atk",dice:3,drain:.5,w:6},
          {n:"かく乱する",k:"buff",pow:8,w:2}]},
+ rockworm:{n:"ストーンワーム",d:"回廊の石を喰って穴を穿つ虫。喰った石をそのまま殻にしているので、叩いても衝撃が通らない。深く傷つくと殻を締めて、いっそう硬くなる。",mat:"rshell",weak:"pierce",resist:"blunt",elem:"earth",art:"rockworm",snd:"blunt",
+   HP:160,STR:42,DEF:10,DEX:18,rank:"front",scout:1,
+   acts:[{n:"体 当 た り",k:"atk",dice:3,w:4},
+         {n:"糸 を 吐 く",k:"hex",slow:12,dur:2,w:3}],
+   phases:[{at:.5,n:"殻 を 締 め る",d:"節を詰めて、隙間がなくなった",def:10,quiet:true,
+     acts:[{n:"体 当 た り",k:"atk",dice:3,w:4},
+           {n:"糸 を 吐 く",k:"hex",slow:12,dur:2,w:3}]}]},
  gargoyle:{n:"ガーゴイル",d:"門の上に据えられていた石像。飛べるはずのない重さで飛び、高みから見下ろして睨みつける。石の羽は、握ってみるとやはり石でしかない。",mat:"swing",weak:"blunt",resist:"slash",elem:"earth",art:"gargoyle",snd:"slash",HP:135,STR:38,DEF:14,DEX:32,rank:"back",scout:5,
    acts:[{n:"斬りつける",k:"atk",dice:3,w:5},
          {n:"石の唸り",k:"hex",weak:1,slow:6,dur:2,w:3},
@@ -3913,12 +3942,20 @@ async function checkPhase(f){
   if(P.forceAct)f.forceNext=P.forceAct;
   f.tele=chooseTele(f);f.next=chooseTele(f);
   draw();drawOrder();
-  SFX.crit();
-  ovMsg(`<span class="k">${f.name}</span><br>${P.n}`,true);
   log(`<span class="b">${f.name}</span>　─── <span class="c">${P.n}</span>　`+
     `<span class="s">${P.d||""}</span>`);
-  await wait(1250);
-  ovHide();
+  /* quiet … 盤いっぱいの名乗りを出さない。
+     段階はボスだけの仕組みではないので、ふつうの敵に付けたときに
+     毎回1.25秒の全画面を挟むと、道中がひどく重くなる。 */
+  if(P.quiet){
+    fxOn(f,"charge");popOn(f,P.n,"blk");SFX.open();
+    await wait(560);
+  }else{
+    SFX.crit();
+    ovMsg(`<span class="k">${f.name}</span><br>${P.n}`,true);
+    await wait(1250);
+    ovHide();
+  }
   return true;
 }
 function chooseTele(f){
@@ -6034,6 +6071,11 @@ const ENCS={
  ws2:{n:"水と石",list:["wslime","livingstone"]},
  s_ls:{n:"転がる石",list:["livingstone"]},
  s_gg2:{n:"見下ろす石像",list:["gargoyle"]},
+ s_rw:{n:"石を穿つ音",list:["rockworm"]},
+ rw1:{n:"壁を喰うもの",list:["rockworm","gargoyle"]},
+ rw2:{n:"虫 と 水",list:["rockworm","wslime"]},
+ rw3:{n:"虫 と 巨 人",list:["rockworm","golem"]},
+ rw4:{n:"石喰いの巣",list:["rockworm","rockworm","gargoyle"]},
  s_sk:{n:"さまよう骨",list:["skeleton"]},
  s_sa:{n:"はぐれ魚人",list:["sahagin"]},
  s_wr:{n:"淀んだ影",list:["wraith"]},
@@ -6198,11 +6240,11 @@ const AREAS={
    x:72,y:59,land:"water",
    d:"切り出した石が整然と並ぶ。作られたものが番をしている。",
    to:["city"],
-   solo:["s_gg2","s_ws","s_ls","s_bt","h_gl"],
+   solo:["s_gg2","s_ws","s_ls","s_bt","h_gl","s_rw"],
    easy:["h_tr","gg1","ws1","ls1","ws2"],
-   norm:["h_bg","ls2","h_gg","gl1"],
-   hard:["bt1","h_gt","gl2","tr1"],
-   elite:["gg2","gl3"], boss:"b2"},
+   norm:["h_bg","ls2","h_gg","gl1","rw1","rw2"],
+   hard:["bt1","h_gt","gl2","tr1","rw3"],
+   elite:["gg2","gl3","rw4"], boss:"b2"},
  city:{n:"水没都市アトランティス",tier:4,art:"atlantis",
    x:72,y:82,land:"water",
    d:"かつて栄えた地下都市。水が満ち、住人だったものが残っている。",
