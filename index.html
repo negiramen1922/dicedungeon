@@ -973,6 +973,19 @@ const NEWS=[
    "身を守る は 防+28 から <b>防+10</b> に。巨人が縮こまるほど硬くなるのは変でした",
    "<b>新しい状態「恐 怖」</b>と、<b>割合で上がる強化</b>を仕組みとして足しました",
  ]},
+ {id:"v0032f",tag:"bal",v:"α0.0032",d:"2026-09-02",n:"エルダートレントが花を咲かせるようになりました",b:[
+   "<b>手を4つに絞りました。</b>大枝を振り下ろす（3D 110%）・樹皮を固める（DEF +20）・森を薙ぐ（4D 100%・振ったあと隙）・<b>根 を 貼 る</b>（自分の威力 +20%・2ターン）",
+   "<b>いつでも傷を塞げるのをやめました。</b>これまでは最初から 根を張り直す（HP +70）を持っていて、削っても戻る足踏みになっていました",
+   "<b>HP が半分を切ると 森 が 花 を つ け る。</b>ここから <b>ヒールフラワー</b> を咲かせるようになります",
+   "<b>ヒールフラワーは、咲いた次の手番に古木の HP を最大の 10% 戻して散ります。</b>蕾のうちに摘めば、それきり咲きません（HP 45・柔らかい）",
+   "<b>花は前列にしか咲かず、同時に1つまでです。</b>後列に隠れて摘めない、ということは起きません",
+   "<b>年輪が燃える は取りやめました。</b>数字が動くだけの段階でした",
+   "<span class=\"s\">古木ひとりぶんの手応えは 126 → 115。段階に入ると 97 まで下がりますが、放っておくと 6〜7手番に1度 114 ずつ戻されます</span>",
+ ]},
+ {id:"v0032g",tag:"fix",v:"α0.0032",d:"2026-09-02",n:"敵の強化の持続が1ターン長く出ていました",b:[
+   "<b>敵が自分や味方を強化したとき、予告とログに 実際より1ターン長い数字が出ていました。</b>2ターンぶんの強化が「3ターン」と書かれていました",
+   "効き目そのものは変わりません。<b>書かれている数字のほうを直しました</b>（サイクロプスの 大 咆 哮 は「4ターン」→ 正しくは <b>3ターン</b>）",
+ ]},
  {id:"v0032e",tag:"bal",v:"α0.0032",d:"2026-09-02",n:"クイーンスパイダーが卵を産むようになりました",b:[
    "<b>手を4つに絞りました。</b>大顎で噛みつく（3D 90%）・糸で絡める（<b>DEX −10 と 威力 −10%</b>）・糸で守る（DEF +20）・<b>産 卵</b>",
    "<b>産卵で「蜘 蛛 の 卵」が 1〜2 個 置かれます。</b>卵は攻撃してきませんが、<b>2手ほどで割れてケイヴスパイダーになります</b>",
@@ -996,7 +1009,7 @@ const NEWS=[
  {id:"v0032",tag:"up",v:"α0.0032",d:"2026-09-01",n:"ボスに段階と隙ができました",b:[
    "<b>ボスは HP が減ると別物になります。</b>行動表がまるごと入れ替わり、守りが薄くなるかわりに攻めが増えます",
    "キングスライム <b>核が浮かぶ</b>（HP50%）／サイクロプス <b>隻眼が据わる</b>（45%）／クイーンスパイダー <b>腹を割く</b>（50%）",
-   "エルダートレント <b>年輪が燃える</b>（40%・もう傷を塞ぎません）／ゲートガーディアン <b>核を剥き出す</b>（50%）",
+   "エルダートレント <b>森が花をつける</b>（50%）／ゲートガーディアン <b>核を剥き出す</b>（50%）",
    "<b>ディープワンだけ二段あります。</b><b>鱗が裂ける</b>（60%）で臣を呼びはじめ、<b>王が立つ</b>（25%）で守りを捨てます",
    "<b>大振りの技を振ったあと、ボスは無防備になります。</b>防御が落ち、当てやすくなります。予告に「<b>振ったあと 隙ができる</b>」と出るので、<b>待って叩けます</b>",
    "段階に入るとボスの DEF も落ちます。押し切るのが速くなるぶん、受ける被害も 1.2〜1.4倍 になります",
@@ -1794,6 +1807,14 @@ const PXFOE={
   [5,4,2,2,"#c9a227"],[9,4,2,2,"#c9a227"],[6,5,1,1,"#14160f"],[10,5,1,1,"#14160f"],
   [6,6,1,1,"#b1544a"],[9,6,1,1,"#b1544a"],
   [3,8,10,9,"#5c4666"],[4,10,8,6,"#4a3a52"],[6,12,4,3,"#e0d0a8"]],
+ hflower:[[7,13,2,7,"#4a6330"],
+  [3,15,4,2,"#5a7a3a"],[9,15,4,2,"#5a7a3a"],
+  [2,16,1,1,"#4a6330"],[13,16,1,1,"#4a6330"],
+  [6,2,4,1,"#e8a0bc"],[5,3,6,1,"#e8a0bc"],[4,4,8,1,"#e8a0bc"],
+  [3,5,10,5,"#e8a0bc"],[4,10,8,1,"#e8a0bc"],
+  [5,11,6,1,"#d0748f"],[6,12,4,1,"#d0748f"],
+  [2,6,1,3,"#d0748f"],[13,6,1,3,"#d0748f"],
+  [6,5,4,4,"#f2e6b0"],[7,6,2,2,"#e9c46a"]],
  qegg:[[7,0,2,2,"#b8b2a0"],
   [6,2,4,1,"#d8d2be"],[5,3,6,2,"#e4dfcc"],
   [4,5,8,9,"#e4dfcc"],[10,5,2,9,"#cfc8b2"],
@@ -3601,17 +3622,21 @@ const FOE={
          {n:"骨の壁",k:"veil",block:12,w:2,needFront:true}]},
  elder:{n:"エルダートレント",d:"世界樹のもっとも近くに立つ古木。動き出してから幾百年、根を下ろすことなく森を巡っている。裂けた幹の奥で年輪が光っており、それが心の臓だと言われる。",mat:"heart",weak:"fire",resist:"slash",elem:"earth",art:"elder",snd:"blunt",
    HP:520,STR:58,DEF:30,DEX:12,rank:"front",scout:3,
-   acts:[{n:"大枝を振り下ろす",k:"atk",dice:3,pct:15,w:6},
-         {n:"森を薙ぐ",k:"atk",dice:4,open:{t:1},w:4},
-         {n:"根を張り直す",k:"regen",heal:70,w:2},
-         {n:"森を呼び覚ます",k:"cheer",pow:20,dur:2,w:2},
-         {n:"樹皮を固める",k:"guard",block:26,w:1}],
-   phases:[{at:.4,n:"年 輪 が 燃 え る",d:"裂けた幹の奥が赤い。もう傷を塞がない",
-     def:-10,str:12,
-     acts:[{n:"大枝を振り下ろす",k:"atk",dice:3,pct:20,w:5},
-           {n:"森 を 焼 く",k:"atk",dice:4,pct:15,open:{t:2},w:5},
-           {n:"根を絡める",k:"hex",slow:14,curse:8,dur:2,w:3},
-           {n:"森を呼び覚ます",k:"cheer",pow:26,dur:2,w:2}]}]},
+   acts:[{n:"大枝を振り下ろす",k:"atk",dice:3,pct:10,w:5},
+         {n:"樹皮を固める",k:"guard",block:20,w:3},
+         {n:"森を薙ぐ",k:"atk",dice:4,open:{t:1},w:3},
+         {n:"根 を 貼 る",k:"buff",pctUp:20,dur:2,w:2}],
+   phases:[{at:.5,n:"森 が 花 を つ け る",d:"根もとの土が盛り上がり、蕾が首をもたげた",
+     acts:[{n:"大枝を振り下ろす",k:"atk",dice:3,pct:10,w:5},
+           {n:"樹皮を固める",k:"guard",block:20,w:3},
+           {n:"森を薙ぐ",k:"atk",dice:4,open:{t:1},w:3},
+           {n:"花 を 咲 か せ る",k:"summon",who:"hflower",num:1,cd:2,
+            ifUnder:1,back:false,w:3},
+           {n:"根 を 貼 る",k:"buff",pctUp:20,dur:2,w:2}]}]},
+ hflower:{n:"ヒールフラワー",d:"エルダートレントが根もとに咲かせる花。開くと甘い匂いを放ち、古木の裂けた幹がゆっくりと塞がっていく。蕾のうちに摘めば、それきり咲かない。",mat:"petal",weak:"fire",art:"hflower",snd:"magic",
+   HP:45,STR:1,DEF:4,DEX:8,rank:"front",scout:1,
+   acts:[{n:"つ ぼ み",k:"idle",d:"根もとで蕾がふくらんでいる",seq:1,w:0},
+         {n:"花 が ひ ら く",k:"heal",pct:.1,seq:2,w:0}]},
  gate:{n:"ゲートガーディアン",d:"回廊の最奥の門を守る守護者。胸に守護核を抱いている。門の向こうにはもう誰もいないが、閉ざす役目だけを ひとりで続けている。",mat:"core",weak:"blunt",resist:"slash",elem:"earth",art:"gate",snd:"blunt",HP:510,STR:58,DEF:31,DEX:14,rank:"front",scout:1,
    acts:[{n:"拳を振り下ろす",k:"atk",dice:3,w:5},
          {n:"門を薙ぐ",k:"atk",dice:4,pct:-25,open:{t:1},w:3},
@@ -3895,10 +3920,11 @@ function telePreview(f,tt){
   }
   if(t.k==="guard")return {txt:"◈ "+t.n,sub:`防御 +${t.block}（1ヒットごと）`,danger:false};
   if(t.k==="buff")return {txt:"▲ "+t.n,
-    sub:t.pow?`自分の威力 +${t.pow}　${(t.dur||1)+1}ターン`
+    sub:t.pctUp?`自分の威力 +${t.pctUp}%　${t.dur||1}ターン`
+       :t.pow?`自分の威力 +${t.pow}　${t.dur||1}ターン`
              :`自分の速さ +${t.dex}　この戦闘のあいだ`,danger:false};
   if(t.k==="cheer")return {txt:"▲ "+t.n,
-    sub:`前列すべての威力 ${t.pctUp?`+${t.pctUp}%　${(t.dur||1)+1}ターン`:`+${t.pow}`}`,danger:false};
+    sub:`前列すべての威力 ${t.pctUp?`+${t.pctUp}%　${t.dur||1}ターン`:`+${t.pow}`}`,danger:false};
   if(t.k==="summon")return {txt:"✚ "+t.n,
     sub:`${FOE[t.who].n} を 1〜${t.num||3} 体 呼ぶ`,danger:true};
   if(t.k==="regen")return {txt:"✚ "+t.n,sub:`自分の HP を ${t.heal} 回復する`,danger:false};
@@ -3912,6 +3938,8 @@ function telePreview(f,tt){
       `　${(t.dur||2)+1}ターン`+(t.dice?`　＋ ${t.dice}d6 の侵蝕`:""),danger:true};
   if(t.k==="veil")return {txt:"◈ "+t.n,sub:`前列すべてに DEF +${t.block}`,danger:false};
   if(t.k==="idle")return {txt:"◦ "+t.n,sub:t.d||"",danger:false};
+  if(t.k==="heal")return {txt:"✚ "+t.n,
+    sub:`<span style="color:#e0b83a">呼んだ相手の HP を 最大の ${Math.round((t.pct||.1)*100)}% 戻す</span>　開く前に摘める`,danger:true};
   if(t.k==="hatch")return {txt:"✚ "+t.n,
     sub:`<span style="color:#e0b83a">${FOE[t.who].n} が出てくる</span>　割れる前に潰せる`,danger:true};
   if(t.k==="grow")return {txt:"▲ "+t.n,
@@ -3975,6 +4003,7 @@ function actIcon(t){
   if(t&&t.k==="regen")return {g:"✚",c:"buf"};
   if(t&&t.k==="summon")return {g:"✚",c:"hex"};
   if(t&&t.k==="hatch")return {g:"✚",c:"hex",n:"孵る"};
+  if(t&&t.k==="heal")return {g:"✚",c:"buf",n:"癒し"};
   if(t&&t.k==="idle")return {g:"◦",c:"me",n:"待ち"};
   if(!t)return {g:"…",c:"me",n:"—"};
   if(t.k==="atk")return {g:"⚔",c:"atk",n:"攻撃"};
@@ -5242,8 +5271,8 @@ async function enemyAct(f){
     draw();fxOn(f,"charge");
     popOn(f,t.pctUp?"力+"+t.pctUp+"%":t.pow?"力+"+t.pow:"速+"+t.dex,"blk");SFX.open();
     log(`<span class="b">${f.name}</span> が`+
-      (t.pctUp?`吼えた（威力 <span class="m">+${t.pctUp}%</span>　${(t.dur||1)+1}ターン）`:"")+
-      (t.pow?`力をためた（威力 +${t.pow}　${(t.dur||1)+1}ターン）`:"")+
+      (t.pctUp?`力を漲らせた（威力 <span class="m">+${t.pctUp}%</span>　${t.dur||1}ターン）`:"")+
+      (t.pow?`力をためた（威力 +${t.pow}　${t.dur||1}ターン）`:"")+
       (t.dex?`${t.pow?"　":""}身を軽くした（速さ <span class="m">+${t.dex}</span>　この戦闘のあいだ）`:""));
     await wait(450);
   }else if(t.k==="cheer"){
@@ -5253,7 +5282,7 @@ async function enemyAct(f){
     draw();aliveIn("front").forEach(x=>{fxOn(x,"charge");
       popOn(x,t.pctUp?"力+"+t.pctUp+"%":"力+"+t.pow,"blk");});SFX.open();
     log(`<span class="b">${f.name}</span> が前列を鼓舞した（威力 `+
-      (t.pctUp?`<span class="m">+${t.pctUp}%</span>　${(t.dur||1)+1}ターン`:`+${t.pow}`)+`）`);await wait(500);
+      (t.pctUp?`<span class="m">+${t.pctUp}%</span>　${t.dur||1}ターン`:`+${t.pow}`)+`）`);await wait(500);
   }else if(t.k==="summon"){
     f.lastAid=t.n;f.sumUsed=true;f.sumCd=t.cd||0;
     /* 前列が埋まっていたら後列へ回す。num で 1dN を指定できる（既定 1d3） */
@@ -5269,7 +5298,7 @@ async function enemyAct(f){
         const nf={...base,id:foes.length,key:t.who,
           name:base.n+" "+"ABCDEF"[foes.filter(x=>x.key===t.who).length],
           maxHP:hp,HP:hp,STR:Math.round(base.STR*(1+(dm-1)*0.6)),
-          block:0,buffs:[],ail:[],stun:false,isFoe:true,
+          block:0,buffs:[],ail:[],stun:false,isFoe:true,owner:f.id,
           rank:aliveIn("front").length<3?"front":"back",
           tele:null,next:null,lastAid:null,turn:0,sumCd:0,sumUsed:false};
         nf.tele=chooseTele(nf);nf.next=chooseTele(nf);
@@ -5316,6 +5345,17 @@ async function enemyAct(f){
     log(`<span class="b">${f.name}</span> の <span class="c">${t.n}</span>　`+
       (msg.length?msg.join("　")+`　<span class="s">（${dur+1}ターン）</span>`:"効き目がなかった"));
     await wait(620);
+  }else if(t.k==="heal"){
+    /* 呼ばれた側が、呼んだ側を癒やす。咲いたら散る（wither） */
+    const o=foes.find(x=>x.id===f.owner&&x.HP>0);
+    if(!o){log(`<span class="b">${f.name}</span> は咲いたが、力を送る相手がいない`);await wait(520);}
+    else{
+      const hl=Math.min(Math.round(o.maxHP*(t.pct||.1)),o.maxHP-o.HP);
+      o.HP+=hl;draw();fxOn(o,"charge");popOn(o,"+"+hl,"heal");SFX.found();
+      log(`<span class="c">${f.name}</span> が開き、<span class="b">${o.name}</span> の傷が塞がった　HP <span class="m">+${hl}</span>`);
+      await wait(700);
+    }
+    if(t.wither!==false){f.HP=0;draw();}
   }else if(t.k==="idle"){
     /* 卵のように、ただ場に在るだけの相手。手番は使うが何もしない */
     draw();fxOn(f,"charge");
