@@ -976,7 +976,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0035";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0036";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -989,6 +989,17 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0036",tag:"bal",v:"α0.0036",d:"2026-09-03",n:"敵の強化を 割合にしました",b:[
+   "<b>敵が力をためても、深い区画ではほとんど何も起きていませんでした。</b>敵の STR は深さで最大 2.5 倍まで伸びるのに、強化の幅は「+12」のような固定値のままだったからです",
+   "<b>18 の技を すべて 割合（STR の何%）に直しました。</b>ゴブリンの 力をためる は浅いところで +80% ／ 深いところで +23% と 別物になっていたのが、+47% ／ +34% に揃います",
+   "<b>同じ「雄叫び」でも 相手によって 素の STR の 22%〜48% とばらついていました。</b>自分だけを強める手は 22〜30%、前列すべてを鼓舞する手は 20〜22% に整えています",
+   "サイクロプスの 岩を掴む は +35%（次のターンに必ず投げるので、そのぶん重く）",
+ ]},
+ {id:"v0036b",tag:"fix",v:"α0.0036",d:"2026-09-03",n:"3つの技が 何もしていませんでした",b:[
+   "<b>宣 言（傲慢）</b>は、討つと告げる処理そのものが書かれておらず、ただの攻撃になっていました。MP +2 も付かず、誓いも立たず、しかも「威力 +100%」のはずが 素の「+100」の足し算だったので、Lv1 で +213%・Lv30 で +54% と 別の技になっていました。<b>告げた相手を 次のラウンドだけ 威力 ×2 で討てるようになりました</b>",
+   "<b>昼 寝（怠惰）・明日やる（怠惰）</b>は、休むだけで 次のターンの強化が乗っていませんでした。おまけに 画面には「命中閾値 −undefined」と出ていました。<b>つなぎました</b>（昼寝 → 次のターン 威力 ×2、明日やる → 次のターン 攻撃ダイス +2）",
+   "パッシブ 4 つ（前線騎士・重装・初撃・遠見）の説明が 実際の値とズレていて、% も抜けていました。<b>前線騎士 +16%、重装 +14%、初撃 +25%、遠見 +18%</b> が正しい値です",
+ ]},
  {id:"v0035",tag:"bal",v:"α0.0035",d:"2026-09-03",n:"技ごとに 振るダイスの数を決めました",b:[
    "<b>「ダイスを 2 に絞る」と書いてある 渾 身・ロックスパイク・血の契 は、実は絞られていませんでした。</b>威力 ×1.5 だけが効いていて、説明とは別の技になっていました",
    "<b>絞る技は、絞ったぶん 1 ヒットが重くなります。</b>7d6 の武器を 2 に絞れば 1 ヒットは 3.5 倍。ならした強さは 武器を問わず同じで、当たり外れの大きさだけが変わります。硬い相手には まとめた一撃のほうが通ります",
@@ -2800,7 +2811,11 @@ function stateRows(u){
     if(me.dexUp)R.push({icon:ailIcon("up_dice"),n:"疾 走",c:"#8fa261",good:true,
       v:"速 +"+me.dexUp,d:"この戦闘のあいだ 速さが上がる"});
     if(me.vow&&me.vow.id!=null)R.push({icon:ailIcon("up_pow"),n:"誓 い",c:"#c96e8a",good:true,
-      v:"",d:"決めた相手しか狙えない"});
+      v:"×"+(me.vow.mul||2).toFixed(1),
+      d:"告げた相手しか狙えないが 威力が上がる"});
+    if(me.rest&&me.rest.r>=round)R.push({icon:ailIcon("up_pow"),n:"休 み 明 け",c:"#8fa261",good:true,
+      v:me.rest.pow?"+"+me.rest.pow+"%":"ダイス+"+me.rest.dice,
+      d:"休んだぶん この手番だけ乗る"});
   }else{
     if(u.block)R.push({icon:ailIcon("up_def"),n:"シールド",c:"#8fd0ff",good:true,
       v:u.block,d:"1ヒットごと この数だけ相殺する"});
@@ -3421,8 +3436,8 @@ const REW={
     d:"場のすべてに喰らいつく（威力 60%）　倒した数だけ 最大HPの 15% 回復"},
   ],
   pride:[
-   {id:"apr1",n:"宣 言",kind:"declare",mp:0,cd:3,mpGain:2,pow:100,
-    d:"次に討つ相手を告げる　MP +2　次のターンは その相手しか狙えないが 威力 +100%"},
+   {id:"apr1",n:"宣 言",kind:"declare",mp:0,cd:3,mpGain:2,powMul:2,
+    d:"次に討つ相手を告げる　MP +2　次のターンは その相手しか狙えないが 威力 ×2"},
    {id:"apr2",n:"見 下 す",kind:"atk",mp:4,cd:3,powMul:1.6,slower:true,
     d:"自分より DEX が低い相手にのみ　威力 ×1.6"},
    {id:"apr3",n:"王の一撃",kind:"atk",mp:6,cd:4,powMul:1.8,earlyOnly:3,
@@ -3450,14 +3465,14 @@ const REW={
   knight:[
    {id:"pk1",n:"防 壁",ef:{k:"guard",v:5,w:"always"},d:"常時 → DEF +5"},
    {id:"pk2",n:"仁王立ち",ef:{k:"guard",v:12,w:"hp50"},d:"HP50%以下 → DEF +12"},
-   {id:"pk3",n:"前線騎士",ef:{k:"powp",v:16,w:"front"},d:"前衛にいる間 → 威力 +12"},
-   {id:"pk4",n:"重 装",ef:{k:"powp",v:14,w:"def10"},d:"DEF が 10 以上 → 威力 +10"},
+   {id:"pk3",n:"前線騎士",ef:{k:"powp",v:16,w:"front"},d:"前衛にいる間 → 威力 +16%"},
+   {id:"pk4",n:"重 装",ef:{k:"powp",v:14,w:"def10"},d:"DEF が 10 以上 → 威力 +14%"},
    {id:"pk5",n:"硬 化",ef:{k:"guard",v:6,w:"guarded"},d:"防御を選んだターン → DEF がさらに +6"},
   ],
   archer:[
    {id:"pa1",n:"ホークアイ",ef:{k:"scout",v:1,w:"always"},d:"常時 → 索敵ダイス +1"},
-   {id:"pa2",n:"初 撃",ef:{k:"powp",v:25,w:"r1"},d:"第1ラウンド → 威力 +20"},
-   {id:"pa3",n:"遠 見",ef:{k:"powp",v:18,w:"back"},d:"後衛にいる間 → 威力 +14"},
+   {id:"pa2",n:"初 撃",ef:{k:"powp",v:25,w:"r1"},d:"第1ラウンド → 威力 +25%"},
+   {id:"pa3",n:"遠 見",ef:{k:"powp",v:18,w:"back"},d:"後衛にいる間 → 威力 +18%"},
    {id:"pa4",n:"羽 音",ef:{k:"dice",v:1,w:"back"},d:"後衛にいる間 → 攻撃ダイス +1"},
    {id:"pa5",n:"護身術",ef:{k:"guard",v:7,w:"front"},d:"前衛にいる間 → DEF +7"},
   ],
@@ -3648,17 +3663,17 @@ const FOE={
          {n:"仲間を呼ぶ",k:"summon",who:"rat",alone:true,once:true,w:1}]},
  goblin:{n:"ゴブリン",d:"洞窟に住み着く緑色の小柄な亜人。一匹の力は人の子ほどもないが、決して一匹ではいない。耳は討伐の証として地上で買い取られる。",mat:"ear",weak:"slash",art:"goblin",snd:"blunt",HP:75,STR:25,DEF:5,DEX:20,rank:"front",scout:3,
    acts:[{n:"棍棒を振る",k:"atk",dice:3,w:5},
-         {n:"力をためる",k:"buff",pow:12,dur:1,w:2},
+         {n:"力をためる",k:"buff",pctUp:28,dur:1,w:2},
          {n:"身をかがめる",k:"guard",block:16,w:2}]},
  garcher:{n:"弓ゴブリン",d:"群れの後方から射かける役目を負ったゴブリン。前に出ることはなく、味方が崩れると真っ先に逃げる。矢は拾ったものを削り直して使うので、同じ矢が二度飛んでくる。",mat:"ear",weak:"slash",art:"garcher",snd:"bow",HP:78,STR:29,DEF:5,DEX:28,rank:"back",scout:4,
    acts:[{n:"矢を放つ",k:"atk",dice:2,w:6},
-         {n:"狙いを定める",k:"buff",pow:13,w:2}]},
+         {n:"狙いを定める",k:"buff",pctUp:28,w:2}]},
  hobgoblin:{n:"ホブゴブリン",d:"群れを率いる大型のゴブリン。奪った鉄の斧と盾を使いこなし、仲間を叱咤して前へ押し出す。これを先に落とすと、残りは驚くほど脆い。",mat:"ear",weak:"pierce",resist:"slash",art:"hobgoblin",snd:"blunt",HP:150,STR:37,DEF:12,DEX:18,rank:"front",scout:3,
    acts:[{n:"斧を振り下ろす",k:"atk",dice:2,pct:15,w:5},
          {n:"盾を構える",k:"guard",block:11,w:3},
-         {n:"雄叫び",k:"buff",pow:12,w:2}]},
+         {n:"雄叫び",k:"buff",pctUp:25,w:2}]},
  shaman:{n:"ゴブリンキャスター",d:"見よう見まねで術を覚えたゴブリン。誰に習ったわけでもないので詠唱は出鱈目で、ときどき自分の足元で暴発する。それでも当たれば効く。",mat:"ear",weak:"pierce",elem:"dark",art:"shaman",snd:"magic",HP:95,STR:27,DEF:5,DEX:23,rank:"back",scout:5,
-   acts:[{n:"仲間を鼓舞する",k:"cheer",pow:10,dur:1,seq:1},
+   acts:[{n:"仲間を鼓舞する",k:"cheer",pctUp:20,dur:1,seq:1},
          {n:"力を奪う",k:"hex",weak:1,dur:2,seq:2},
          {n:"ファイヤーボール",k:"atk",dice:2,pct:30,w:4,solo:true},
          {n:"守りの霧",k:"veil",block:8,w:3,needFront:true}]},
@@ -3706,7 +3721,7 @@ const FOE={
          {n:"孵 る",k:"hatch",who:"cspider",seq:3,w:0}]},
  bigbat:{n:"オオコウモリ",d:"洞窟や遺跡の暗がりに、逆さまに下がって眠る大蝙蝠。灯りを嫌い、近づいた者の血を吸う。翼の膜は薄く丈夫で、防具の裏地にちょうどいい。",mat:"wing",weak:"light",resist:"pierce",elem:"dark",art:"bigbat",snd:"slash",HP:98,STR:33,DEF:6,DEX:42,rank:"front",scout:6,
    acts:[{n:"血を吸う",k:"atk",dice:3,drain:.5,w:6},
-         {n:"かく乱する",k:"buff",pow:8,w:2}]},
+         {n:"かく乱する",k:"buff",pctUp:22,w:2}]},
  rockworm:{n:"ストーンワーム",d:"回廊の石を喰って穴を穿つ虫。喰った石をそのまま殻にしているので、叩いても衝撃が通らない。深く傷つくと殻を締めて、いっそう硬くなる。",mat:"rshell",weak:"pierce",resist:"blunt",elem:"earth",art:"rockworm",snd:"blunt",
    HP:160,STR:42,DEF:10,DEX:18,rank:"front",scout:1,
    acts:[{n:"体 当 た り",k:"atk",dice:3,w:4},
@@ -3723,16 +3738,16 @@ const FOE={
  /* ===== 3 階層　沈んだ街 ===== */
  skeleton:{n:"スケルトン",d:"都市の住人だったもの。骨だけになってもなお、動きたがっている。錆びた剣を握る指の形が、生前の握り癖のまま残っている。",mat:"bone",weak:"blunt",resist:"pierce",elem:"dark",art:"skeleton",snd:"slash",HP:175,STR:46,DEF:16,DEX:26,rank:"front",scout:2,
    acts:[{n:"錆びた剣",k:"atk",dice:3,w:5},
-         {n:"骨を鳴らす",k:"buff",pow:10,w:2},
+         {n:"骨を鳴らす",k:"buff",pctUp:22,w:2},
          {n:"骨で受ける",k:"guard",block:12,w:2}]},
  skarcher:{n:"スケルトンアーチャー",d:"弓を持ったまま死んだ者。肉も目も失われているのに、狙いだけは生前のまま正確に残っている。何を見て狙っているのかは分からない。",mat:"bone",weak:"blunt",resist:"pierce",elem:"dark",art:"skarcher",snd:"bow",HP:140,STR:44,DEF:10,DEX:34,rank:"back",scout:5,
    acts:[{n:"骨の矢",k:"atk",dice:2,pct:15,w:6},
-         {n:"狙いすます",k:"buff",pow:16,w:2}]},
+         {n:"狙いすます",k:"buff",pctUp:28,w:2}]},
  sahagin:{n:"サハギン",d:"水没したあとに移り住んだ魚人。三叉槍を巧みに使い、群れで押し包む。この都市を自分たちのものだと思っており、事実いまはそうである。",mat:"scale",weak:"bolt",resist:"water",elem:"water",art:"sahagin",snd:"slash",HP:215,STR:50,DEF:18,DEX:28,rank:"front",flex:true,scout:4,
    acts:[{n:"三叉槍",k:"atk",dice:3,pct:10,pos:"front",w:5},
          {n:"槍を投げる",k:"atk",dice:3,pos:"back",w:5},
          {n:"水を纏う",k:"guard",block:14,w:2},
-         {n:"群れを呼ぶ",k:"cheer",pow:12,dur:1,w:2,needFront:true}]},
+         {n:"群れを呼ぶ",k:"cheer",pctUp:20,dur:1,w:2,needFront:true}]},
  spriest:{n:"サハギンの司祭",d:"群れの後ろで潮を招くもの。手にした巻貝を吹くと、傷ついた同胞の鱗が音もなく閉じていく。潮を招けるのは一度きりで、そのあとは槍を持つ者と変わらない。",mat:"scale",weak:"bolt",resist:"water",elem:"water",art:"spriest",snd:"magic",
    HP:185,STR:46,DEF:14,DEX:30,rank:"back",scout:5,
    acts:[{n:"潮 を 撃 つ",k:"atk",dice:3,pct:-10,w:4},
@@ -3745,11 +3760,11 @@ const FOE={
  bonefish:{n:"ボーンフィッシュ",d:"肉の落ちた魚が、骨だけで泳ぎ続けている。一匹では大したことはないが、都市の水路にはいくらでもいる。",mat:"bone",weak:"blunt",resist:"pierce",elem:"dark",art:"bonefish",snd:"slash",
    HP:130,STR:36,DEF:8,DEX:38,rank:"front",scout:3,
    acts:[{n:"骨 の 牙",k:"atk",dice:3,w:5},
-         {n:"群 れ る",k:"cheer",pctUp:12,dur:2,w:2,needFront:true}]},
+         {n:"群 れ る",k:"cheer",pctUp:20,dur:2,w:2,needFront:true}]},
  wraith:{n:"レ イ ス",d:"沈んだ日の恨みだけが形を保っているもの。触れられたところから体温が失われ、しばらく指先が戻らない。残滓は冷たいままで、決して温まらない。",mat:"residue",weak:"light",resist:"slash",elem:"dark",art:"wraith",snd:"magic",HP:165,STR:44,DEF:10,DEX:30,rank:"back",scout:6,
    acts:[{n:"呪いを注ぐ",k:"atk",dice:2,pct:20,w:5},
          {n:"弱りに食らいつく",k:"atk",dice:2,pct:20,vsAil:40,w:3},
-         {n:"仲間を蝕む",k:"cheer",pow:14,w:3},
+         {n:"仲間を蝕む",k:"cheer",pctUp:20,w:3},
          {n:"呪 縛",k:"hex",curse:7,dur:2,w:3},
          {n:"霧に紛れる",k:"veil",block:10,w:2}]},
 
@@ -3763,11 +3778,11 @@ const FOE={
    HP:62,STR:26,DEF:4,DEX:32,rank:"front",scout:6,
    acts:[{n:"噛みつく",k:"atk",dice:3,w:5},
          {n:"喉を狙う",k:"atk",dice:2,pct:30,w:3},
-         {n:"低く唸る",k:"buff",pow:10,dur:1,w:2}]},
+         {n:"低く唸る",k:"buff",pctUp:28,dur:1,w:2}]},
  boar:{n:"ワイルドボア",d:"太く曲がった一対の牙を持つ大猪。向きを変えるのが苦手で、狙いを定めるといちど大きく地を掻いてから真っ直ぐに走る。その一直線は若木なら薙ぎ倒す。",mat:"tusk",weak:"pierce",resist:"blunt",art:"boar",snd:"blunt",
    HP:130,STR:34,DEF:6,DEX:16,rank:"front",scout:2,
    acts:[{n:"突進する",k:"atk",dice:2,pct:30,w:5},
-         {n:"地を掻く",k:"buff",pow:16,dur:1,w:3},
+         {n:"地を掻く",k:"buff",pctUp:30,dur:1,w:3},
          {n:"牙を振る",k:"atk",dice:3,w:2}]},
  killerbee:{n:"キラービー",d:"草原に巣を張る大蜂。羽音のするほうを見上げたときには、もう囲まれている。腹の先の針は抜けたあとも刺さり続け、傷口から毒がまわる。",mat:"sting",weak:"blunt",art:"killerbee",snd:"slash",
    HP:32,STR:24,DEF:3,DEX:34,rank:"back",scout:4,
@@ -3798,13 +3813,13 @@ const FOE={
  orc:{n:"オ ー ク",d:"森に住む大柄な亜人。人の言葉を少し解し、こちらの言うことも分かっているらしい。棍棒しか使わないが、その筋肉の塊の体では それで足りる。",mat:"orcfang",weak:"slash",art:"orc",snd:"blunt",
    HP:120,STR:33,DEF:8,DEX:20,rank:"front",scout:3,
    acts:[{n:"棍棒を叩きつける",k:"atk",dice:3,w:5},
-         {n:"雄叫び",k:"buff",pow:15,dur:1,w:3},
+         {n:"雄叫び",k:"buff",pctUp:30,dur:1,w:3},
          {n:"盾を構える",k:"guard",block:22,w:2}]},
  bear:{n:"ワイルドベア",d:"森の頂点に立つ獣。立ち上がると人の背を余裕で超え、厚い毛皮は並の刃を通さない。爪は重く硬いため、武具の芯として高く買われる。",mat:"claw2",weak:"pierce",resist:"blunt",art:"bear",snd:"slash",
    HP:175,STR:40,DEF:9,DEX:18,rank:"front",scout:3,
    acts:[{n:"薙ぎ払う",k:"atk",dice:3,pct:20,w:5},
          {n:"抱き潰す",k:"atk",dice:2,pct:40,w:3},
-         {n:"立ち上がる",k:"buff",pow:18,dur:1,w:2},
+         {n:"立ち上がる",k:"buff",pctUp:30,dur:1,w:2},
          {n:"毛皮で受ける",k:"guard",block:24,w:2}]},
  mandragora:{n:"マンドラゴラ",d:"引き抜くと叫ぶ根。その声は空気そのものを裂き、聞いた者は耳から先に壊れていく。土に潜られると、次に顔を出すまで手が出せない。",mat:"root",elem:"earth",weak:"fire",resist:"dark",art:"mandragora",snd:"magic",
    HP:80,STR:28,DEF:5,DEX:26,rank:"back",scout:4,
@@ -3827,7 +3842,7 @@ const FOE={
    HP:150,STR:36,DEF:12,DEX:26,rank:"back",scout:5,
    acts:[{n:"蔦を振るう",k:"atk",dice:2,pct:15,w:6},
          {n:"惑いの歌",k:"hex",weak:2,dur:2,w:3},
-         {n:"鼓舞の歌",k:"cheer",pow:12,dur:2,w:1}]},
+         {n:"鼓舞の歌",k:"cheer",pctUp:20,dur:2,w:1}]},
  spriggan:{n:"スプリガン",d:"森の境を守る妖精。普段は岩と見分けがつかないほど小さいが、侵入者を見つけると膨れ上がって道を塞ぐ。膨れる前に仕留めれば、ただの小石でしかない。",mat:"fdust",weak:"blunt",resist:"pierce",elem:"earth",art:"spriggan",snd:"blunt",
    HP:100,STR:38,DEF:28,DEX:10,rank:"front",scout:1,
    acts:[{n:"膨れ上がる",k:"grow",hp:110,seq:1},
@@ -3847,7 +3862,7 @@ const FOE={
  centaur:{n:"ケンタウロス",d:"上半身が人、下半身が馬の種族。森の道を巡回している。弓の腕は確かで、間合いを取ったまま射続ける。話は通じるが、まず矢が飛んでくる。",mat:"hoof",weak:"pierce",resist:"blunt",art:"centaur",snd:"bow",
    HP:175,STR:47,DEF:16,DEX:30,rank:"back",scout:5,
    acts:[{n:"矢を射る",k:"atk",dice:3,w:5},
-         {n:"引き絞る",k:"buff",pow:18,dur:1,w:3},
+         {n:"引き絞る",k:"buff",pctUp:28,dur:1,w:3},
          {n:"貫きの一矢",k:"atk",dice:1,pct:55,w:2}]},
  harpy:{n:"ハーピー",d:"人の顔と鳥の体を持つ。高い梢に巣を作り、上から獲物に襲いかかる。甲高い声で仲間を呼ぶので、一羽を追うと数が増える。",mat:"quill",weak:"pierce",resist:"earth",art:"harpy",snd:"slash",
    HP:145,STR:42,DEF:8,DEX:40,rank:"front",flex:true,scout:6,
@@ -3858,7 +3873,7 @@ const FOE={
    HP:230,STR:44,DEF:22,DEX:14,rank:"front",scout:2,
    acts:[{n:"根で薙ぐ",k:"atk",dice:2,pct:25,w:6},
          {n:"マナを吸う",k:"regen",heal:40,w:2},
-         {n:"芽吹かせる",k:"cheer",pow:16,dur:2,w:2}]},
+         {n:"芽吹かせる",k:"cheer",pctUp:22,dur:2,w:2}]},
  gant:{n:"ジャイアントアント",d:"腐葉土の下に巣を広げる大蟻。硬い外殻は生半可な刃を弾き、大顎は木の枝ほどなら音もなく断つ。巣穴の入口を踏み抜くと、一度に何匹も這い出てくる。",mat:"jaw",weak:"blunt",resist:"slash",art:"gant",snd:"blunt",
    HP:135,STR:30,DEF:20,DEX:14,rank:"front",scout:2,
    acts:[{n:"大顎で挟む",k:"atk",dice:2,pct:20,w:5},
@@ -3871,7 +3886,7 @@ const FOE={
    acts:[{n:"石棍棒を振るう",k:"atk",dice:3,pct:10,w:4},
          {n:"睨みつける",k:"hex",fear:1,dur:2,w:2},
          {n:"身を守る",k:"guard",block:10,w:2},
-         {n:"岩を掴む",k:"buff",pow:20,dur:1,forceNext:"岩を投げる",w:2},
+         {n:"岩を掴む",k:"buff",pctUp:35,dur:1,forceNext:"岩を投げる",w:2},
          {n:"岩を投げる",k:"atk",dice:3,pct:50,hidden:true,open:{t:2},w:0},
          {n:"大 咆 哮",k:"cheer",pctUp:30,dur:3,hidden:true,w:0}],
    phases:[{at:.5,n:"隻 眼 が 据 わ る",d:"傷が深い。天を仰いで吼えた",
@@ -3879,14 +3894,14 @@ const FOE={
      acts:[{n:"石棍棒を振るう",k:"atk",dice:3,pct:10,w:4},
            {n:"睨みつける",k:"hex",fear:1,dur:2,w:2},
            {n:"身を守る",k:"guard",block:10,w:2},
-           {n:"岩を掴む",k:"buff",pow:20,dur:1,forceNext:"岩を投げる",w:2},
+           {n:"岩を掴む",k:"buff",pctUp:35,dur:1,forceNext:"岩を投げる",w:2},
            {n:"岩を投げる",k:"atk",dice:3,pct:50,hidden:true,open:{t:2},w:0},
            {n:"大 咆 哮",k:"cheer",pctUp:30,dur:3,hidden:true,w:0}]}]},
 
  /* ===== ボス ===== */
  bshaman:{n:"ゴブリンシャーマン",d:"群れの奥に据えられた老いたゴブリン。骨と羽を並べて何かを唱えると、前の者たちが目に見えて奮い立つ。自分では前に出ないので、後ろに残っているうちは群れが崩れない。",mat:"ear",weak:"pierce",resist:"dark",elem:"dark",art:"bshaman",snd:"magic",HP:380,STR:50,DEF:15,DEX:26,rank:"back",scout:6,
    acts:[{n:"祓 う",k:"cleanse",w:3},
-         {n:"眷属を鼓舞する",k:"cheer",pow:16,dur:1,seq:1},
+         {n:"眷属を鼓舞する",k:"cheer",pctUp:22,dur:1,seq:1},
          {n:"力を奪う",k:"hex",weak:1,dur:2,seq:2},
          {n:"呪いの奔流",k:"atk",dice:3,pct:10,w:4,solo:true},
          {n:"呪 縛",k:"hex",curse:7,dur:2,w:3,solo:true},
@@ -4111,7 +4126,8 @@ function vowGone(){
 }
 function canTarget(f){
   if(f.HP<=0)return false;
-  if(me.vow&&me.vow.id!==null&&f.id!==me.vow.id&&!(pending&&pending.item))return false;
+  if(me.vow&&me.vow.id!==null&&round>=me.vow.r&&f.id!==me.vow.id
+    &&!(pending&&pending.item))return false;
   if(pending&&pending.item)return true;      // 投げる道具はどこにでも届く
   if(pending&&pending.backOnly)return f.rank==="back";
   if(pending&&pending.slower)return f.DEX<dexOf();
@@ -5168,7 +5184,9 @@ async function playerAttack(targets,opt){
     lostD=Math.min(3,Math.floor((1-me.HP/me.maxHP)/0.25));
     if(lostD)log(`<span class="c">復 讐</span> 失った HP のぶん 攻撃ダイス <span class="m">+${lostD}</span>`);
   }
-  let n=Math.max(1,baseDice+(opt.dice||0)+lostD+scoutBonus+passOn("dice")
+  const restD=(me.rest&&me.rest.r===round&&me.rest.dice)||0;
+  if(restD)log(`<span class="c">明日やる</span> 休んだぶん 攻撃ダイス <span class="m">+${restD}</span>`);
+  let n=Math.max(1,baseDice+(opt.dice||0)+lostD+restD+scoutBonus+passOn("dice")
     -ailSum(me,"shrink"));
   if(fixMul!==1){
     opt={...opt,powMul:(opt.powMul||1)*fixMul};
@@ -5230,9 +5248,13 @@ async function playerAttack(targets,opt){
     }
     let pmul=1+(passOn("powp")+passOn("allround")*6+passOn("fang")*8
       +(me.beast?me.beast.pow:0)+(me.goldPow?me.goldPow.v:0)
-      +(me.selfPow?me.selfPow.v:0))/100;
+      +(me.selfPow?me.selfPow.v:0)+((me.rest&&me.rest.r===round&&me.rest.pow)||0))/100;
     if(passOn("blood")>0&&t.HP<=t.maxHP*0.5)pmul+=passOn("blood")/100;
     let skm=1;
+    if(me.vow&&me.vow.id===t.id&&me.vow.mul&&round>=me.vow.r){
+      skm*=me.vow.mul;
+      log(`<span class="c">誓 い</span> 討つと告げた相手　威力 <span class="m">×${me.vow.mul.toFixed(1)}</span>`);
+    }
     if(opt.jealous&&t){
       const r=1+Math.min(0.6,Math.max(0,(t.HP-me.HP)/Math.max(1,me.maxHP))*0.6);
       skm*=r;
@@ -5454,11 +5476,33 @@ async function resolvePlayer(a,target){
       draw();fxOn(me,"charge");popSelf("DEX+"+s.dex,"blk");SFX.buff();
       log(`<span class="a">${me.name}</span> は身を軽くした（DEX +${s.dex}　この戦闘のあいだ）`);
       await wait(650);}
+    else if(s.kind==="focus"&&s.rest){
+      /* 休んで 次のターンだけ乗るもの。書いてあるのに s.rest を誰も読んでおらず、
+         このふたつは「ただ休むだけ」の技になっていた。
+         しかも thr を持たないので、下の focus の枝に落ちて
+         「命中閾値 −undefined」と出ていた。 */
+      me.rest={...s.rest,r:round+1};   /* 次のラウンドの手番にだけ乗る */
+      draw();fxOn(me,"charge");
+      popSelf(s.rest.pow?"威力+"+s.rest.pow+"%":"ダイス+"+s.rest.dice,"blk");SFX.buff();
+      log(`<span class="a">${me.name}</span> は休んだ　次のターンだけ `+
+        (s.rest.pow?`威力 <span class="m">+${s.rest.pow}%</span>`:`攻撃ダイス <span class="m">+${s.rest.dice}</span>`));
+      await wait(650);}
     else if(s.kind==="focus"){
       me.focus={v:s.thr,t:s.dur||1};
       draw();fxOn(me,"charge");popSelf("集 中","blk");SFX.buff();
       log(`<span class="a">${me.name}</span> は狙いを定めた（命中閾値 −${s.thr}　${(s.dur||1)+1}ターン）`);
       await wait(650);}
+    else if(s.kind==="declare"){
+      /* 討つ相手を告げる。前は declare の枝が無く、下の攻撃に落ちていたので
+         誓いも MP も動かず、pow:100 が「素の +100」として攻撃に乗っていた。 */
+      me.vow={id:target.id,mul:s.powMul||2,r:round+1};
+      const g=Math.min(s.mpGain||0,me.maxMP-me.MP);
+      if(g)me.MP+=g;
+      draw();fxOn(me,"charge");popSelf("宣 言","blk");SFX.buff();
+      log(`<span class="a">${me.name}</span> は <span class="c">${target.name}</span> を討つと告げた`+
+        (g?`　MP <span class="m">+${g}</span>`:"")+
+        `　次のターンは この相手しか狙えないが 威力 <span class="m">×${(s.powMul||2).toFixed(1)}</span>`);
+      await wait(700);}
     else if(s.kind==="buff"){me.half=true;draw();fxOn(me,"charge");popSelf("半減","blk");SFX.buff();await wait(650);}
     else if(s.kind==="cure"){
       const one=(me.ail||[]).slice().sort((a,b)=>b.t-a.t)[0];
@@ -5646,7 +5690,12 @@ async function runQueue(){
       if(me.beast){me.beast.t--;if(me.beast.t<0)me.beast=null;}
       if(me.goldPow){me.goldPow.t--;if(me.goldPow.t<0)me.goldPow=null;}
       if(me.selfPow){me.selfPow.t--;if(me.selfPow.t<0)me.selfPow=null;}
-      me.vow=null;me.hurtThisRound=false;me.fixId=null;me.fixN=0;me.attackedLast=false;me.whim=null;me.holdDef=null;
+      /* 誓いと 休み明けは「効くラウンド」を持たせる。手番のたびに数を減らす形だと
+         同じラウンドで手番の処理が二度走ったときに消えてしまう。
+         前はここで毎回 me.vow=null にしていたので、宣言は一度も効かなかった。 */
+      if(me.vow&&(round>me.vow.r||!vowTarget()))me.vow=null;
+      if(me.rest&&round>me.rest.r)me.rest=null;
+      me.hurtThisRound=false;me.fixId=null;me.fixN=0;me.attackedLast=false;me.whim=null;me.holdDef=null;
       if(await ailDot(me)){
         if(passOn("endure")>0&&!me.endured){me.endured=true;me.HP=1;draw();
           popSelf("気 合","heal");log(`<span class="a">気 合</span> HP 1 で耐えた`);}
@@ -9250,7 +9299,7 @@ function prepareBattle(){
   fleeUsed=false;foeStart=foes.length;
   queue=[me,...foes];qi=-1;
   scoutFirst=null;
-  me.block=0;me.blockSpent=false;me.half=false;me.rank="front";me.tmpPow=0;me.tmpDef=0;me.ail=[];me.counter=0;me.focus=null;me.dexUp=0;me.again=null;me.selfDef=0;me.endured=false;me.coat=null;me.beast=null;me.goldPow=null;me.selfPow=null;me.taken=0;
+  me.block=0;me.blockSpent=false;me.half=false;me.rank="front";me.tmpPow=0;me.tmpDef=0;me.ail=[];me.counter=0;me.focus=null;me.dexUp=0;me.again=null;me.selfDef=0;me.endured=false;me.coat=null;me.beast=null;me.goldPow=null;me.selfPow=null;me.taken=0;me.vow=null;me.rest=null;
   me.sk.forEach(k=>k.cdLeft=0);
   $("#acts").innerHTML="";
   $("#stageLbl").textContent=`${RUN.act+1}階層　${RUN.cur?RUN.cur.name:""}`+
