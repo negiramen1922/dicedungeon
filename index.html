@@ -997,6 +997,15 @@ const NEWS=[
    "身を守る は 防+28 から <b>防+10</b> に。巨人が縮こまるほど硬くなるのは変でした",
    "<b>新しい状態「恐 怖」</b>と、<b>割合で上がる強化</b>を仕組みとして足しました",
  ]},
+ {id:"v0034f",tag:"bal",v:"α0.0034",d:"2026-09-02",n:"デバフの通り方と、遠隔の当てにくさを直しました",b:[
+   "<b>〔削除〕遠隔武器で前に立つと 命中閾値 +1 という罰を外しました。</b>前に立つ理由が他に無いのに罰だけがあり、<b>杖のウィザードは立っているだけで閾値が上限に張り付いていました</b>",
+   "<b>アーチャーとウィザードが当てやすくなります。</b>Lv13 対ゴーレムの与ダメ/T は アーチャー 113 → <b>151</b>、ウィザード 107 → <b>160</b>",
+   "<b>デバフが乗るかどうかを、武器のダイス数と切り離しました。</b>これまでは「武器のダイスが1つでも当たれば付く」だったので、<b>手数の多い武器ほどデバフが得意</b>という、腕とも術とも関係ない差が出ていました",
+   "<b>いまは デバフ専用に 1d6 を1回だけ振ります。</b>閾値は命中閾値 −1（ダメージより通りやすい）",
+   "<b>デバフ技を6つ持つウィザードが 42% → 67% になります。</b>ナイト 88% → 83%、スカウト 87% → 67%。<b>手数ではなく腕で決まる</b>ようになりました",
+   "<b>敵のデバフ専用の手（`hex`）も振るようになりました。</b>これまでは判定なしで必ず入っていました。いまは 50〜67%。避ける腕が そのままデバフの抵抗になります",
+   "<span class=\"s\">予告に「通る率 ◯%」が出ます。乗らなかった回もログに 出目 が残ります</span>",
+ ]},
  {id:"v0034e",tag:"up",v:"α0.0034",d:"2026-09-02",n:"状態異常に対する手ができました",b:[
    "<b>これまで 状態異常を解く手は アンチポーション1つだけでした。</b>スキルは0、敵にいたっては解く手を持っていませんでした。デバフは22手も飛んでくるのに、こちらの答えが道具1つだけでした",
    "<b>共通スキル 気 を 静 め る（MP2・再使用待ち2）。</b>状態異常を <b>1つ</b> 解きます。いちばん長く残っているものから",
@@ -4273,7 +4282,8 @@ function telePreview(f,tt){
       t.fear?`恐 怖　こちらの命中閾値 +${t.fear}`:"",
       t.poison?`毎ターン ${t.poison} の毒`:""]
       .filter(Boolean).join("　")+
-      `　${(t.dur||2)+1}ターン`+(t.dice?`　＋ ${t.dice}d6 の侵蝕`:""),danger:true};
+      `　${(t.dur||2)+1}ターン`+(t.dice?`　＋ ${t.dice}d6 の侵蝕`:"")+
+      `　<span class="s">／ 通る率 ${Math.round((7-ailThr(f,me,{}))/6*100)}%</span>`,danger:true};
   if(t.k==="veil")return {txt:"◈ "+t.n,
     sub:`前列すべてに シールド ${t.block?t.block:`最大HPの ${t.blockPct}%`}`,danger:false};
   if(t.k==="idle")return {txt:"◦ "+t.n,sub:t.d||"",danger:false};
@@ -4641,6 +4651,17 @@ function dexStep(d){ return Math.max(0,Math.min(DEXCAP,Math.floor(d/DEXSTEP))); 
    5ラウンドごとに 1、下げるのは 2 まで。こちらにも敵にも同じだけ効く。 */
 const DRAGEVERY=5, DRAGCAP=2;
 function dragEase(){ return Math.min(DRAGCAP,Math.floor((Math.max(1,round||1)-1)/DRAGEVERY)); }
+/* デバフが乗るかどうかは、武器のダイス数と切り離して 1回だけ振る。
+   閾値は命中閾値から AILTHR 引く（ダメージより通りやすい）。
+   前は「武器のダイスが1つでも当たれば付く」だったので、
+   手数の多い武器ほどデバフが得意という、腕とも術とも関係ない差が出ていた
+   （ナイト 88% 対 ウィザード 42%。デバフ技を6つ持つのはウィザードのほう）。 */
+const AILTHR=1;
+function ailThr(u,tgt,opt){ return Math.max(2,threshold(u,tgt,opt||{})-AILTHR); }
+function ailRoll(u,tgt,opt){
+  const thr=ailThr(u,tgt,opt), v=r6();
+  return {ok:v>=thr,v,thr};
+}
 function threshold(u,tgt,opt){
   opt=opt||{};
   let t=4;
@@ -4653,7 +4674,9 @@ function threshold(u,tgt,opt){
     if(c>=3)t-=1;      /* 6戦。段階を遅くしたぶん、ここは前の4段目から繰り上げた */
   }
   if(!u.isFoe){
-    if(u.wep.type==="ranged"&&u.rank==="front")t+=1;      // 近すぎて撃ちにくい
+    /* 「遠隔武器で前に立つと +1」は外した。
+       前に立つ理由が他に無いのに罰だけがあり、
+       杖のウィザードは立っているだけで閾値が上限に張り付いていた。 */
     if(u.wep.type==="ranged"&&tgt.rank==="back")t+=1;     // 後列は遠い
     t-=(opt.thr||0);
     if(me.focus)t-=me.focus.v;
@@ -4695,7 +4718,6 @@ function thrWhy(tgt,opt){
     if(c>=2)T.push({n:"図鑑 3戦",v:-1});
     if(c>=3)T.push({n:"図鑑 6戦",v:-1});
   }
-  if(me.wep.type==="ranged"&&me.rank==="front")T.push({n:"近すぎる",v:1});
   if(me.wep.type==="ranged"&&tgt&&tgt.rank==="back")T.push({n:"後列は遠い",v:1});
   if(opt.thr)T.push({n:"技 の 補 正",v:-opt.thr});
   if(me.focus)T.push({n:"狙 い",v:-me.focus.v});
@@ -5260,12 +5282,19 @@ async function playerAttack(targets,opt){
       log(`　<span class="c">影縫い</span>　<span class="b">${t.name}</span> が 鈍足になった`);
     }
     if(opt.ail&&t.HP>0){
-      opt.ail.forEach(a=>{
-        ailAdd(t,a.k,a.v||0,a.t||2);
-        popOn(t,AIL[a.k].n,"blk");
-      });
-      log(`　<span class="b">${t.name}</span> に `+
-        opt.ail.map(a=>`<span class="c">${AIL[a.k].n}</span>`).join("・"));
+      const R=ailRoll(me,t,opt);
+      if(R.ok){
+        opt.ail.forEach(a=>{
+          ailAdd(t,a.k,a.v||0,a.t||2);
+          popOn(t,AIL[a.k].n,"blk");
+        });
+        log(`　<span class="c">効いた</span> <span class="s">1d6 ${R.v}／${R.thr}以上</span>　`+
+          `<span class="b">${t.name}</span> に `+
+          opt.ail.map(a=>`<span class="c">${AIL[a.k].n}</span>`).join("・"));
+      }else{
+        popOn(t,"効かない","blk");
+        log(`　<span class="s">1d6 ${R.v}／${R.thr}以上　効き目は乗らなかった</span>`);
+      }
       draw();
     }
     if(em>1&&t.key){learnElem(t.key,"weak",atkEl);
@@ -5797,6 +5826,14 @@ async function enemyAct(f){
     log(`<span class="b">${f.name}</span> は傷を塞いだ　HP <span class="m">+${hl}</span>`);
     await wait(620);
   }else if(t.k==="hex"){
+    /* デバフ専用の手も1回だけ振る。前は判定なしで必ず入っていた */
+    const RA=ailRoll(f,me,{});
+    if(!RA.ok){
+      draw();popSelf("効かない","blk");
+      log(`<span class="b">${f.name}</span> の <span class="c">${t.n}</span>　`+
+        `<span class="s">1d6 ${RA.v}／${RA.thr}以上　効き目は乗らなかった</span>`);
+      await wait(520);
+    }else{
     /* 弱体は状態異常として乗せる。前は me.curse / me.weak に足していたが、
        それを読む計算がどこにも無く、ログと表示だけ出て数字が動いていなかった。
        weak は 1 につき 15% の威力低下（前の表示に合わせてある）。 */
@@ -5814,6 +5851,7 @@ async function enemyAct(f){
     log(`<span class="b">${f.name}</span> の <span class="c">${t.n}</span>　`+
       (msg.length?msg.join("　")+`　<span class="s">（${dur+1}ターン）</span>`:"効き目がなかった"));
     await wait(620);
+    }
   }else if(t.k==="cleanse"){
     /* 味方ひとりの状態異常を解く。いちばん多く背負っている者を選ぶ */
     const c=alive().filter(x=>x!==f&&(x.ail||[]).length)
