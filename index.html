@@ -990,13 +990,15 @@ const NEWSTAG={
 };
 const NEWS=[
  {id:"v0044",tag:"up",v:"α0.0044",d:"2026-09-03",n:"守りの仕組みを組み直しました",b:[
-   "<b>1発が HP に届くまでの順番を そろえました。</b>① 出目のボーナス → ② 見切りなら半分 → ③ シールドを引く → ④ 残りから DEF を引いて HP へ。<b>シールドは DEF を通さず そのまま受け止めます</b>",
+   "<b>1発が HP に届くまでの順番を そろえました。</b>① 出目のボーナス → ② 見切りなら半分 → ③ シールドが肩代わり → ④ 残りから DEF を引いて HP へ。<b>シールドは DEF を通さず そのまま受け止めます</b>",
+   "<b>シールドは 受けたぶんだけ減る器になりました。</b>シールド14 に 125 が来れば、14 を肩代わりして消え、2発目からはもう働きません。使い切るまでは残ります",
+   "<b>ログの出し方を直しました。</b>これまで「4の目 87」とだけ出していて、それが引いたあとの数なのか前の数なのか読めませんでした。いまは <b>4の目 119→87</b> のように、素の一撃と 通ったぶんを 並べて出します",
    "<b>DEF の下限が 威力の 25% から 20% になりました。</b>どれだけ硬くても このぶんは必ず通ります。ただし <b>シールドが丸ごと受け止めた回は 0 のまま</b>で、下限は湧きません",
    "<b>装備でシールドは動かせなくなりました。</b>常時シールドは強すぎたので、装備が触れるのは DEF だけです。シールドを出せるのは <b>防御する</b> と <b>技</b> だけになりました",
    "<b>闘志の紋章</b> シールド+7 → <b>DEF +5</b>／<b>守り手の紋</b> DEF+6・シールド+5 → <b>DEF +10</b>／<b>殻 の 盾</b> DEF+13・シールド+3% → <b>DEF +17</b>",
    "<b>敵の守りの手が 2 種類になりました。</b>シールドを張るものと、DEF そのものを上げるものです。DEF を上げるほうは 殴られても減らず、ターンで切れます",
    "<b>身 を 守 る（サイクロプス）</b>は DEF +8（2ターン）、<b>背 を 固 め る（スプリガン）</b>と <b>土 に 潜 る（マンドラゴラ）</b>は DEF +10（2ターン）になりました。残り28件はシールドのままです",
-   "<b>状態異常「防壊」の名前を「弱 化」に変えました。</b>効果はこれまでどおり DEF が下がります",
+   "<b>状態異常の名前を2つ変えました。</b>威力が下がる「弱体」→ <b>衰 弱</b>、DEF が下がる「防壊」→ <b>弱 化</b>。効果はどちらもこれまでどおりです",
  ]},
  {id:"v0041",tag:"up",v:"α0.0041",d:"2026-09-03",n:"細かいところを7つ直しました",b:[
    "<b>戦闘中に 所持金が出るようになりました。</b>マネーイズパワー（強欲）は金貨を払って効くのに、戦闘画面のどこにも金貨がありませんでした",
@@ -2585,7 +2587,7 @@ const WEP={
    火傷 残りHPに比例した継続ダメージ
    麻痺 次の行動を1回飛ばす
    鈍足 DEX が下がる
-   弱体 威力が下がる／弱化 DEF が下がる
+   衰弱 威力が下がる／弱化 DEF が下がる
    いずれも「その者の手番のはじめ」に 1 減り、切れて消える。   */
 /* ---- 持ち物のドット絵（10×10） ---- */
 const PXITEM={
@@ -2793,8 +2795,8 @@ const AIL={
  burn:{n:"火傷",c:"#d1603a",d:"毎ターン 残りHPの一部を失う"},
  palsy:{n:"麻痺",c:"#d9c04a",d:"次の行動を1回失う"},
  slow:{n:"鈍足",c:"#8fa9bf",d:"DEX が下がる"},
- weak:{n:"弱体",c:"#a68bbf",d:"威力が下がる"},
- weakp:{n:"弱体",c:"#a68bbf",d:"威力が割合で下がる"},
+ weak:{n:"衰 弱",c:"#a68bbf",d:"威力が下がる"},
+ weakp:{n:"衰 弱",c:"#a68bbf",d:"威力が割合で下がる"},
  break:{n:"弱 化",c:"#c98a3a",d:"DEF が下がる"},
  blur:{n:"盲目",c:"#8a7f9c",d:"命中閾値が上がる"},
  fear:{n:"恐怖",c:"#8a6b9c",d:"竦んで命中閾値が上がる"},
@@ -2839,7 +2841,7 @@ function stateRows(u){
   });
   if(u===me){
     if(me.block)R.push({icon:ailIcon("up_def"),n:"シールド",c:"#8fd0ff",good:true,
-      v:me.block,d:"1ヒットごと この数だけ相殺する。殴られるまで残る"});
+      v:me.block,d:"受けたダメージを その数だけ肩代わりする。使い切るまで残る"});
     if(me.holdDef)R.push({icon:ailIcon("up_def"),n:"持続の構え",c:"#8fd0ff",good:true,
       v:"+"+me.holdDef.v,t:me.holdDef.t+1,d:"手番のはじめに構えが戻る"});
     if(me.half)R.push({icon:ailIcon("up_half"),n:"見 切 り",c:"#9fd8ff",good:true,
@@ -2871,7 +2873,7 @@ function stateRows(u){
       d:"休んだぶん この手番だけ乗る"});
   }else{
     if(u.block)R.push({icon:ailIcon("up_def"),n:"シールド",c:"#8fd0ff",good:true,
-      v:u.block,d:"1ヒットごと この数だけ相殺する"});
+      v:u.block,d:"受けたダメージを その数だけ肩代わりする"});
     if(defSum(u))R.push({icon:ailIcon("up_def"),n:"守 り",c:"#8fd0ff",good:true,
       v:"+"+defSum(u),t:(u.dbuffs||[]).reduce((a,b)=>Math.max(a,b.t),0),
       d:"DEF が上がっている"});
@@ -3355,7 +3357,7 @@ const REW={
   ],
   knight:[
    {id:"ak1",n:"盾 構",kind:"guard",mp:3,cd:2,blockPct:12,
-    d:"シールド 最大HPの 12%（殴られるまで残る）"},
+    d:"シールド 最大HPの 12%（使い切るまで残る）"},
    {id:"ak2",n:"鉄 壁",kind:"guard",mp:5,cd:3,blockPct:20,
     d:"シールド 最大HPの 20%。守りに徹する"},
    {id:"ak3",n:"カウンター",kind:"guard",mp:4,cd:3,blockPct:10,counter:0.4,
@@ -3451,7 +3453,7 @@ const REW={
   envy:[
    {id:"aen1",n:"呪 詛",kind:"atk",mp:6,cd:3,powMul:0.5,
     ail:[{k:"weak",v:10,t:1},{k:"slow",v:8,t:1},{k:"break",v:8,t:1}],
-    d:"弱体・鈍足・弱化 を まとめて 与える（各 2ターン）"},
+    d:"衰弱・鈍足・弱化 を まとめて 与える（各 2ターン）"},
    {id:"aen2",n:"簒 奪",kind:"atk",mp:5,cd:4,steal:true,
     d:"攻撃し、相手の強化を 奪って 自分のものにする"},
    {id:"aen3",n:"妬 心",kind:"atk",mp:4,cd:3,jealous:true,
@@ -4334,15 +4336,16 @@ function telePreview(f,tt){
     const thr=threshold(f,me,{});
     /* 予告の数字も 本番と同じ順で出す（出目 → 見切り → シールド → DEF） */
     const sh=shieldOf(me), mdef=defOf(me);
+    /* シールドは 減っていく器なので 1ヒットあたりの数には織り込まない。別に出す。 */
     const one=v=>{
       let d=Math.round(hitDmg(fpow,v,thr)*orgMul("inMul"));
       if(me.half)d=Math.round(d/2);
-      return perHit(Math.max(0,d-sh),mdef);
+      return perHit(d,mdef);
     };
     const per=one(thr), hiOne=one(6);
     return {txt:"⚔ "+t.n,
-      sub:`${nd}d6 ・ 1ヒット ${per}${sh?`<span style="color:#8fd0ff">（盾 −${sh}）</span>`:""}${
-        mdef?`<span style="color:#8fd0ff">（DEF −${mdef}）</span>`:""} ・ 最大 ${hiOne*nd}`+
+      sub:`${nd}d6 ・ 1ヒット ${per}${mdef?`<span style="color:#8fd0ff">（DEF −${mdef}）</span>`:""} ・ 最大 ${hiOne*nd}`+
+        (sh?`　／　<span style="color:#8fd0ff">シールド ${sh} を先に削る</span>`:"")+
         (sd?`　／　<span style="color:#b1544a">先に気づいていた ダイス +${sd}</span>`:"")+
         (t.drain?`　／　与えた分の ${Math.round(t.drain*100)}% を吸う`:"")+
         (t.open?`　／　<span style="color:#e0b83a">振ったあと 隙ができる</span>`:"")+
@@ -4354,7 +4357,7 @@ function telePreview(f,tt){
   }
   if(t.k==="guard")return {txt:"◈ "+t.n,
     sub:t.defUp?`DEF +${t.defUp}　${t.dur||1}ターン`
-       :`シールド ${shieldAmount(f,t)}（1ヒットごとに相殺する）`,danger:false};
+       :`シールド ${shieldAmount(f,t)}（受けたぶんを肩代わりする）`,danger:false};
   if(t.k==="buff")return {txt:"▲ "+t.n,
     sub:t.pctUp?`自分の威力 +${t.pctUp}%　${t.dur||1}ターン`
        :t.pow?`自分の威力 +${t.pow}　${t.dur||1}ターン`
@@ -5018,8 +5021,8 @@ function drawActs(){
     add("bag","道 具 を 使 う",`持ち物 ${bagLabel()}`,false,()=>bagPanel());
   }
   if(vowGone())$("#prompt").textContent="▸ 討つと告げた相手は もういない";
-  add("def","防 御 す る",`シールド ${blockValue()}（1ヒットごとに相殺）　MP +${GUARD_MP}　再使用待ち −1`
-    +`　<span style="color:#8fd0ff">殴られるまで残る</span>`,false,
+  add("def","防 御 す る",`シールド ${blockValue()}（受けたぶんを肩代わり）　MP +${GUARD_MP}　再使用待ち −1`
+    +`　<span style="color:#8fd0ff">使い切るまで残る</span>`,false,
     ()=>doAct({kind:"guard",block:blockValue()}));
   /* 立ち位置の説明。α0.0040 で「威力4割減」も「後衛から近接できない」も無くなったので、
      いまの決まり（守りは 前に出ている相手の閾値 +1、攻めは 近接だけが遠さを払う）に合わせる。 */
@@ -5470,11 +5473,17 @@ async function playerAttack(targets,opt){
     const sh=shieldOf(t);
     const atkEl=opt.el||(me.coat&&me.coat.el)||me.wep.el||"none";
     const em=elemMul(atkEl,t);
-    /* ①出目 → ③シールド → ④DEF。来歴と属性の倍率は 出目と同じ段で掛ける */
-    const each=vals.map(v=>{
-      const raw=Math.round(hitDmg(pow,v,opt.even?2:thr)*orgMul("outMul")*em);
-      return perHit(Math.max(0,raw-sh),tdef);
+    /* ①出目 → ③シールド → ④DEF。来歴と属性の倍率は 出目と同じ段で掛ける。
+       ログに出すために、引く前（rawEach）と 通ったぶん（each）を 両方とっておく。 */
+    const rawEach=vals.map(v=>Math.round(hitDmg(pow,v,opt.even?2:thr)*orgMul("outMul")*em));
+    /* シールドは 減っていく器。1発目が食い破れば 2発目からは もう無い。 */
+    let shLeft=sh;
+    const each=rawEach.map(raw=>{
+      const use=Math.min(shLeft,raw); shLeft-=use;
+      return perHit(raw-use,tdef);
     });
+    const shUsed=sh-shLeft;
+    t.block=shLeft;
     const base=perHit(Math.round(pow*orgMul("outMul")*em),tdef)*hits;
     let dmg=each.reduce((a,b)=>a+b,0)
       +Math.round(sixes*((opt.six||0)+passOn("six"))*orgMul("outMul")*em);
@@ -5521,10 +5530,12 @@ async function playerAttack(targets,opt){
     draw();popOn(t,"−"+dmg,(em>1?"weakhit":em<1?"resisthit":""));SFX.dmg();
     log(`<span class="a">${me.name}</span> → <span class="b">${t.name}</span>　`+
       `${n}d6・${thr}以上 <span class="m">${hits}ヒット</span>　`+
-      `威力 ${pow} → ${vals.map((v,i)=>`${v}の目 ${each[i]}`).join("　")}`+
+      `威力 ${pow}　${vals.map((v,i)=>
+        `${v}の目 ${rawEach[i]}${rawEach[i]!==each[i]?`<span class="c">→${each[i]}</span>`:""}`
+        ).join("　")}`+
+      (shUsed?`　<span class="c">シールド −${shUsed}</span>${shLeft?`<span class="s">（残り ${shLeft}）</span>`:""}`:"")+
+      (tdef?`　<span class="s">（DEF −${tdef}　1ヒットごと）</span>`:"")+
       (sixes&&opt.six?`　6の目 ${sixes}×${opt.six}`:"")+
-      (t.block?`　<span class="c">相手のシールド −${t.block}/ヒット</span>`:"")+
-      (tdef?`　<span class="c">相手の DEF −${tdef}/ヒット</span>`:"")+
       (em>1?`　<span class="m">${ELEM[atkEl].n} が弱点　×${em.toFixed(2)}</span>`
         :em<1?`　<span class="c">${ELEM[atkEl].n} に耐性　×${em.toFixed(2)}</span>`:"")+
       `　→ <span class="m">${dmg}</span>`+(t.HP<=0?`　<span class="b">撃破</span>`:""));
@@ -5840,9 +5851,10 @@ async function runQueue(){
          前は自分の手番のたびに必ず 0 に戻していたので、相手が守りや溜めに
          回った回は、防御に使った1手が丸ごと消えていた。
          殴られれば落ちるので、安全な回に積み重ねても意味は無い（積むだけ無駄になる）。 */
-      if(me.blockSpent){me.block=0;me.blockSpent=false;}
-      else if(me.block>0)log(`<span class="a">${me.name}</span> のシールドはまだ残っている　`+
-        `<span class="c">${me.block}／ヒット</span>`);
+      /* シールドは 削られたぶんだけ減る器。殴られただけでは消えない。
+         使い切るまで残るので、ここでは何もしない。 */
+      if(me.block>0)log(`<span class="a">${me.name}</span> のシールドが残っている　`+
+        `<span class="c">${me.block}</span>`);
       me.counter=0;me.selfDef=0;
       if(me.holdDef){
         me.holdDef.t--;
@@ -5929,11 +5941,14 @@ async function enemyAct(f){
     const ev=rolls.filter(v=>v>=thr).sort((a,b)=>a-b);
     /* ①出目（＋来歴の倍率）→ ②見切り → ③シールド → ④DEF */
     let evs=ev.map(v=>Math.round(hitDmg(fpow,v,thr)*orgMul("inMul")));
+    const halved=me.half;
     if(me.half){evs=evs.map(v=>Math.round(v/2));me.half=false;}
     const sh=shieldOf(me);
-    const afterSh=evs.map(v=>Math.max(0,v-sh));
-    const raw=evs.reduce((a,b)=>a+b,0);
-    const soaked=raw-afterSh.reduce((a,b)=>a+b,0);
+    /* シールドは 減っていく器。1発目が食い破れば 2発目からは もう無い。 */
+    let shLeft=sh;
+    const afterSh=evs.map(v=>{const use=Math.min(shLeft,v);shLeft-=use;return v-use;});
+    const soaked=sh-shLeft;
+    me.block=shLeft;
     const mdef=defOf(me);
     const evShown=afterSh.map(v=>perHit(v,mdef));
     let dmg=evShown.reduce((a,b)=>a+b,0);
@@ -5948,8 +5963,7 @@ async function enemyAct(f){
       me.hurtThisRound=true;
     }
     /* シールドは 殴られたら役目を終える。丸ごと受け止めた回も使ったことにする */
-    if(hits&&me.block>0)me.blockSpent=true;
-    if(soaked>0){popSelf("盾 −"+soaked,"blk");}
+    if(soaked>0){popSelf("シールド −"+soaked,"blk");}
     if(hits){
       const shown=Math.min(hits,5);
       for(let i=0;i<shown;i++){
@@ -5999,13 +6013,17 @@ async function enemyAct(f){
     }
     log(`<span class="b">${f.name}</span> → <span class="a">${me.name}</span>　`+
       `${nd}d6 <span class="m">${hits}ヒット</span>　`+
-      `威力 ${fpow} → ${ev.map((v,i)=>`${v}の目 ${evShown[i]}`).join("　")}`+
-      (sh?`　<span class="c">シールド −${sh}/ヒット</span>`:"")+
-      (mdef?`　<span class="c">DEF −${mdef}/ヒット</span>`:"")+`　→ <span class="m">${dmg}</span>`);
+      `威力 ${fpow}　${ev.map((v,i)=>
+        `${v}の目 ${evs[i]}${evs[i]!==evShown[i]?`<span class="c">→${evShown[i]}</span>`:""}`
+        ).join("　")}`+
+      (halved?`　<span class="s">（見切りで半分）</span>`:"")+
+      (soaked?`　<span class="c">シールド −${soaked}</span>${shLeft?`<span class="s">（残り ${shLeft}）</span>`:""}`:"")+
+      (mdef?`　<span class="s">（DEF −${mdef}　1ヒットごと）</span>`:"")+
+      `　→ <span class="m">${dmg}</span>`);
     await wait(430);
   }else if(t.k==="guard"){
     /* 守りの手は 2 種類ある。
-         block / blockPct … シールド（1ヒットごとに相殺。次の手番で消える）
+         block / blockPct … シールド（受けたぶんを肩代わりして減る。次の手番で消える）
          defUp             … DEF そのものを上げる（ターンで切れる。殴られても減らない） */
     if(t.defUp){
       addDefBuff(f,t.defUp,t.dur||1);
@@ -6014,7 +6032,7 @@ async function enemyAct(f){
     }else{
       const amt=shieldAmount(f,t);
       f.block+=amt;draw();fxOn(f,"guard");popOn(f,"+"+amt,"blk");SFX.open();
-      log(`<span class="b">${f.name}</span> は身を固めた（<span class="c">シールド ${f.block}</span>／ヒット）`);
+      log(`<span class="b">${f.name}</span> は身を固めた（<span class="c">シールド ${f.block}</span>）`);
     }
     await wait(450);
   }else if(t.k==="buff"){
@@ -6178,7 +6196,7 @@ async function enemyAct(f){
   }else if(t.k==="veil"){
     aliveIn("front").forEach(x=>{const a=shieldAmount(x,t);x.block+=a;});
     draw();aliveIn("front").forEach(x=>{fxOn(x,"guard");popOn(x,"+"+shieldAmount(x,t),"blk");});SFX.open();
-    log(`<span class="b">${f.name}</span> が霧を張った（前列に <span class="c">シールド</span>／ヒット）`);await wait(500);
+    log(`<span class="b">${f.name}</span> が霧を張った（前列に <span class="c">シールド</span>）`);await wait(500);
   }
   await opening();          /* 大振りの技は、振り抜いたあと隙になる */
 }
@@ -7451,7 +7469,7 @@ function roomInfo(nd){
     if(!fore)return `<span class="unk">何が起きるか分からない。</span>`;
     const EV={ambush:"待ち伏せ",chest:"打ち捨てられた箱",spring:"澄んだ泉",shop:"休んでいる行商人"};
     const EVD={ambush:"戦いになる",chest:"金貨と食材、そして装備",
-      spring:"HP と MP が戻り、弱体も洗われる",shop:"装備と道具を買える"};
+      spring:"HP と MP が戻り、状態異常も洗われる",shop:"装備と道具を買える"};
     return `<span class="known">見 通 し て い る</span><br>`+
       `<b>${EV[nd.ev]||"？"}</b>　${EVD[nd.ev]||""}`+
       (nd.ev==="ambush"&&nd.e?`<br>${ENCS[nd.e].n}　${ENCS[nd.e].list.length}体`:"");
@@ -9512,7 +9530,7 @@ function prepareBattle(){
   fleeUsed=false;foeStart=foes.length;
   queue=[me,...foes];qi=-1;
   scoutFirst=null;
-  me.block=0;me.blockSpent=false;me.dbuffs=[];me.half=false;me.rank="front";me.tmpPow=0;me.tmpDef=0;me.ail=[];me.counter=0;me.focus=null;me.dexUp=0;me.again=null;me.selfDef=0;me.endured=false;me.coat=null;me.beast=null;me.goldPow=null;me.selfPow=null;me.taken=0;me.vow=null;me.rest=null;
+  me.block=0;me.dbuffs=[];me.half=false;me.rank="front";me.tmpPow=0;me.tmpDef=0;me.ail=[];me.counter=0;me.focus=null;me.dexUp=0;me.again=null;me.selfDef=0;me.endured=false;me.coat=null;me.beast=null;me.goldPow=null;me.selfPow=null;me.taken=0;me.vow=null;me.rest=null;
   me.sk.forEach(k=>k.cdLeft=0);
   $("#acts").innerHTML="";
   $("#stageLbl").textContent=`${RUN.act+1}階層　${RUN.cur?RUN.cur.name:""}`+
