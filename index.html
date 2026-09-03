@@ -976,7 +976,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0038";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0039";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -989,6 +989,18 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0039",tag:"up",v:"α0.0039",d:"2026-09-03",n:"立ち位置が 命中に効くようになりました",b:[
+   "<b>後列の相手は 狙いにくくなりました（命中閾値 +1）。</b>武器の種類は問いません。ただし <b>相手の前列が絶えたら この +1 は消えます</b>。盾になる者がいなくなるからです",
+   "<b>こちらが後衛に下がると、前に出ている相手からは 当てられにくくなります（相手の命中閾値 +1）。</b>これまでは「1ヒットの威力が4割減る」という、画面のどこにも出ない掛け算でした。閾値に移したので、内訳に出ます。後列から撃ってくる相手（矢・術）には効きません",
+   "<b>後衛から攻めると こちらの命中閾値も +1 になります。</b>下がるのは 当てにくく・当てられにくくなる取引です。数で来られたら下がる、一体なら前に出る、という選び方になります",
+   "近接は これまでどおり 後衛からは殴れません",
+ ]},
+ {id:"v0039b",tag:"bal",v:"α0.0039",d:"2026-09-03",n:"索敵に負けると 相手が先の一撃を取ります",b:[
+   "<b>これまで索敵は「勝てば得、負けても損なし」でした。</b>負けても先に動かれるだけで、相手にダイスは乗りませんでした",
+   "<b>負けた差のぶん、気づいた一匹の最初の攻撃に 攻撃ダイスが +1〜2 乗ります。</b>群れ全員には乗りません（深いところの3体に +2 ずつ足すと 1ラウンド目に最大HPの倍が飛びます）",
+   "予告にも「先に気づいていた ダイス +2」と出ます",
+   "ついでに、攻撃ボタンに出る <b>ダイスの数が 先制ぶんを含むようになりました</b>。これまで 4d6 と書いてあるのに 7 個振ることがありました",
+ ]},
  {id:"v0038",tag:"bal",v:"α0.0038",d:"2026-09-03",n:"サハギンが 海の歌をうたいます",b:[
    "<b>サハギンの「群れを呼ぶ」は 仲間を増やす手のような名前でしたが、中身は前列を鼓舞するだけでした。</b>名前を <b>海 の 歌</b> に改めました。効果はこれまでどおり 前列すべての威力 +20%（1ターン）です",
    "<b>敵の強化の割合を 5 の倍数に揃えました。</b>28% だったもの（力をためる・狙いを定める・狙いすます・低く唸る・引き絞る）は <b>30%</b> に、22% だったもの（かく乱する・骨を鳴らす・芽吹かせる・眷属を鼓舞する）は <b>20%</b> になりました",
@@ -4285,23 +4297,25 @@ function telePreview(f,tt){
   if(!t)return {txt:"—",sub:"",danger:false};
   if(t.k==="atk"){
     const b0=(t.vsAil&&(me.ail||[]).length)?t.vsAil:0;
-    let per=perHit(powOf(f,{pct:(t.pct||0)+b0,pow:t.pow||0}),defOf(me));
+    const per=perHit(powOf(f,{pct:(t.pct||0)+b0,pow:t.pow||0}),defOf(me));
     const far=(f.rank==="front"&&me.rank==="back");
-    if(far)per=Math.max(1,Math.round(per*0.6));
+    const sd=f.scoutDice||0;
+    const nd=t.dice+sd;
     const thr=threshold(f,me,{});
-    const R=hitRange(per,t.dice,thr);
+    const R=hitRange(per,nd,thr);
     /* シールドは1ヒットごとに引かれる。予告の数字にも織り込む */
     const sh=shieldOf(me), perS=Math.max(0,per-sh);
     return {txt:"⚔ "+t.n,
-      sub:`${t.dice}d6 ・ 1ヒット ${sh?`<span style="color:#8fd0ff">${perS}</span>（盾 −${sh}）`:per} ・ 最大 ${
-        Math.max(0,R.hi-sh)*t.dice}`+
+      sub:`${nd}d6 ・ 1ヒット ${sh?`<span style="color:#8fd0ff">${perS}</span>（盾 −${sh}）`:per} ・ 最大 ${
+        Math.max(0,R.hi-sh)*nd}`+
+        (sd?`　／　<span style="color:#b1544a">先に気づいていた ダイス +${sd}</span>`:"")+
         (t.drain?`　／　与えた分の ${Math.round(t.drain*100)}% を吸う`:"")+
         (t.open?`　／　<span style="color:#e0b83a">振ったあと 隙ができる</span>`:"")+
         (t.vsAil?`　／　<span style="color:#e0b83a">弱っている相手には 威力 +${t.vsAil}%</span>`:"")+
         (t.ail?`　／　当たると ${[t.ail.curse&&`DEF −${t.ail.curse}`,t.ail.slow&&`DEX −${t.ail.slow}`,
           t.ail.weak&&`威力 −${t.ail.weak}%`,t.ail.blind&&`命中 −${t.ail.blind}`,
           t.ail.poison&&`毒 ${t.ail.poison}`].filter(Boolean).join("・")}`:"")+
-        (far?`　／　後衛なので4割減`:""),danger:true};
+        (far?`　／　<span style="color:#8fd0ff">後衛なので 当てにくい（閾値 +1）</span>`:""),danger:true};
   }
   if(t.k==="guard")return {txt:"◈ "+t.n,
     sub:`シールド ${shieldAmount(f,t)}（1ヒットごとに相殺する）`,danger:false};
@@ -4683,6 +4697,9 @@ function knownElem(key,kind){
    25 ごとに 1 動き、上限は +2。
    前は 15 ごとで上限が無く、DEX が伸びる職（スカウト・アーチャー）だと
    すぐ天井（6）に張り付いて、そこから DEX が伸びても何も変わらなかった。 */
+/* 索敵で負けたとき、気づいた一匹の最初の攻撃に足すダイスの上限。
+   こちらの上限は 3 だが、相手は数がいるので 2 で止める。 */
+const FOESCOUTCAP=2;
 const DEXSTEP=25, DEXCAP=2;
 function dexStep(d){ return Math.max(0,Math.min(DEXCAP,Math.floor(d/DEXSTEP))); }
 /* 長引くほど、双方の命中閾値が下がる。
@@ -4716,7 +4733,7 @@ function threshold(u,tgt,opt){
     /* 「遠隔武器で前に立つと +1」は外した。
        前に立つ理由が他に無いのに罰だけがあり、
        杖のウィザードは立っているだけで閾値が上限に張り付いていた。 */
-    if(u.wep.type==="ranged"&&tgt.rank==="back")t+=1;     // 後列は遠い
+    t+=distTo(tgt);                                      // 立ち位置ぶんの遠さ
     t-=(opt.thr||0);
     if(me.focus)t-=me.focus.v;
     if(passOn("rank")>0&&tgt.maxHP<me.maxHP)t-=1;
@@ -4735,10 +4752,31 @@ function threshold(u,tgt,opt){
        鈍足をかければ相手の DEX が下がるので、そのぶん当てやすくなる。 */
     t+=dexStep(Math.max(1,tgt.DEX-ailSum(tgt,"slow")));
   }else{
+    /* 前に出ている相手が 後衛のこちらへ手を伸ばすと届きにくい。
+       前は「1ヒットの威力 ×0.6」という見えない掛け算で表していたので、
+       画面のどこにも出ず、下がったことが効いているのか分からなかった。
+       閾値に移して、内訳に出るようにした。
+       後列から撃ってくる相手（矢・術）には この項は付かない。 */
+    if(tgt===me&&me.rank==="back"&&u.rank==="front")t+=1;
     const td=(tgt===me)?dexOf():Math.max(1,tgt.DEX-ailSum(tgt,"slow"));
     t+=dexStep(td-u.DEX);                                /* こちらの回避 */
   }
   return Math.max(2,Math.min(6,t));
+}
+/* 立ち位置ぶんの遠さ。こちらが攻めるときだけ使う。
+     自分が後衛にいる        … +1（遠い）
+     相手が後列にいる        … +1（ただし 相手の前列が生きているときだけ）
+   「相手の前列が絶えたら 後列も狙いやすくなる」は、盾になる者が居なくなるから。
+   遠隔／近接では分けない。近接がそこへ届くのは前列が絶えたあとだけで、
+   そのときは この項が 0 になるので、結果として前と同じ形になる。
+   敵が攻めるときは「こちらが後衛か」だけを見る。敵の後列には
+   もともと後列用の手（槍を投げる・種を打つ）が別に用意されていて、
+   そこへ重ねて罰を置くと二重になるため。 */
+function distTo(tgt){
+  let d=0;
+  if(me.rank==="back")d++;
+  if(tgt&&tgt.isFoe&&tgt.rank==="back"&&!frontOpen())d++;
+  return d;
 }
 /* 命中閾値が いくつになっているのか、何がそれを動かしているのかを並べて返す。
    threshold() と同じ順で同じものを足すこと。片方だけ直すと嘘の内訳が出る。 */
@@ -4757,7 +4795,10 @@ function thrWhy(tgt,opt){
     if(c>=2)T.push({n:"図鑑 3戦",v:-1});
     if(c>=3)T.push({n:"図鑑 6戦",v:-1});
   }
-  if(me.wep.type==="ranged"&&tgt&&tgt.rank==="back")T.push({n:"後列は遠い",v:1});
+  if(tgt){
+    const dd=distTo(tgt);
+    if(dd)T.push({n:"遠 さ",v:dd});
+  }
   if(opt.thr)T.push({n:"技 の 補 正",v:-opt.thr});
   if(me.focus)T.push({n:"狙 い",v:-me.focus.v});
   if(passOn("rank")>0&&tgt&&tgt.maxHP<me.maxHP)T.push({n:"格 下",v:-1});
@@ -4902,9 +4943,11 @@ function drawActs(){
   };
   const anyTarget=foes.some(canTarget)&&!vowGone();
   const per=perHit(powOf(me,{}),5);
-  const RR=hitRange(per,me.wep.hands,4);
+  /* 先制のダイスと パッシブのダイスも 見えるところに出す（振る数と食い違っていた） */
+  const nAtk=Math.max(1,me.wep.hands+scoutBonus+passOn("dice")-ailSum(me,"shrink"));
+  const RR=hitRange(per,nAtk,4);
   add("atk",me.wep.n+"で攻撃",
-    anyTarget?`${me.wep.hands}d6 ・ <b class="thr">${thrText()}</b> で当たり ・ 1ヒット ${per} ・ 最大 ${RR.hi*me.wep.hands}`:
+    anyTarget?`${nAtk}d6${nAtk!==me.wep.hands?`<span class="m">（${me.wep.hands}＋${nAtk-me.wep.hands}）</span>`:""} ・ <b class="thr">${thrText()}</b> で当たり ・ 1ヒット ${per} ・ 最大 ${RR.hi*nAtk}`:
       (me.wep.type==="melee"&&me.rank==="back"?"後衛からは近接できない":"届く相手がいない"),
     !anyTarget,()=>askTarget({kind:"atk"}));
   if(bagCount()){
@@ -5754,17 +5797,21 @@ async function enemyAct(f){
     await wait(420);
   };
   if(t.k==="atk"){
-    const reach=(f.rank==="front"&&me.rank==="back");   // 後衛には手が届きにくい
     /* vsAil … 相手が状態異常を背負っているときだけ 威力が乗る。
        デバフを放置する重さを作るための札 */
     const bonus=(t.vsAil&&(me.ail||[]).length)?t.vsAil:0;
     if(bonus)log(`<span class="b">${f.name}</span> は弱ったところを狙っている　`+
       `<span class="m">威力 +${bonus}%</span>`);
-    let per=perHit(powOf(f,{pct:(t.pct||0)+bonus,pow:t.pow||0}),defOf(me));
-    if(reach)per=Math.max(1,Math.round(per*0.6));
-    const rolls=[];for(let i=0;i<t.dice;i++)rolls.push(r6());
+    const per=perHit(powOf(f,{pct:(t.pct||0)+bonus,pow:t.pow||0}),defOf(me));
+    const sd=f.scoutDice||0;
+    if(sd){
+      f.scoutDice=0;
+      log(`<span class="b">${f.name}</span> は先に気づいていた　攻撃ダイス <span class="c">+${sd}</span>`);
+    }
+    const nd=t.dice+sd;
+    const rolls=[];for(let i=0;i<nd;i++)rolls.push(r6());
     const thr=threshold(f,me,{});
-    await rollDice(rolls,thr,`${f.name} → ${me.name}　<em>${t.dice}d6 ・ ${thr}以上</em>`);
+    await rollDice(rolls,thr,`${f.name} → ${me.name}　<em>${nd}d6 ・ ${thr}以上</em>`);
     const hits=rolls.filter(v=>v>=thr).length;
     ovHide();
     const ev=rolls.filter(v=>v>=thr).sort((a,b)=>a-b);
@@ -5838,7 +5885,7 @@ async function enemyAct(f){
       if(f.HP<=0)draw();
     }
     log(`<span class="b">${f.name}</span> → <span class="a">${me.name}</span>　`+
-      `${t.dice}d6 <span class="m">${hits}ヒット</span>　`+
+      `${nd}d6 <span class="m">${hits}ヒット</span>　`+
       `基礎 ${per} → ${ev.map((v,i)=>`${v}の目 ${evals[i]}`).join("　")}`+
       (me.block?`　<span class="c">軽減 −${me.block}/ヒット</span>`:"")+`　→ <span class="m">${dmg}</span>`);
     await wait(430);
@@ -9271,6 +9318,13 @@ async function doScout(){
   const a=await side("scMine",me.name,mine,"mine");
   const b=await side("scFoe",lead.name+(foes.length>1?` ほか ${foes.length-1}`:""),theirs,"foe");
   scoutBonus=Math.max(0,Math.min(3,a-b));
+  /* 負けたぶんは 相手の側に乗る。前はこちらが勝ったときだけ得があり、
+     負けても「先に動かれる」だけだったので、索敵は勝てば得・負けても損なしだった。
+     乗せるのは 気づいた一匹だけ。群れ全員に乗せると数の暴力になる
+     （深いところの3体で +2 ずつ足すと 1ラウンド目に最大HPの倍が飛ぶ）。 */
+  const fb=Math.max(0,Math.min(FOESCOUTCAP,b-a));
+  foes.forEach(f=>{f.scoutDice=0;});
+  if(fb)lead.scoutDice=fb;
   /* 索敵に勝ったほうが、1ラウンド目だけ素早さを飛び越えて先に動く。
      前は「片方だけが成功したとき」だけ入れ替えていたので、
      両方成功して相手のほうが上（こちら成功・相手ハード成功）だと、
@@ -9286,6 +9340,7 @@ async function doScout(){
   $("#scEnd").innerHTML=
     `<div class="scDiff" style="color:${scoutBonus?"#8fa261":"#7d6b68"}">${vd}</div>`+
     (scoutBonus?`<div class="scGain">最初の攻撃に 攻撃ダイス <b>+${scoutBonus}</b></div>`
+      :fb?`<div class="scGain lose">${lead.name} の最初の攻撃に 攻撃ダイス <b style="color:var(--blood)">+${fb}</b></div>`
       :`<div class="scGain lose">先制の利はない</div>`)+
     (scoutFirst==="me"?`<div class="scGain">1ラウンド目は <b>こちらが先に動く</b></div>`
      :scoutFirst==="foe"?`<div class="scGain lose">1ラウンド目は <b style="color:var(--blood)">相手が先に動く</b></div>`
@@ -9293,7 +9348,8 @@ async function doScout(){
   SFX.found();
   log(`<span class="a">索敵</span> ${me.short||"自分"} <span class="m">${SCLV[a+1]}</span>`+
       ` 対 ${lead.name} <span class="m">${SCLV[b+1]}</span>`+
-    (scoutBonus?` → 最初の攻撃に ダイス <span class="m">+${scoutBonus}</span>`:` → 先制なし`)+
+    (scoutBonus?` → 最初の攻撃に ダイス <span class="m">+${scoutBonus}</span>`
+     :fb?` → ${lead.name} の最初の攻撃に ダイス <span class="c">+${fb}</span>`:` → 先制なし`)+
     (scoutFirst==="me"?`　<span class="m">1ラウンド目は先手</span>`
      :scoutFirst==="foe"?`　<span class="c">1ラウンド目は後手</span>`:""));
   await wait(1500);
