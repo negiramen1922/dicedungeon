@@ -976,7 +976,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0042";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0043";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -989,10 +989,6 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
- {id:"v0042",tag:"bal",v:"α0.0042",d:"2026-09-03",n:"守りの側から 立ち位置の補正を外しました",b:[
-   "<b>「前に出ている相手 → 後衛のこちら」の補正を なくしました。</b>もとは「1ヒットの威力が4割減る」という 画面のどこにも出ない掛け算で、いったん命中閾値 +1 に移しましたが、それも外しています",
-   "<b>被弾は 前でも後ろでも同じになりました。</b>立ち位置が変えるのは 近接の命中閾値と、近接が敵の後列へ届くかどうか、それに立ち位置のパッシブだけです",
- ]},
  {id:"v0041",tag:"up",v:"α0.0041",d:"2026-09-03",n:"細かいところを7つ直しました",b:[
    "<b>戦闘中に 所持金が出るようになりました。</b>マネーイズパワー（強欲）は金貨を払って効くのに、戦闘画面のどこにも金貨がありませんでした",
    "<b>空振りしたときの幸運を 目の前で振るようになりました。</b>これまではログに「1d100 66／27」と数字が出るだけで、なぜもう一度振れたのか（振れなかったのか）が読めませんでした",
@@ -1004,13 +1000,13 @@ const NEWS=[
  ]},
  {id:"v0041b",tag:"fix",v:"α0.0041",d:"2026-09-03",n:"立ち位置の説明が 古いままでした",b:[
    "<b>「後ろへ下がる」に まだ『敵前列からの被害 4割減 ・ 近接は使えない』と書いてありました。</b>どちらも もう違います",
-   "いまは <b>近接だけが 攻めるときの遠さを払います</b>。守りの側に 立ち位置の補正はありません",
+   "いまは <b>下がると 前に出ている相手の命中閾値 +1</b>。攻めるほうは 近接だけが遠さを払い、遠隔は変わりません",
    "「前へ出る」の『遠隔の命中は落ちる』も 古い決まりの名残でした",
  ]},
  {id:"v0039",tag:"up",v:"α0.0039",d:"2026-09-03",n:"立ち位置が 命中に効くようになりました",b:[
    "<b>近接は 1マス離れるごとに 命中閾値 +1 を払うようになりました。遠隔は 距離で損をしません。</b>前衛→前衛 ±0／前衛→後列（敵の前列が絶えたとき）+1／後衛→前衛 +1／後衛→後列 +2／遠隔は どこからどこへでも ±0",
    "<b>後衛からでも 近接で殴れるようになりました。</b>これまでは一切届かず、近接には「下がる」という手がありませんでした",
-   "<b>「前に出ている相手 → 後衛のこちら は 1ヒットの威力が4割減る」を なくしました。</b>画面のどこにも出ない掛け算でした。守りの側に 立ち位置の補正はありません",
+   "<b>こちらが後衛に下がると、前に出ている相手からは 当てられにくくなります（相手の命中閾値 +1）。</b>これまでは「1ヒットの威力が4割減る」という、画面のどこにも出ない掛け算でした。閾値に移したので、内訳に出ます。後列から撃ってくる相手（矢・術）には効きません",
  ]},
  {id:"v0039b",tag:"bal",v:"α0.0039",d:"2026-09-03",n:"索敵に負けると 相手が先の一撃を取ります",b:[
    "<b>これまで索敵は「勝てば得、負けても損なし」でした。</b>負けても先に動かれるだけで、相手にダイスは乗りませんでした",
@@ -4324,6 +4320,7 @@ function telePreview(f,tt){
   if(t.k==="atk"){
     const b0=(t.vsAil&&(me.ail||[]).length)?t.vsAil:0;
     const per=perHit(powOf(f,{pct:(t.pct||0)+b0,pow:t.pow||0}),defOf(me));
+    const far=(f.rank==="front"&&me.rank==="back");
     const sd=f.scoutDice||0;
     const nd=t.dice+sd;
     const thr=threshold(f,me,{});
@@ -4340,7 +4337,7 @@ function telePreview(f,tt){
         (t.ail?`　／　当たると ${[t.ail.curse&&`DEF −${t.ail.curse}`,t.ail.slow&&`DEX −${t.ail.slow}`,
           t.ail.weak&&`威力 −${t.ail.weak}%`,t.ail.blind&&`命中 −${t.ail.blind}`,
           t.ail.poison&&`毒 ${t.ail.poison}`].filter(Boolean).join("・")}`:"")+
-        "",danger:true};
+        (far?`　／　<span style="color:#8fd0ff">後衛なので 当てにくい（閾値 +1）</span>`:""),danger:true};
   }
   if(t.k==="guard")return {txt:"◈ "+t.n,
     sub:`シールド ${shieldAmount(f,t)}（1ヒットごとに相殺する）`,danger:false};
@@ -4780,6 +4777,12 @@ function threshold(u,tgt,opt){
        鈍足をかければ相手の DEX が下がるので、そのぶん当てやすくなる。 */
     t+=dexStep(Math.max(1,tgt.DEX-ailSum(tgt,"slow")));
   }else{
+    /* 前に出ている相手が 後衛のこちらへ手を伸ばすと届きにくい。
+       もとは「1ヒットの威力 ×0.6」という見えない掛け算だったので、
+       画面のどこにも出ず、下がったことが効いているのか分からなかった。
+       掛け算のほうは消し、閾値に移して 内訳（thrWhy）に出るようにしてある。
+       後列から撃ってくる相手（矢・術）には この項は付かない。 */
+    if(tgt===me&&me.rank==="back"&&u.rank==="front")t+=1;
     const td=(tgt===me)?dexOf():Math.max(1,tgt.DEX-ailSum(tgt,"slow"));
     t+=dexStep(td-u.DEX);                                /* こちらの回避 */
   }
@@ -4986,17 +4989,20 @@ function drawActs(){
   add("def","防 御 す る",`シールド ${blockValue()}（1ヒットごとに相殺）　MP +${GUARD_MP}　再使用待ち −1`
     +`　<span style="color:#8fd0ff">殴られるまで残る</span>`,false,
     ()=>doAct({kind:"guard",block:blockValue()}));
-  /* 立ち位置は 攻めるときの遠さだけを見る。守りに立ち位置の補正は無い。 */
+  /* 立ち位置の説明。α0.0040 で「威力4割減」も「後衛から近接できない」も無くなったので、
+     いまの決まり（守りは 前に出ている相手の閾値 +1、攻めは 近接だけが遠さを払う）に合わせる。 */
   const melee=me.wep.type==="melee";
   if(me.rank==="front")
     add("mv","後ろへ下がる",
-      melee?`<span style="color:#e0b83a">近接の命中閾値 +1</span>　後列へは 前列が絶えてから`
-           :`<span style="color:#8fd0ff">遠隔の当たり方は 変わらない</span>`,false,
+      `<span style="color:#8fd0ff">前に出ている相手の 命中閾値 +1</span>　`+
+      (melee?`<span style="color:#e0b83a">近接の命中閾値も +1</span>`
+            :`遠隔の当たり方は 変わらない`),false,
       ()=>doAct({kind:"move",to:"back"}));
   else
     add("mv","前へ出る",
-      melee?`<span style="color:#8fd0ff">近接の命中閾値が 元に戻る</span>`
-           :`<span style="color:#8fd0ff">遠隔の当たり方は 変わらない</span>`,false,
+      `<span style="color:#e0b83a">前に出ている相手に 当てられやすくなる</span>　`+
+      (melee?`<span style="color:#8fd0ff">近接の命中閾値が 元に戻る</span>`
+            :`遠隔の当たり方は 変わらない`),false,
       ()=>doAct({kind:"move",to:"front"}));
   {
     const od=fleeOdds();
