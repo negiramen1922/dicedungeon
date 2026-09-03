@@ -976,7 +976,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0036";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0037";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -989,6 +989,12 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0037",tag:"bal",v:"α0.0037",d:"2026-09-03",n:"道具の効き目を 割合にしました",b:[
+   "<b>力のポーション +14 は、Lv1 では 威力の 30%、Lv30 では 8% でした。</b>序盤は壊れ性能、終盤はゴミという 別の道具になっていました",
+   "<b>威力と DEF を上げる 5 つの品を 割合にしました。</b>力のポーション +20%／焼き魚 +28%／鋼の護符 DEF +30%／香草の干し肉 DEF +45%／沈んだ街の宴 威力 +25%・DEF +38%",
+   "<b>これまでの固定値は 下限として残しています。</b>どの時点でも 前より弱くなることはありません。Lv30 のナイトなら 力のポーション は +14 → +37 になります",
+   "DEF は レベルでは伸びず 装備でしか伸びないので、装備の薄いうちは 下限のほうが働きます",
+ ]},
  {id:"v0036",tag:"bal",v:"α0.0036",d:"2026-09-03",n:"敵の強化を 割合にしました",b:[
    "<b>敵が力をためても、深い区画ではほとんど何も起きていませんでした。</b>敵の STR は深さで最大 2.5 倍まで伸びるのに、強化の幅は「+12」のような固定値のままだったからです",
    "<b>18 の技を すべて 割合（STR の何%）に直しました。</b>ゴブリンの 力をためる は浅いところで +80% ／ 深いところで +23% と 別物になっていたのが、+47% ／ +34% に揃います",
@@ -3042,17 +3048,17 @@ const ITEMS={
  dynamite:{n:"ダイナマイト",d:"敵1体に 70 の固定ダメージ。DEFを無視する",cost:44,dmg:70,target:true,tier:1},
  napalm:{n:"ナパーム",d:"敵の一つの列すべてに 55 の固定ダメージ",cost:62,dmg:55,all:true,target:true,tier:2},
  harden:{n:"硬化のポーション",d:"次に受けるダメージを半分にする",cost:24,half:true,tier:1},
- might:{n:"力のポーション",d:"この戦闘の間 威力 +14",cost:38,pow:14,tier:1},
- ward:{n:"鋼の護符",d:"この戦闘の間 防御 +8",cost:34,def:8,tier:1},
+ might:{n:"力のポーション",d:"この戦闘の間 威力 +20%（最低でも +14）",cost:38,pow:14,powPct:20,tier:1},
+ ward:{n:"鋼の護符",d:"この戦闘の間 DEF +30%（最低でも +8）",cost:34,def:8,defPct:30,tier:1},
  net:{n:"捕縛網",d:"敵1体の次の行動を1回潰す",cost:40,stun:true,target:true,tier:2},
 
  c_stew:{n:"根菜の煮込み",d:"HP を最大の 50% 回復する",cost:34,heal:.50,anywhere:true,tier:1,made:true},
  c_soup:{n:"キノコのスープ",d:"MP を 22 回復する",cost:44,mp:22,anywhere:true,tier:2,made:true},
- c_grill:{n:"焼 き 魚",d:"この戦闘の間 威力 +20",cost:48,pow:20,tier:2,made:true},
- c_jerky:{n:"香草の干し肉",d:"この戦闘の間 DEF +12",cost:50,def:12,tier:2,made:true},
+ c_grill:{n:"焼 き 魚",d:"この戦闘の間 威力 +28%（最低でも +20）",cost:48,pow:20,powPct:28,tier:2,made:true},
+ c_jerky:{n:"香草の干し肉",d:"この戦闘の間 DEF +45%（最低でも +12）",cost:50,def:12,defPct:45,tier:2,made:true},
  c_cake:{n:"石蜜の焼き菓子",d:"HP を 40% 、MP を 14 戻す",cost:66,heal:.40,mp:14,anywhere:true,tier:3,made:true},
- c_feast:{n:"沈んだ街の宴",d:"HP 全快。この戦闘の間 威力 +18 と DEF +10",cost:120,
-   heal:1,pow:18,def:10,tier:3,made:true},
+ c_feast:{n:"沈んだ街の宴",d:"HP 全快。この戦闘の間 威力 +25% と DEF +38%（最低 +18 / +10）",cost:120,
+   heal:1,pow:18,powPct:25,def:10,defPct:38,tier:3,made:true},
  c_hipot:{n:"ハイポーション",d:"HP を最大の 70% 、MP を最大の 50% 戻す",cost:96,
    heal:.70,mpr:.50,anywhere:true,tier:3,made:true},
  anti:{n:"アンチポーション",d:"自分の状態異常をすべて解く（毒・火傷・麻痺・盲目・混乱も）",
@@ -4631,7 +4637,7 @@ function powOf(u,opt){
   }
   let p=Math.round(base*statMul(u.wep))+(opt.pow||0);
   if(opt.powMul)p=Math.round(p*opt.powMul);
-  if(u===me){                    /* 弱体は敵と同じ扱い。固定値を引いてから割合を掛ける */
+  if(u===me&&!opt.noAil){        /* 弱体は敵と同じ扱い。固定値を引いてから割合を掛ける */
     const wk=ailSum(me,"weak"), wp=ailSum(me,"weakp");
     if(wk||wp)p=Math.max(1,Math.round((p-wk)*(1-Math.min(0.6,wp/100))));
   }
@@ -9137,13 +9143,27 @@ async function doItem(k,tgt){
     draw();fxOn(me,"charge");SFX.found();
     log(`<span class="a">${it.n}</span> を使った　`+parts.join("　"));
   }
-  if(it.pow){
-    me.tmpPow=(me.tmpPow||0)+it.pow;draw();fxOn(me,"charge");popSelf("威力+"+it.pow,"blk");SFX.open();
-    log(`<span class="a">${it.n}</span>　この戦闘の間 威力 <span class="m">+${it.pow}</span>`);
+  /* 威力・DEF を上げる品は 割合で書く（powPct / defPct）。
+     飲んだ時点の素の値から量を出して、あとは固定値として持つ。
+     固定値のまま置いておくと、力のポーション +14 が Lv1 で +30%・
+     Lv30 で +8% と、序盤は壊れ・終盤はゴミという別物になっていた。
+     固定値のほうは下限として残す。DEF は レベルでは伸びず 装備でしか伸びないので、
+     割合だけにすると 装備の薄い序盤に かえって効かなくなる。 */
+  const powAdd=Math.max(it.pow||0,
+    it.powPct?Math.round(powOf(me,{noAil:true})*it.powPct/100):0);
+  if(powAdd){
+    me.tmpPow=(me.tmpPow||0)+powAdd;draw();fxOn(me,"charge");popSelf("威力+"+powAdd,"blk");SFX.open();
+    log(`<span class="a">${it.n}</span>　この戦闘の間 威力 <span class="m">+${powAdd}</span>`+
+      (it.powPct?`（素の威力の ${it.powPct}%）`:""));
   }
-  if(it.def){
-    me.tmpDef=(me.tmpDef||0)+it.def;draw();fxOn(me,"guard");popSelf("防御+"+it.def,"blk");SFX.open();
-    log(`<span class="a">${it.n}</span>　この戦闘の間 防御 <span class="m">+${it.def}</span>`);
+  /* DEF 側は 装備ぶんを含めた素の DEF が土台（me.DEF）。
+     defOf は道具ぶんや構えも含むので、重ねて飲むと雪だるまになる。 */
+  const defAdd=Math.max(it.def||0,
+    it.defPct?Math.round(me.DEF*it.defPct/100):0);
+  if(defAdd){
+    me.tmpDef=(me.tmpDef||0)+defAdd;draw();fxOn(me,"guard");popSelf("防御+"+defAdd,"blk");SFX.open();
+    log(`<span class="a">${it.n}</span>　この戦闘の間 DEF <span class="m">+${defAdd}</span>`+
+      (it.defPct?`（素の DEF の ${it.defPct}%）`:""));
   }
   if(it.cure1){
     /* いちばん長く残っているものを1つだけ解く。序盤の答えとして安い */

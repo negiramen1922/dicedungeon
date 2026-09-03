@@ -378,6 +378,29 @@ if(t.pctUp)addBuff(f,Math.round(f.STR*t.pctUp/100),t.dur||1);
 
 `phases` の `P.str` は **もとから割合**（`f.STR*(1+P.str/100)`）。混同しないこと。
 
+**「与ダメージの伸び」と「バフの大きさ」を混同しない。**`pctUp` は どの深さでも
+STR に対して同じ割合（測って確認済み：28.0 / 27.8 / 28.6 / 28.6%）。
+それでも与ダメージの伸びが 47%→34% と違って見えるのは、
+1ヒットが `威力 − こちらの DEF` で、**元が小さいほど割り増しが大きく見える**ため。
+DEF を引く形をやめない限り これは消えないし、こちらの攻撃でも同じことが起きている。
+
+#### 道具の効き目は 割合、固定値は下限（`powPct` / `defPct`）
+
+```javascript
+const powAdd=Math.max(it.pow||0, it.powPct?Math.round(powOf(me,{noAil:true})*it.powPct/100):0);
+const defAdd=Math.max(it.def||0, it.defPct?Math.round(me.DEF*it.defPct/100):0);
+```
+
+* 威力の土台は `powOf(me,{noAil:true})`。**弱体は乗せない**（弱体中に飲んだら薄い、を避ける）
+* DEF の土台は **`me.DEF`（素の値＋装備）**。`defOf` は道具ぶんや構えも含むので、
+  重ねて飲むと雪だるまになる
+* **固定値は下限として残す。**どの時点でも 前より弱くならない
+
+**プレイヤーの DEF は レベルでまったく伸びない**（`GROW` は STR/VIT/DEX/INT だけ）。
+ナイトは 13、ウィザードは 7 のまま Lv30 まで来る。伸びるのは装備だけ（積んで 41／35）。
+だから DEF の割合は **装備に追随する**のであって、レベルには追随しない。
+`shieldAmount` が 最大HP を土台にしているのは、こうならないため。
+
 #### 「効くラウンド」で持つもの（`me.vow`・`me.rest`）
 
 ```javascript
