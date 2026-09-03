@@ -353,6 +353,29 @@ const add=[];for(let i=0;i<q;i++)add.push(r6());
 **さらに抑えるなら 手数そのものか、1回の攻撃の上限を触ることになる**
 （案：追加ダイスの威力を落とす／与ダメージに「平均の◯倍」の天井を置く）。
 
+#### 押したボタンに焦点を残さない
+
+```javascript
+document.addEventListener("click",e=>{
+  const b=e.target&&e.target.closest&&e.target.closest("button");
+  if(b&&b.blur)b.blur();
+});
+```
+
+**焦点が残っていると Enter でもう一度押せる。**宝箱の部屋に入る札で これをやると
+**抽選をやり直せた**（α0.0045 で塞いだ）。この盤は指と鼠で触るものなので、
+焦点を辿る操作は無い。窓や演出を開くときも `blurActive()` を呼ぶ。
+
+Enter／Space は `primaryBtn()` が返すボタンだけを押す。
+
+* 宝箱の演出中 … null（「と ば す」は Enter では押さない。連打で見せ場が飛ぶ）
+* 宝箱の結果  … 受 け 取 る（`.ndbtn .go2`）
+* ふつうの窓  … 確 認（`.ndbtn .go2`）
+* 3択の窓    … null（どれを選ぶかは Enter では決めない）
+
+**null のときも、窓や演出が出ていれば `preventDefault()` する。**
+後ろのボタンを叩かせないため。
+
 #### 1発が HP に届くまでの順番（α0.0044）
 
 ```

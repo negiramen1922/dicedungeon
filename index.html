@@ -976,7 +976,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0044";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0045";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -989,6 +989,11 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0045",tag:"fix",v:"α0.0045",d:"2026-09-03",n:"宝箱で Enter を押すと 抽選をやり直せました",b:[
+   "<b>部屋の札を押したあと、その札に焦点が残っていました。</b>そのまま Enter を叩くと同じ札がもう一度押され、<b>宝箱の抽選をやり直せてしまいました</b>",
+   "<b>押したボタンからは 焦点を外すようにしました。</b>宝箱にかぎらず、どの部屋でも Enter で入り直せません",
+   "<b>Enter で「確 認」「受 け 取 る」が押せるようになりました。</b>宝箱の演出の最中は 何も起きません（連打で見せ場が飛ばないように、「と ば す」は Enter では押せません）",
+ ]},
  {id:"v0044",tag:"up",v:"α0.0044",d:"2026-09-03",n:"守りの仕組みを組み直しました",b:[
    "<b>1発が HP に届くまでの順番を そろえました。</b>① 出目のボーナス → ② 見切りなら半分 → ③ シールドが肩代わり → ④ 残りから DEF を引いて HP へ。<b>シールドは DEF を通さず そのまま受け止めます</b>",
    "<b>シールドは 受けたぶんだけ減る器になりました。</b>シールド14 に 125 が来れば、14 を肩代わりして消え、2発目からはもう働きません。使い切るまでは残ります",
@@ -8415,7 +8420,7 @@ function chestNote(k){
 async function openChest(nd,weak){
   const title=nd.name;
   const O=$("#chestOv");
-  chestSkip=false;
+  chestSkip=false;blurActive();
   SFX.chest();
   O.className="chestOv on";
   O.innerHTML=`
@@ -8653,6 +8658,27 @@ function openModal(html,dismissible){
   const m=$("#modal");
   m.dataset.free=dismissible?"1":"";
   m.classList.remove("hide");
+  /* 押したボタンに焦点が残っていると、Enter でもう一度その部屋に入れてしまう
+     （宝箱で Enter を叩くと 抽選をやり直せた）。窓を開けたら必ず外す。 */
+  blurActive();
+}
+/* いま焦点のあるものから焦点を外す。窓や演出を開くたびに呼ぶ */
+function blurActive(){
+  const a=document.activeElement;
+  if(a&&a!==document.body&&a.blur)a.blur();
+}
+/* Enter／Space で押すべきボタンを1つ返す。窓の「確 認」など、
+   いちばん手前の 進めるボタン。無ければ null。 */
+function primaryBtn(){
+  const O=$("#chestOv");
+  if(O&&O.classList.contains("on")){
+    /* 「受 け 取 る」だけ。演出中の「と ば す」は Enter では押さない
+       （連打で見せ場が飛ぶ）。押されない Enter は下で握りつぶす。 */
+    return O.querySelector(".ndbtn .go2")||null;
+  }
+  if(!modalOpen())return null;
+  const box=$("#mbox");
+  return box.querySelector(".ndbtn .go2")||box.querySelector(".ndbtn button")||null;
 }
 function closeModal(){$("#modal").classList.add("hide");}
 function modalOpen(){return !$("#modal").classList.contains("hide");}
@@ -9762,7 +9788,7 @@ function drawMake(){
    宝箱と同じ器（#chestOv）と同じ札（.d100）を使い回している。 */
 async function lukRollOv(L){
   const O=$("#chestOv");
-  chestSkip=false;
+  chestSkip=false;blurActive();
   O.className="chestOv on";
   O.innerHTML=`
     <button class="cSkip" id="lkSkip">と ば す</button>
@@ -10207,10 +10233,21 @@ $("#gear").onclick=()=>{SFX.click();openSet();};
 $("#setClose").onclick=closeSet;
 $("#setwrap").onclick=e=>{if(e.target.id==="setwrap")closeSet();};
 document.addEventListener("keydown",e=>{
-  if(e.key!=="Escape")return;
-  if(!$("#setwrap").classList.contains("hide"))return closeSet();
-  if(!$("#newswrap").classList.contains("hide"))return closeNews();
-  if(modalFree())closeModal();});
+  if(e.key==="Escape"){
+    if(!$("#setwrap").classList.contains("hide"))return closeSet();
+    if(!$("#newswrap").classList.contains("hide"))return closeNews();
+    if(modalFree())closeModal();
+    return;
+  }
+  if(e.key!=="Enter"&&e.key!==" ")return;
+  /* Enter は「いま出ている窓の 確 認」を押す。
+     押さえておかないと、焦点の残ったボタン（部屋の札）がもう一度発火して、
+     宝箱の抽選をやり直せてしまう。 */
+  const b=primaryBtn();
+  if(b){e.preventDefault();blurActive();b.click();return;}
+  if(modalOpen()||($("#chestOv")&&$("#chestOv").classList.contains("on"))){
+    e.preventDefault();   /* 窓や演出の最中は、後ろのボタンを叩かせない */
+  }});
 SLIDERS.forEach(([k,sid])=>{
   const el=$("#"+sid);
   el.oninput=()=>{
@@ -10221,6 +10258,13 @@ SLIDERS.forEach(([k,sid])=>{
 });
 /* 自動再生を止められていたら、最初に何か押されたときに鳴らし直す */
 document.addEventListener("click",()=>{SFX.init();Music.resume();});
+/* 押したボタンに焦点を残さない。残っていると Enter でもう一度押せてしまう
+   （宝箱で Enter を叩くと 抽選をやり直せた）。この盤は指と鼠で触るものなので、
+   焦点を辿る操作は無い。 */
+document.addEventListener("click",e=>{
+  const b=e.target&&e.target.closest&&e.target.closest("button");
+  if(b&&b.blur)b.blur();
+});
 /* 書く前に閉じられても記録を落とさない。pagehide は iOS でも呼ばれる */
 window.addEventListener("pagehide",metaFlush);
 document.addEventListener("visibilitychange",()=>{if(document.hidden)metaFlush();});
