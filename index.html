@@ -976,7 +976,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0040";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0041";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -989,6 +989,20 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0041",tag:"up",v:"α0.0041",d:"2026-09-03",n:"細かいところを7つ直しました",b:[
+   "<b>戦闘中に 所持金が出るようになりました。</b>マネーイズパワー（強欲）は金貨を払って効くのに、戦闘画面のどこにも金貨がありませんでした",
+   "<b>空振りしたときの幸運を 目の前で振るようになりました。</b>これまではログに「1d100 66／27」と数字が出るだけで、なぜもう一度振れたのか（振れなかったのか）が読めませんでした",
+   "<b>装備の入れ替えでも 等級が出るようになりました。</b>新しいほうにしか等級が出ておらず、何を捨てるか比べられませんでした",
+   "<b>戦利品を選ぶときに いま持っている技と特が見えるようになりました。</b>入れ替えて後悔することがありました",
+   "<b>スプリガンが膨れると 見た目も変わります。</b>膨れ上がって道を塞ぐ、という姿になります",
+   "<b>踏破・戦死のあとに「ホームに戻る」が増えました。</b>これまでは「新しい冒険者で潜る」しかありませんでした",
+   "殿堂の古い記録で 金貨や技が「undefined」と出ていたのを直しました",
+ ]},
+ {id:"v0041b",tag:"fix",v:"α0.0041",d:"2026-09-03",n:"立ち位置の説明が 古いままでした",b:[
+   "<b>「後ろへ下がる」に まだ『敵前列からの被害 4割減 ・ 近接は使えない』と書いてありました。</b>どちらも もう違います",
+   "いまは <b>前に出ている相手の命中閾値 +1</b>。近接なら こちらの命中閾値も +1、遠隔なら こちらの命中は落ちません",
+   "「前へ出る」の『遠隔の命中は落ちる』も 古い決まりの名残でした",
+ ]},
  {id:"v0039",tag:"up",v:"α0.0039",d:"2026-09-03",n:"立ち位置が 命中に効くようになりました",b:[
    "<b>近接は 1マス離れるごとに 命中閾値 +1 を払うようになりました。遠隔は 距離で損をしません。</b>前衛→前衛 ±0／前衛→後列（敵の前列が絶えたとき）+1／後衛→前衛 +1／後衛→後列 +2／遠隔は どこからどこへでも ±0",
    "<b>後衛からでも 近接で殴れるようになりました。</b>これまでは一切届かず、近接には「下がる」という手がありませんでした",
@@ -2151,6 +2165,14 @@ const PXFOE={
   [4,10,1,5,"#8a7052"],[11,10,1,5,"#8a7052"],
   [5,16,2,4,"#6b5540"],[9,16,2,4,"#6b5540"],
   [7,0,2,2,"#7ab85a"],[4,1,2,1,"#7ab85a"],[10,1,2,1,"#7ab85a"]],
+ /* 膨れたあとの姿。grow のときに f.fig をこちらへ差し替える */
+ spriggan_big:[[2,4,12,10,"#7a7f72"],[4,1,8,4,"#8a8f82"],
+  [5,2,2,2,"#c9a227"],[9,2,2,2,"#c9a227"],
+  [2,0,2,3,"#5c6155"],[12,0,2,3,"#5c6155"],
+  [0,6,2,7,"#6b7064"],[14,6,2,7,"#6b7064"],
+  [3,14,4,4,"#6b7064"],[9,14,4,4,"#6b7064"],
+  [2,18,5,2,"#5c6155"],[9,18,5,2,"#5c6155"],
+  [4,8,4,3,"#4a6330"],[9,5,3,3,"#4a6330"],[6,12,5,2,"#4a6330"]],
  spriggan:[[4,5,8,8,"#7a7f72"],[5,2,6,4,"#8a8f82"],
   [6,3,1,2,"#c9a227"],[9,3,1,2,"#c9a227"],
   [3,1,2,3,"#5c6155"],[11,1,2,3,"#5c6155"],
@@ -4374,7 +4396,7 @@ function unitCell(u,isMine){
   const col=isMine?"#8fa261":"#b1544a";
   return `<div class="cell ${u.HP<=0?"dead":""} ${target?"sel":""}"
       ${isMine?'data-me="1"':`data-id="${u.id}"`}>
-    <div class="por">${isMine?meFig(40):foeFig(u.key,40)}</div>
+    <div class="por">${isMine?meFig(40):foeFig(u.fig||u.key,40)}</div>
     <div class="cn ${isMine?"mine":"foe"}">${u.name}</div>
     <div class="chp">${Math.max(0,u.HP)}/${u.maxHP}</div>
     <div class="bar ${isMine?"me":""}"><i style="width:${Math.max(0,u.HP/u.maxHP*100)}%"></i></div>
@@ -4427,8 +4449,11 @@ function actIcon(t){
 function drawOrder(){
   const host=$("#ordList");if(!host)return;
   const st=$("#stageLbl");
+  /* 所持金も戦闘中に出す。マネーイズパワー（強欲）は 金貨を払って効くのに、
+     戦闘画面のどこにも金貨が出ていなかった。 */
   if(st&&RUN&&RUN.cur)
-    st.textContent=`${areaOf().n||""}　${RUN.cur.name}`+(RUN.elite?"　［手練れ］":RUN.boss?"　［ボス］":"");
+    st.innerHTML=`${areaOf().n||""}　${RUN.cur.name}`+(RUN.elite?"　［手練れ］":RUN.boss?"　［ボス］":"")
+      +`　<span style="color:#c9a227">金貨 ${me?me.gold:0}</span>`;
   /* 1枚のふだ。act に null を渡すと「？」になる（自分の手は自分で決めるので） */
   const card=(u,{no,act,cls})=>{
     const mine=(u===me);
@@ -4436,7 +4461,7 @@ function drawOrder(){
     return `<div class="ord ${mine?"mine":"foe"} ${cls}" title="${u.name}" ${
       mine?'data-om="1"':`data-oid="${u.id}"`}>
       <div class="oface">
-        ${mine?faceFig(sel.job,sel.race,34):foeFaceFig(u.key,34)}
+        ${mine?faceFig(sel.job,sel.race,34):foeFaceFig(u.fig||u.key,34)}
         <div class="oact ${ic.c}">${ic.g}</div>
         <div class="oi">${no}</div>
       </div></div>`;
@@ -4965,11 +4990,21 @@ function drawActs(){
   add("def","防 御 す る",`シールド ${blockValue()}（1ヒットごとに相殺）　MP +${GUARD_MP}　再使用待ち −1`
     +`　<span style="color:#8fd0ff">殴られるまで残る</span>`,false,
     ()=>doAct({kind:"guard",block:blockValue()}));
+  /* 立ち位置の説明。α0.0040 で「威力4割減」も「後衛から近接できない」も無くなったので、
+     いまの決まり（近接だけが距離ぶんの命中閾値を払う）に合わせて書き直した。 */
+  const melee=me.wep.type==="melee";
   if(me.rank==="front")
-    add("mv","後ろへ下がる","後衛へ ・ 敵前列からの被害 4割減 ・ 近接は使えない",false,
+    add("mv","後ろへ下がる",
+      `前に出ている相手の 命中閾値 +1　`+
+      (melee?`<span style="color:#e0b83a">こちらの命中閾値も +1</span>`
+            :`<span style="color:#8fd0ff">遠隔の命中は落ちない</span>`),false,
       ()=>doAct({kind:"move",to:"back"}));
   else
-    add("mv","前へ出る","前衛へ ・ 近接が使える ・ 遠隔の命中は落ちる",false,()=>doAct({kind:"move",to:"front"}));
+    add("mv","前へ出る",
+      `前に出ている相手に 当てられやすくなる　`+
+      (melee?`<span style="color:#8fd0ff">こちらの命中閾値が 元に戻る</span>`
+            :`<span style="color:#e0b83a">遠隔は 前でも後ろでも当たり方は同じ</span>`),false,
+      ()=>doAct({kind:"move",to:"front"}));
   {
     const od=fleeOdds();
     add("flee","逃 げ る",
@@ -5133,6 +5168,35 @@ function ovMsg(html,cut){
   o.innerHTML=cut?`<div class="ovTop">${html}</div>`:`<div class="ovNote">${html}</div>`;
 }
 function ovHide(){$("#diceOv").className="diceOv";}
+/* 空振りのときの幸運を 目の前で振る。
+   前はログに「1d100 66／27」と数字が出るだけで、
+   何が起きて もう一度振れたのか（振れなかったのか）が読めなかった。
+   キャラ作成の lukRollOv と同じ見た目に揃えている。 */
+async function lukOv(pct,r){
+  const o=$("#diceOv");
+  o.className="diceOv on";
+  o.innerHTML=`<div class="ovTop">幸 運</div>
+    <div class="dvLbl">空振り　<em>1d100 ・ ${pct} 以下で もう一度</em></div>
+    <div class="dvRow" style="justify-content:center">
+      <span class="d100 roll" id="lkD">00</span></div>
+    <div id="dvRes"></div>`;
+  const d=$("#lkD");
+  SFX.shake();
+  const spin=setInterval(()=>{d.textContent=String(r100()).padStart(2,"0");},55);
+  await wait(680);
+  clearInterval(spin);
+  d.textContent=String(r.v).padStart(2,"0");
+  d.className="d100 land";
+  const ok=r.k>0;
+  const c=r.crit?"#e9c46a":(r.fumble?"#b1544a":(ok?"#8fa261":"#7d6b68"));
+  d.style.color=c;d.style.borderColor=c;
+  $("#dvRes").innerHTML=`<div class="dvRes" style="color:${c}">${
+    r.crit?"クリティカル":r.fumble?"ファンブル":r.s}${
+    ok?`　もう <b>${r.k}</b> つ振る`:"　届かなかった"}</div>`;
+  if(ok)SFX.crit();else SFX.tick();
+  await wait(ok?640:420);
+  if(!ok)ovHide();          /* 振れなかったときは ここで畳む（続きの演出が無い） */
+}
 async function rollDice(rolls,thr,label,top,noBonus){
   const row=ovShow(label||`判 定　<em>${thr} 以上で命中</em>`,top);
   const els=rolls.map((_,i)=>{const s=document.createElement("span");
@@ -5288,6 +5352,7 @@ async function playerAttack(targets,opt){
     let luck=passOn("luck");
     let lnames=passNames("luck");
     const lr=lukRoll(lukOf());       /* 段階のぶんだけ増える。はずれなら 0 */
+    if(lukOf()>0)await lukOv(lukOf(),lr);
     if(lr.k>0){luck+=lr.k;lnames=lnames.concat([`幸運 ${lr.s}　<em>1d100 ${lr.v}／${lr.p}</em>`]);}
     if(luck>0){
       rerolled=true;
@@ -5359,6 +5424,7 @@ async function playerAttack(targets,opt){
     let lnames=passNames("luck");
     if(opt.even&&!rerolled&&!vals.length){
       const lr2=lukRoll(lukOf());
+      if(lukOf()>0)await lukOv(lukOf(),lr2);
       if(lr2.k>0){luck+=lr2.k;lnames=lnames.concat([`幸運 ${lr2.s}`]);}
     }
     if(luck>0&&!vals.length){
@@ -5680,7 +5746,7 @@ function foeModal(f){
   const nx=codexNext(f.key);
   openModal(`
     <div class="mtitle">${f.name}</div>
-    <div style="text-align:center;line-height:0;margin-bottom:8px">${foeFig(f.key,64)}</div>
+    <div style="text-align:center;line-height:0;margin-bottom:8px">${foeFig(f.fig||f.key,64)}</div>
     <div class="mgrow">
       HP <b>${Math.max(0,f.HP)}</b>/${f.maxHP}　
       ${f.rank==="front"?"前列":"後列"}　
@@ -5962,6 +6028,8 @@ async function enemyAct(f){
        これが無いと、深い階層ほど「膨れても大したことがない」ことになる。 */
     const add=Math.round(t.hp*depthMul());
     f.maxHP+=add; f.HP+=add; f.lastAid=t.n;
+    /* 膨れたら見た目も変わる。差し替える絵があるときだけ（PXFOE.<key>_big） */
+    if(PXFOE[f.key+"_big"])f.fig=f.key+"_big";
     if(t.pow)addBuff(f,t.pow,t.dur||2);
     draw();fxOn(f,"charge");popOn(f,"HP+"+add,"heal");SFX.buff();
     log(`<span class="b">${f.name}</span> が <span class="c">膨れ上がった</span>`+
@@ -8488,10 +8556,14 @@ function drawEnd(){
   lines.push(`記憶した部屋：${Object.keys(META.rooms).length} 箇所`);
   result(RUN.cleared?"踏 破":"死 亡",lines);
   const b=document.createElement("div");
-  b.className="ctrl";b.innerHTML=`<button id="newrun" class="pri">新しい冒険者で潜る</button>`;
+  b.className="ctrl";
+  b.innerHTML=`<button id="newrun" class="pri">新しい冒険者で潜る</button>`+
+    `<button id="tohome">ホームに戻る</button>`;
   $("#mapinfo").appendChild(b);
   const nb=$("#newrun");
   if(nb)nb.onclick=()=>{newChar();showScreen("make");metaNote();window.scrollTo(0,0);};
+  const hb=$("#tohome");
+  if(hb)hb.onclick=()=>{newChar();goHome();window.scrollTo(0,0);};
 }
 function metaNote(){
   const el=$("#metaNote");if(!el)return;
@@ -8923,7 +8995,7 @@ function gearSwapModal(newR,after){
   cur.forEach((c,i)=>{
     h+=`<button class="act rew cgear" data-i="${i}">
       <span class="rcat">${c.kind==="stash"?"予備を捨てる":"外して捨てる"}</span>
-      <span class="an">${c.g.n}</span>
+      <span class="an">${tierTag(c.g.tier)}${madeTag(c.g)} ${c.g.n}</span>
       <span class="ad">${gearDesc(c.g)}</span></button>`;});
   h+=`<button class="act cancel wide" data-keep="1">
     <span class="an">受け取らない</span>
@@ -8952,6 +9024,8 @@ function lootModal(list,after){
   let h=`<div class="mtitle">戦 利 品</div>
     <div class="mgrow">Lv <b>${me.lv}</b>　経験 <b>${me.exp}</b> / ${expCap()}　
       金貨 <b style="color:#c9a227">${me.gold}</b></div>
+    <div class="mgrow s">技　${me.sk.map(x=>x.n).join("・")||"なし"}　<span class="s">（${me.sk.length}/${SKMAX}）</span></div>
+    <div class="mgrow s">特　${me.pass.map(x=>x.n).join("・")||"なし"}　<span class="s">（${me.pass.length}/${PASSMAX}）</span></div>
     <div class="msub">持ち出せるのは ひとつだけ。</div><div class="acts">`;
   list.forEach((o,i)=>{
     h+=`<button class="act rew ${CLS[o.t]}" data-i="${i}">
@@ -9744,12 +9818,12 @@ function drawHall(){
           <span class="hcres">${h.cleared?"踏 破":"戦 死"}</span></div>
         <div class="hcname">${tagFig(h.job,13)} ${JOB[h.job].n}　${
           tagFig(h.race,13)} ${RACE[h.race].n}　${tagFig(h.orig,13)} ${ORIG[h.orig].n}</div>
-        <div class="hcsub">${h.dun}　${h.cleared?`${h.acts}階層を抜けた`:`${h.depth}階層で力尽きた`}
-          　Lv ${h.lv}　HP ${h.hp}/${h.maxHP}　金貨 ${h.gold}</div>
-        <div class="hceq">${h.wep}${h.armor?"／"+h.armor:""}${
-          h.acc.length?"／"+h.acc.join("・"):""}</div>
-        <div class="hcsk">技　${h.sk.join("・")||"なし"}</div>
-        <div class="hcsk">特　${h.pass.join("・")||"なし"}</div>
+        <div class="hcsub">${h.dun||""}　${h.cleared?`${h.acts||0}階層を抜けた`:`${h.depth||1}階層で力尽きた`}
+          　Lv ${h.lv||1}　HP ${h.hp||0}/${h.maxHP||0}　金貨 ${h.gold||0}</div>
+        <div class="hceq">${h.wep||"素手"}${h.armor?"／"+h.armor:""}${
+          (h.acc&&h.acc.length)?"／"+h.acc.join("・"):""}</div>
+        <div class="hcsk">技　${(h.sk||[]).join("・")||"なし"}</div>
+        <div class="hcsk">特　${(h.pass||[]).join("・")||"なし"}</div>
       </div>
     </div>`).join("");
 }
