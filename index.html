@@ -983,7 +983,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0050";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0051";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -996,6 +996,10 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0051",tag:"fix",v:"α0.0051",d:"2026-09-04",n:"前の版から続けたとき 一味のタブが動かなかったのを直しました",b:[
+   "<b>パーティより前の控えから続けると、主人公の職・種族・欲望が空のままでした。</b>その者のタブを押すと画面の組み立てが途中で止まり、<b>押しても何も起きない</b>ように見えていました",
+   "読み込んだときに 職・種族・欲望を繕うようにしました。あわせて <b>主人公が隊列の最後尾に回されていた</b>のも直しています",
+   "前の版から続けている場合は、一度 続きから始め直すと直ります"]},
  {id:"v0050",tag:"bal",v:"α0.0050",d:"2026-09-04",n:"アーチャーの「退き撃ち」を「足止めの矢」に置き換えました",b:[
    "<b>退き撃ち</b>（撃って後衛へ下がる）は、隊列が戦闘中に動かなくなったので 行き場を失っていました",
    "<b>足止めの矢</b>　MP 5 ・ 再使用 3　足を射る　鈍足（DEX −12　3ターン）",
@@ -4084,8 +4088,21 @@ const actor=()=>cur||me;
    party[0] は必ず主人公。pid は盤面のマスを引くための番号。 */
 function setParty(list){
   party=(list&&list.length)?list:(me?[me]:[]);
-  party.forEach((u,i)=>{u.pid=i;u.isFoe=false;});
+  party.forEach((u,i)=>{u.pid=i;u.isFoe=false;fixUnit(u);});
   return party;
+}
+/* 職・種族・欲望を その者が持つようになったのは α0.0048 から。
+   それより前の控えには入っていないので、読み込んだときに繕う。
+   欠けたまま画面に出すと JOB[undefined].n で落ち、窓が更新されなくなる
+   （一味のタブが「押しても動かない」ように見えた）。 */
+function fixUnit(u){
+  if(!u)return u;
+  if(!JOB[u.job])u.job=sel.job;
+  if(!RACE[u.race])u.race=sel.race;
+  if(!("orig" in u))u.orig=(u===me)?sel.orig:null;      /* 仲間は欲望を持たない */
+  if(!u.short)u.short=(JOB[u.job]||{}).n||"";
+  if(!u.art)u.art=(JOB[u.job]||{}).art||u.job;
+  return u;
 }
 let fleeUsed=false, foeStart=0;   /* 逃走は1戦闘に1回。倒した数だけ逃げやすくなる */
 /* 索敵で片方だけが成功したとき、1ラウンド目だけ DEX を無視して
@@ -6571,6 +6588,7 @@ function runResume(){
   sel.job=r.sel.job;sel.race=r.sel.race;sel.orig=r.sel.orig;
   sel.area=r.sel.area;sel.luk=r.sel.luk;sel.lukD=r.sel.lukD;
   me=r.me;
+  fixUnit(me);            /* 古い控えは 職・種族・欲望を持っていない。先に繕う */
   /* 控えに仲間が入っていれば そのまま。無ければ（古い控え）その場で組む */
   setParty([me,...(r.mates||[])]);
   owned=r.owned||[];
@@ -9088,8 +9106,9 @@ function charModal(back,U){
       `<button class="tab${i===chWho?" on":""}" data-who="${i}">
         <span class="tabn">${u.short}</span><span class="tabc">${
           u.HP<=0?"倒れた":`${lineMark(u).replace(/<[^>]*>/g,"")}`}</span></button>`).join("")}</div>`;
-  h+=`<div class="msub">${tagFig(U.job,14)} ${JOB[U.job].n}　${
-    tagFig(U.race,14)} ${RACE[U.race].n}${U.orig?`　${tagFig(U.orig,14)} ${ORIG[U.orig].n}`:""}</div>
+  const uJ=JOB[U.job]||JOB[sel.job]||{n:"—"}, uR=RACE[U.race]||RACE[sel.race]||{n:"—"};
+  h+=`<div class="msub">${tagFig(U.job,14)} ${uJ.n}　${
+    tagFig(U.race,14)} ${uR.n}${(ORIG[U.orig])?`　${tagFig(U.orig,14)} ${ORIG[U.orig].n}`:""}</div>
   <div class="mstat chhead">
     <span style="color:#c9a227">Lv <b style="color:#c9a227">${U.lv}</b></span>
     <span${low?' style="color:#b1544a"':""}>HP <b${
@@ -9412,8 +9431,8 @@ function buildParty(){
   const jobs=MATEJOBS.filter(j=>j!==sel.job).slice(0,2);
   const races=Object.keys(RACE);
   const mates=jobs.map(j=>makeMate(j,races[Math.floor(Math.random()*races.length)],me.lv));
-  const list=[me,...mates].sort((a,b)=>
-    (LINEPREF[a.job]===undefined?9:LINEPREF[a.job])-(LINEPREF[b.job]===undefined?9:LINEPREF[b.job]));
+  const pref=u=>{const v=LINEPREF[u.job];return v===undefined?(u===me?0:9):v;};
+  const list=[me,...mates].sort((a,b)=>pref(a)-pref(b));
   setParty(list);
 }
 /* 仲間のレベルは主人公に追従する。差のぶんだけ成長表を回して追いつかせる。
