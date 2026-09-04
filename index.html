@@ -99,6 +99,16 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .cell{min-height:104px;padding:2px 1px;display:flex;flex-direction:column;
   align-items:center;justify-content:flex-start;position:relative}
 .cell.dead{opacity:.24;filter:grayscale(1)}
+/* いま手番の味方。3人になったので、光っていないと どの者を動かしているのか分からない */
+.cell.acting{background:#1d2117;box-shadow:inset 0 0 0 1px #6f7a63}
+.cell.acting .cn{color:var(--brass)}
+/* 行動一覧のいちばん上に出す「誰の手番か」 */
+.whoturn{grid-column:1/-1;display:flex;align-items:center;gap:7px;
+  padding:5px 8px;margin-bottom:2px;background:#1d2117;border:1px solid #2f3429}
+.whoturn b{color:var(--brass);letter-spacing:.08em}
+.whoturn span{color:var(--dim);font-size:10px;
+  font-family:"DotGothic16",ui-monospace,monospace}
+.whoturn svg{display:block;flex:0 0 auto}
 .cell.sel{cursor:pointer}
 .cell.look{cursor:pointer}
 .cell.look:hover .por{background:#262b1e}
@@ -973,7 +983,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0047";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0048";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -986,6 +996,19 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0048",tag:"up",v:"α0.0048",d:"2026-09-04",n:"隊列を横一列にして、仲間が2人加わりました",b:[
+   "<b>ひとりで潜るのをやめました。</b>主人公のほかに 職の違う仲間が2人つきます。3人とも自分で動かします",
+   "<b>盤面が 横一列になりました。</b>前列／後列 という2つの列はもう無く、味方も敵も 1本の列に並びます",
+   "<b>遠さは「生きている者の中で何番目か」で決まります。</b>先頭 ±0／1つ奥 命中閾値 +1／2つ奥から +2。<b>先頭が倒れれば 次が繰り上がり、その者の遠さは ひとりでに消えます</b>",
+   "<b>遠隔（弓・術）は 遠さを払いません。</b>奥の敵を叩くのは アーチャーとウィザードの仕事です",
+   "<b>「届かない」という決まりが無くなりました。</b>誰でも狙えます。奥ほど当てにくいだけです",
+   "<b>「前へ出る／後ろへ下がる」を外しました。</b>戦闘に入ったら 隊列は動きません。組み替えは 戦闘の外（装備・状態のステータス欄）でします",
+   "<b>貫通が 言葉どおりになりました。</b>狙った相手と その1つ奥を貫きます。範囲は 手前の3体（これまでと同じ重み）",
+   "<b>仲間はパッシブ4・スキル3を持ちます。</b>レベルは主人公に追い、経験・金貨・道具・素材は 主人公ひとりが持ちます。仲間は欲望を持ちません",
+   "<b>倒れた仲間は そのままです。</b>全員倒れたらゲームオーバー。焚き火では「休む」か「起こす」かを選びます（両方はできません）",
+   "<b>守り手（ガーディアンハンド）の身代わりを廃止しました。</b>手は門より手前に並ぶので、手を片付けなければ門に +2 を払うことになります。特別扱いなしで同じ働きをします",
+   "<b>呼ばれた敵の4体目が「V」と名乗っていたのを直しました</b>（前回の DEF→VIT 置換の巻き添えで \"ABCDEF\" が壊れていました）",
+   "<b>手応えは まだ引き直していません。</b>3人になったぶん いまはかなり楽になっています（余裕 ×5 前後）。次で敵側を引き直します"]},
  {id:"v0047",tag:"info",v:"α0.0047",d:"2026-09-04",n:"パーティ（3人）への作り直し・その1（下ごしらえ）",b:[
    "<b>遊びかたは何も変わりません。</b>盤面も数字も これまでと同じです",
    "仲間を連れて歩けるようにするため、<b>「こちら側は1人」という前提で書かれていた場所を、人数を数える形に直しました。</b>行動順・盤面の並び・パッシブの持ち主・敵が誰を狙うか・全滅の判定などです",
@@ -2477,8 +2500,9 @@ function poolTag(cat,id){
 }
 
 /* ---------- 立ち絵 ---------- */
-function meFig(size){
-  return pixFig(sel.job,sel.race,size||46);
+function meFig(size,u){
+  u=u||me;
+  return pixFig(u?u.job:sel.job,u?u.race:sel.race,size||46);
 }
 function fig(kind,c,w){
   w=w||34;
@@ -3270,22 +3294,26 @@ const SKORIG={
   envy:    {search:10, shoot:5},
   lust:    {shoot:10},
 };
-/* 技能値。職業・種族・欲望だけで決まる */
-function skillOf(k){
+/* 技能値。職業・種族・欲望だけで決まる。
+   仲間は欲望を持たない（欲望は主人公ひとりのもの）ので その項は 0 になる。 */
+function skillOf(k,u){
+  u=u||me;
+  const job =u?u.job :sel.job, race=u?u.race:sel.race, orig=u?u.orig:sel.orig;
   return Math.max(0,Math.min(SKMAXV,
-     ((SKJOB[sel.job]||{})[k]||0)
-    +((SKRACE[sel.race]||{})[k]||0)
-    +((SKORIG[sel.orig]||{})[k]||0)));
+     ((SKJOB[job]||{})[k]||0)
+    +((SKRACE[race]||{})[k]||0)
+    +((SKORIG[orig]||{})[k]||0)));
 }
 /* いま持っている武器で使う技能 */
 function wepSkill(u){ u=u||me; return (u&&u.wep&&u.wep.type==="ranged")?"shoot":"fight"; }
 /* 技能値の一覧。いま持っている武器で使う技能に印を付ける */
-function skillLine(sep){
-  const use=wepSkill();
+function skillLine(sep,u){
+  u=u||me;
+  const use=wepSkill(u);
   return Object.keys(SK).map(k=>{
     const on=(k===use);
     return `<span${on?' style="color:var(--brass)"':""}>${SK[k].n} <b${
-      on?' style="color:var(--brass)"':""}>${skillOf(k)}</b></span>`;
+      on?' style="color:var(--brass)"':""}>${skillOf(k,u)}</b></span>`;
   }).join(sep||"　");
 }
 
@@ -4097,6 +4125,8 @@ function makeMe(){
     for(const k in o)base[k]=(base[k]||0)+o[k];});
   base.LUK=sel.luk||0;      /* 幸運だけは職業・種族・欲望から来ない */
   const m={name:`${RACE[sel.race].n}の${JOB[sel.job].n}`,short:J.n,art:J.art,
+    /* 職・種族・欲望は その者が持つ。仲間は欲望を持たない（orig:null） */
+    job:sel.job,race:sel.race,orig:sel.orig,
     baseWep:J.wep,isFoe:false,
     base:base,grow:{STR:0,DEX:0,INT:0,VIT:0,HP:0,MP:0},
     eq:{wep:null,armor:null,acc:[]},stash:[],
@@ -4137,8 +4167,8 @@ function recalcMe(m,full){
   /* HP と MP は もう VIT／INT の従属ではない。職・種族・来歴・成長で
      直に積む器。VIT は硬さ（1ヒットから引く数）だけを見る。 */
   const hpBase=(m.base.HP||0)+(m.grow.HP||0)+(st.HP||0);
-  m.maxHP=Math.round((hpBase+hp)
-    *((ORIG[sel.orig]&&ORIG[sel.orig].hpMul)||1)*(1+pHP/100));
+  const org=ORIG[("orig" in m)?m.orig:sel.orig];
+  m.maxHP=Math.round((hpBase+hp)*((org&&org.hpMul)||1)*(1+pHP/100));
   const pMPP=(m.pass||[]).filter(p=>p.ef&&p.ef.k==="maxmpp").reduce((a,p)=>a+p.ef.v,0);
   const mpBase=(m.base.MP||0)+(m.grow.MP||0)+(st.MP||0);
   m.maxMP=Math.round((Math.max(1,mpBase)+pMP)*(1+pMPP/100));
@@ -4436,7 +4466,7 @@ function telePreview(f,tt){
     const sh=shieldOf(tg), mdef=defOf(tg);
     /* シールドは 減っていく器なので 1ヒットあたりの数には織り込まない。別に出す。 */
     const one=v=>{
-      let d=Math.round(hitDmg(fpow,v,thr)*orgMul("inMul"));
+      let d=Math.round(hitDmg(fpow,v,thr)*orgMul("inMul",tg));
       if(tg.half)d=Math.round(d/2);
       return perHit(d,mdef);
     };
@@ -4509,9 +4539,10 @@ function unitCell(u,isMine,fig){
   const p=isMine?null:telePreview(u,st.t);
   const target=!isMine&&pending&&canTarget(u);
   const col=isMine?"#8fa261":"#b1544a";
-  return `<div class="cell ${u.HP<=0?"dead":""} ${target?"sel":""}"
+  const acting=isMine&&u===cur&&!busy&&!over;
+  return `<div class="cell ${u.HP<=0?"dead":""} ${target?"sel":""} ${acting?"acting":""}"
       ${isMine?`data-me="${u.pid||0}"`:`data-id="${u.id}"`}>
-    <div class="por">${isMine?meFig(fig):foeFig(u.fig||u.key,fig)}</div>
+    <div class="por">${isMine?meFig(fig,u):foeFig(u.fig||u.key,fig)}</div>
     <div class="cn ${isMine?"mine":"foe"}">${u.name}</div>
     <div class="chp">${Math.max(0,u.HP)}/${u.maxHP}</div>
     <div class="bar ${isMine?"me":""}"><i style="width:${Math.max(0,u.HP/u.maxHP*100)}%"></i></div>
@@ -4572,26 +4603,26 @@ function drawOrder(){
       +`　<span style="color:#c9a227">金貨 ${me?me.gold:0}</span>`;
   /* 1枚のふだ。act に null を渡すと「？」になる（自分の手は自分で決めるので） */
   const card=(u,{no,act,cls})=>{
-    const mine=(u===me);
+    const mine=!u.isFoe;
     const ic=mine?{g:"？",c:"me"}:actIcon(act);
     return `<div class="ord ${mine?"mine":"foe"} ${cls}" title="${u.name}" ${
-      mine?'data-om="1"':`data-oid="${u.id}"`}>
+      mine?`data-om="${u.pid||0}"`:`data-oid="${u.id}"`}>
       <div class="oface">
-        ${mine?faceFig(sel.job,sel.race,34):foeFaceFig(u.fig||u.key,34)}
+        ${mine?faceFig(u.job,u.race,34):foeFaceFig(u.fig||u.key,34)}
         <div class="oact ${ic.c}">${ic.g}</div>
         <div class="oi">${no}</div>
       </div></div>`;
   };
   /* いまのラウンド。済んだ者は薄くする */
   let h=queue.map((u,i)=>{
-    if(u!==me&&u.HP<=0)return "";
+    if(u.isFoe&&u.HP<=0)return "";
     const done=(i<qi||u.HP<=0);
     return card(u,{no:i+1,
       act:done?(u.next||u.tele):u.tele,
       cls:(i===qi?"now ":"")+(done?"done":"")});
   }).join("");
   /* 次のラウンド。並びも技も いまの値から決まるので前もって出せる */
-  const later=orderOf().filter(u=>u===me||u.HP>0);
+  const later=orderOf().filter(u=>u.HP>0);
   if(later.length){
     h+=`<div class="orddiv"><b>R${round+1}</b><span>次</span></div>`;
     h+=later.map((u,i)=>card(u,{no:i+1,act:u.next||u.tele,cls:"later"})).join("");
@@ -4599,7 +4630,8 @@ function drawOrder(){
   host.innerHTML=h;
   host.querySelectorAll("[data-oid]").forEach(el=>{
     el.onclick=()=>{const f=foes.find(x=>x.id===+el.dataset.oid);if(f)foeModal(f);};});
-  host.querySelectorAll("[data-om]").forEach(el=>{el.onclick=()=>charModal();});
+  host.querySelectorAll("[data-om]").forEach(el=>{
+    el.onclick=()=>charModal(null,party[+el.dataset.om]||me);});
   const now=host.querySelector(".ord.now");
   if(now&&now.scrollIntoView)now.scrollIntoView({block:"nearest",inline:"nearest"});
   if(!$("#detail").classList.contains("hide"))drawDetail();
@@ -4695,7 +4727,7 @@ function bindCells(){
     if(!dead)el.classList.add("look");
     el.onclick=()=>{
       if(pending)return;
-      if(el.dataset.me)return charModal();
+      if(el.dataset.me!==undefined)return charModal(null,party[+el.dataset.me]||me);
       const f=foes.find(x=>x.id===+el.dataset.id);
       if(f)foeModal(f);
     };
@@ -4738,7 +4770,11 @@ function perHit(rest,def){return Math.max(Math.ceil(rest*VITFLOOR),rest-def);}
 function pctText(r){return "+"+Math.round(r*100)+"%";}
 /* 武器ごとの威力倍率。手数の多い武器ほど低い */
 function statMul(w){return w.mul||1;}
-function orgMul(k){return (ORIG[sel.orig]&&ORIG[sel.orig][k])||1;}
+/* 来歴の倍率。欲望は主人公ひとりのものなので、仲間は必ず等倍になる */
+function orgMul(k,u){
+  const o=(u&&"orig" in u)?u.orig:sel.orig;
+  return (ORIG[o]&&ORIG[o][k])||1;
+}
 /* 持続つきの強化・弱体。自分の手番が来るたび 1 減り、切れたら消える */
 function buffSum(u){return (u.buffs||[]).reduce((a,b)=>a+b.v,0);}
 function tickBuffs(u){
@@ -5067,7 +5103,8 @@ function shieldAmount(u,t){
 const GUARDPCT=9;
 function guardPct(){ return GUARDPCT; }
 function blockValue(){
-  return Math.max(1,Math.round(me.maxHP*guardPct()/100));
+  const A=actor();   /* 手番の主。仲間が動いているときは その者 */
+  return Math.max(1,Math.round(A.maxHP*guardPct()/100));
 }
 const GUARD_MP=4;
 
@@ -5075,12 +5112,14 @@ const GUARD_MP=4;
 /* 狙える相手ぜんぶの命中閾値。ボタンを描く時点では相手が決まっていないので、
    幅があるときは「4〜5」のように範囲で出す。opt は技の補正（thr など）。 */
 function thrText(opt,filter){
+  const A=actor();   /* 手番の主。仲間が動いているときは その者 */
   const list=alive().filter(f=>(filter?filter(f):canTarget(f)));
   if(!list.length)return "";
-  const v=[...new Set(list.map(f=>threshold(me,f,opt||{})))].sort((a,b)=>a-b);
+  const v=[...new Set(list.map(f=>threshold(A,f,opt||{})))].sort((a,b)=>a-b);
   return v.length===1?`${v[0]}以上`:`${v[0]}〜${v[v.length-1]}以上`;
 }
 function drawActs(){
+  const A=actor();   /* 手番の主。仲間が動いているときは その者 */
   const host=$("#acts");host.innerHTML="";
   $("#prompt").textContent="";
   const add=(cls,name,desc,dis,fn)=>{
@@ -5089,19 +5128,28 @@ function drawActs(){
     b.innerHTML=`<span class="an">${name}</span><span class="ad">${desc}</span>`;
     if(!dis)b.onclick=fn;host.appendChild(b);
   };
+  /* 誰の手番かを いちばん上に出す。一味が3人になったので、
+     これが無いと どの者の技を選んでいるのか分からない */
+  if(party.length>1){
+    const who=document.createElement("div");
+    who.className="whoturn";
+    who.innerHTML=`${meFig(22,A)}<b>${A.name}</b>`+
+      `<span>${lineMark(A)}　HP ${Math.max(0,A.HP)}/${A.maxHP}　MP ${A.MP}/${A.maxMP}</span>`;
+    host.appendChild(who);
+  }
   const anyTarget=foes.some(canTarget)&&!vowGone();
   /* 見積りも 本番と同じ順で（出目 → シールド → VIT）。的はまだ決まっていないので
      いちばん手前の相手を仮の相手にする。 */
-  const pv=powOf(me,{});
-  const pvT=alive().filter(f=>f!==me)[0]||null;
+  const pv=powOf(A,{});
+  const pvT=alive().filter(f=>f!==A)[0]||null;
   const pvSh=pvT?shieldOf(pvT):0, pvDef=pvT?defOf(pvT):0;
-  const pOne=v=>perHit(Math.max(0,Math.round(hitDmg(pv,v,4)*orgMul("outMul"))-pvSh),pvDef);
+  const pOne=v=>perHit(Math.max(0,Math.round(hitDmg(pv,v,4)*orgMul("outMul",A))-pvSh),pvDef);
   const per=pOne(4);
   /* 先制のダイスと パッシブのダイスも 見えるところに出す（振る数と食い違っていた） */
-  const nAtk=Math.max(1,me.wep.hands+scoutBonus+passOn("dice")-ailSum(me,"shrink"));
+  const nAtk=Math.max(1,A.wep.hands+scoutBonus+passOn("dice")-ailSum(A,"shrink"));
   const RR={hi:pOne(6)};
-  add("atk",me.wep.n+"で攻撃",
-    anyTarget?`${nAtk}d6${nAtk!==me.wep.hands?`<span class="m">（${me.wep.hands}＋${nAtk-me.wep.hands}）</span>`:""} ・ <b class="thr">${thrText()}</b> で当たり ・ 1ヒット ${per} ・ 最大 ${RR.hi*nAtk}`:
+  add("atk",A.wep.n+"で攻撃",
+    anyTarget?`${nAtk}d6${nAtk!==A.wep.hands?`<span class="m">（${A.wep.hands}＋${nAtk-A.wep.hands}）</span>`:""} ・ <b class="thr">${thrText()}</b> で当たり ・ 1ヒット ${per} ・ 最大 ${RR.hi*nAtk}`:
       "届く相手がいない",
     !anyTarget,()=>askTarget({kind:"atk"}));
   if(bagCount()){
@@ -5122,8 +5170,8 @@ function drawActs(){
        `　戦闘に1回だけ`,
       fleeUsed,()=>doAct({kind:"flee"}));
   }
-  me.sk.forEach((s,i)=>{
-    const noMp=me.MP<s.mp,onCd=s.cdLeft>0;
+  A.sk.forEach((s,i)=>{
+    const noMp=A.MP<s.mp,onCd=s.cdLeft>0;
     const needFront=s.front&&depthOf(actor())!==0;
     const tooLate=s.earlyOnly&&round>s.earlyOnly;
     const noTgt=s.kind==="atk"&&(s.backOnly
@@ -5153,6 +5201,7 @@ function drawActs(){
    DEX の上限が 100 なので、40 を下駄にしてそのまま百分率として使える。 */
 const FLEEBASE=40, FLEEDOWN=12;
 function fleeOdds(){
+  const A=actor();   /* 手番の主。仲間が動いているときは その者 */
   const ls=alive();
   const fast=ls.reduce((a,f)=>(a&&a.DEX>=f.DEX)?a:f, ls[0]);
   const down=Math.max(0,foeStart-ls.length);
@@ -5246,7 +5295,8 @@ function columnMate(t){
   return (i<0?null:L[i+1])||null;
 }
 function askTarget(a){
-  const s=a.kind==="skill"?me.sk[a.i]:null;
+  const A=actor();   /* 手番の主。仲間が動いているときは その者 */
+  const s=a.kind==="skill"?A.sk[a.i]:null;
   if(s&&s.all){ doAct(a,null); return; }
   pending=s?{...a,backOnly:s.backOnly,slower:s.slower}:a;
   $("#prompt").textContent="▸ 狙う相手を選ぶ";
@@ -5399,28 +5449,29 @@ function log(html,cls){
 /* ---------- 攻撃の解決 ---------- */
 let killedThisAttack=false,sawSix=false;
 async function playerAttack(targets,opt){
+  const A=actor();   /* 手番の主。仲間が動いているときは その者 */
   opt=opt||{};
   /* 守り手のいる相手は直接殴れない。ここで狙い先ごと振り替える。
      命中閾値も守り手のもので出したいので、ダイスを振る前に済ませておく。 */
   targets=coverList(targets);
   if(!targets.length)return;
-  killedThisAttack=false;sawSix=false;me.attackedLast=true;
+  killedThisAttack=false;sawSix=false;A.attackedLast=true;
   /* 振るダイスの数。技が fixDice を持つときは 武器のダイス数ではなく
      そちらを使い、減った（増えた）ぶんは 1 ヒットの重さに寄せる。
      ここでならしておかないと、2d6 の重い武器で「ダイスを 4 に絞る」技を
      使うだけで まるまる倍の威力になってしまう。
      ならした強さは武器を問わず同じで、上振れの形だけ 技のほうで決まる。 */
-  let fixMul=1, baseDice=me.wep.hands;
-  if(opt.fixDice){ baseDice=opt.fixDice; fixMul=me.wep.hands/opt.fixDice; }
+  let fixMul=1, baseDice=A.wep.hands;
+  if(opt.fixDice){ baseDice=opt.fixDice; fixMul=A.wep.hands/opt.fixDice; }
   let lostD=0;
   if(opt.lostDice){
-    lostD=Math.min(3,Math.floor((1-me.HP/me.maxHP)/0.25));
+    lostD=Math.min(3,Math.floor((1-A.HP/A.maxHP)/0.25));
     if(lostD)log(`<span class="c">復 讐</span> 失った HP のぶん 攻撃ダイス <span class="m">+${lostD}</span>`);
   }
-  const restD=(me.rest&&me.rest.r===round&&me.rest.dice)||0;
+  const restD=(A.rest&&A.rest.r===round&&A.rest.dice)||0;
   if(restD)log(`<span class="c">明日やる</span> 休んだぶん 攻撃ダイス <span class="m">+${restD}</span>`);
   let n=Math.max(1,baseDice+(opt.dice||0)+lostD+restD+scoutBonus+passOn("dice")
-    -ailSum(me,"shrink"));
+    -ailSum(A,"shrink"));
   if(fixMul!==1){
     opt={...opt,powMul:(opt.powMul||1)*fixMul};
     log(`<span class="c">絞る</span> 攻撃ダイスを <span class="m">${opt.fixDice}</span> に絞る　1 ヒット <span class="m">×${fixMul.toFixed(2)}</span>`);
@@ -5431,9 +5482,9 @@ async function playerAttack(targets,opt){
     log(`<span class="a">先制</span> 探索で先を取った　攻撃ダイス <span class="m">+${scoutBonus}</span>`);
     scoutBonus=0;
   }
-  const thr=threshold(me,targets[0],{...opt,thr:(opt.thr||0)+passOn("thr")});
+  const thr=threshold(A,targets[0],{...opt,thr:(opt.thr||0)+passOn("thr")});
   let rolls=[];for(let i=0;i<n;i++)rolls.push(r6());
-  await rollDice(rolls,thr,`${me.name} → ${targets.map(t=>t.name).join("・")}　<em>${n}d6 ・ ${thr}以上</em>`);
+  await rollDice(rolls,thr,`${A.name} → ${targets.map(t=>t.name).join("・")}　<em>${n}d6 ・ ${thr}以上</em>`);
   if(opt.chain||passOn("chain")){
     /* 追加ぶんの 6 からは さらに増えない。
        前は追加ダイスの 6 も数え直していたので雪だるまになり、
@@ -5465,63 +5516,63 @@ async function playerAttack(targets,opt){
       rerolled=true;
       const extra=[];for(let i=0;i<luck;i++)extra.push(r6());
       log(`<span class="c">${lnames.join("・")}</span> 空振り → もう <span class="m">${luck}</span> つ振る　[${extra.join("][")}]`);
-      await rollDice(extra,thr,`${me.name}　<em>振り直し ${luck}d6</em>`,"再 挑 戦");
+      await rollDice(extra,thr,`${A.name}　<em>振り直し ${luck}d6</em>`,"再 挑 戦");
       ovHide();
       rolls=rolls.concat(extra);
       hits=rolls.filter(v=>v>=thr).length;
       sixes=rolls.filter(v=>v>=6).length;
     }
   }
-  if(!hits){SFX.miss();log(`<span class="a">${me.name}</span> ${n}d6・${thr}以上 → 空振り`);await wait(450);return;}
+  if(!hits){SFX.miss();log(`<span class="a">${A.name}</span> ${n}d6・${thr}以上 → 空振り`);await wait(450);return;}
   for(const t of targets){
     if(t.HP<=0)continue;
-    let pow=powOf(me,opt)+passOn("pow")+(me.tmpPow||0);
+    let pow=powOf(A,opt)+passOn("pow")+(A.tmpPow||0);
     if(passOn("fixate")>0){
-      if(me.fixId===t.id)me.fixN=Math.min(3,(me.fixN||0)+1);
-      else {me.fixId=t.id;me.fixN=0;}
+      if(A.fixId===t.id)A.fixN=Math.min(3,(A.fixN||0)+1);
+      else {A.fixId=t.id;A.fixN=0;}
     }
     let pmul=1+(passOn("powp")+passOn("allround")*6+passOn("fang")*8
-      +(me.beast?me.beast.pow:0)+(me.goldPow?me.goldPow.v:0)
-      +(me.selfPow?me.selfPow.v:0)+((me.rest&&me.rest.r===round&&me.rest.pow)||0))/100;
+      +(A.beast?A.beast.pow:0)+(me.goldPow?me.goldPow.v:0)
+      +(A.selfPow?A.selfPow.v:0)+((A.rest&&A.rest.r===round&&A.rest.pow)||0))/100;
     if(passOn("blood")>0&&t.HP<=t.maxHP*0.5)pmul+=passOn("blood")/100;
     let skm=1;
-    if(me.vow&&me.vow.id===t.id&&me.vow.mul&&round>=me.vow.r){
-      skm*=me.vow.mul;
-      log(`<span class="c">誓 い</span> 討つと告げた相手　威力 <span class="m">×${me.vow.mul.toFixed(1)}</span>`);
+    if(A.vow&&A.vow.id===t.id&&A.vow.mul&&round>=A.vow.r){
+      skm*=A.vow.mul;
+      log(`<span class="c">誓 い</span> 討つと告げた相手　威力 <span class="m">×${A.vow.mul.toFixed(1)}</span>`);
     }
     if(opt.jealous&&t){
-      const r=1+Math.min(0.6,Math.max(0,(t.HP-me.HP)/Math.max(1,me.maxHP))*0.6);
+      const r=1+Math.min(0.6,Math.max(0,(t.HP-A.HP)/Math.max(1,A.maxHP))*0.6);
       skm*=r;
       log(`<span class="c">妬 心</span> 相手のほうが多く持っている　威力 <span class="m">×${r.toFixed(2)}</span>`);
     }
     if(opt.rage){
-      const r=1+Math.min(0.6,(me.taken||0)/me.maxHP*0.8);
+      const r=1+Math.min(0.6,(A.taken||0)/A.maxHP*0.8);
       skm*=r;
-      log(`<span class="c">逆 境</span> これまでに受けた ${me.taken||0} が 威力 <span class="m">×${r.toFixed(2)}</span> になる`);
+      log(`<span class="c">逆 境</span> これまでに受けた ${A.taken||0} が 威力 <span class="m">×${r.toFixed(2)}</span> になる`);
     }
     if(opt.lostPow){
-      const r=1+Math.min(0.45,(1-me.HP/me.maxHP)*0.6);
+      const r=1+Math.min(0.45,(1-A.HP/A.maxHP)*0.6);
       skm*=r;
       log(`<span class="c">火事場の力</span> 威力 <span class="m">×${r.toFixed(2)}</span>`);
     }
     pow=Math.round(pow*pmul*skm);
     if(opt.jealous&&t){
-      const r=1+Math.min(0.6,Math.max(0,(t.HP-me.HP)/Math.max(1,me.maxHP))*0.6);
+      const r=1+Math.min(0.6,Math.max(0,(t.HP-A.HP)/Math.max(1,A.maxHP))*0.6);
       skm*=r;
       log(`<span class="c">妬 心</span> 相手のほうが多く持っている　威力 <span class="m">×${r.toFixed(2)}</span>`);
     }
     if(opt.rage){
-      const r=1+Math.min(0.6,(me.taken||0)/me.maxHP*0.8);
+      const r=1+Math.min(0.6,(A.taken||0)/A.maxHP*0.8);
       skm*=r;
-      log(`<span class="c">逆 境</span> これまでに受けた ${me.taken||0} が 威力 <span class="m">×${r.toFixed(2)}</span> になる`);
+      log(`<span class="c">逆 境</span> これまでに受けた ${A.taken||0} が 威力 <span class="m">×${r.toFixed(2)}</span> になる`);
     }
     if(opt.lostPow){
-      const lost=1-me.HP/me.maxHP;
+      const lost=1-A.HP/A.maxHP;
       const add=Math.round(Math.min(30,lost*40));
       pow+=add;
       if(add)log(`<span class="c">火事場の力</span> 失った HP のぶん 威力 <span class="m">+${add}</span>`);
     }
-    const pen=Math.min(1,(opt.pen||0)+(passOn("pen")+(me.gearPen||0))/100);
+    const pen=Math.min(1,(opt.pen||0)+(passOn("pen")+(A.gearPen||0))/100);
     const tdef=Math.round(defOf(t)*(1-pen));
     let vals=(opt.even?rolls.filter(v=>v%2===0):rolls.filter(v=>v>=thr)).sort((a,b)=>a-b);
     /* 一つも当たらなかったとき、もう一度だけ振る */
@@ -5538,17 +5589,17 @@ async function playerAttack(targets,opt){
       rerolled=true;
       const extra=[];for(let i=0;i<luck;i++)extra.push(r6());
       log(`<span class="c">${lnames.join("・")}</span> 空振り → もう <span class="m">${luck}</span> つ振る　[${extra.join("][")}]`);
-      await rollDice(extra,thr,`${me.name}　<em>振り直し ${luck}d6</em>`,"再 挑 戦");
+      await rollDice(extra,thr,`${A.name}　<em>振り直し ${luck}d6</em>`,"再 挑 戦");
       ovHide();
       rolls.push(...extra);
       vals=(opt.even?extra.filter(v=>v%2===0):extra.filter(v=>v>=thr)).sort((a,b)=>a-b);
     }
     const sh=shieldOf(t);
-    const atkEl=opt.el||(me.coat&&me.coat.el)||me.wep.el||"none";
+    const atkEl=opt.el||(A.coat&&A.coat.el)||A.wep.el||"none";
     const em=elemMul(atkEl,t);
     /* ①出目 → ③シールド → ④VIT。来歴と属性の倍率は 出目と同じ段で掛ける。
        ログに出すために、引く前（rawEach）と 通ったぶん（each）を 両方とっておく。 */
-    const rawEach=vals.map(v=>Math.round(hitDmg(pow,v,opt.even?2:thr)*orgMul("outMul")*em));
+    const rawEach=vals.map(v=>Math.round(hitDmg(pow,v,opt.even?2:thr)*orgMul("outMul",A)*em));
     /* シールドは 減っていく器。1発目が食い破れば 2発目からは もう無い。 */
     let shLeft=sh;
     const each=rawEach.map(raw=>{
@@ -5557,16 +5608,16 @@ async function playerAttack(targets,opt){
     });
     const shUsed=sh-shLeft;
     t.block=shLeft;
-    const base=perHit(Math.round(pow*orgMul("outMul")*em),tdef)*hits;
+    const base=perHit(Math.round(pow*orgMul("outMul",A)*em),tdef)*hits;
     let dmg=each.reduce((a,b)=>a+b,0)
-      +Math.round(sixes*((opt.six||0)+passOn("six"))*orgMul("outMul")*em);
+      +Math.round(sixes*((opt.six||0)+passOn("six",A))*orgMul("outMul",A)*em);
     const rate=base?dmg/base-1:0;
     const startHP=t.HP, endHP=Math.max(0,t.HP-dmg);
     const shown=Math.min(hits,5);
     for(let i=0;i<shown;i++){
-      await lungeUnit(me);
-      SFX.atk(me.wep.snd);
-      fxOn(t,me.wep.snd);
+      await lungeUnit(A);
+      SFX.atk(A.wep.snd);
+      fxOn(t,A.wep.snd);
       const v=(i===shown-1)?each.slice(i).reduce((a,b)=>a+b,0):each[i];
       popOn(t,"−"+v,"each"+(em>1?" weakhit":em<1?" resisthit":""));
       setHPBar(t,startHP-(startHP-endHP)*(i+1)/shown);
@@ -5581,7 +5632,7 @@ async function playerAttack(targets,opt){
       log(`　<span class="c">影縫い</span>　<span class="b">${t.name}</span> が 鈍足になった`);
     }
     if(opt.ail&&t.HP>0){
-      const R=ailRoll(me,t,opt);
+      const R=ailRoll(A,t,opt);
       if(R.ok){
         opt.ail.forEach(a=>{
           ailAdd(t,a.k,a.v||0,a.t||2);
@@ -5601,7 +5652,7 @@ async function playerAttack(targets,opt){
     else if(em<1&&t.key)learnElem(t.key,"resist",atkEl);
     if(opt.stun)t.stun=true;
     draw();popOn(t,"−"+dmg,(em>1?"weakhit":em<1?"resisthit":""));SFX.dmg();
-    log(`<span class="a">${me.name}</span> → <span class="b">${t.name}</span>　`+
+    log(`<span class="a">${A.name}</span> → <span class="b">${t.name}</span>　`+
       `${n}d6・${thr}以上 <span class="m">${hits}ヒット</span>　`+
       `威力 ${pow}　${vals.map((v,i)=>
         `${v}の目 ${rawEach[i]}${rawEach[i]!==each[i]?`<span class="c">→${each[i]}</span>`:""}`
@@ -5621,14 +5672,14 @@ async function playerAttack(targets,opt){
     if(opt.steal&&t.buffs&&t.buffs.length){
       const b=t.buffs.shift();
       const pct=Math.max(5,Math.round(b.v/Math.max(1,t.STR)*100));
-      me.selfPow={v:pct,t:Math.max(1,b.t)};
+      A.selfPow={v:pct,t:Math.max(1,b.t)};
       popOn(t,"奪 取","weakhit");popSelf("+"+pct+"%","blk");
       log(`　<span class="c">簒 奪</span>　<span class="b">${t.name}</span> の強化を奪った（威力 <span class="m">+${pct}%</span>）`);
       draw();
     }
     if(opt.lifeSteal&&dmg>0){
-      const h=Math.min(Math.round(dmg*opt.lifeSteal),me.maxHP-me.HP);
-      if(h>0){me.HP+=h;popSelf("+"+h,"heal");
+      const h=Math.min(Math.round(dmg*opt.lifeSteal),A.maxHP-A.HP);
+      if(h>0){A.HP+=h;popSelf("+"+h,"heal");
         log(`　<span class="c">捕 食</span>　HP <span class="m">+${h}</span>`);}
     }
     if(opt.devour&&t.HP>0&&t.HP<=t.maxHP*opt.devour&&!RUN.boss){
@@ -5636,8 +5687,8 @@ async function playerAttack(targets,opt){
       t.HP=0;fxOn(t,"blunt");popOn(t,"呑 込","weakhit");SFX.dmg();
     }
     if(opt.mpDrain&&dmg>0){
-      const g=Math.min(Math.round(me.maxMP*opt.mpDrain),me.maxMP-me.MP);
-      if(g>0){me.MP+=g;popSelf("MP+"+g,"blk");
+      const g=Math.min(Math.round(A.maxMP*opt.mpDrain),A.maxMP-A.MP);
+      if(g>0){A.MP+=g;popSelf("MP+"+g,"blk");
         log(`　<span class="c">魔力を吸い取った</span>　MP <span class="m">+${g}</span>`);}
     }
     if(opt.loot&&dmg>0){
@@ -5648,20 +5699,20 @@ async function playerAttack(targets,opt){
     if(t.HP<=0){
       killedThisAttack=true;
       if(opt.feast){
-        const h=Math.min(Math.round(me.maxHP*opt.feast),me.maxHP-me.HP);
-        if(h>0){me.HP+=h;popSelf("+"+h,"heal");
+        const h=Math.min(Math.round(A.maxHP*opt.feast),A.maxHP-A.HP);
+        if(h>0){A.HP+=h;popSelf("+"+h,"heal");
           log(`　<span class="c">暴飲暴食</span>　HP <span class="m">+${h}</span>`);}
       }
       const dh=passOn("devourHeal");
-      if(dh>0&&me.HP<me.maxHP){
-        const h=Math.min(Math.round(t.maxHP*dh/100),me.maxHP-me.HP);
-        if(h>0){me.HP+=h;popSelf("+"+h,"heal");
+      if(dh>0&&A.HP<A.maxHP){
+        const h=Math.min(Math.round(t.maxHP*dh/100),A.maxHP-A.HP);
+        if(h>0){A.HP+=h;popSelf("+"+h,"heal");
           log(`　<span class="c">悪 食</span>　HP <span class="m">+${h}</span>`);}
       }
       const fd=passOn("feed");
-      if(fd>0&&me.HP<me.maxHP){
-        const h=Math.min(Math.round(me.maxHP*fd/100),me.maxHP-me.HP);
-        me.HP+=h;popSelf("+"+h,"heal");
+      if(fd>0&&A.HP<A.maxHP){
+        const h=Math.min(Math.round(A.maxHP*fd/100),A.maxHP-A.HP);
+        A.HP+=h;popSelf("+"+h,"heal");
         log(`<span class="c">捕 食</span> HP <span class="m">+${h}</span>`);
       }
     }
@@ -5673,25 +5724,26 @@ async function playerAttack(targets,opt){
 
 /* ---------- プレイヤーの手番 ---------- */
 async function resolvePlayer(a,target){
+  const A=actor();   /* 手番の主。仲間が動いているときは その者 */
   if(busy||over)return;
   busy=true;$("#acts").innerHTML="";$("#prompt").textContent="";
   if(a.kind==="atk"){
-    me.lastSk=null;
+    A.lastSk=null;
     await playerAttack([target],{});
   }else if(a.kind==="skill"){
-    const s=me.sk[a.i];
-    me.MP-=s.mp;s.cdLeft=s.cd;
-    log(`<span class="a">${me.name}</span> が <span class="c">${s.n}</span>（MP −${s.mp}）`);
+    const s=A.sk[a.i];
+    A.MP-=s.mp;s.cdLeft=s.cd;
+    log(`<span class="a">${A.name}</span> が <span class="c">${s.n}</span>（MP −${s.mp}）`);
     if(s.kind==="guard"){
-      const amt=shieldAmount(me,s);
-      me.block+=amt;
+      const amt=shieldAmount(A,s);
+      A.block+=amt;
       /* hold は「そのあと何ターン 毎ターン張り直すか」。
-         書かれていたのに どこからも me.holdDef に入れていなかったので、
+         書かれていたのに どこからも A.holdDef に入れていなかったので、
          鉄壁の「2ターンのあいだ」がずっと効いていなかった。 */
-      if(s.hold)me.holdDef={v:amt,t:s.hold};
-      if(s.counter)me.counter=s.counter;
-      draw();fxOn(me,"guard");popSelf("+"+amt,"blk");SFX.open();
-      if(s.counter)log(`<span class="a">${me.name}</span> は反撃の構えを取った（受けた分の ${
+      if(s.hold)A.holdDef={v:amt,t:s.hold};
+      if(s.counter)A.counter=s.counter;
+      draw();fxOn(A,"guard");popSelf("+"+amt,"blk");SFX.open();
+      if(s.counter)log(`<span class="a">${A.name}</span> は反撃の構えを取った（受けた分の ${
         Math.round(s.counter*100)}% を返す）`);
       await wait(650);}
     else if(s.kind==="focus"&&s.goldPow){
@@ -5700,77 +5752,77 @@ async function resolvePlayer(a,target){
       }
       me.gold-=s.payGold;
       me.goldPow={v:s.goldPow,t:s.dur||2};
-      draw();fxOn(me,"charge");popSelf("+"+s.goldPow+"%","blk");SFX.buff();
-      log(`<span class="a">${me.name}</span> は 金貨 ${s.payGold} を撒いた（威力 +${s.goldPow}%　${(s.dur||2)+1}ターン）`);
+      draw();fxOn(A,"charge");popSelf("+"+s.goldPow+"%","blk");SFX.buff();
+      log(`<span class="a">${A.name}</span> は 金貨 ${s.payGold} を撒いた（威力 +${s.goldPow}%　${(s.dur||2)+1}ターン）`);
       await wait(650);}
     else if(s.kind==="focus"&&s.beast){
-      me.beast={...s.beast,t:s.dur||2};
-      draw();fxOn(me,"charge");popSelf("獣 化","blk");SFX.buff();
-      log(`<span class="a">${me.name}</span> が <span class="c">獣</span> になった`+
+      A.beast={...s.beast,t:s.dur||2};
+      draw();fxOn(A,"charge");popSelf("獣 化","blk");SFX.buff();
+      log(`<span class="a">${A.name}</span> が <span class="c">獣</span> になった`+
         `（威力 +${s.beast.pow}%　DEX +${s.beast.dex}　VIT 半減　${(s.dur||2)+1}ターン）`);
       await wait(700);}
     else if(s.kind==="focus"&&s.elCoat){
-      me.coat={el:s.elCoat,t:s.dur||2};
-      draw();fxOn(me,"charge");popSelf(ELEM[s.elCoat].n,"blk");SFX.buff();
-      log(`<span class="a">${me.name}</span> に <span class="c">${ELEM[s.elCoat].n}</span> の力が宿った（${(s.dur||2)+1}ターン）`);
+      A.coat={el:s.elCoat,t:s.dur||2};
+      draw();fxOn(A,"charge");popSelf(ELEM[s.elCoat].n,"blk");SFX.buff();
+      log(`<span class="a">${A.name}</span> に <span class="c">${ELEM[s.elCoat].n}</span> の力が宿った（${(s.dur||2)+1}ターン）`);
       await wait(650);}
     else if(s.kind==="focus"&&s.dex){
-      me.dexUp=(me.dexUp||0)+s.dex;
+      A.dexUp=(A.dexUp||0)+s.dex;
       buildQueue&&null;
-      draw();fxOn(me,"charge");popSelf("DEX+"+s.dex,"blk");SFX.buff();
-      log(`<span class="a">${me.name}</span> は身を軽くした（DEX +${s.dex}　この戦闘のあいだ）`);
+      draw();fxOn(A,"charge");popSelf("DEX+"+s.dex,"blk");SFX.buff();
+      log(`<span class="a">${A.name}</span> は身を軽くした（DEX +${s.dex}　この戦闘のあいだ）`);
       await wait(650);}
     else if(s.kind==="focus"&&s.rest){
       /* 休んで 次のターンだけ乗るもの。書いてあるのに s.rest を誰も読んでおらず、
          このふたつは「ただ休むだけ」の技になっていた。
          しかも thr を持たないので、下の focus の枝に落ちて
          「命中閾値 −undefined」と出ていた。 */
-      me.rest={...s.rest,r:round+1};   /* 次のラウンドの手番にだけ乗る */
-      draw();fxOn(me,"charge");
+      A.rest={...s.rest,r:round+1};   /* 次のラウンドの手番にだけ乗る */
+      draw();fxOn(A,"charge");
       popSelf(s.rest.pow?"威力+"+s.rest.pow+"%":"ダイス+"+s.rest.dice,"blk");SFX.buff();
-      log(`<span class="a">${me.name}</span> は休んだ　次のターンだけ `+
+      log(`<span class="a">${A.name}</span> は休んだ　次のターンだけ `+
         (s.rest.pow?`威力 <span class="m">+${s.rest.pow}%</span>`:`攻撃ダイス <span class="m">+${s.rest.dice}</span>`));
       await wait(650);}
     else if(s.kind==="focus"){
-      me.focus={v:s.thr,t:s.dur||1};
-      draw();fxOn(me,"charge");popSelf("集 中","blk");SFX.buff();
-      log(`<span class="a">${me.name}</span> は狙いを定めた（命中閾値 −${s.thr}　${(s.dur||1)+1}ターン）`);
+      A.focus={v:s.thr,t:s.dur||1};
+      draw();fxOn(A,"charge");popSelf("集 中","blk");SFX.buff();
+      log(`<span class="a">${A.name}</span> は狙いを定めた（命中閾値 −${s.thr}　${(s.dur||1)+1}ターン）`);
       await wait(650);}
     else if(s.kind==="declare"){
       /* 討つ相手を告げる。前は declare の枝が無く、下の攻撃に落ちていたので
          誓いも MP も動かず、pow:100 が「素の +100」として攻撃に乗っていた。 */
-      me.vow={id:target.id,mul:s.powMul||2,r:round+1};
-      const g=Math.min(s.mpGain||0,me.maxMP-me.MP);
-      if(g)me.MP+=g;
-      draw();fxOn(me,"charge");popSelf("宣 言","blk");SFX.buff();
-      log(`<span class="a">${me.name}</span> は <span class="c">${target.name}</span> を討つと告げた`+
+      A.vow={id:target.id,mul:s.powMul||2,r:round+1};
+      const g=Math.min(s.mpGain||0,A.maxMP-A.MP);
+      if(g)A.MP+=g;
+      draw();fxOn(A,"charge");popSelf("宣 言","blk");SFX.buff();
+      log(`<span class="a">${A.name}</span> は <span class="c">${target.name}</span> を討つと告げた`+
         (g?`　MP <span class="m">+${g}</span>`:"")+
         `　次のターンは この相手しか狙えないが 威力 <span class="m">×${(s.powMul||2).toFixed(1)}</span>`);
       await wait(700);}
-    else if(s.kind==="buff"){me.half=true;draw();fxOn(me,"charge");popSelf("半減","blk");SFX.buff();await wait(650);}
+    else if(s.kind==="buff"){A.half=true;draw();fxOn(A,"charge");popSelf("半減","blk");SFX.buff();await wait(650);}
     else if(s.kind==="cure"){
-      const one=(me.ail||[]).slice().sort((a,b)=>b.t-a.t)[0];
+      const one=(A.ail||[]).slice().sort((a,b)=>b.t-a.t)[0];
       if(one){
-        me.ail=me.ail.filter(a=>a!==one);draw();fxOn(me,"charge");
+        A.ail=A.ail.filter(a=>a!==one);draw();fxOn(A,"charge");
         popSelf(AIL[one.k].n,"blk");SFX.found();
-        log(`<span class="a">${me.name}</span> は息を整えた　<span class="m">${AIL[one.k].n}</span> が解けた`);
+        log(`<span class="a">${A.name}</span> は息を整えた　<span class="m">${AIL[one.k].n}</span> が解けた`);
       }else{
         draw();popSelf("変化なし","blk");
-        log(`<span class="a">${me.name}</span> は息を整えた　解くべきものはなかった`);
+        log(`<span class="a">${A.name}</span> は息を整えた　解くべきものはなかった`);
       }
       await wait(650);
     }
     else if(s.kind==="heal"){
-      const h=Math.min(Math.round(me.maxHP*s.heal),me.maxHP-me.HP);
-      me.HP+=h;draw();fxOn(me,"charge");popSelf("+"+h,"heal");SFX.found();
-      log(`<span class="a">${me.name}</span> は傷を手当てした　HP <span class="m">+${h}</span>`);
+      const h=Math.min(Math.round(A.maxHP*s.heal),A.maxHP-A.HP);
+      A.HP+=h;draw();fxOn(A,"charge");popSelf("+"+h,"heal");SFX.found();
+      log(`<span class="a">${A.name}</span> は傷を手当てした　HP <span class="m">+${h}</span>`);
       await wait(650);
     }
     else if(s.kind==="breath"){
-      const g=Math.min(s.mpGain,me.maxMP-me.MP);
-      me.MP+=g;me.block+=s.block;draw();fxOn(me,"guard");
+      const g=Math.min(s.mpGain,A.maxMP-A.MP);
+      A.MP+=g;A.block+=s.block;draw();fxOn(A,"guard");
       popSelf("MP+"+g,"blk");SFX.open();
-      log(`<span class="a">${me.name}</span> は息を整えた　MP <span class="m">+${g}</span>　VIT +${s.block}`);
+      log(`<span class="a">${A.name}</span> は息を整えた　MP <span class="m">+${g}</span>　VIT +${s.block}`);
       await wait(650);
     }
     else{
@@ -5804,10 +5856,10 @@ async function resolvePlayer(a,target){
         rage:s.rage,lostDice:s.lostDice,lifeSteal:s.lifeSteal,devour:s.devour,feast:s.feast,
         steal:s.steal,jealous:s.jealous,charm:s.charm,
         again:s.again&&!s.usedAgain,killed:[]});
-      if(s.selfDef)me.selfDef=(me.selfDef||0)+s.selfDef;
+      if(s.selfDef)A.selfDef=(A.selfDef||0)+s.selfDef;
       if(s.selfBuff){
-        me.selfPow={v:s.selfBuff.pow,t:s.selfBuff.t||1};
-        log(`<span class="a">${me.name}</span> の血が滾る（威力 +${s.selfBuff.pow}%　${(s.selfBuff.t||1)+1}ターン）`);
+        A.selfPow={v:s.selfBuff.pow,t:s.selfBuff.t||1};
+        log(`<span class="a">${A.name}</span> の血が滾る（威力 +${s.selfBuff.pow}%　${(s.selfBuff.t||1)+1}ターン）`);
       }
       if(passOn("quick")>0&&sawSix&&s.cdLeft>0){
         s.cdLeft=Math.max(0,s.cdLeft-passOn("quick"));
@@ -5815,22 +5867,22 @@ async function resolvePlayer(a,target){
       }
       if(s.again&&!s.usedAgain&&killedThisAttack&&alive().length){
         s.usedAgain=true;
-        me.again=true;
+        A.again=true;
         SFX.found();
         log(`<span class="a">追い討ち</span> 仕留めた勢いで もう一度 動ける`);
       }
     }
   }else if(a.kind==="guard"){
-    me.block+=a.block;
-    me.idle=true;
-    const gm=Math.min(GUARD_MP+passOn("medit"),me.maxMP-me.MP);
-    me.MP+=gm;
-    me.sk.forEach(k=>{if(k.cdLeft>0)k.cdLeft--;});
-    const gh=(ORIG[sel.orig]&&ORIG[sel.orig].guardHeal)||0;
-    if(gh){const hh=Math.min(Math.round(me.maxHP*gh),me.maxHP-me.HP);
-      if(hh){me.HP+=hh;popSelf("+"+hh,"heal");}}
-    draw();fxOn(me,"guard");popSelf("+"+a.block,"blk");SFX.open();
-    log(`<span class="a">${me.name}</span> は身を固めた　<span class="c">VIT ${me.VIT}+${me.block}</span>`+
+    A.block+=a.block;
+    A.idle=true;
+    const gm=Math.min(GUARD_MP+passOn("medit"),A.maxMP-A.MP);
+    A.MP+=gm;
+    A.sk.forEach(k=>{if(k.cdLeft>0)k.cdLeft--;});
+    const gh=(ORIG[A.orig]&&ORIG[A.orig].guardHeal)||0;
+    if(gh){const hh=Math.min(Math.round(A.maxHP*gh),A.maxHP-A.HP);
+      if(hh){A.HP+=hh;popSelf("+"+hh,"heal");}}
+    draw();fxOn(A,"guard");popSelf("+"+a.block,"blk");SFX.open();
+    log(`<span class="a">${A.name}</span> は身を固めた　<span class="c">VIT ${A.VIT}+${A.block}</span>`+
       (gm?`　MP <span class="m">+${gm}</span>`:"")+`　再使用待ちが1進む`);
     await wait(600);
   }else if(a.kind==="flee"){
@@ -5838,7 +5890,7 @@ async function resolvePlayer(a,target){
     const ok=await fleeRoll();
     if(ok){
       over=true;busy=false;pending=null;
-      me.ail=[];                    /* 状態異常は戦闘の中だけのもの（finish と同じ） */
+      A.ail=[];                    /* 状態異常は戦闘の中だけのもの（finish と同じ） */
       $("#prompt").textContent="";$("#acts").innerHTML="";
       fleeBack();
       return;
@@ -6017,7 +6069,7 @@ async function enemyAct(f){
     ovHide();
     const ev=rolls.filter(v=>v>=thr).sort((a,b)=>a-b);
     /* ①出目（＋来歴の倍率）→ ②見切り → ③シールド → ④VIT */
-    let evs=ev.map(v=>Math.round(hitDmg(fpow,v,thr)*orgMul("inMul")));
+    let evs=ev.map(v=>Math.round(hitDmg(fpow,v,thr)*orgMul("inMul",tg)));
     const halved=tg.half;
     if(tg.half){evs=evs.map(v=>Math.round(v/2));tg.half=false;}
     const sh=shieldOf(tg);
@@ -6423,7 +6475,7 @@ function runSnapshot(){
     v:RVER, ver:VERSION, t:Date.now(), id:RUN.id||null,
     sel:{job:sel.job,race:sel.race,orig:sel.orig,area:sel.area,
          luk:sel.luk,lukD:sel.lukD},
-    me, owned,
+    me, mates:party.filter(u=>u!==me), owned,
     run:{act:RUN.act,area:RUN.area,seen:RUN.seen||[],curKey:RUN.curKey||null,
          path:RUN.path||[],M:RUN.M,stock:RUN.stock||null,
          shopRecipe:RUN.shopRecipe===undefined?null:RUN.shopRecipe},
@@ -6509,13 +6561,18 @@ function runResume(){
   if(!r){ runClear(); drawHome(); return; }
   sel.job=r.sel.job;sel.race=r.sel.race;sel.orig=r.sel.orig;
   sel.area=r.sel.area;sel.luk=r.sel.luk;sel.lukD=r.sel.lukD;
-  me=r.me; setParty([me]); owned=r.owned||[];
+  me=r.me;
+  /* 控えに仲間が入っていれば そのまま。無ければ（古い控え）その場で組む */
+  setParty([me,...(r.mates||[])]);
+  owned=r.owned||[];
   RUN={id:r.id||runNewId(), act:r.run.act||0, area:r.run.area, seen:r.run.seen||[],
        curKey:r.run.curKey||null, cur:null, path:r.run.path||[],
        M:r.run.M, stock:r.run.stock||null, shopRecipe:r.run.shopRecipe,
        preview:null, over:false, cleared:false, elite:false, boss:false};
   RUN.cur=RUN.curKey?(RUN.M.node[RUN.curKey]||null):null;
-  recalcMe(me);                       /* 式が変わっていても組み直す */
+  party.forEach(u=>recalcMe(u));      /* 式が変わっていても組み直す */
+  if(party.length<2)buildParty();     /* 仲間の無い古い控えは ここで組む */
+  syncMates();
   $("#log").innerHTML="";
   drawFloor();showScreen("floor");window.scrollTo(0,0);
   setTimeout(introScroll,120);
@@ -7432,7 +7489,7 @@ function price(base){
 /* ---- 進行 ---- */
 function startRun(){
   me=makeMe();
-  setParty([me]);
+  buildParty();                  /* 主人公と仲間2人で一味を組む */
   markSeen("w_"+me.baseWep);
   me.gold=(ORIG[sel.orig]&&ORIG[sel.orig].startGold)||30;
   /* id は「どの潜行か」の目印。クラウドと突き合わせるときに、
@@ -7504,7 +7561,9 @@ function enterArea(key,quiet){
   RUN.seen=RUN.seen||[];
   if(!RUN.seen.includes(key))RUN.seen.push(key);
   RUN.curKey=null;RUN.cur=null;RUN.path=[];
-  if(ORIG[sel.orig]&&ORIG[sel.orig].actFull){me.HP=me.maxHP;me.MP=me.maxMP;}
+  /* 階層を抜けると全快する来歴。倒れた者は起きない（起こせるのは焚き火だけ） */
+  if(ORIG[sel.orig]&&ORIG[sel.orig].actFull)
+    party.forEach(u=>{if(u.HP>0){u.HP=u.maxHP;u.MP=u.maxMP;}});
   RUN.M=genAct(AREAS[key]);RUN.preview=null;
   /* 1区画目は このあと「出立の支度」の窓が出る。
      選ぶ前に控えると、装備なしの姿で続きが始まってしまう。
@@ -8383,15 +8442,30 @@ function enterNode(nd){
   const out=[];
   if(nd.t==="rest"){
     SFX.camp();
+    /* 倒れた者がいるなら「休む」か「起こす」かを選ぶ。両方はできない。
+       戦いで倒れた者は それきりで、起こせるのは焚き火だけ。 */
+    const down=party.filter(u=>u.HP<=0);
+    if(down.length){
+      const rh=(ORIG[sel.orig]&&ORIG[sel.orig].restHalf)?0.5:1;
+      resultModal(nd.name,out.concat([
+        `<span class="loss">${down.map(u=>u.name).join("・")}</span> が倒れたままだ`,
+        `<span class="s">火は一度きり。休むか、起こすか。</span>`]),
+        [{n:`休 む（一味の HP ${Math.round(45*rh)}%・MP ${Math.round(60*rh)}%）`,
+          cb:()=>{restAtFire(nd,[],0.45*rh,0.6*rh);}},
+         {n:`起 こ す（${down.map(u=>u.short).join("・")}　HP ${Math.round(REVIVEPCT*100)}%）`,
+          cb:()=>{
+            const said=down.map(u=>{
+              u.HP=Math.max(1,Math.round(u.maxHP*REVIVEPCT));
+              u.MP=Math.round(u.maxMP*REVIVEPCT);
+              return `<span class="gain">${u.name}</span> が目を開けた　HP ${u.HP}/${u.maxHP}`;
+            });
+            backToFloor(nd.name,["火にあたって 起こした"].concat(said),
+              [{n:"火を使って こしらえる",cb:()=>craftModal(null)},{n:"確 認"}]);
+          }}]);
+      return;
+    }
     const rh=(ORIG[sel.orig]&&ORIG[sel.orig].restHalf)?0.5:1;
-    const h=Math.min(Math.round(me.maxHP*0.45*rh),me.maxHP-me.HP);
-    const m=Math.min(Math.round(me.maxMP*0.6*rh),me.maxMP-me.MP);
-    me.HP+=h;me.MP+=m;
-    out.push(`火にあたって休んだ`);
-    out.push(`HP <span class="gain">+${h}</span>　MP <span class="gain">+${m}</span>`);
-    backToFloor(nd.name,out,[
-      {n:"火を使って こしらえる",cb:()=>craftModal(null)},
-      {n:"確 認"}]);
+    restAtFire(nd,out,0.45*rh,0.6*rh);
   }else if(nd.t==="treasure"){
     openChest(nd,false);          /* 中身も金貨も演出の中で決まる */
   }else if(nd.t==="shop"){
@@ -8401,6 +8475,22 @@ function enterNode(nd){
   }else{
     resolveEvent(nd,out);
   }
+}
+/* 焚き火で倒れた者を起こしたときに戻る HP と MP の割合。仮の値 */
+const REVIVEPCT=0.30;
+/* 火にあたって休む。一味ぜんぶが回復する */
+function restAtFire(nd,out,hp,mp){
+  const said=[];
+  party.forEach(u=>{
+    if(u.HP<=0)return;                       /* 倒れた者は休んでも戻らない */
+    const h=Math.min(Math.round(u.maxHP*hp),u.maxHP-u.HP);
+    const m=Math.min(Math.round(u.maxMP*mp),u.maxMP-u.MP);
+    u.HP+=h;u.MP+=m;
+    said.push(`${u.short}　HP <span class="gain">+${h}</span>　MP <span class="gain">+${m}</span>`);
+  });
+  backToFloor(nd.name,out.concat(["火にあたって休んだ"],said),[
+    {n:"火を使って こしらえる",cb:()=>craftModal(null)},
+    {n:"確 認"}]);
 }
 /* 事象は 4 つのどれかが起きる */
 function resolveEvent(nd,out){
@@ -8422,13 +8512,16 @@ function resolveEvent(nd,out){
   if(ev==="spring"){
     SFX.camp();
     const rh=(ORIG[sel.orig]&&ORIG[sel.orig].restHalf)?0.5:1;
-    const h=Math.min(Math.round(me.maxHP*0.40*rh),me.maxHP-me.HP);
-    const m=Math.min(Math.round(me.maxMP*0.5*rh),me.maxMP-me.MP);
-    me.HP+=h;me.MP+=m;
     /* 状態異常の解除はここには書かない。状態異常は戦闘の中だけのもので、
        探索画面では必ず空になっている（§ 状態異常の決まり）。 */
     out.push(`<span class="gain">澄んだ泉が湧いていた</span>`);
-    out.push(`　HP <b>+${h}</b>　MP <b>+${m}</b>`);
+    party.forEach(u=>{
+      if(u.HP<=0)return;              /* 泉では倒れた者は起きない。火だけが起こせる */
+      const h=Math.min(Math.round(u.maxHP*0.40*rh),u.maxHP-u.HP);
+      const m=Math.min(Math.round(u.maxMP*0.5*rh),u.maxMP-u.MP);
+      u.HP+=h;u.MP+=m;
+      out.push(`　${u.short}　HP <b>+${h}</b>　MP <b>+${m}</b>`);
+    });
     backToFloor(nd.name,out,[
       {n:"火を使って こしらえる",cb:()=>craftModal(null)},
       {n:"確 認"}]);
@@ -8833,11 +8926,12 @@ const CHTABS=[
   {k:"bag",n:"持ち物"},
 ];
 let chNow=CHTABS[0].k;
-function chCount(k){
-  if(k==="eq") return `装飾 ${(me.eq.acc||[]).length}/${ACCMAX}`;
-  if(k==="st") return `Lv ${me.lv}`;
+function chCount(k,U){
+  U=U||me;
+  if(k==="eq") return `装飾 ${(U.eq.acc||[]).length}/${ACCMAX}`;
+  if(k==="st") return `Lv ${U.lv}`;
   if(k==="bag")return `道具 ${bagLabel()}`;
-  return `技${me.sk.length} 癖${me.pass.length}`;
+  return `技${U.sk.length} 癖${U.pass.length}`;
 }
 /* 装備の1行。武器・防具・装飾で作りが同じなので1つにまとめる */
 function eqRow(icon,label,g,extra){
@@ -8888,29 +8982,31 @@ function chBodyEq(){
     :`<div class="mitem" style="color:#4d5346">なし　<span class="s">宝箱や戦利品で枠が埋まっているものは、いったんここに入る</span></div>`;
   return h;
 }
-function chBodySt(){
-  const c=lukCuts(me.LUK);
-  const cap=me.DEX>=STATMAX.DEX;
+function chBodySt(U){
+  U=U||me;
+  const c=lukCuts(U.LUK);
+  const cap=U.DEX>=STATMAX.DEX;
   return `<div class="msec">効 い て い る も の</div>
-  ${ailList(me)}
+  ${ailList(U)}
   ${thrPanel()}
   <div class="msec">ス テ ー タ ス</div>
   <div class="mstat">
-    <span>経験 <b>${me.exp}</b>/${expCap()}</span>
-    <span>STR <b>${me.STR}</b></span>
+    ${U===me?`<span>経験 <b>${U.exp}</b>/${expCap()}</span>`
+            :`<span style="color:var(--ink)">レベルは主人公に追う</span>`}
+    <span>STR <b>${U.STR}</b></span>
     <span${cap?' style="color:#c9a227"':""}>DEX <b${cap?' style="color:#c9a227"':""}>${
-      me.DEX}</b>${cap?`<span class="s">/${STATMAX.DEX}</span>`:""}</span>
-    <span>INT <b>${me.INT}</b></span><span>VIT <b>${me.VIT}</b></span>
+      U.DEX}</b>${cap?`<span class="s">/${STATMAX.DEX}</span>`:""}</span>
+    <span>INT <b>${U.INT}</b></span><span>VIT <b>${U.VIT}</b></span>
     <span>シールド <b>${blockValue()}</b><span class="s">（最大HPの${guardPct()}%）</span></span>
-    <span style="color:#c9a227">幸運 <b style="color:#c9a227">${me.LUK}</b></span></div>
+    <span style="color:#c9a227">幸運 <b style="color:#c9a227">${U.LUK}</b></span></div>
   <div class="msec">技 能　<span style="color:var(--dim);letter-spacing:0">1d100 で振る</span></div>
   <div class="mitem">${skillLine("　")}
     <br><span class="s">${SK[wepSkill()].n.replace(/ /g,"")} は いま持っている ${
-      me.wep.n} の命中に効く。
+      U.wep.n} の命中に効く。
     探索は戦いのはじめの先制、鍛冶と料理はこしらえるときに振る</span></div>
   <div class="msec">幸 運</div>
-  <div class="mitem" style="color:var(--ink)">幸運 ${me.LUK}　＝　生まれ ${
-    me.base.LUK||0}${(me.LUK-(me.base.LUK||0))?`　＋ 装備 ${me.LUK-(me.base.LUK||0)}`:""}
+  <div class="mitem" style="color:var(--ink)">幸運 ${U.LUK}　＝　生まれ ${
+    U.base.LUK||0}${(U.LUK-(U.base.LUK||0))?`　＋ 装備 ${U.LUK-(U.base.LUK||0)}`:""}
     <br><span class="s">1d100 を振って、出目が小さいほど良い段階になる</span>
     <br><span style="color:${LUKRANK[3].c}">超あたり ${c.ext} 以下</span>　
     <span style="color:${LUKRANK[2].c}">大あたり ${c.hard} 以下</span>　
@@ -8939,18 +9035,19 @@ function chBodyBag(){
     }).join(""):`<div class="mitem" style="color:#4d5346">まだ覚えていない</div>`;
   return h;
 }
-function chBodySk(){
+function chBodySk(U){
+  U=U||me;
   let h=`<div class="msec">ス キ ル　<span style="color:var(--dim);letter-spacing:0">${
-    me.sk.length} / ${SKMAX}</span></div>`;
-  h+=me.sk.length?me.sk.map(k=>`<div class="mitem">
+    U.sk.length} / ${SKMAX}</span></div>`;
+  h+=U.sk.length?U.sk.map(k=>`<div class="mitem">
     <span class="tagx" style="color:var(--brass);border-color:var(--brass)">${tagFig(k.kind,12)}</span>
     <b>${k.n}</b>　${k.d}　<span style="color:var(--ink)">MP ${k.mp}・再使用 ${k.cd}</span>
     ${poolTag("act",k.id)}</div>`).join("")
     :`<div class="mitem" style="color:#4d5346">まだ無い</div>`;
   h+=`<div class="msec">パ ッ シ ブ　<span style="color:var(--dim);letter-spacing:0">${
-    me.pass.length} / ${PASSMAX}</span></div>`;
-  h+=me.pass.length?me.pass.map(pp=>{
-    const on=(typeof round!=="undefined")&&PCOND[pp.ef.w]&&PCOND[pp.ef.w]();
+    U.pass.length} / ${PASSMAX}</span></div>`;
+  h+=U.pass.length?U.pass.map(pp=>{
+    const on=(typeof round!=="undefined")&&PCOND[pp.ef.w]&&PCOND[pp.ef.w](U);
     return `<div class="mitem">
       <span class="tagx" style="color:var(--blue);border-color:var(--blue)">${tagFig(pp.ef.k,12)}</span>
       <b>${pp.n}</b>　${pp.d}${on?`　<span style="color:var(--blue)">発動中</span>`:""}
@@ -8958,28 +9055,69 @@ function chBodySk(){
     :`<div class="mitem" style="color:#4d5346">まだ無い</div>`;
   return h;
 }
-function charModal(back){
+/* いま戦っているか。戦闘中は隊列を動かせない */
+function inBattle(){ return curScreen==="fight"&&!over; }
+/* 一味のうち いま見ている者。盤面や行動順から開いたときは その者になる */
+let chWho=0;
+function charModal(back,U){
   if(typeof back!=="function")back=null;   /* onclick から出来事が来ることがある */
-  if(!CHTABS.some(t=>t.k===chNow))chNow=CHTABS[0].k;
-  const low=me.HP<=me.maxHP*0.35;
-  let h=`<div class="mtitle">装 備 ・ 状 態</div>
-  <div class="msub">${tagFig(sel.job,14)} ${JOB[sel.job].n}　${
-    tagFig(sel.race,14)} ${RACE[sel.race].n}　${tagFig(sel.orig,14)} ${ORIG[sel.orig].n}</div>
+  if(U)chWho=Math.max(0,party.indexOf(U));
+  if(chWho>=party.length)chWho=0;
+  U=party[chWho]||me;
+  /* 装備と持ち物は 一味の共有物で、持っているのは主人公。
+     仲間の欄では その2つを出さない（付け替えは 次の段でできるようにする）。 */
+  const tabs=(U===me)?CHTABS:CHTABS.filter(t=>t.k==="st"||t.k==="sk");
+  if(!tabs.some(t=>t.k===chNow))chNow=tabs[0].k;
+  const low=U.HP<=U.maxHP*0.35;
+  let h=`<div class="mtitle">装 備 ・ 状 態</div>`;
+  if(party.length>1)
+    h+=`<div class="tabs chtabs">${party.map((u,i)=>
+      `<button class="tab${i===chWho?" on":""}" data-who="${i}">
+        <span class="tabn">${u.short}</span><span class="tabc">${
+          u.HP<=0?"倒れた":`${lineMark(u).replace(/<[^>]*>/g,"")}`}</span></button>`).join("")}</div>`;
+  h+=`<div class="msub">${tagFig(U.job,14)} ${JOB[U.job].n}　${
+    tagFig(U.race,14)} ${RACE[U.race].n}${U.orig?`　${tagFig(U.orig,14)} ${ORIG[U.orig].n}`:""}</div>
   <div class="mstat chhead">
-    <span style="color:#c9a227">Lv <b style="color:#c9a227">${me.lv}</b></span>
+    <span style="color:#c9a227">Lv <b style="color:#c9a227">${U.lv}</b></span>
     <span${low?' style="color:#b1544a"':""}>HP <b${
-      low?' style="color:#b1544a"':""}>${Math.max(0,me.HP)}</b>/${me.maxHP}</span>
-    <span>MP <b>${me.MP}</b>/${me.maxMP}</span>
+      low?' style="color:#b1544a"':""}>${Math.max(0,U.HP)}</b>/${U.maxHP}</span>
+    <span>MP <b>${U.MP}</b>/${U.maxMP}</span>
     <span style="color:#c9a227">金貨 <b style="color:#c9a227">${me.gold}</b></span></div>
-  <div class="tabs chtabs">${CHTABS.map(t=>
+  <div class="tabs chtabs">${tabs.map(t=>
     `<button class="tab${t.k===chNow?" on":""}" data-ch="${t.k}">
-      <span class="tabn">${t.n}</span><span class="tabc">${chCount(t.k)}</span></button>`).join("")}</div>`;
+      <span class="tabn">${t.n}</span><span class="tabc">${chCount(t.k,U)}</span></button>`).join("")}</div>`;
+  /* 隊列の組み替え。**戦闘に入ったら動かせない。**火のそばでも道でも、
+     戦っていないあいだだけ並べ替えられる。 */
+  if(party.length>1&&chNow==="st"&&!inBattle()){
+    const i=chWho;
+    h+=`<div class="msec">隊 列</div>
+      <div class="mitem lineRow">
+        <span class="eqk">いまの並び</span>
+        <span class="eqv">${party.map((u,j)=>
+          `${j?" ▸ ":""}<b${j===i?' style="color:var(--brass)"':""}>${u.short}</b>`).join("")}
+          <span class="s">　先頭ほど狙われる。奥ほど狙いにくい</span></span></div>
+      <div class="ndbtn">
+        <button class="no2" data-mv="-1"${i===0?" disabled":""}>ひとつ前へ</button>
+        <button class="no2" data-mv="1"${i===party.length-1?" disabled":""}>ひとつ後ろへ</button>
+      </div>`;
+  }
   h+= chNow==="eq" ?chBodyEq()
-    : chNow==="st" ?chBodySt()
+    : chNow==="st" ?chBodySt(U)
     : chNow==="bag"?chBodyBag()
-    :               chBodySk();
+    :               chBodySk(U);
   h+=`<button class="mclose" id="mClose">${back?"もどる":"閉じる"}</button>`;
   openModal(h,true);
+  $("#mbox").querySelectorAll("[data-who]").forEach(b=>{
+    b.onclick=()=>{chWho=+b.dataset.who;SFX.click();charModal(back);};});
+  $("#mbox").querySelectorAll("[data-mv]").forEach(b=>{
+    b.onclick=()=>{
+      const d=+b.dataset.mv, j=chWho+d;
+      if(j<0||j>=party.length)return;
+      const l=party.slice();
+      l[chWho]=l[j];l[j]=party[chWho];
+      setParty(l);chWho=j;
+      SFX.move();charModal(back);
+    };});
   $("#mbox").querySelectorAll("[data-ch]").forEach(b=>{
     b.onclick=()=>{chNow=b.dataset.ch;SFX.click();charModal(back);};});
   $("#mbox").querySelectorAll("[data-eq]").forEach(b=>{
@@ -9185,11 +9323,91 @@ function gearSwapModal(newR,after){
   const kb=$("#mbox").querySelector("[data-keep]");
   if(kb)kb.onclick=()=>{closeModal();after&&after();};
 }
-function growUp(){
-  const g=GROW[sel.job];
-  for(const k in g)me.grow[k]+=g[k];
-  recalcMe(me,false);
+function growUp(u){
+  u=u||me;
+  const g=GROW[u.job]||GROW[sel.job];
+  for(const k in g)u.grow[k]+=g[k];
+  recalcMe(u,false);
   return g;
+}
+/* ===== 仲 間 =====
+   主人公の隣に立つ者。育てるのは主人公だけで、仲間は主人公に追従する。
+
+     ・レベルは主人公と同じ（syncMates が追いつかせる）
+     ・経験・金貨・道具・素材は 主人公ひとりが持つ（一味の共有物）
+     ・技（スキル）と特（パッシブ）は 職と種族のプールから選んで持つ
+     ・欲望は持たない（欲望は主人公ひとりのもの）。orig:null
+
+   **持てる数は仮の値。**雇用（次の段）で「雇ったときの主人公のレベル」に
+   置き換える。いまは主人公のレベルで開く枠の数として置いてある。 */
+const MATEPASSLV=[1,4,8,13];   /* このレベルで パッシブが1つずつ開く（最大4） */
+const MATESKLV  =[1,6,12];     /* このレベルで スキルが1つずつ開く（最大3） */
+/* 仲間の職。主人公の職を除き、この順で2人。前で受ける者と 遠くから撃つ者が
+   必ず揃うように並べてある */
+const MATEJOBS=["knight","mage","archer","scout"];
+/* 隊列の既定順。小さいほど前に立ちたい */
+const LINEPREF={knight:0,scout:1,archer:2,mage:3};
+
+function pickSome(pool,n,taken){
+  const out=[];
+  const rest=pool.filter(x=>!taken.has(x.id));
+  while(out.length<n&&rest.length){
+    const i=Math.floor(Math.random()*rest.length);
+    const x=rest.splice(i,1)[0];
+    taken.add(x.id);out.push({...x});
+  }
+  return out;
+}
+/* 仲間ひとりを作る。lv は主人公のレベル */
+function makeMate(job,race,lv){
+  const J=JOB[job];
+  const base={STR:0,DEX:0,INT:0,VIT:0,LUK:0,HP:0,MP:0};
+  [J.st,RACE[race].st].forEach(o=>{for(const k in o)base[k]=(base[k]||0)+o[k];});
+  base.LUK=8;                     /* 仲間の幸運は振らない。低めで固定 */
+  const m={name:`${RACE[race].n}の${J.n}`,short:J.n,art:J.art,
+    job,race,orig:null,mate:true,
+    baseWep:J.wep,isFoe:false,
+    base,grow:{STR:0,DEX:0,INT:0,VIT:0,HP:0,MP:0},
+    eq:{wep:null,armor:null,acc:[]},stash:[],
+    gold:0,bag:{},mats:{},recipes:[],lv:1,exp:0,
+    sk:[],pass:[],block:0,half:false};
+  recalcMe(m,true);
+  while(m.lv<(lv||1)){ m.lv++; growUp(m); }
+  fillMate(m);
+  m.HP=m.maxHP;m.MP=m.maxMP;
+  return m;
+}
+/* 仲間の技と特を、いまのレベルで開く数だけ埋める。
+   すでに持っているものは そのまま。増えるだけで、減ることはない。 */
+function fillMate(m){
+  const lv=m.lv;
+  const wantP=MATEPASSLV.filter(x=>lv>=x).length;
+  const wantS=MATESKLV.filter(x=>lv>=x).length;
+  const pPool=[...(REW.pass.common||[]),...(REW.pass[m.job]||[]),...(REW.pass[m.race]||[])];
+  const sPool=[...(REW.act.common||[]),...(REW.act[m.job]||[]),...(REW.act[m.race]||[])];
+  const tp=new Set(m.pass.map(x=>x.id)), ts=new Set(m.sk.map(x=>x.id));
+  m.pass.push(...pickSome(pPool,Math.max(0,wantP-m.pass.length),tp));
+  m.sk.push(...pickSome(sPool,Math.max(0,wantS-m.sk.length),ts).map(x=>({...x,cdLeft:0})));
+  recalcMe(m,false);
+}
+/* 一味を組む。主人公と 仲間2人。並びは LINEPREF の順（前に立ちたい者が先頭） */
+function buildParty(){
+  const jobs=MATEJOBS.filter(j=>j!==sel.job).slice(0,2);
+  const races=Object.keys(RACE);
+  const mates=jobs.map(j=>makeMate(j,races[Math.floor(Math.random()*races.length)],me.lv));
+  const list=[me,...mates].sort((a,b)=>
+    (LINEPREF[a.job]===undefined?9:LINEPREF[a.job])-(LINEPREF[b.job]===undefined?9:LINEPREF[b.job]));
+  setParty(list);
+}
+/* 仲間のレベルは主人公に追従する。差のぶんだけ成長表を回して追いつかせる。
+   経験と戦利品は主人公ひとりが受け取り、仲間はここで追いつく。 */
+function syncMates(){
+  party.forEach(u=>{
+    if(u===me)return;
+    while(u.lv<me.lv){ u.lv++; growUp(u); }
+    fillMate(u);                 /* レベルで開いた枠を埋める */
+    u.HP=Math.min(u.maxHP,u.HP);u.MP=Math.min(u.maxMP,u.MP);
+  });
 }
 /* 戦利品を1つ選ぶ */
 function lootModal(list,after){
@@ -9259,6 +9477,7 @@ function levelUpModal(after){
   me.lv++;
   const before={HP:me.maxHP,STR:me.STR,DEX:me.DEX,INT:me.INT,VIT:me.VIT,VIT:me.VIT};
   const g=growUp();
+  syncMates();                   /* 仲間も同じレベルまで追いつく */
   /* まず「上がった」ことを見せる */
   const rows=Object.keys(g).map(k=>
     `<span class="lvrow">${k}　<b>${before[k]}</b> → <b class="up">${me[k]}</b></span>`).join("");
@@ -9428,6 +9647,7 @@ async function useItem(k){
   await doItem(k,null);
 }
 async function doItem(k,tgt){
+  const A=actor();   /* 手番の主。仲間が動いているときは その者 */
   const it=ITEMS[k];
   busy=true;pending=null;
   me.bag[k]--;if(!me.bag[k])delete me.bag[k];
@@ -9437,18 +9657,18 @@ async function doItem(k,tgt){
   if(it.heal||it.mp||it.mpr){
     const parts=[];
     if(it.heal){
-      const h=Math.min(Math.round(me.maxHP*it.heal),me.maxHP-me.HP);
-      me.HP+=h;parts.push(`HP <span class="m">+${h}</span>`);popSelf("+"+h,"heal");
+      const h=Math.min(Math.round(A.maxHP*it.heal),A.maxHP-A.HP);
+      A.HP+=h;parts.push(`HP <span class="m">+${h}</span>`);popSelf("+"+h,"heal");
     }
     let g=0;
-    if(it.mpr)g+=Math.round(me.maxMP*it.mpr);
+    if(it.mpr)g+=Math.round(A.maxMP*it.mpr);
     if(it.mp) g+=Math.round(it.mp*(it.made&&cookMax()?1.3:1));
     if(g){
-      g=Math.min(g,me.maxMP-me.MP);
-      me.MP+=g;parts.push(`MP <span class="m">+${g}</span>`);
+      g=Math.min(g,A.maxMP-A.MP);
+      A.MP+=g;parts.push(`MP <span class="m">+${g}</span>`);
       if(!it.heal)popSelf("MP+"+g,"blk");
     }
-    draw();fxOn(me,"charge");SFX.found();
+    draw();fxOn(A,"charge");SFX.found();
     log(`<span class="a">${it.n}</span> を使った　`+parts.join("　"));
   }
   /* 威力・VIT を上げる品は 割合で書く（powPct / defPct）。
@@ -9458,26 +9678,26 @@ async function doItem(k,tgt){
      固定値のほうは下限として残す。VIT は レベルでは伸びず 装備でしか伸びないので、
      割合だけにすると 装備の薄い序盤に かえって効かなくなる。 */
   const powAdd=Math.max(it.pow||0,
-    it.powPct?Math.round(powOf(me,{noAil:true})*it.powPct/100):0);
+    it.powPct?Math.round(powOf(A,{noAil:true})*it.powPct/100):0);
   if(powAdd){
-    me.tmpPow=(me.tmpPow||0)+powAdd;draw();fxOn(me,"charge");popSelf("威力+"+powAdd,"blk");SFX.open();
+    A.tmpPow=(A.tmpPow||0)+powAdd;draw();fxOn(A,"charge");popSelf("威力+"+powAdd,"blk");SFX.open();
     log(`<span class="a">${it.n}</span>　この戦闘の間 威力 <span class="m">+${powAdd}</span>`+
       (it.powPct?`（素の威力の ${it.powPct}%）`:""));
   }
-  /* VIT 側は 装備ぶんを含めた素の VIT が土台（me.VIT）。
+  /* VIT 側は 装備ぶんを含めた素の VIT が土台（A.VIT）。
      defOf は道具ぶんや構えも含むので、重ねて飲むと雪だるまになる。 */
   const defAdd=Math.max(it.def||0,
-    it.defPct?Math.round(me.VIT*it.defPct/100):0);
+    it.defPct?Math.round(A.VIT*it.defPct/100):0);
   if(defAdd){
-    me.tmpDef=(me.tmpDef||0)+defAdd;draw();fxOn(me,"guard");popSelf("防御+"+defAdd,"blk");SFX.open();
+    A.tmpDef=(A.tmpDef||0)+defAdd;draw();fxOn(A,"guard");popSelf("防御+"+defAdd,"blk");SFX.open();
     log(`<span class="a">${it.n}</span>　この戦闘の間 VIT <span class="m">+${defAdd}</span>`+
       (it.defPct?`（素の VIT の ${it.defPct}%）`:""));
   }
   if(it.cure1){
     /* いちばん長く残っているものを1つだけ解く。序盤の答えとして安い */
-    const one=(me.ail||[]).slice().sort((a,b)=>b.t-a.t)[0];
+    const one=(A.ail||[]).slice().sort((a,b)=>b.t-a.t)[0];
     if(one){
-      me.ail=me.ail.filter(a=>a!==one);draw();fxOn(me,"charge");
+      A.ail=A.ail.filter(a=>a!==one);draw();fxOn(A,"charge");
       popSelf(AIL[one.k].n,"blk");SFX.found();
       log(`<span class="a">${it.n}</span> を使った　<span class="m">${AIL[one.k].n}</span> を解いた`);
     }else{
@@ -9486,15 +9706,15 @@ async function doItem(k,tgt){
     }
   }
   if(it.cure){
-    const had=(me.ail||[]).map(a=>AIL[a.k].n);
-    me.ail=[];draw();fxOn(me,"charge");
+    const had=(A.ail||[]).map(a=>AIL[a.k].n);
+    A.ail=[];draw();fxOn(A,"charge");
     popSelf(had.length?"解 除":"変化なし","blk");SFX.found();
     log(`<span class="a">${it.n}</span> を使った　`+
       (had.length?`<span class="m">${[...new Set(had)].join("・")}</span> を解いた`
                  :`解くべきものはなかった`));
   }
   if(it.half){
-    me.half=true;draw();fxOn(me,"guard");popSelf("半減","blk");SFX.buff();
+    A.half=true;draw();fxOn(A,"guard");popSelf("半減","blk");SFX.buff();
     log(`<span class="a">${it.n}</span> を使った　次の被害が半分になる`);
   }
   if(it.stun&&tgt){
