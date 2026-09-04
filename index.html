@@ -983,7 +983,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0048";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0049";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -996,6 +996,11 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0049",tag:"up",v:"α0.0049",d:"2026-09-04",n:"仲間の覚えるものを 自分で選べるようになりました",b:[
+   "<b>仲間も 主人公と同じように 覚えるものを選びます。</b>スキルとパッシブの候補が3つ出て、そこから1つ選びます",
+   "<b>覚えられるのは Lv 1・3・6・9・12・15・18 の7回。</b>スキルは3つまで、パッシブは4つまで持てます",
+   "自動で割り振られていたのをやめました。前は「パッシブ4・スキル3」が勝手に決まっていて、仲間の組み方に手を出せませんでした",
+   "焚き火で倒れた仲間を起こしたときに戻る HP・MP は <b>30%</b> です"]},
  {id:"v0048",tag:"up",v:"α0.0048",d:"2026-09-04",n:"隊列を横一列にして、仲間が2人加わりました",b:[
    "<b>ひとりで潜るのをやめました。</b>主人公のほかに 職の違う仲間が2人つきます。3人とも自分で動かします",
    "<b>盤面が 横一列になりました。</b>前列／後列 という2つの列はもう無く、味方も敵も 1本の列に並びます",
@@ -6573,6 +6578,8 @@ function runResume(){
   party.forEach(u=>recalcMe(u));      /* 式が変わっていても組み直す */
   if(party.length<2)buildParty();     /* 仲間の無い古い控えは ここで組む */
   syncMates();
+  /* 覚えるものを選ばずに閉じた控えは、続きから始めたときに選ばせる */
+  setTimeout(()=>mateLearnQueue(()=>{}),0);
   $("#log").innerHTML="";
   drawFloor();showScreen("floor");window.scrollTo(0,0);
   setTimeout(introScroll,120);
@@ -7505,7 +7512,9 @@ function startRun(){
 function startPick(left){
   /* 1階層目は装備選びの窓が先に出るので、それが片づいてから名前を出す。
      窓の下でぼわぁとやっても見えない。 */
-  if(left<=0){runSave();actTitle();return;}   /* 支度が済んだ姿を控える */
+  if(left<=0){                                /* 支度が済んだ姿を控える */
+    return mateLearnQueue(()=>{drawFloor();runSave();actTitle();});
+  }
   choiceModal("出 立 の 支 度",
     left>1?`装備を ${left} つ選べる（傲慢）`:"",
     pickList(["gear"]),()=>{drawFloor();startPick(left-1);},
@@ -9338,26 +9347,18 @@ function growUp(u){
      ・技（スキル）と特（パッシブ）は 職と種族のプールから選んで持つ
      ・欲望は持たない（欲望は主人公ひとりのもの）。orig:null
 
-   **持てる数は仮の値。**雇用（次の段）で「雇ったときの主人公のレベル」に
-   置き換える。いまは主人公のレベルで開く枠の数として置いてある。 */
-const MATEPASSLV=[1,4,8,13];   /* このレベルで パッシブが1つずつ開く（最大4） */
-const MATESKLV  =[1,6,12];     /* このレベルで スキルが1つずつ開く（最大3） */
+   **仲間も 主人公と同じように 自分で選ぶ。**このレベルに届くたびに
+   スキルとパッシブの候補が3つ出て、そこから1つ覚える。
+   雇用（次の段）では「雇ったときのレベルまで」をまとめて選ぶことになる。 */
+const MATELV=[1,3,6,9,12,15,18];   /* このレベルで ひとつ覚えられる */
+const MATESKMAX=3;                 /* 仲間が持てるスキルの数 */
+const MATEPASSMAX=4;               /* 仲間が持てるパッシブの数 */
 /* 仲間の職。主人公の職を除き、この順で2人。前で受ける者と 遠くから撃つ者が
    必ず揃うように並べてある */
 const MATEJOBS=["knight","mage","archer","scout"];
 /* 隊列の既定順。小さいほど前に立ちたい */
 const LINEPREF={knight:0,scout:1,archer:2,mage:3};
 
-function pickSome(pool,n,taken){
-  const out=[];
-  const rest=pool.filter(x=>!taken.has(x.id));
-  while(out.length<n&&rest.length){
-    const i=Math.floor(Math.random()*rest.length);
-    const x=rest.splice(i,1)[0];
-    taken.add(x.id);out.push({...x});
-  }
-  return out;
-}
 /* 仲間ひとりを作る。lv は主人公のレベル */
 function makeMate(job,race,lv){
   const J=JOB[job];
@@ -9371,23 +9372,35 @@ function makeMate(job,race,lv){
     eq:{wep:null,armor:null,acc:[]},stash:[],
     gold:0,bag:{},mats:{},recipes:[],lv:1,exp:0,
     sk:[],pass:[],block:0,half:false};
+  m.picks=0;
   recalcMe(m,true);
   while(m.lv<(lv||1)){ m.lv++; growUp(m); }
-  fillMate(m);
   m.HP=m.maxHP;m.MP=m.maxMP;
   return m;
 }
-/* 仲間の技と特を、いまのレベルで開く数だけ埋める。
-   すでに持っているものは そのまま。増えるだけで、減ることはない。 */
-function fillMate(m){
-  const lv=m.lv;
-  const wantP=MATEPASSLV.filter(x=>lv>=x).length;
-  const wantS=MATESKLV.filter(x=>lv>=x).length;
-  const pPool=[...(REW.pass.common||[]),...(REW.pass[m.job]||[]),...(REW.pass[m.race]||[])];
-  const sPool=[...(REW.act.common||[]),...(REW.act[m.job]||[]),...(REW.act[m.race]||[])];
-  const tp=new Set(m.pass.map(x=>x.id)), ts=new Set(m.sk.map(x=>x.id));
-  m.pass.push(...pickSome(pPool,Math.max(0,wantP-m.pass.length),tp));
-  m.sk.push(...pickSome(sPool,Math.max(0,wantS-m.sk.length),ts).map(x=>({...x,cdLeft:0})));
+/* 仲間が選べる候補。職と種族のプールだけ（欲望は持たない）。
+   主人公の owned は見ない。仲間どうし・主人公と同じものを持ってよい。 */
+function matePool(m,cat){
+  const P=REW[cat];
+  const has=new Set((cat==="act"?m.sk:m.pass).map(x=>x.id));
+  return P.common.concat(P[m.job]||[]).concat(P[m.race]||[]).filter(r=>!has.has(r.id));
+}
+/* あと何回 覚えられるか。レベルで開いた回数 − すでに選んだ回数 */
+function matePending(m){
+  return Math.max(0,MATELV.filter(x=>m.lv>=x).length-(m.picks||0));
+}
+/* 仲間ひとりに ひとつ覚えさせる */
+function mateLearn(m,cat,r){
+  /* 枠は ここでも見る。窓は閉じても消えずに隠れるだけなので、
+     古い窓のボタンが二度押されても 枠を超えないようにしておく */
+  if(cat==="act"){
+    if(m.sk.length>=MATESKMAX||m.sk.some(x=>x.id===r.id))return;
+    m.sk.push({...r,cdLeft:0});
+  }else{
+    if(m.pass.length>=MATEPASSMAX||m.pass.some(x=>x.id===r.id))return;
+    m.pass.push({...r});
+  }
+  m.picks=(m.picks||0)+1;
   recalcMe(m,false);
 }
 /* 一味を組む。主人公と 仲間2人。並びは LINEPREF の順（前に立ちたい者が先頭） */
@@ -9405,7 +9418,8 @@ function syncMates(){
   party.forEach(u=>{
     if(u===me)return;
     while(u.lv<me.lv){ u.lv++; growUp(u); }
-    fillMate(u);                 /* レベルで開いた枠を埋める */
+    /* 覚えるものは自分では決めない。matePending が溜まり、
+       mateLearnQueue が窓を出して 遊ぶ人に選ばせる */
     u.HP=Math.min(u.maxHP,u.HP);u.MP=Math.min(u.maxMP,u.MP);
   });
 }
@@ -9499,11 +9513,63 @@ function levelUpModal(after){
       list.push({cat:"act",r:ap.splice(Math.floor(Math.random()*ap.length),1)[0]});
     for(let i=0;i<3-skN&&pp.length;i++)
       list.push({cat:"pass",r:pp.splice(Math.floor(Math.random()*pp.length),1)[0]});
-    const done=()=>{ if(expToNext()<=0)return levelUpModal(after); after(); };
+    const done=()=>{ if(expToNext()<=0)return levelUpModal(after);
+                     mateLearnQueue(after); };
     choiceModal(`レベル ${me.lv} で 覚 え る`,
       `<span class="win">レベルが上がった</span>　いまの Lv ${me.lv}`,
       list,done,"覚えない",done);
   };
+}
+/* 仲間が覚える窓。覚えられる者が居なくなるまで つないで出す。
+   枠が満杯の種類は候補に出さない（スキル3・パッシブ4まで）。 */
+function mateLearnQueue(after){
+  after=after||function(){};
+  const m=party.find(u=>u!==me&&u.HP>0&&matePending(u)>0)
+       ||party.find(u=>u!==me&&matePending(u)>0);
+  if(!m)return after();
+  const canS=m.sk.length<MATESKMAX, canP=m.pass.length<MATEPASSMAX;
+  if(!canS&&!canP){ m.picks=(m.picks||0)+1; return mateLearnQueue(after); }
+  /* 3つ出す。両方空いていれば スキル1〜2・残りパッシブ */
+  const want=3;
+  const list=[];
+  const ap=canS?matePool(m,"act"):[], pp=canP?matePool(m,"pass"):[];
+  let skN=!canP?want:!canS?0:(Math.random()<0.5?2:1);
+  skN=Math.min(skN,ap.length,Math.max(0,MATESKMAX-m.sk.length));
+  for(let i=0;i<skN&&ap.length;i++)
+    list.push({cat:"act",r:ap.splice(Math.floor(Math.random()*ap.length),1)[0]});
+  for(let i=list.length;i<want&&pp.length;i++)
+    list.push({cat:"pass",r:pp.splice(Math.floor(Math.random()*pp.length),1)[0]});
+  for(let i=list.length;i<want&&ap.length&&m.sk.length+ (list.filter(x=>x.cat==="act").length) <MATESKMAX;i++)
+    list.push({cat:"act",r:ap.splice(Math.floor(Math.random()*ap.length),1)[0]});
+  if(!list.length){ m.picks=(m.picks||0)+1; return mateLearnQueue(after); }
+  const next=()=>mateLearnQueue(after);
+  mateChoiceModal(m,list,next);
+}
+/* 仲間ぶんの選択窓。主人公の choiceModal は me に入れてしまうので別に持つ */
+function mateChoiceModal(m,list,done){
+  let h=`<div class="mtitle">${m.name} が 覚 え る</div>
+    <div class="mgrow">${meFig(28,m)}　<b>${m.short}</b>　Lv ${m.lv}　
+      <span class="s">技 ${m.sk.length}/${MATESKMAX}　特 ${m.pass.length}/${MATEPASSMAX}</span></div>
+    <div class="msub">覚えるものを ひとつ選ぶ</div><div class="acts">`;
+  list.forEach(({cat,r},i)=>{
+    const C=CAT[cat];
+    const meta=(cat==="act")
+      ?`MP ${r.mp}　再使用 ${r.cd} ターン　枠 ${m.sk.length}/${MATESKMAX}`
+      :`操作は不要・自動で働く　枠 ${m.pass.length}/${MATEPASSMAX}`;
+    h+=`<button class="act rew ${C.c}" data-i="${i}">
+      <span class="rcat">${C.n}</span><span class="an">${r.n}</span>
+      <span class="ad">${r.d}</span>
+      <span class="rmeta">${meta}</span></button>`;
+  });
+  h+=`<button class="act cancel wide" data-skip="1">
+    <span class="an">覚えない</span>
+    <span class="ad">この回は 見送る（あとから選び直せない）</span></button></div>`;
+  openModal(h);
+  $("#mbox").querySelectorAll("[data-i]").forEach(b=>{
+    b.onclick=()=>{const {cat,r}=list[+b.dataset.i];
+      mateLearn(m,cat,r);SFX.found();closeModal();done();};});
+  const sk=$("#mbox").querySelector("[data-skip]");
+  if(sk)sk.onclick=()=>{m.picks=(m.picks||0)+1;closeModal();done();};
 }
 function showRewards(){
   const kind=RUN.boss?"boss":(RUN.elite?"elite":"battle");

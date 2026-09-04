@@ -637,9 +637,28 @@ function reachOf(u,tgt,act){ ... }  /* 遠さぶんの命中閾値 */
 `drawActs` / `resolvePlayer` / `doAct` / `playerAttack` / `askTarget` /
 `doItem` の中では `const A=actor();` を置いて `A` を使う。
 
-`makeMate` が持てる数（`MATEPASSLV` / `MATESKLV`）は **仮の値**。
-雇用（次の段）で「雇ったときの主人公のレベル」に置き換える。
-`REVIVEPCT`（焚き火で起こしたときに戻る割合）も 仮。
+仲間が覚えるものは **主人公と同じように 遊ぶ人が選ぶ**（α0.0049）。
+自動で割り振らない。
+
+```javascript
+const MATELV=[1,3,6,9,12,15,18];   /* このレベルで ひとつ覚えられる（計7回） */
+const MATESKMAX=3;                 /* 仲間が持てるスキル */
+const MATEPASSMAX=4;               /* 仲間が持てるパッシブ */
+matePool(m,cat)     /* 候補。職と種族のプールだけ（欲望は持たない） */
+matePending(m)      /* あと何回 覚えられるか＝開いた回数 − m.picks */
+mateLearnQueue(af)  /* 覚えられる者が居なくなるまで 窓をつないで出す */
+```
+
+窓を出す場所は3つ。**増やすときは この3つと同じところに足すこと。**
+
+1. `startPick` の終わり（出立の支度のあと。Lv1 の1回ぶん）
+2. `levelUpModal` の `done`（主人公が上がると仲間も上がる）
+3. `runResume`（覚えずに閉じた控えを 続きから始めたとき）
+
+`mateLearn` は **枠を二重に見る**。`closeModal` は窓を隠すだけで消さないので、
+古い窓のボタンが二度押されても 枠を超えないようにしてある。
+
+`REVIVEPCT`（焚き火で起こしたときに戻る割合）は 0.30。
 
 #### 味方は配列で持つ（`party`／α0.0047・段1）
 
