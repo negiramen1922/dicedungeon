@@ -983,7 +983,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0051";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0052";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -996,6 +996,12 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0052",tag:"bal",v:"α0.0052",d:"2026-09-04",n:"敵を引き上げ、行動の並びに決まりを入れました",b:[
+   "<b>一味が3人になったぶん、敵が弱すぎました。</b>手応え（耐えられるラウンド ÷ 倒すのにかかるラウンド）が <b>4.3倍 楽</b>になっていたのを測って引き直しています",
+   "<b>敵の最大HP ×2.5　敵の攻撃力 ×1.4。</b>HP だけで戻すとボス戦が 55ターンになり、攻撃力だけで戻すと事故死ばかりになるので、両方から取っています",
+   "<b>敵が2手続けて攻めてこない、ということが無くなりました。</b>強化や守りの次は 必ず攻撃に戻ります",
+   "<b>敵が守りを続けて出さなくなりました。</b>前は「力をためる → 身を守る → 力をためる」と一度も殴らないまま何ターンも過ぎることがあり、ためた力が使われないままでした",
+   "この2つで 敵が実際に攻撃してくる割合は <b>73.6%</b>、攻めない手が2度続くことは <b>0</b> になりました"]},
  {id:"v0051",tag:"fix",v:"α0.0051",d:"2026-09-04",n:"前の版から続けたとき 一味のタブが動かなかったのを直しました",b:[
    "<b>パーティより前の控えから続けると、主人公の職・種族・欲望が空のままでした。</b>その者のタブを押すと画面の組み立てが途中で止まり、<b>押しても何も起きない</b>ように見えていました",
    "読み込んだときに 職・種族・欲望を繕うようにしました。あわせて <b>主人公が隊列の最後尾に回されていた</b>のも直しています",
@@ -4205,6 +4211,18 @@ function recalcMe(m,full){
    これまで depthMul は「その区画の何段目か」しか見ておらず、
    何区画目かを一切見ていなかった。だから後半が物足りなくなる。
    ボスに至っては常に等倍で、同じ区画の奥の雑魚より弱かった。 */
+/* ===== 一味が3人になったぶんの引き直し（α0.0052） =====
+   味方が主人公ひとりだったころに比べ、合計HP が ×2.3、1ラウンドの与ダメが ×3 に
+   なり、手応え（耐えられるラウンド ÷ 倒すのにかかるラウンド）が **4.6倍 楽**に
+   なっていた。そのぶんを敵に返す。
+
+   HP だけで戻すと ボス戦が 55ターンになり、STR だけで戻すと 事故死ばかりになる。
+   測って ちょうど昔と同じ手応え・同じ戦闘の長さに収まる組み合わせを選んだ。
+
+   **敵の素の数字を触るときは この2つも測り直すこと。** */
+/* 測り直すときに差し替えられるよう let にしてある（tools の計測が上書きする）。
+   遊んでいるあいだに変わることはない。 */
+let FOEHP=2.5, FOESTR=1.4;
 function depthAt(tier){ return 1+((tier||1)-1)*0.34; }
 function depthMul(){
   const r=(RUN&&RUN.cur)?RUN.cur.r:0;
@@ -4224,8 +4242,8 @@ function makeFoes(){
     const nth=list.slice(0,i).filter(x=>x===k).length;
     return {...f,id:i,key:k,
       name:f.n+(same>1?" "+((f.nm&&f.nm[nth])||"ABC"[nth]):""),
-      maxHP:Math.round(f.HP*dm),HP:Math.round(f.HP*dm),
-      STR:Math.round(f.STR*(1+(dm-1)*0.6)),
+      maxHP:Math.round(f.HP*dm*FOEHP),HP:Math.round(f.HP*dm*FOEHP),
+      STR:Math.round(f.STR*(1+(dm-1)*0.6)*FOESTR),
       /* DEX も深さで伸ばす。前は HP と STR だけ伸ばしていたので、
          こちらの DEX だけが青天井に育ち、スカウトは木漏れ日の森の時点で
          敵の命中閾値が全部 6 に張り付いていた（当たる率 17%）。 */
@@ -4341,6 +4359,11 @@ function canTarget(f){
 
 /* ---------- 予告 ---------- */
 const AIDK=["buff","cheer","hex","veil"];
+/* 手の種類の見分け。行動の並びの決まり（chooseTele）で使う。
+   攻める手 … 相手を削る手。ためた力を使う手でもある
+   守る手  … シールドを張る／VIT を上げる手 */
+function isAtkAct(a){ return !!a&&a.k==="atk"; }
+function isDefAct(a){ return !!a&&(a.k==="guard"||a.k==="veil"); }
 /* ===== ボスの段階 =====
    HP がしきい値を切ったら、行動表ごと入れ替える。1段につき1回だけ。
    通常の敵と同じ表を最後まで回すと、ボスが「大きいだけの敵」になっていた。
@@ -4412,8 +4435,8 @@ function chooseTele(f){
     const sp=f.acts.filter(a=>a.solo);
     const st=sp.reduce((x,a)=>x+(a.w||1),0);
     let sr=Math.random()*st;
-    for(const a of sp){sr-=(a.w||1);if(sr<=0)return {...a};}
-    return {...sp[0]};
+    for(const a of sp){sr-=(a.w||1);if(sr<=0)return (f.prevPick={...a});}
+    return (f.prevPick={...sp[0]});
   }
   /* 決まった手番の行動。ひとりでいても出す。
      前は !alone を付けていたが、solo の手を持つ敵は上の枝で返ってしまうので
@@ -4425,11 +4448,11 @@ function chooseTele(f){
      turn が 1 から進まず、永久に出番が来なかった。 */
   f.turn=(f.turn||0)+1;
   const seq=f.acts.find(a=>a.seq===f.turn);
-  if(seq)return {...seq};
+  if(seq)return (f.prevPick={...seq});
   if(f.forceNext){
     const fa=f.acts.find(a=>a.n===f.forceNext);
     f.forceNext=null;
-    if(fa)return {...fa,dice:fa.diceRand?(1+Math.floor(Math.random()*fa.diceRand)):fa.dice};
+    if(fa)return (f.prevPick={...fa,dice:fa.diceRand?(1+Math.floor(Math.random()*fa.diceRand)):fa.dice});
   }
   const pool=f.acts.filter(a=>{
     if(a.hidden)return false;                       // 単体では選ばれない
@@ -4466,11 +4489,40 @@ function chooseTele(f){
     if(AIDK.includes(a.k)&&f.lastAid===a.n)return false;   // 同じ強化・弱体は連続しない
     return true;
   });
-  if(!pool.length)return {...f.acts[0]};
-  const tot=pool.reduce((s,a)=>s+(a.w||1),0);
-  let r=Math.random()*tot;
-  for(const a of pool){r-=(a.w||1);if(r<=0)return pick(a);}
-  return pick(pool[0]);
+  /* ここから 手の並びの決まり（α0.0052）。
+
+     ① 攻めない手が2度続かない。強化・守り・弱体の次は 必ず攻撃に戻る
+     ② 同じ守りを続けて出さない
+
+     これが無いと「力をためる → 身を守る → 力をためる」と、一度も殴らないまま
+     何ターンも過ぎることがあった。ためた力は使われず、こちらは ただ待つだけになる。
+     予告を読んで身構える という遊びが 成り立たなくなっていた。
+
+     見るのは **前に引いた手**（prevPick）。tele と next を先に引いてあるので、
+     引いた順が そのまま出す順になる（chooseTele が返した N 番目 ＝ N 手番目）。 */
+  const prev=f.prevPick;
+  let use=pool;
+  if(prev&&!isAtkAct(prev)){
+    const atk=pool.filter(isAtkAct);
+    if(atk.length)use=atk;                    /* 攻める手があるなら 必ず攻める */
+    else{
+      const nd=pool.filter(a=>!isDefAct(a));  /* 攻め手が無い相手は せめて守りを外す */
+      if(nd.length)use=nd;
+    }
+  }else if(prev&&isDefAct(prev)){
+    const nd=pool.filter(a=>!isDefAct(a));
+    if(nd.length)use=nd;                      /* 守りは続けない */
+  }
+  return fromPool(use.length?use:pool);
+
+  function fromPool(list){
+    if(!list.length)return remember({...f.acts[0]});
+    const tot=list.reduce((x,a)=>x+(a.w||1),0);
+    let rr=Math.random()*tot;
+    for(const a of list){rr-=(a.w||1);if(rr<=0)return remember(pick(a));}
+    return remember(pick(list[0]));
+  }
+  function remember(o){ f.prevPick=o; return o; }
   function pick(a){
     const o={...a};
     if(a.diceRand)o.dice=1+Math.floor(Math.random()*a.diceRand);
@@ -6228,10 +6280,10 @@ async function enemyAct(f){
       const dm=depthMul();
       for(let i=0;i<n;i++){
         const base=FOE[t.who];
-        const hp=Math.round(base.HP*dm);
+        const hp=Math.round(base.HP*dm*FOEHP);
         const nf={...base,id:foes.length,key:t.who,
           name:base.n+" "+"ABCDEF"[foes.filter(x=>x.key===t.who).length],
-          maxHP:hp,HP:hp,STR:Math.round(base.STR*(1+(dm-1)*0.6)),
+          maxHP:hp,HP:hp,STR:Math.round(base.STR*(1+(dm-1)*0.6)*FOESTR),
           DEX:Math.round(base.DEX*(1+(dm-1)*0.6)),
           block:0,buffs:[],ail:[],stun:false,isFoe:true,owner:f.id,
           tele:null,next:null,lastAid:null,turn:0,sumCd:0,sumUsed:false};
@@ -6335,10 +6387,10 @@ async function enemyAct(f){
     await wait(520);
   }else if(t.k==="hatch"){
     /* 割れて中身が出る。殻そのものは消え、同じ立ち位置を中身が引き継ぐ */
-    const dm=depthMul(), base=FOE[t.who], hp=Math.round(base.HP*dm);
+    const dm=depthMul(), base=FOE[t.who], hp=Math.round(base.HP*dm*FOEHP);
     const nf={...base,id:foes.length,key:t.who,
       name:base.n+" "+"ABCDEF"[foes.filter(x=>x.key===t.who).length],
-      maxHP:hp,HP:hp,STR:Math.round(base.STR*(1+(dm-1)*0.6)),
+      maxHP:hp,HP:hp,STR:Math.round(base.STR*(1+(dm-1)*0.6)*FOESTR),
       DEX:Math.round(base.DEX*(1+(dm-1)*0.6)),
       block:0,buffs:[],ail:[],stun:false,isFoe:true,
       tele:null,next:null,lastAid:null,turn:0,sumCd:0,sumUsed:false};
