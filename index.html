@@ -1004,7 +1004,7 @@ body.play .fh1{padding-right:62px}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.004";
+const VERSION="α1.0.005";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1017,6 +1017,9 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1005",tag:"fix",v:"α1.0.005",d:"2026-09-04",n:"はじめから遊べなくなっていたのを直しました",b:[
+   "<b>キャラを作り終えたところで 止まっていました。</b>周回をやめたときに消した関数を、キャラ作成の最後がまだ呼んでいたためです",
+   "<b>まっさらな状態から 町・潜行・戦闘・帰還まで 通しで遊べることを確かめました。</b>これからは 画面を実際に押していく通しテストを毎回まわします"]},
  {id:"v1004",tag:"bal",v:"α1.0.004",d:"2026-09-04",n:"レベルの上がり方を ゆっくりにしました",b:[
    "<b>次のレベルまでに要る経験を 2.5倍にしました。</b>これまでは <b>1回潜れば次の区画へ行けて</b>しまい、町へ戻って潜り直す意味がありませんでした",
    "<b>1つの区画につき だいたい3回。</b>（水没都市だけ5回）潜って、拾って、帰って、また潜る という形になります",
@@ -10261,7 +10264,8 @@ const MKSTEPS=[
   {k:"race",ttl:"種 族", data:()=>RACE, sub:"どんな体か"},
   {k:"orig",ttl:"欲 望", data:()=>ORIG, sub:"何を求めるか"},
   {k:"__ok",ttl:"確 認", sub:""},
-  {k:"area", ttl:"潜 る 場 所", data:()=>startAreas(), sub:"どこから降りるか"},
+  /* α1 では「潜るたびに選ぶ」のは町の仕事。ここで選ぶのは **拠点の場所** */
+  {k:"area", ttl:"始 め る 場 所", data:()=>startAreas(), sub:"どこを拠点にするか"},
 ];
 let mkStep=0;
 function mkFig(){
@@ -10308,7 +10312,9 @@ function drawMake(){
   $("#mkBody").innerHTML=h;
   const pickIt=k=>{
     sel[S.k]=k;
-    if(S.k==="area"){SFX.pick();return startRun();}
+    /* ここで一味ができて 町へ出る。startRun は α1 で newGame になった
+       （消した名前を呼んだままだと、まっさらから始めたときだけ落ちる） */
+    if(S.k==="area"){SFX.pick();return newGame();}
     SFX.open();mkStep++;drawMake();window.scrollTo(0,0);
   };
   $("#mkBody").querySelectorAll("[data-k]").forEach(b=>{
@@ -10387,7 +10393,7 @@ function drawMakeConfirm(){
     </div>
     <div class="ndbtn">
       <button class="no2" id="mkRe">選び直す</button>
-      <button class="go2" id="mkNext">潜る場所を 決める</button>
+      <button class="go2" id="mkNext">始める場所を 決める</button>
     </div>`;
   $("#mkRe").onclick=()=>{mkStep=0;drawMake();window.scrollTo(0,0);};
   $("#mkNext").onclick=()=>{mkStep++;drawMake();window.scrollTo(0,0);};
