@@ -983,7 +983,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0052";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0053";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -996,6 +996,12 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0053",tag:"bal",v:"α0.0053",d:"2026-09-04",n:"遭遇の敵が1体増え、敵の攻撃力は素に戻りました",b:[
+   "<b>普通・重い・精鋭 の遭遇に 敵を1体足しました</b>（65件）。足したのは その遭遇でいちばん弱い顔ぶれなので、「狼と兎」は 狼＋兎2 になります。遭遇の性格は変えていません",
+   "<b>名前が数を言っている遭遇（二頭・二人・ふたつ・二体・二匹・番）は そのままです</b>（11件）",
+   "<b>敵の攻撃力を ×1.4 から 素の値（×1.0）に戻しました。</b>数が増えたぶんで釣り合うので、一撃の重さは設計どおりに戻せます。最大HP は ×2.5 のままです",
+   "<b>列が3〜4体になりました。</b>奥の相手に 近接で +2 を払う場面が増え、範囲攻撃と貫通の値打ちが上がります",
+   "盤の見出しで <b>4体目が「3番目」と出ていた</b>のを直しました（遠さは +2 で頭打ちですが、位置の番号は本当の数を出します）"]},
  {id:"v0052",tag:"bal",v:"α0.0052",d:"2026-09-04",n:"敵を引き上げ、行動の並びに決まりを入れました",b:[
    "<b>一味が3人になったぶん、敵が弱すぎました。</b>手応え（耐えられるラウンド ÷ 倒すのにかかるラウンド）が <b>4.3倍 楽</b>になっていたのを測って引き直しています",
    "<b>敵の最大HP ×2.5　敵の攻撃力 ×1.4。</b>HP だけで戻すとボス戦が 55ターンになり、攻撃力だけで戻すと事故死ばかりになるので、両方から取っています",
@@ -4222,7 +4228,7 @@ function recalcMe(m,full){
    **敵の素の数字を触るときは この2つも測り直すこと。** */
 /* 測り直すときに差し替えられるよう let にしてある（tools の計測が上書きする）。
    遊んでいるあいだに変わることはない。 */
-let FOEHP=2.5, FOESTR=1.4;
+let FOEHP=2.5, FOESTR=1.0;
 function depthAt(tier){ return 1+((tier||1)-1)*0.34; }
 function depthMul(){
   const r=(RUN&&RUN.cur)?RUN.cur.r:0;
@@ -4792,10 +4798,12 @@ function draw(){
   bindCells();
   if(pending)bindTargets();   /* 的を選ぶ最中は、選べるマスだけそちらで上書きする */
 }
-/* 列のなかの位置と、そこを狙うときの上乗せ */
+/* 列のなかの位置と、そこを狙うときの上乗せ。
+   位置は **本当の番号**、上乗せは DEPTHCAP で頭打ちの値。
+   4体並ぶと 3番目も4番目も +2 なので、番号まで頭打ちにすると嘘になる。 */
 function lineMark(u){
-  const d=depthOf(u);
-  return d?`${d+1}番目 <b style="color:#e0b83a">+${d}</b>`:"先 頭";
+  const i=lineOf(u).indexOf(u), no=(i<0?0:i)+1, d=depthOf(u);
+  return d?`${no}番目 <b style="color:#e0b83a">+${d}</b>`:"先 頭";
 }
 /* 盤面の誰かを押したら、その者の詳細を開く。
    的を選んでいる最中は選択のほうが大事なので何もしない（bindTargets が受け持つ）。 */
@@ -6958,10 +6966,10 @@ const ENCS={
  cs2:{n:"ふたつの糸",list:["cspider","cspider"]},
  rc1:{n:"鼠 と 糸",list:["rat","cspider"]},
  dc1:{n:"翼 と 糸",list:["dropbat","cspider"]},
- db2:{n:"滴りの群れ",list:["dropbat","dropbat"]},
- gc3:{n:"見張りと糸",list:["goblin","goblin","cspider"]},
- c_bs1:{n:"奪 わ れ た 核",list:["bshaman","hobgoblin","goblin"]},
- c_bs2:{n:"呪 わ れ た 壁",list:["bshaman","hobgoblin","hobgoblin"]},
+ db2:{n:"滴りの群れ",list:["dropbat","dropbat","dropbat"]},
+ gc3:{n:"見張りと糸",list:["goblin","goblin","cspider","goblin"]},
+ c_bs1:{n:"奪 わ れ た 核",list:["bshaman","hobgoblin","goblin","goblin"]},
+ c_bs2:{n:"呪 わ れ た 壁",list:["bshaman","hobgoblin","hobgoblin","hobgoblin"]},
  s_rt:{n:"うろつく鼠",list:["rat"]},
  s_ga:{n:"物陰の射手",list:["garcher"]},
  s_gc:{n:"岩陰の術師",list:["shaman"]},
@@ -6973,15 +6981,15 @@ const ENCS={
  w_wi2:{n:"ふたつの灯",list:["wisp","wisp"]},
  w_rc2:{n:"赤帽の二人",list:["redcap","redcap"]},
  w_ha:{n:"梢の影",list:["harpy"]},
- w_sd:{n:"岩と灯",list:["spriggan","wisp"]},
- w_al:{n:"花の主",list:["alraune","redcap"]},
- w_ce:{n:"巡回の射手",list:["centaur","harpy"]},
- w_wr:{n:"灯と赤帽",list:["wisp","redcap"]},
- w_dh:{n:"歌と羽",list:["dryad","harpy","redcap"]},
- w_ss:{n:"歩く苗",list:["sprout","spriggan"]},
- w_sa:{n:"根の間",list:["sprout","alraune"]},
- w_hard:{n:"森の巡り",list:["centaur","dryad","wisp"]},
- w_el:{n:"苗と羽",list:["sprout","harpy","wisp"]},
+ w_sd:{n:"岩と灯",list:["spriggan","wisp","spriggan"]},
+ w_al:{n:"花の主",list:["alraune","redcap","redcap"]},
+ w_ce:{n:"巡回の射手",list:["centaur","harpy","harpy"]},
+ w_wr:{n:"灯と赤帽",list:["wisp","redcap","wisp"]},
+ w_dh:{n:"歌と羽",list:["dryad","harpy","redcap","redcap"]},
+ w_ss:{n:"歩く苗",list:["sprout","spriggan","spriggan"]},
+ w_sa:{n:"根の間",list:["sprout","alraune","alraune"]},
+ w_hard:{n:"森の巡り",list:["centaur","dryad","wisp","wisp"]},
+ w_el:{n:"苗と羽",list:["sprout","harpy","wisp","wisp"]},
  w_al1:{n:"花 の 影",list:["alraune"]},
  w_ce1:{n:"蹄 の 音",list:["centaur"]},
  w_sd3:{n:"岩と木の声",list:["spriggan","dryad"]},
@@ -6994,59 +7002,59 @@ const ENCS={
  s_ls:{n:"転がる石",list:["livingstone"]},
  s_gg2:{n:"見下ろす石像",list:["gargoyle"]},
  s_rw:{n:"石を穿つ音",list:["rockworm"]},
- rw1:{n:"壁を喰うもの",list:["rockworm","gargoyle"]},
- rw2:{n:"虫 と 水",list:["rockworm","wslime"]},
- rw3:{n:"虫 と 巨 人",list:["rockworm","golem"]},
- rw4:{n:"石喰いの巣",list:["rockworm","rockworm","gargoyle"]},
+ rw1:{n:"壁を喰うもの",list:["rockworm","gargoyle","gargoyle"]},
+ rw2:{n:"虫 と 水",list:["rockworm","wslime","rockworm"]},
+ rw3:{n:"虫 と 巨 人",list:["rockworm","golem","rockworm"]},
+ rw4:{n:"石喰いの巣",list:["rockworm","rockworm","gargoyle","gargoyle"]},
  s_sk:{n:"さまよう骨",list:["skeleton"]},
  s_bf:{n:"骨 の 魚",list:["bonefish"]},
  c_af:{n:"深みの大魚",list:["abyssfish"]},
- c_bf2:{n:"骨魚の群れ",list:["bonefish","bonefish"]},
- c_spa:{n:"司祭と魚人",list:["sahagin","spriest","bonefish"]},
- c_afb:{n:"大 魚 と 骨",list:["abyssfish","bonefish"]},
- c_spw:{n:"潮 と 骨",list:["sahagin","bonefish"]},
- c_af3:{n:"深みの饗宴",list:["abyssfish","bonefish","spriest"]},
+ c_bf2:{n:"骨魚の群れ",list:["bonefish","bonefish","bonefish"]},
+ c_spa:{n:"司祭と魚人",list:["sahagin","spriest","bonefish","bonefish"]},
+ c_afb:{n:"大 魚 と 骨",list:["abyssfish","bonefish","bonefish"]},
+ c_spw:{n:"潮 と 骨",list:["sahagin","bonefish","bonefish"]},
+ c_af3:{n:"深みの饗宴",list:["abyssfish","bonefish","spriest","bonefish"]},
  s_sa:{n:"はぐれ魚人",list:["sahagin"]},
  s_wr:{n:"淀んだ影",list:["wraith"]},
- rt1:{n:"鼠の群れ",list:["rat","rat","rat"]},
- gc1:{n:"鼠と見張り",list:["goblin","rat"]},
+ rt1:{n:"鼠の群れ",list:["rat","rat","rat","rat"]},
+ gc1:{n:"鼠と見張り",list:["goblin","rat","rat"]},
  gc2:{n:"術師つき",list:["goblin","shaman"]},
  gb1:{n:"見張り二人",list:["goblin","goblin"]},
- gb2:{n:"射手つき",list:["goblin","garcher"]},
- gr1:{n:"鼠を連れて",list:["goblin","rat","rat"]},
- hb1:{n:"ホブと射手",list:["hobgoblin","garcher"]},
- hb2:{n:"重装の壁",list:["hobgoblin","hobgoblin"]},
- sh1:{n:"呪術師の陣",list:["goblin","goblin","shaman"]},
- sh2:{n:"呪われたホブ",list:["hobgoblin","shaman"]},
+ gb2:{n:"射手つき",list:["goblin","garcher","goblin"]},
+ gr1:{n:"鼠を連れて",list:["goblin","rat","rat","rat"]},
+ hb1:{n:"ホブと射手",list:["hobgoblin","garcher","garcher"]},
+ hb2:{n:"重装の壁",list:["hobgoblin","hobgoblin","hobgoblin"]},
+ sh1:{n:"呪術師の陣",list:["goblin","goblin","shaman","goblin"]},
+ sh2:{n:"呪われたホブ",list:["hobgoblin","shaman","shaman"]},
  /* 2 階層 */
- bt1:{n:"翼の音",list:["bigbat","bigbat"]},
+ bt1:{n:"翼の音",list:["bigbat","bigbat","bigbat"]},
  ls1:{n:"ふたつの石",list:["livingstone","livingstone"]},
- ls2:{n:"石と翼",list:["livingstone","bigbat"]},
+ ls2:{n:"石と翼",list:["livingstone","bigbat","bigbat"]},
  gg1:{n:"見下ろすもの",list:["livingstone","gargoyle"]},
- gg2:{n:"石像の陣",list:["bigbat","bigbat","gargoyle"]},
- tr1:{n:"回廊のトロル",list:["troll","bigbat"]},
- gl1:{n:"石の守り手",list:["golem","livingstone"]},
+ gg2:{n:"石像の陣",list:["bigbat","bigbat","gargoyle","bigbat"]},
+ tr1:{n:"回廊のトロル",list:["troll","bigbat","bigbat"]},
+ gl1:{n:"石の守り手",list:["golem","livingstone","livingstone"]},
  gl2:{n:"二体のゴーレム",list:["golem","golem"]},
- gl3:{n:"守護の間",list:["golem","gargoyle","bigbat"]},
+ gl3:{n:"守護の間",list:["golem","gargoyle","bigbat","bigbat"]},
  h_gl:{n:"石 の 巨 人",list:["golem"]},
  h_tr:{n:"うずくまる巨躯",list:["troll"]},
- h_bg:{n:"翼と石像",list:["bigbat","gargoyle"]},
- h_gg:{n:"石像と巨人",list:["gargoyle","golem"]},
- h_gt:{n:"石像とトロル",list:["gargoyle","troll"]},
+ h_bg:{n:"翼と石像",list:["bigbat","gargoyle","bigbat"]},
+ h_gg:{n:"石像と巨人",list:["gargoyle","golem","gargoyle"]},
+ h_gt:{n:"石像とトロル",list:["gargoyle","troll","gargoyle"]},
  /* 3 階層 */
- sk1:{n:"骨の兵",list:["skeleton","skeleton"]},
- sk2:{n:"射手を連れて",list:["skeleton","skarcher"]},
- sk3:{n:"骨の隊列",list:["skeleton","skeleton","skarcher"]},
- sg1:{n:"魚人の斥候",list:["sahagin","skeleton"]},
- sg2:{n:"魚人の狩り",list:["sahagin","skarcher"]},
+ sk1:{n:"骨の兵",list:["skeleton","skeleton","skeleton"]},
+ sk2:{n:"射手を連れて",list:["skeleton","skarcher","skarcher"]},
+ sk3:{n:"骨の隊列",list:["skeleton","skeleton","skarcher","skarcher"]},
+ sg1:{n:"魚人の斥候",list:["sahagin","skeleton","skeleton"]},
+ sg2:{n:"魚人の狩り",list:["sahagin","skarcher","skarcher"]},
  wr1:{n:"淀みのレイス",list:["skeleton","wraith"]},
  c_ar:{n:"骨 の 射 手",list:["skarcher"]},
  c_wa:{n:"淀みの射手",list:["wraith","skarcher"]},
  c_ar2:{n:"射手の二人",list:["skarcher","skarcher"]},
- c_sw:{n:"魚人と淀み",list:["sahagin","wraith"]},
- c_bwa:{n:"骨と淀みの列",list:["skeleton","wraith","skarcher"]},
+ c_sw:{n:"魚人と淀み",list:["sahagin","wraith","wraith"]},
+ c_bwa:{n:"骨と淀みの列",list:["skeleton","wraith","skarcher","skarcher"]},
  sg3:{n:"二匹の魚人",list:["sahagin","sahagin"]},
- wr2:{n:"深みの合唱",list:["sahagin","wraith","skarcher"]},
+ wr2:{n:"深みの合唱",list:["sahagin","wraith","skarcher","skarcher"]},
   /* 原始の草原 1 階層 */
  p_sl:{n:"ひとつの粘体",list:["slime"]},
  p_gs:{n:"草に紛れる粘体",list:["gslime"]},
@@ -7056,21 +7064,21 @@ const ENCS={
  p_wf:{n:"うろつく狼",list:["wolf"]},
  p_rb2:{n:"兎の群れ",list:["hrabbit","hrabbit"]},
  p_sl2:{n:"ふたつの粘体",list:["slime","slime"]},
- p_wr:{n:"狼と兎",list:["wolf","hrabbit"]},
- p_gw2:{n:"粘体と狼",list:["gslime","wolf"]},
+ p_wr:{n:"狼と兎",list:["wolf","hrabbit","hrabbit"]},
+ p_gw2:{n:"粘体と狼",list:["gslime","wolf","wolf"]},
  p_wf2:{n:"狼の番",list:["wolf","wolf"]},
- p_wr2:{n:"兎を追う狼",list:["wolf","hrabbit","hrabbit"]},
+ p_wr2:{n:"兎を追う狼",list:["wolf","hrabbit","hrabbit","hrabbit"]},
  p_bo:{n:"荒れる猪",list:["boar"]},
- p_bo2:{n:"猪と狼",list:["boar","wolf"]},
- p_bs:{n:"猪と粘体",list:["boar","slime"]},
+ p_bo2:{n:"猪と狼",list:["boar","wolf","wolf"]},
+ p_bs:{n:"猪と粘体",list:["boar","slime","slime"]},
  p_be:{n:"羽 音",list:["killerbee"]},
  p_rbe:{n:"兎と蜂",list:["hrabbit","killerbee"]},
- p_be3:{n:"蜂の群れ",list:["killerbee","killerbee","killerbee"]},
- p_bbe:{n:"猪と蜂",list:["boar","killerbee","killerbee"]},
+ p_be3:{n:"蜂の群れ",list:["killerbee","killerbee","killerbee","killerbee"]},
+ p_bbe:{n:"猪と蜂",list:["boar","killerbee","killerbee","killerbee"]},
  p_bo3:{n:"猪 の 二 頭",list:["boar","boar"]},
- p_fang:{n:"牙 の 群 れ",list:["wolf","killerbee","boar"]},
- p_rb3:{n:"跳ねる群れ",list:["hrabbit","hrabbit","hrabbit"]},
- p_hard:{n:"草 原 の 主",list:["boar","wolf","wolf"]},
+ p_fang:{n:"牙 の 群 れ",list:["wolf","killerbee","boar","killerbee"]},
+ p_rb3:{n:"跳ねる群れ",list:["hrabbit","hrabbit","hrabbit","hrabbit"]},
+ p_hard:{n:"草 原 の 主",list:["boar","wolf","wolf","wolf"]},
   /* 原始の草原 2 階層 */
  f_me:{n:"食らう蔓",list:["maneater"]},
  f_me2:{n:"蔓の茂み",list:["maneater","maneater"]},
@@ -7079,18 +7087,18 @@ const ENCS={
  f_mm:{n:"蔓と根",list:["maneater","mandragora"]},
  f_or2:{n:"オーク二人",list:["orc","orc"]},
  f_om:{n:"オークと根",list:["orc","mandragora"]},
- f_be:{n:"森の熊",list:["bear"]},
+ f_be:{n:"森の熊",list:["bear","bear"]},
  f_tr:{n:"歩く古木",list:["treant"]},
- f_bm:{n:"熊と根",list:["bear","mandragora"]},
- f_to:{n:"古木とオーク",list:["treant","orc"]},
- f_hard:{n:"森の奥",list:["bear","treant","mandragora"]},
+ f_bm:{n:"熊と根",list:["bear","mandragora","mandragora"]},
+ f_to:{n:"古木とオーク",list:["treant","orc","orc"]},
+ f_hard:{n:"森の奥",list:["bear","treant","mandragora","mandragora"]},
  f_ga:{n:"腐 葉 土 の 下",list:["gant"]},
  f_md2:{n:"根のふたつ",list:["mandragora","mandragora"]},
  f_ga2:{n:"ふたつの顎",list:["gant","gant"]},
- f_og:{n:"オークと蟻",list:["orc","gant"]},
- f_gb:{n:"蟻 と 熊",list:["gant","bear"]},
- f_tb:{n:"古木と熊",list:["bear","treant"]},
- f_ob:{n:"オークと熊",list:["orc","bear"]},
+ f_og:{n:"オークと蟻",list:["orc","gant","orc"]},
+ f_gb:{n:"蟻 と 熊",list:["gant","bear","gant"]},
+ f_tb:{n:"古木と熊",list:["bear","treant","bear"]},
+ f_ob:{n:"オークと熊",list:["orc","bear","orc"]},
  f_be2:{n:"二 頭 の 熊",list:["bear","bear"]},
  /* ボス */
  b1:{n:"クイーンスパイダー",list:["qspider","cspider","cspider"]},
