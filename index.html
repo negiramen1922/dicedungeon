@@ -1004,7 +1004,7 @@ body.play .fh1{padding-right:62px}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.002";
+const VERSION="α1.0.003";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1017,6 +1017,11 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1003",tag:"bal",v:"α1.0.003",d:"2026-09-04",n:"格下の区画からは 経験が入らなくなりました",b:[
+   "<b>区画ごとに「ちょうどよいレベル」と「経験が満ちる上限」を置きました。</b>草原 Lv4／上限8、森と洞窟 Lv8／上限13、世界樹と回廊 Lv13／上限17、都市 Lv17／上限25 です",
+   "<b>上限を超えると 経験が減ります。</b>1つ超えるごとに3分の1ずつ減り、<b>3つ超えたら もう入りません</b>。同じ区画を回り続けても、上限より3つ上で止まります",
+   "潜る先を選ぶ窓と 討伐のたびに <b>いまの入り方が %で出ます</b>",
+   "<b>〔修正〕深い区画の 経験・金貨・戦利品の等級・店の値段が「1区画目」のままでした。</b>周回をやめたときに、深さを数えていたものが動かなくなっていました。区画そのものの段を見るようにしています"]},
  {id:"v1000",tag:"up",v:"α1.0.002",d:"2026-09-04",n:"ローグライクをやめ、町から何度でも潜る形になりました",b:[
    "<b>周回が無くなりました。</b>一味は残り続けます。町から潜って、拾って、帰ってくる — その繰り返しです",
    "<b>いつでも町へ帰れます。</b>地図の「町 へ 帰 る」で引き返せて、拾ったものはすべて持ち帰れます。<b>どこで引くかが 毎回の判断</b>になります",
@@ -6498,12 +6503,19 @@ async function finish(win){
   log(`<span class="a">討伐</span> ${round} ラウンド　残 HP ${me.HP}`);
   await wait(900);
   const kind=RUN.boss?"boss":(RUN.elite?"elite":"battle");
-  const xp=expFor(kind);
+  /* 格下からは経験が少ない。区画のちょうどよいレベルを超えているぶんだけ減る */
+  const raw=expFor(kind), mul=expMul();
+  /* 目減りが 0 まで落ちたら 本当に入らない。1 でも残すと わずかずつ伸び続ける */
+  const xp=mul>0?Math.max(1,Math.round(raw*mul)):0;
   me.exp+=xp;
-  ovMsg(`<span class="k">討 伐</span><br>経験 <span class="win">+${xp}</span>`+
+  const dull=(mul<1)
+    ?`<br><span style="font-size:11px;color:#a0714f">${areaOf().n} は もう格下　`+
+     (mul>0?`経験 ${Math.round(mul*100)}%`:`経験は もう入らない`)+`</span>`:"";
+  ovMsg(`<span class="k">討 伐</span><br>経験 <span class="win">+${xp}</span>`+dull+
     (expToNext()<=0?`<br><span style="color:#c9a227">L E V E L　U P</span>`
       :`<br><span style="font-size:11px;color:#6f7a63">次まで ${expToNext()}</span>`));
-  log(`<span class="a">討伐</span> 経験 <span class="m">+${xp}</span>`);
+  log(`<span class="a">討伐</span> 経験 <span class="m">+${xp}</span>`+
+    (mul<1?`　<span class="c">格下（${raw} の ${Math.round(mul*100)}%）</span>`:""));
   await wait(1100);
   ovHide();
   showRewards();
@@ -7304,10 +7316,38 @@ function worldMap(mode,pick){
 
 /* ---------- 区画のめぐり方 ----------
    RUN.area … いまいる区画の鍵。敵・名前・BGM・難度はこれで決まる
-   RUN.act  … 何区画目か。金貨と装備の等級だけがこれを見る
-   RUN.seen … この周で通った区画。同じ所へは戻らない                */
+   RUN.seen … この潜行で通った区画                                  */
 function areaOf(){ return AREAS[RUN&&RUN.area]||{}; }
 function areaTier(){ return areaOf().tier||1; }
+/* ===== 世界の深さ（α1） =====
+   α0 では「1周で何区画目か」（RUN.act）が深さだった。α1 は潜行が1区画で
+   終わるので、それでは いつも 0 のままになる。**区画そのものの段**を見る。
+   経験・金貨・戦利品の等級・店の値段・道具の威力が これに従う。 */
+function worldStep(){ return Math.max(0,(areaTier()||1)-1); }
+
+/* ===== 区画ごとの ちょうどよいレベル（α1・段B） =====
+   TIERLV は「その段の区画で戦うのに ちょうどよいレベル」。
+   釣り合いを測るときに使ってきた値をそのまま置いてある
+   （草原4 ／ 森・洞窟8 ／ 世界樹・回廊13 ／ 都市17）。
+
+   **上限は「次の段のちょうどよいレベル」。**そこまでは普通に経験が入り、
+   超えると減っていく。こうすると 次の区画へ行けるだけは育つが、
+   同じ区画を回り続けても それ以上は伸びない。 */
+const TIERLV=[4,8,13,17];
+/* EXPNEED はここより下で作られるので、呼ばれたときに読む */
+function lvMax(){ return EXPNEED.length-1; }
+function tierCap(tier){ return TIERLV[tier]||lvMax(); }  /* 次の段の値。最後は上限 */
+function areaCap(){ return tierCap(areaTier()); }
+/* 経験の目減り。上限を1つ超えるごとに 3分の1ずつ減り、**3つ超えたら入らない**。
+   下限を残すと わずかずつ入り続けて いつまでも稼げてしまう（0.05 で試したら
+   草原だけで Lv15 まで伸びた）。ここは 0 で切る。 */
+/* 測り直すときに差し替えられるよう let にしてある（tools の計測が上書きする）。
+   遊んでいるあいだに変わることはない。 */
+let EXPDROP=0.34, EXPFLOOR=0;
+function expMul(lv,cap){
+  const over=Math.max(0,(lv===undefined?me.lv:lv)-(cap===undefined?areaCap():cap));
+  return over?Math.max(EXPFLOOR,1-over*EXPDROP):1;
+}
 /* 出発点にできる区画 */
 function startAreas(){
   const o={};Object.keys(AREAS).forEach(k=>{if(AREAS[k].start)o[k]=AREAS[k];});
@@ -7531,7 +7571,7 @@ function genAct(ai){
 /* ---- 金貨 ---- */
 const GOLD={battle:[16,22,28],elite:[42,54,66],boss:[80,100,120],treasure:[26,34,42]};
 function gainGold(kind){
-  const base=GOLD[kind][Math.min(2,RUN.act)];
+  const base=GOLD[kind][Math.min(2,worldStep())];
   const v=Math.round(base*(0.85+Math.random()*0.3)
     *((ORIG[sel.orig]&&ORIG[sel.orig].goldMul)||1)*(1+passOn("gold")/100));
   me.gold+=v;return v;
@@ -7555,7 +7595,7 @@ function gainFood(n){
   for(let i=0;i<n;i++){
     const pool=FOODS.filter(k=>{
       const t=MATS[k].v;
-      return t<=12+RUN.act*8;
+      return t<=12+worldStep()*8;
     });
     const k=pool[Math.floor(Math.random()*pool.length)];
     me.mats[k]=(me.mats[k]||0)+1;got[k]=(got[k]||0)+1;META.mats[k]=true;touchMeta();
@@ -7580,7 +7620,7 @@ function matCount(){return Object.values(me.mats||{}).reduce((a,b)=>a+b,0);}
 function rollDrop(){
   const rate=RUN.boss?1:(RUN.elite?0.55:0.3);
   if(Math.random()>=rate)return null;
-  const keys=Object.keys(ITEMS).filter(k=>(ITEMS[k].tier||1)<=RUN.act+1);
+  const keys=Object.keys(ITEMS).filter(k=>(ITEMS[k].tier||1)<=worldStep()+1);
   const w=keys.map(k=>({k,w:(ITEMS[k].tier||1)===1?4:((ITEMS[k].tier||1)===2?2:1)}));
   const tot=w.reduce((a,b)=>a+b.w,0);
   let x=Math.random()*tot;
@@ -7615,7 +7655,7 @@ function itemSwapModal(key,after){
   if(kb)kb.onclick=()=>{RUN.pendingItem=null;closeModal();after&&after();};
 }
 function price(base){
-  return Math.round(base*(1+RUN.act*0.28)
+  return Math.round(base*(1+worldStep()*0.28)
     *((ORIG[sel.orig]&&ORIG[sel.orig].shopHalf)?0.5:1)*(1-passOn("haggle")/100));
 }
 
@@ -7767,7 +7807,7 @@ let actTtlTimer=null;
 function actTitle(){
   const el=$("#actTtl");if(!el)return;
   const A=areaOf();
-  el.innerHTML=`<div class="atDun">第 ${A.tier} 階層　${RUN.act+1} 区画目</div>
+  el.innerHTML=`<div class="atDun">第 ${A.tier} 階層</div>
     <div class="atName">${A.n||""}</div>
     <div class="atSub">${A.d||""}</div>`;
   el.className="actTtl on";
@@ -7813,7 +7853,7 @@ function drawFloor(){
   if(!RUN)return;                 /* 町にいる（潜っていない） */
   const A=areaOf();
   const cur=RUN.curKey?RUN.M.node[RUN.curKey]:null;
-  $("#fName").innerHTML=`${A.n}　<em>第 ${A.tier} 階層 ・ ${RUN.act+1} 区画目</em>`;
+  $("#fName").innerHTML=`${A.n}　<em>第 ${A.tier} 階層 ・ ちょうどよい Lv ${TIERLV[A.tier-1]||"—"}</em>`;
   $("#fSub").textContent=cur?`${cur.r+1} / ${ROWS} 段目`:"入口";
   const low=me.HP<=me.maxHP*0.35?"lowhp":"";
   $("#fStat").innerHTML=
@@ -8240,7 +8280,7 @@ function makeStock(){
     const r=gp.splice(Math.floor(Math.random()*gp.length),1)[0];
     st.push({cat:"gear",r,cost:price(44+(r.tier||1)*8),sold:false});
   }
-  const keys=Object.keys(ITEMS).filter(k=>(ITEMS[k].tier||1)<=RUN.act+1);
+  const keys=Object.keys(ITEMS).filter(k=>(ITEMS[k].tier||1)<=worldStep()+1);
   const pool=keys.slice();
   for(let i=0;i<3&&pool.length;i++){
     const k=pool.splice(Math.floor(Math.random()*pool.length),1)[0];
@@ -9263,7 +9303,7 @@ function charModal(back,U){
 /* ---------- 報酬 ---------- */
 function catPool(cat){
   if(cat==="gear"){
-    const maxT=(RUN?RUN.act:0)+1+LUKGRADE;   /* 宝箱では幸運で 1 段上がる */
+    const maxT=worldStep()+1+LUKGRADE;       /* 宝箱では幸運で 1 段上がる */
     const list=[];
     (GEAR.wep[sel.job]||[]).forEach(g=>list.push({...g,slot:"wep",
       d:(()=>{const w=WEP[g.key];
@@ -9300,7 +9340,7 @@ function expCap(){return EXPNEED[Math.min(EXPNEED.length-1,me.lv)];}
 function expToNext(){return expCap()-me.exp;}
 function expFor(kind){
   const base={battle:24,elite:55,boss:110}[kind]||24;
-  return Math.round(base*(1+RUN.act*0.55));
+  return Math.round(base*(1+worldStep()*0.55));
 }
 const PASSMAX=10;
 const TIERN={0:"初期",1:"一等",2:"二等",3:"三等"};
@@ -9693,7 +9733,7 @@ function mateChoiceModal(m,list,done){
 function showRewards(){
   const kind=RUN.boss?"boss":(RUN.elite?"elite":"battle");
   const list=[];
-  const gv=Math.round(GOLD[kind][Math.min(2,RUN.act)]*1.7*orgMul("goldMul")
+  const gv=Math.round(GOLD[kind][Math.min(2,worldStep())]*1.7*orgMul("goldMul")
     *(1+passOn("gold")/100));
   list.push({t:"gold",n:`金貨 ${gv}`,d:"そのまま使える。行商で装備や道具に換わる",v:gv});
   const mk=[...new Set(ENCS[sel.enc].list.map(k=>FOE[k].mat).filter(Boolean))];
@@ -9701,7 +9741,7 @@ function showRewards(){
   list.push({t:"mat",n:`${mk.map(k=>MATS[k].n).join("・")}`,
     d:`討った相手から剥ぐ。それぞれ ${mn} 個`,keys:mk,num:mn});
   list.push({t:"food",n:"あたりを漁る",d:"料理の材料。2〜3 個",num:2+Math.floor(Math.random()*2)});
-  const ik=Object.keys(ITEMS).filter(k=>!ITEMS[k].made&&(ITEMS[k].tier||1)<=RUN.act+1);
+  const ik=Object.keys(ITEMS).filter(k=>!ITEMS[k].made&&(ITEMS[k].tier||1)<=worldStep()+1);
   const ikey=ik[Math.floor(Math.random()*ik.length)];
   list.push({t:"item",n:ITEMS[ikey].n,d:ITEMS[ikey].d,key:ikey});
   const roll=Math.random();
@@ -9905,7 +9945,7 @@ async function doItem(k,tgt){
     const list=coverList(it.all?foeLine().slice(0,AOEMAX):[tgt]);
     for(const t of list){
       if(!t)continue;
-      const d=it.dmg+Math.round(it.dmg*0.25*RUN.act);
+      const d=it.dmg+Math.round(it.dmg*0.25*worldStep());
       t.HP=Math.max(0,t.HP-d);
       await checkPhase(t);
       fxOn(t,"blunt");popOn(t,"−"+d);SFX.dmg();
@@ -10045,7 +10085,7 @@ function prepareBattle(){
     (u.sk||[]).forEach(k=>k.cdLeft=0);
   });
   $("#acts").innerHTML="";
-  $("#stageLbl").textContent=`${RUN.act+1}階層　${RUN.cur?RUN.cur.name:""}`+
+  $("#stageLbl").textContent=`${areaTier()}階層　${RUN.cur?RUN.cur.name:""}`+
     (RUN.elite?"　［手練れ］":RUN.boss?"　［ボス］":"");
   showScreen("fight");
   draw();window.scrollTo(0,0);
@@ -10618,10 +10658,15 @@ function diveModal(){
     <div class="msub">抜けた区画から 道が続いていく</div><div class="acts">`;
   list.forEach((k,i)=>{
     const A=AREAS[k], done=areaCleared(k);
+    const fit=TIERLV[A.tier-1]||1, cap=tierCap(A.tier);
+    const m=expMul(me.lv,cap);
     h+=`<button class="act rew ${done?"cgear":"cskill"}" data-d="${i}">
       <span class="rcat">${done?"抜けた":"未 踏"}</span><span class="an">${A.n}</span>
       <span class="ad">${A.d||""}</span>
-      <span class="rmeta">${A.wip?"まだ作りかけ":`${A.tier} 段目の深さ`}</span></button>`;
+      <span class="rmeta">${A.wip?"まだ作りかけ"
+        :`ちょうどよい Lv <b>${fit}</b>　経験が満ちるのは Lv ${cap} まで`+
+         (m<1?`　<span style="color:#a0714f">いまは 経験 ${Math.round(m*100)}%</span>`
+             :`　<span style="color:#8fa261">経験 100%</span>`)}</span></button>`;
   });
   h+=`</div><button class="mclose" id="dvX">やめる</button>`;
   openModal(h,true);
