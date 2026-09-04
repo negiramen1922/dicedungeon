@@ -634,6 +634,39 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .tph{font-size:9px;color:var(--dim);font-family:"DotGothic16",ui-monospace,monospace}
 .tph.down{color:var(--blood)}
 .tpl{font-size:9px;color:#c9a227;font-family:"DotGothic16",ui-monospace,monospace}
+.ttlwrap{min-height:78vh;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;text-align:center;padding:20px 0}
+.ttlmain{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:30px;
+  letter-spacing:.22em;color:var(--bone);text-indent:.22em}
+.ttlsub{font-size:12.5px;color:var(--brass);letter-spacing:.2em;margin-top:12px;
+  text-indent:.2em}
+.ttldice{margin:22px 0 6px;display:flex;gap:10px;justify-content:center}
+.ttlwrap .homemenu{margin-top:14px}
+/* 記録の枠 */
+.slot{width:100%;background:var(--panel);border:1px solid var(--line);color:var(--bone);
+  text-align:left;padding:12px 13px;margin-bottom:9px;cursor:pointer;
+  font-family:inherit;display:block}
+.slot:hover{border-color:var(--brass)}
+.slot .sln{font-size:11px;letter-spacing:.14em;color:var(--dim)}
+.slot .slt{font-size:15px;letter-spacing:.06em;margin-top:5px;display:flex;
+  align-items:center;gap:8px}
+.slot .sld{font-size:10.5px;color:var(--dim);margin-top:5px;
+  font-family:"DotGothic16",ui-monospace,monospace;letter-spacing:.03em}
+.slot .sld b{color:var(--bone)}
+.slot.empty .slt{color:#4d5346}
+.slotdel{background:transparent;border:1px solid var(--line);color:var(--dim);
+  font-family:inherit;font-size:10px;padding:5px 10px;margin-top:8px;cursor:pointer}
+.slotdel:hover{border-color:var(--blood);color:var(--blood)}
+/* 潜る先の一覧（世界地図の下） */
+.dvlist{margin-top:10px}
+.dvrow{border:1px solid var(--line);background:var(--panel);padding:8px 10px;
+  margin-bottom:5px;cursor:pointer}
+.dvrow:hover{border-color:var(--brass)}
+.dvn{display:block;font-size:13px;letter-spacing:.06em}
+.dvn em{font-style:normal;font-size:9.5px;color:var(--dim);border:1px solid var(--line);
+  padding:1px 4px;margin-right:5px}
+.dvm{display:block;font-size:10px;color:var(--dim);margin-top:3px;
+  font-family:"DotGothic16",ui-monospace,monospace}
 .hometitle{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:27px;
   letter-spacing:.34em;color:var(--bone);margin-bottom:8px}
 .homesub{font-size:12px;color:var(--ink);letter-spacing:.14em;margin-bottom:26px}
@@ -871,6 +904,8 @@ body.play .fh1{padding-right:62px}
   letter-spacing:.08em;margin-top:9px}
 .setver b{color:var(--dim);font-weight:600;letter-spacing:.04em}
 .hide{display:none}
+/* 表題と記録選びのあいだは 上の名札を隠す。表題そのものと重なるため */
+body.attitle #brand{display:none}
 </style>
 </head>
 <body>
@@ -921,15 +956,34 @@ body.play .fh1{padding-right:62px}
   <div id="qzBody"></div>
 </section>
 
-<section id="home">
+<section id="title">
+  <div class="ttlwrap">
+    <div class="ttlmain">ダ イ ス ダ ン ジ ョ ン</div>
+    <div class="ttlsub">サイコロに導かれる運命</div>
+    <div class="ttldice" id="ttlDice"></div>
+    <div class="homemenu">
+      <button class="go" id="tStart">ゲ ー ム を ス タ ー ト</button>
+      <button class="topbtn" id="tTut">遊 び 方</button>
+      <button class="topbtn" id="tCodex">図 鑑</button>
+      <button class="topbtn" id="tQuiz">見 立 て</button>
+    </div>
+  </div>
+</section>
+
+<section id="slots" class="hide">
+  <div class="secbar"><button class="backbtn" id="slBack">← もどる</button>
+    <div class="secttl">記 録 を 選 ぶ</div></div>
+  <div class="note">3つまで別々に遊べます。図鑑は どの記録でも共通です。</div>
+  <div id="slotList"></div>
+</section>
+
+<section id="home" class="hide">
   <div class="hometitle">ダ イ ス ダ ン ジ ョ ン</div>
   <div class="homesub" id="homeSub">賽の目に身を委ね、深みへ降りる</div>
   <div class="townnote" id="townNote"></div>
   <div class="homestat" id="homeStat"></div>
   <div class="townparty" id="townParty"></div>
   <div class="homemenu">
-    <button class="go hide" id="hCont">つ づ き か ら</button>
-    <div class="contnote hide" id="hContNote"></div>
     <button class="go" id="hGo">潜 る</button>
     <button class="topbtn hide" id="hChar">一 味 を 見 る</button>
     <button class="topbtn" id="hWorld">世 界 地 図</button>
@@ -937,6 +991,7 @@ body.play .fh1{padding-right:62px}
     <button class="topbtn" id="hCodex">図 鑑</button>
     <button class="topbtn" id="hQuiz">見 立 て</button>
     <button class="topbtn" id="hTut">遊 び 方</button>
+    <button class="topbtn" id="hTitle">記 録 を 変 え る</button>
   </div>
 </section>
 
@@ -1004,7 +1059,7 @@ body.play .fh1{padding-right:62px}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.005";
+const VERSION="α1.0.006";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1017,6 +1072,12 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1006",tag:"up",v:"α1.0.006",d:"2026-09-04",n:"表題画面と 3つの記録、世界地図で潜る先を選ぶ形にしました",b:[
+   "<b>表題画面ができました。</b>「ダイスダンジョン ／ サイコロに導かれる運命」から始まります",
+   "<b>記録を3つまで持てます。</b>別々のキャラで同時に遊べます。図鑑と潜行の記録は どの記録でも共通です",
+   "<b>空の記録を選ぶと キャラを作るところから。</b>作り終えると 町に立ちます",
+   "<b>ひとりで始まります。</b>仲間は町で雇う形にします（いま作っているところです）",
+   "<b>潜る先は 世界地図から選びます。</b>光っている場所だけ押せます。最初は 原始の草原だけで、抜けるたびに その先が開きます"]},
  {id:"v1005",tag:"fix",v:"α1.0.005",d:"2026-09-04",n:"はじめから遊べなくなっていたのを直しました",b:[
    "<b>キャラを作り終えたところで 止まっていました。</b>周回をやめたときに消した関数を、キャラ作成の最後がまだ呼んでいたためです",
    "<b>まっさらな状態から 町・潜行・戦闘・帰還まで 通しで遊べることを確かめました。</b>これからは 画面を実際に押していく通しテストを毎回まわします"]},
@@ -6612,7 +6673,20 @@ function metaClear(){
    RUN.preview・RUN.lootLines はその場かぎりのものなので落とす。 */
 /* 控えの形。α1 で「1周ぶんの潜行」から「一味そのもの」に変わったので上げた。
    v1（ローグライクの潜行）は読まない。 */
-const RKEY="dd.run", RVER=2;
+/* ===== 記録は3つ（α1.0.006） =====
+   鍵は dd.run.0 / .1 / .2。図鑑と潜行の記録（META）は どの記録でも共通。
+   枠を選ぶ前は slot が null で、そのあいだ 控えの読み書きはしない。 */
+const RKEY="dd.run", RVER=2, SLOTS=3;
+let slot=null;
+function rkey(i){ return RKEY+"."+(i===undefined?slot:i); }
+/* α1.0.005 までの控え（dd.run）は 1つ目の枠へ移す */
+function slotMigrate(){
+  try{
+    const old=localStorage.getItem(RKEY);
+    if(old&&!localStorage.getItem(rkey(0)))localStorage.setItem(rkey(0),old);
+    if(old)localStorage.removeItem(RKEY);
+  }catch(e){}
+}
 let runBroken=false;
 function runNewId(){
   return Date.now().toString(36)+Math.random().toString(36).slice(2,8);
@@ -6641,11 +6715,13 @@ function runSave(){
 }
 /* 控えを端末に置くだけ。RUN には触らない */
 function runPut(o){
-  try{ localStorage.setItem(RKEY,JSON.stringify(o)); }
+  if(slot===null)return;
+  try{ localStorage.setItem(rkey(),JSON.stringify(o)); }
   catch(e){ runBroken=true; }      /* 容量切れなど。保存を諦めて遊べるようにする */
 }
-function runRaw(){
-  try{ return JSON.parse(localStorage.getItem(RKEY)||"null"); }catch(e){ return null; }
+function runRaw(i){
+  if(i===undefined&&slot===null)return null;
+  try{ return JSON.parse(localStorage.getItem(rkey(i))||"null"); }catch(e){ return null; }
 }
 /* 読めるかどうかまで見る。表の中身が変わって指し先が消えていたら捨てる */
 function runLoad(r){
@@ -6720,8 +6796,7 @@ function runResume(){
        preview:null, over:false, cleared:false, elite:false, boss:false}:null;
   if(RUN)RUN.cur=RUN.curKey?(RUN.M.node[RUN.curKey]||null):null;
   party.forEach(u=>recalcMe(u));      /* 式が変わっていても組み直す */
-  if(party.length<2)buildParty();     /* 仲間の無い古い控えは ここで組む */
-  syncMates();
+  syncMates();                        /* ひとりのこともある。それでよい */
   /* 覚えるものを選ばずに閉じた控えは、続きから始めたときに選ばせる */
   setTimeout(()=>mateLearnQueue(()=>{}),0);
   $("#log").innerHTML="";
@@ -7421,11 +7496,12 @@ function bgmKey(id){
   return "home";                        /* home・make・tut・quiz */
 }
 function showScreen(id){
-  ["tut","quiz","home","hall","codex","make","floor","fight"].forEach(k=>{
+  ["title","slots","tut","quiz","home","hall","codex","make","floor","fight"].forEach(k=>{
     const el=$("#"+k);if(el)el.classList.toggle("hide",k!==id);});
   curScreen=id;
   /* 表題を出すのはホームと遊び方だけ。遊んでいる間は盤面に縦を回す */
-  document.body.classList.toggle("play",id!=="home"&&id!=="tut");
+  document.body.classList.toggle("play",id!=="home"&&id!=="tut"&&id!=="title"&&id!=="slots");
+  document.body.classList.toggle("attitle",id==="title"||id==="slots");
   Music.play(bgmKey(id));
 }
 const K=(r,c)=>r+","+c;
@@ -7703,7 +7779,9 @@ function townRestore(o){
 /* はじめの一度だけ。以後は町から潜る */
 function newGame(){
   me=makeMe();
-  buildParty();                  /* 主人公と仲間2人で一味を組む */
+  /* **ひとりで始める。**仲間は町で雇う（段C）。
+     buildParty（決め打ちの3人）は 仮の形だったので もう呼ばない。 */
+  setParty([me]);
   markSeen("w_"+me.baseWep);
   me.gold=(ORIG[sel.orig]&&ORIG[sel.orig].startGold)||30;
   RUN=null; owned=[];
@@ -9574,15 +9652,6 @@ function mateLearn(m,cat,r){
   m.picks=(m.picks||0)+1;
   recalcMe(m,false);
 }
-/* 一味を組む。主人公と 仲間2人。並びは LINEPREF の順（前に立ちたい者が先頭） */
-function buildParty(){
-  const jobs=MATEJOBS.filter(j=>j!==sel.job).slice(0,2);
-  const races=Object.keys(RACE);
-  const mates=jobs.map(j=>makeMate(j,races[Math.floor(Math.random()*races.length)],me.lv));
-  const pref=u=>{const v=LINEPREF[u.job];return v===undefined?(u===me?0:9):v;};
-  const list=[me,...mates].sort((a,b)=>pref(a)-pref(b));
-  setParty(list);
-}
 /* 仲間のレベルは主人公に追従する。差のぶんだけ成長表を回して追いつかせる。
    経験と戦利品は主人公ひとりが受け取り、仲間はここで追いつく。 */
 function syncMates(){
@@ -10487,16 +10556,72 @@ function drawHome(){
     : "";
   $("#townParty").querySelectorAll("[data-tp]").forEach(b=>{
     b.onclick=()=>{SFX.click();charModal(null,party[+b.dataset.tp]);};});
-  /* 途中の潜行が控えてあれば「つづきから」を出す */
-  const lb=runLabel();
-  $("#hCont").classList.toggle("hide",!lb);
-  $("#hContNote").classList.toggle("hide",!lb);
-  $("#hContNote").innerHTML=lb||"";
   $("#hChar").classList.toggle("hide",!started);
   $("#hGo").textContent=started?"潜 る":"は じ め る";
   $("#hGo").classList.remove("sub");
 }
 function goHome(){drawHome();showScreen("home");window.scrollTo(0,0);}
+/* ===== 表題 と 記録の選択（α1.0.006） ===== */
+function goTitle(){
+  slot=null;me=null;party=[];RUN=null;
+  drawTitle();showScreen("title");window.scrollTo(0,0);
+}
+function drawTitle(){
+  const el=$("#ttlDice");if(!el)return;
+  el.innerHTML=[3,5,6].map(v=>`<span class="d100 six">${v}</span>`).join("");
+}
+/* 枠ひとつの中身を読む。壊れていたら null */
+function slotInfo(i){
+  const r=runLoad(runRaw(i));
+  if(!r)return null;
+  const A=AREAS[r.run?r.run.area:r.sel.area]||{};
+  const d=Math.round((Date.now()-(r.t||0))/60000);
+  return {
+    name:`${RACE[r.sel.race].n}の${JOB[r.sel.job].n}`,
+    job:r.sel.job, race:r.sel.race,
+    lv:r.me.lv, gold:r.me.gold,
+    party:1+((r.mates||[]).length),
+    where:r.run?`${A.n||""} の途中`:"町",
+    ago:d<1?"たったいま":d<60?`${d} 分前`:(d<1440?`${Math.floor(d/60)} 時間前`:`${Math.floor(d/1440)} 日前`),
+  };
+}
+function drawSlots(){
+  const host=$("#slotList");if(!host)return;
+  let h="";
+  for(let i=0;i<SLOTS;i++){
+    const o=slotInfo(i);
+    h+=`<button class="slot ${o?"":"empty"}" data-sl="${i}">
+      <span class="sln">記 録 ${i+1}</span>
+      <span class="slt">${o?`${pixFig(o.job,o.race,26)} ${o.name}`:"— 空き —"}</span>
+      <span class="sld">${o
+        ?`Lv <b>${o.lv}</b>　一味 <b>${o.party}</b>人　金貨 <b>${o.gold}</b>　${o.where}　<span style="color:#4d5346">${o.ago}</span>`
+        :"押すと 新しく始める"}</span>
+    </button>`;
+    if(o)h+=`<button class="slotdel" data-del="${i}">この記録を消す</button>`;
+  }
+  host.innerHTML=h;
+  host.querySelectorAll("[data-sl]").forEach(b=>{
+    b.onclick=()=>{SFX.pick();openSlot(+b.dataset.sl);};});
+  host.querySelectorAll("[data-del]").forEach(b=>{
+    b.onclick=()=>{
+      const i=+b.dataset.del, o=slotInfo(i);
+      resultModal("記 録 を 消 す",
+        [`記録 ${i+1}　${o?o.name:""}　Lv ${o?o.lv:"-"}`,
+         `<span class="loss">消すと 元には戻せない</span>`,
+         `<span class="s">図鑑と 潜行の記録は 残ります</span>`],
+        [{n:"やめる"},{n:"消す",cb:()=>{
+          try{localStorage.removeItem(rkey(i));}catch(e){}
+          SFX.click();drawSlots();}}]);
+    };});
+}
+/* 枠を開く。中身があれば町（か潜行の途中）へ、空ならキャラを作る */
+function openSlot(i){
+  slot=i;
+  const r=runLoad(runRaw(i));
+  if(r){ runResume(); return; }
+  me=null;party=[];RUN=null;
+  newChar();mkStep=0;drawMake();showScreen("make");window.scrollTo(0,0);
+}
 
 /* ---------- 殿堂 ---------- */
 function drawHall(){
@@ -10657,7 +10782,6 @@ function cxBody(){
   }).join("");
 }
 
-$("#hCont").onclick=()=>{SFX.pick();runResume();};
 $("#hGo").onclick=()=>{
   /* まだ一味がいなければ キャラを作るところから。いれば 行き先を選んで潜る */
   if(!me){
@@ -10666,29 +10790,29 @@ $("#hGo").onclick=()=>{
   SFX.pick();diveModal();
 };
 $("#hChar").onclick=()=>{SFX.click();charModal();};
-/* どこへ潜るかを選ぶ。抜けたことのある区画と、そこから続く道が並ぶ */
+/* どこへ潜るかを 世界地図で選ぶ。**光っている場所だけ押せる。**
+   開くのは 抜けた区画と その先（diveTargets）。最初は 原始の草原だけ。 */
 function diveModal(){
   const list=diveTargets();
+  const pick=list.map(k=>({key:k}));
+  const line=k=>{
+    const A=AREAS[k], fit=TIERLV[A.tier-1]||1, cap=tierCap(A.tier), m=expMul(me.lv,cap);
+    return `<div class="dvrow" data-d="${k}">
+      <span class="dvn">${areaCleared(k)?"":"<em>未踏</em> "}${A.n}</span>
+      <span class="dvm">ちょうどよい Lv <b>${fit}</b>　経験は Lv ${cap} まで満ちる`+
+      (m<1?`　<span style="color:#a0714f">いまは ${Math.round(m*100)}%</span>`
+          :`　<span style="color:#8fa261">100%</span>`)+`</span></div>`;
+  };
   let h=`<div class="mtitle">ど こ へ 潜 る か</div>
-    <div class="msub">抜けた区画から 道が続いていく</div><div class="acts">`;
-  list.forEach((k,i)=>{
-    const A=AREAS[k], done=areaCleared(k);
-    const fit=TIERLV[A.tier-1]||1, cap=tierCap(A.tier);
-    const m=expMul(me.lv,cap);
-    h+=`<button class="act rew ${done?"cgear":"cskill"}" data-d="${i}">
-      <span class="rcat">${done?"抜けた":"未 踏"}</span><span class="an">${A.n}</span>
-      <span class="ad">${A.d||""}</span>
-      <span class="rmeta">${A.wip?"まだ作りかけ"
-        :`ちょうどよい Lv <b>${fit}</b>　経験が満ちるのは Lv ${cap} まで`+
-         (m<1?`　<span style="color:#a0714f">いまは 経験 ${Math.round(m*100)}%</span>`
-             :`　<span style="color:#8fa261">経験 100%</span>`)}</span></button>`;
-  });
-  h+=`</div><button class="mclose" id="dvX">やめる</button>`;
+    <div class="wmwrap">${worldMap("gate",pick)}</div>
+    <div class="wmnote">光っている場所を押すと そこへ潜る</div>
+    <div class="dvlist">${list.map(line).join("")}</div>
+    <button class="mclose" id="dvX">やめる</button>`;
   openModal(h,true);
-  $("#mbox").querySelectorAll("[data-d]").forEach(b=>{
-    b.onclick=()=>{const k=list[+b.dataset.d];closeModal();
-      party.forEach(u=>{if(u.HP<=0)return;});
-      dive(k);drawFloor();showScreen("floor");window.scrollTo(0,0);};});
+  const go=k=>{ if(!list.includes(k))return;
+    closeModal();dive(k);drawFloor();showScreen("floor");window.scrollTo(0,0); };
+  $("#mbox").querySelectorAll("[data-w]").forEach(g=>{g.onclick=()=>go(g.dataset.w);});
+  $("#mbox").querySelectorAll("[data-d]").forEach(g=>{g.onclick=()=>go(g.dataset.d);});
   $("#dvX").onclick=closeModal;
 }
 /* 潜れる区画。**はじめの区画と、抜けた区画・その先**。
@@ -10712,17 +10836,34 @@ $("#hHall").onclick=()=>{drawHall();showScreen("hall");window.scrollTo(0,0);};
 $("#hCodex").onclick=()=>{drawCodex();showScreen("codex");window.scrollTo(0,0);};
 $("#hQuiz").onclick=()=>{qzStep=0;qzAns={};drawQuiz();showScreen("quiz");window.scrollTo(0,0);};
 $("#hTut").onclick=()=>{drawTut();showScreen("tut");window.scrollTo(0,0);};
-$("#qzBack").onclick=goHome;
+$("#hTitle").onclick=()=>{
+  if(inDive()){
+    resultModal("記 録 を 変 え る",
+      [`潜っている途中です`,`<span class="s">ここまでは控えてあるので、戻ればこの続きから遊べます</span>`],
+      [{n:"やめる"},{n:"表題へ戻る",cb:goTitle}]);
+    return;
+  }
+  goTitle();
+};
+$("#qzBack").onclick=()=>{ if(slot===null)goTitle(); else goHome(); };
 $("#tutOK").onclick=()=>{
   META.tutSeen=true;touchMeta();
+  /* 記録を選ぶ前なら 表題へ戻る。作っている途中なら 見立てへ進む */
+  if(slot===null){goTitle();return;}
   qzStep=0;qzAns={};drawQuiz();showScreen("quiz");window.scrollTo(0,0);};
-$("#hallBack").onclick=goHome;
-$("#mkBack").onclick=goHome;
-$("#cxBack").onclick=goHome;
-/* 起動。控えがあれば 一味を戻してから町を出す（潜行中なら そこへ戻る） */
-if(runLoad()) runResume();
-else if(!META.tutSeen){drawTut();showScreen("tut");}
-else goHome();
+/* ---- 表題 ---- */
+$("#tStart").onclick=()=>{SFX.pick();drawSlots();showScreen("slots");window.scrollTo(0,0);};
+$("#tTut").onclick=()=>{drawTut();showScreen("tut");window.scrollTo(0,0);};
+$("#tCodex").onclick=()=>{drawCodex();showScreen("codex");window.scrollTo(0,0);};
+$("#tQuiz").onclick=()=>{qzStep=0;qzAns={};drawQuiz();showScreen("quiz");window.scrollTo(0,0);};
+$("#slBack").onclick=goTitle;
+$("#hallBack").onclick=()=>{ if(slot===null)goTitle(); else goHome(); };
+$("#mkBack").onclick=()=>{ drawSlots();showScreen("slots");window.scrollTo(0,0); };
+$("#cxBack").onclick=()=>{ if(slot===null)goTitle(); else goHome(); };
+/* 起動。**まず表題。**記録を選ぶまで 一味は居ない。
+   α1.0.005 までの控え（dd.run）は 1つ目の枠へ移す。 */
+slotMigrate();
+goTitle();
 $("#charBtn").onclick =()=>charModal();
 $("#charBtn2").onclick=()=>charModal();
 $("#worldBtn").onclick=()=>{SFX.click();worldModal();};

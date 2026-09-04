@@ -34,7 +34,8 @@ function stubDom() {
     getElementById: () => mkEl(), createElement: () => mkEl(),
     addEventListener() {}, body: mkEl(), documentElement: mkEl(), head: mkEl(),
   };
-  global.window = {addEventListener() {}, matchMedia: () => ({matches: false, addEventListener() {}})};
+  global.window = {addEventListener() {}, scrollTo() {}, requestAnimationFrame() {},
+    matchMedia: () => ({matches: false, addEventListener() {}})};
   global.Audio = function () { return mkEl(); };
   global.AudioContext = global.webkitAudioContext = function () { return mkEl(); };
   global.requestAnimationFrame = () => 0;

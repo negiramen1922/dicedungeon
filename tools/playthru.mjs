@@ -36,6 +36,7 @@ const once=async()=>{
   const inModal=await pg.evaluate(()=>modalOpen());
   const list=inModal
     ?[['#mbox [data-i]',0],['#mbox [data-d]',0],['#mbox [data-b]',1],
+      ['#mbox [data-keep]',0],['#mbox [data-skip]',0],
       ['#mbox .ndbtn button',1],['#mbox .mclose',0],['#mbox button',1]]
     :[['#mkBody [data-k]',0],['#mkBody [data-w]',0]];
   for(const [q,last] of list){
@@ -55,20 +56,13 @@ const firstCard=async(name,tries)=>{
   log.push(`✗ ${name} の札が無い`);return false;
 };
 
-/* ① 起動 → 遊び方 → 見立て → キャラ作成 */
+/* ① 表題 → 記録を選ぶ → キャラ作成 */
 log.push(`① 起動　画面 ${await scr()}`);
-if(await scr()==="tut"){ await tap("#tutOK","キャラをつくって"); log.push(`   遊び方を抜けた → ${await scr()}`); }
-if(await scr()==="quiz"){
-  /* 見立ては3問。答えると おすすめが出る */
-  for(let q=0;q<5;q++){
-    const a=await pg.$$('#qzBody [data-i]');
-    if(!a.length)break;
-    await a[0].click({force:true});await pg.waitForTimeout(160);
-  }
-  await tap("#qzGo","この組み合わせで作る");
-  log.push(`   見立てを終えた → ${await scr()}`);
-}
-if(await scr()==="home"){ await tap("#hGo","はじめる"); }
+await tap("#tStart","ゲームをスタート");
+log.push(`   記録を選ぶ → ${await scr()}　枠 ${await pg.evaluate(()=>document.querySelectorAll("#slotList [data-sl]").length)}`);
+{ const sl=await pg.$$('#slotList [data-sl]');
+  if(sl.length)await sl[0].click({force:true}); else log.push("✗ 記録の枠が無い"); }
+await pg.waitForTimeout(300);
 log.push(`② キャラ作成へ → ${await scr()}`);
 /* 見立てから来ると mkStep=3（確認）に飛ぶ。自分で選ぶ道なら3つ選ぶ */
 for(const step of ["職業","種族","欲望"]){
@@ -96,7 +90,7 @@ log.push(`   一味 ${await pg.evaluate(()=>party.length?party.map(u=>`${u.short
 /* ⑤ 潜る */
 await tap("#hGo","潜る");
 log.push(`⑤ 潜る窓 → ${await scr()}`);
-if(!await firstCard("潜る先"))log.push("   潜る先の札が出ていない");
+
 await pg.waitForTimeout(500);
 log.push(`⑥ 地図 → ${await scr()}　部屋 ${await pg.evaluate(()=>RUN&&RUN.M?Object.keys(RUN.M.node).length:"RUN なし")}`);
 /* ⑦ 部屋を進んで 戦闘まで */
@@ -104,7 +98,8 @@ let battles=0,wasFight=false;
 const trail=[];
 for(let step=0;step<26;step++){
   const s=await scr();
-  trail.push(s);
+  trail.push(s+(s.endsWith("窓")?"["+(await pg.evaluate(()=>{
+    const t=document.querySelector("#mbox .mtitle");return t?t.textContent.trim().replace(/\s/g,""):"?";}))+"]":""));
   if(s.startsWith("fight")){
     if(!wasFight)battles++;
     wasFight=true;
