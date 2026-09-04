@@ -976,7 +976,7 @@ body.play .fh1{padding-right:62px}
 <script>
 "use strict";
 /* ===== 版 ===== */
-const VERSION="α0.0046";      /* マージのたびに tools/bump.js で上げる */
+const VERSION="α0.0047";      /* マージのたびに tools/bump.js で上げる */
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -989,6 +989,10 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v0047",tag:"info",v:"α0.0047",d:"2026-09-04",n:"パーティ（3人）への作り直し・その1（下ごしらえ）",b:[
+   "<b>遊びかたは何も変わりません。</b>盤面も数字も これまでと同じです",
+   "仲間を連れて歩けるようにするため、<b>「こちら側は1人」という前提で書かれていた場所を、人数を数える形に直しました。</b>行動順・盤面の並び・パッシブの持ち主・敵が誰を狙うか・全滅の判定などです",
+   "次の段で <b>2人目</b> を足します。仲間は パッシブ4 スキル2〜3 を持ち、レベルは主人公に追従します"]},
  {id:"v0046",tag:"up",v:"α0.0046",d:"2026-09-03",n:"ステータスの持たせ方を組み直しました",b:[
    "<b>DEF という名前をやめ、硬さは VIT に一本化しました。</b>装備・パッシブ・状態異常「弱 化」・敵の予告、すべて VIT 表記です",
    "<b>VIT は HP ではなく 硬さ（1ヒットから引く数）を決めます。</b>これまで VIT は HP だけを決めていて、硬さのほうは <b>レベルで1も伸びませんでした</b>（ナイトは Lv1 でも Lv30 でも 10）",
@@ -3277,7 +3281,7 @@ function skillOf(k){
     +((SKORIG[sel.orig]||{})[k]||0)));
 }
 /* いま持っている武器で使う技能 */
-function wepSkill(){ return (me&&me.wep&&me.wep.type==="ranged")?"shoot":"fight"; }
+function wepSkill(u){ u=u||me; return (u&&u.wep&&u.wep.type==="ranged")?"shoot":"fight"; }
 /* 技能値の一覧。いま持っている武器で使う技能に印を付ける */
 function skillLine(sep){
   const use=wepSkill();
@@ -3614,30 +3618,35 @@ const REW={
 const CAT={act:{n:"ス キ ル",c:"cskill"},   /* 盤面の .cact（予告アイコン）と名前を分ける */
            pass:{n:"パッシブ",c:"cpass"},
            gear:{n:"装 備",c:"cgear"}};
+/* パッシブの条件は「誰の」パッシブかで見る先が変わる。
+   仲間が増えても そのまま動くよう、条件式は必ず u を受け取ること。
+   u を省いたときは主人公（me）を見る。 */
 const PCOND={
-  always:()=>true,
-  r1:()=>round===1,
-  hp70:()=>me.HP<=Math.ceil(me.maxHP*0.7),
-  hp50:()=>me.HP<=Math.ceil(me.maxHP*0.5),
-  hp30:()=>me.HP<=Math.ceil(me.maxHP*0.3),
-  front:()=>me.rank==="front",
-  back:()=>me.rank==="back",
-  def10:()=>(me.VIT+(me.block||0))>=10,
-  guarded:()=>(me.block||0)>0,
-  mp50:()=>me.MP>=me.maxMP*0.5,
-  hpfull:()=>me.HP>=me.maxHP,
-  hp80:()=>me.HP>=me.maxHP*0.8,
-  mpfull:()=>me.MP>=me.maxMP,
-  solo:()=>true,        /* 味方がいないので今は常に成立する */
+  always:u=>true,
+  r1:u=>round===1,
+  hp70:u=>u.HP<=Math.ceil(u.maxHP*0.7),
+  hp50:u=>u.HP<=Math.ceil(u.maxHP*0.5),
+  hp30:u=>u.HP<=Math.ceil(u.maxHP*0.3),
+  front:u=>u.rank==="front",
+  back:u=>u.rank==="back",
+  def10:u=>(u.VIT+(u.block||0))>=10,
+  guarded:u=>(u.block||0)>0,
+  mp50:u=>u.MP>=u.maxMP*0.5,
+  hpfull:u=>u.HP>=u.maxHP,
+  hp80:u=>u.HP>=u.maxHP*0.8,
+  mpfull:u=>u.MP>=u.maxMP,
+  solo:u=>pAlive().length<=1,   /* ひとりきりのとき */
 };
-function passList(){return (me&&me.pass)||[];}
-function passOn(k){
+function passList(u){u=u||me;return (u&&u.pass)||[];}
+function passOn(k,u){
+  u=u||me;
   let v=0;
-  passList().forEach(p=>{if(p.ef.k===k&&PCOND[p.ef.w]())v+=p.ef.v;});
+  passList(u).forEach(p=>{if(p.ef.k===k&&PCOND[p.ef.w](u))v+=p.ef.v;});
   return v;
 }
-function passNames(k){
-  return passList().filter(p=>p.ef.k===k&&PCOND[p.ef.w]()).map(p=>p.n);
+function passNames(k,u){
+  u=u||me;
+  return passList(u).filter(p=>p.ef.k===k&&PCOND[p.ef.w](u)).map(p=>p.n);
 }
 
 /* ---------- 幸 運 ----------
@@ -4026,6 +4035,21 @@ const FOE={
 
 /* ---------- 状態 ---------- */
 let me,foes,round,busy=false,over=false,pending=null,scoutBonus=0,queue=[],qi=0;
+/* 味方の並び。party[0] が主人公（me）。いまは 1人だが、
+   味方を見るところは すべてこの配列を通すこと。人数が増えたときに
+   触る場所を「配列に入れる／出す」だけに閉じ込めるため。 */
+let party=[];
+/* いま手番を持っている味方。行動一覧（drawActs）はこの者のものを出す。 */
+let cur=null;
+/* 手番の主。戦っていないあいだ（買い物・宝箱など）は主人公を指す。 */
+const actor=()=>cur||me;
+/* 味方の並びを組み直す。仲間が増えたらここに渡す。
+   party[0] は必ず主人公。pid は盤面のマスを引くための番号。 */
+function setParty(list){
+  party=(list&&list.length)?list:(me?[me]:[]);
+  party.forEach((u,i)=>{u.pid=i;u.isFoe=false;});
+  return party;
+}
 let fleeUsed=false, foeStart=0;   /* 逃走は1戦闘に1回。倒した数だけ逃げやすくなる */
 /* 索敵で片方だけが成功したとき、1ラウンド目だけ DEX を無視して
    成功したほうが先に動く。"me" / "foe" / null。 */
@@ -4183,17 +4207,31 @@ function coverList(ts){
   return out;
 }
 const alive=()=>foes.filter(f=>f.HP>0);
+/* 味方側。敵の alive / aliveIn / frontOpen と同じ形にそろえてある */
+const pAlive=()=>party.filter(u=>u.HP>0);
+const pIn=r=>pAlive().filter(u=>u.rank===r);
+const pFrontOpen=()=>pIn("front").length===0;
 const onBoard=()=>foes.filter(f=>f.HP>0);
 const aliveIn=r=>alive().filter(f=>f.rank===r);
 function frontOpen(){return aliveIn("front").length===0;}
 /* 近接で狙えるか：敵前列が生きているなら前列のみ、全滅なら後列も殴れる */
-function vowTarget(){
-  if(!me.vow||me.vow.id===null)return null;
-  return foes.find(x=>x.id===me.vow.id)||null;
+function vowTarget(u){
+  u=u||actor();
+  if(!u.vow||u.vow.id===null)return null;
+  return foes.find(x=>x.id===u.vow.id)||null;
 }
-function vowGone(){
-  const t=vowTarget();
-  return !!(me.vow&&(!t||t.HP<=0));
+function vowGone(u){
+  u=u||actor();
+  const t=vowTarget(u);
+  return !!(u.vow&&(!t||t.HP<=0));
+}
+/* 敵が狙う味方。いまは 1人しかいないので必ず主人公が返る。
+   段2 で「前列を優先し、たまに後列」といった選び方をここに入れる。
+   敵側が味方を指すところは 必ずこれを通すこと。 */
+function foeTarget(f){
+  /* 味方の前列が立っているうちは そちら。全員下がったら後列も狙われる */
+  const live=pFrontOpen()?pAlive():pIn("front");
+  return live[0]||me;
 }
 function canTarget(f){
   if(f.HP<=0)return false;
@@ -4428,7 +4466,7 @@ function unitCell(u,isMine){
   const target=!isMine&&pending&&canTarget(u);
   const col=isMine?"#8fa261":"#b1544a";
   return `<div class="cell ${u.HP<=0?"dead":""} ${target?"sel":""}"
-      ${isMine?'data-me="1"':`data-id="${u.id}"`}>
+      ${isMine?`data-me="${u.pid||0}"`:`data-id="${u.id}"`}>
     <div class="por">${isMine?meFig(40):foeFig(u.fig||u.key,40)}</div>
     <div class="cn ${isMine?"mine":"foe"}">${u.name}</div>
     <div class="chp">${Math.max(0,u.HP)}/${u.maxHP}</div>
@@ -4437,9 +4475,10 @@ function unitCell(u,isMine){
       <div class="bar mpb"><i style="width:${u.maxMP?u.MP/u.maxMP*100:0}%"></i></div>`:""}
     ${ailText(u)?`<div class="celrow">${ailText(u)}</div>`:""}
     ${isMine&&u.half?`<div class="cst">被弾 半減</div>`:""}
-    ${target&&u.HP>0?`<div class="ctarget">${
-       threshold(me,u,pending&&pending.kind==="skill"&&me.sk[pending.i]
-         ?{thr:me.sk[pending.i].thr||0,even:me.sk[pending.i].even}:{})}以上</div>`:""}
+    ${target&&u.HP>0?(()=>{const A=actor();
+       return `<div class="ctarget">${
+         threshold(A,u,pending&&pending.kind==="skill"&&A.sk[pending.i]
+           ?{thr:A.sk[pending.i].thr||0,even:A.sk[pending.i].even}:{})}以上</div>`;})():""}
     ${!isMine?(u.HP>0?(()=>{const ic=actIcon(st.t);
         return `<div class="cact ${p.danger?"bad":"ok"}" title="${p.txt}">${ic.g}</div>`;})()
       /* 倒れても枠は空けておく。消すとセルが縮み、行動一覧が毎ターン動く */
@@ -4566,8 +4605,8 @@ function drawDetail(){
   }).join("");
 }
 function draw(){
-  const myBack =slotRows(me.rank==="back" ?[me]:[]);
-  const myFront=slotRows(me.rank==="front"?[me]:[]);
+  const myBack =slotRows(party.filter(u=>u.rank==="back"));
+  const myFront=slotRows(party.filter(u=>u.rank==="front"));
   /* 倒れた敵も置いたままにする。後列は元からそうしており、前列だけ消していた。
      消すと生き残りが詰めて動き、盤面が縮んで行動一覧の位置が毎ターンずれる。
      倒れた枠は unitCell が dead で灰色にし、canTarget が的から外す。 */
@@ -4577,9 +4616,7 @@ function draw(){
      行動一覧が画面の外へ押し出される。
      段数は倒れた敵を数に入れたまま決めるので、戦闘の途中で盤面の高さは動かない
      （行動一覧の位置がずれると押し間違える）。呼ばれた仲間が増えたときだけ伸びる。 */
-  const held=[slotRows(me.rank==="back"?[me]:[]),slotRows(me.rank==="front"?[me]:[]),
-              slotRows(boardList(foes.filter(f=>f.rank==="front"))),
-              slotRows(boardList(foes.filter(f=>f.rank==="back")))];
+  const held=[myBack,myFront,fFront,fBack];
   const rows=[0,1,2].filter(r=>held.some(c=>c[r]));
   if(!rows.length)rows.push(1);
   let h="";
@@ -4664,22 +4701,25 @@ function addDefBuff(u,v,t){(u.dbuffs=u.dbuffs||[]).push({v,t:t||1});}
    前は me.debuffs という別の配列と me.curse / me.weak というスカラーもあり、
    3通りの持ち方が並んでいた。うち2つは書く側と読む側が繋がっておらず、
    敵の hex は数字を動かしていなかったし、アンチポーションは何も解いていなかった。 */
-function slowSum(){return ailSum(me,"slow");}
+function slowSum(u){return ailSum(u||me,"slow");}
 /* 上限の扱いは、どこから来た上乗せかで変える。
      成長・装備・パッシブ … 上限で止まる。積んでも無駄になる
      スキルのバフ        … 上限を越えられる。その戦闘のあいだだけの伸び
    鈍足で下がるぶんは丸めない。
    （me.order を読む枝があったが、書く場所がどこにも無かったので消した） */
-function dexPassive(){
-  const dp=1+passOn("statDEX")/100;
-  return Math.round(me.DEX*dp)+passOn("dex")+passOn("light")*15
-    +passOn("allround")*3+passOn("slim")*10+passOn("fang")*6;
+function dexPassive(u){
+  u=u||me;
+  const dp=1+passOn("statDEX",u)/100;
+  return Math.round(u.DEX*dp)+passOn("dex",u)+passOn("light",u)*15
+    +passOn("allround",u)*3+passOn("slim",u)*10+passOn("fang",u)*6;
 }
-function dexBuff(){
-  return (me.beast?me.beast.dex:0)+(me.dexUp||0);
+function dexBuff(u){
+  u=u||me;
+  return (u.beast?u.beast.dex:0)+(u.dexUp||0);
 }
-function dexOf(){
-  return Math.max(1,Math.min(STATMAX.DEX,dexPassive())+dexBuff()-slowSum());
+function dexOf(u){
+  u=u||me;
+  return Math.max(1,Math.min(STATMAX.DEX,dexPassive(u))+dexBuff(u)-slowSum(u));
 }
 /* その上乗せ(add)のうち、上限を超えて無駄になっている量。
    「外したら実際にいくつ下がるか」を引いて出すので、
@@ -4722,15 +4762,15 @@ function powOf(u,opt){
     return Math.max(1,Math.round((st+(opt.pow||0)+buffSum(u)-wk)*(1-Math.min(0.6,wp/100))));
   }
   let base=u[u.wep.stat];
-  if(u===me){
-    let bm=1+passOn("stat"+u.wep.stat)/100;
-    if(me.whim===u.wep.stat)bm+=passOn("whim")/100;
+  if(!u.isFoe){
+    let bm=1+passOn("stat"+u.wep.stat,u)/100;
+    if(u.whim===u.wep.stat)bm+=passOn("whim",u)/100;
     base=Math.round(base*bm);
   }
   let p=Math.round(base*statMul(u.wep))+(opt.pow||0);
   if(opt.powMul)p=Math.round(p*opt.powMul);
-  if(u===me&&!opt.noAil){        /* 弱体は敵と同じ扱い。固定値を引いてから割合を掛ける */
-    const wk=ailSum(me,"weak"), wp=ailSum(me,"weakp");
+  if(!u.isFoe&&!opt.noAil){      /* 弱体は敵と同じ扱い。固定値を引いてから割合を掛ける */
+    const wk=ailSum(u,"weak"), wp=ailSum(u,"weakp");
     if(wk||wp)p=Math.max(1,Math.round((p-wk)*(1-Math.min(0.6,wp/100))));
   }
   return p;
@@ -4806,18 +4846,18 @@ function threshold(u,tgt,opt){
     /* 「遠隔武器で前に立つと +1」は外した。
        前に立つ理由が他に無いのに罰だけがあり、
        杖のウィザードは立っているだけで閾値が上限に張り付いていた。 */
-    t+=distTo(tgt);                                      // 立ち位置ぶんの遠さ
+    t+=distTo(tgt,u);                                    // 立ち位置ぶんの遠さ
     t-=(opt.thr||0);
-    if(me.focus)t-=me.focus.v;
-    if(passOn("rank")>0&&tgt.maxHP<me.maxHP)t-=1;
+    if(u.focus)t-=u.focus.v;
+    if(passOn("rank",u)>0&&tgt.maxHP<u.maxHP)t-=1;
   }
   /* 当てる側と避ける側で、見る数字を分ける。
        自分が攻めるとき … 武器に応じた技能（射撃 / 格闘）。DEX は見ない
        敵が攻めるとき   … こちらの DEX（回避）。技能は見ない
      こうすると DEX の仕事が「回避と行動順」だけになり、
      遠隔と近接に別々の腕前が生まれる。                        */
-  if(u===me){
-    t-=skillHit(wepSkill());
+  if(!u.isFoe){
+    t-=skillHit(wepSkill(u));
     /* 相手の素早さ。速い相手ほど当てにくい。
        ここは相手の DEX そのものを見る（こちらの DEX との差では見ない）。
        差にすると自分の DEX がまた命中に効いてしまい、
@@ -4830,8 +4870,8 @@ function threshold(u,tgt,opt){
        画面のどこにも出ず、下がったことが効いているのか分からなかった。
        掛け算のほうは消し、閾値に移して 内訳（thrWhy）に出るようにしてある。
        後列から撃ってくる相手（矢・術）には この項は付かない。 */
-    if(tgt===me&&me.rank==="back"&&u.rank==="front")t+=1;
-    const td=(tgt===me)?dexOf():Math.max(1,tgt.DEX-ailSum(tgt,"slow"));
+    if(!tgt.isFoe&&tgt.rank==="back"&&u.rank==="front")t+=1;
+    const td=(!tgt.isFoe)?dexOf(tgt):Math.max(1,tgt.DEX-ailSum(tgt,"slow"));
     t+=dexStep(td-u.DEX);                                /* こちらの回避 */
   }
   return Math.max(2,Math.min(6,t));
@@ -4851,10 +4891,11 @@ function threshold(u,tgt,opt){
    敵が攻めるときは「前に出ている相手 → 後衛のこちら」で +1。
    後列から撃つ相手（矢・術）には付けない。あちらには後列用の手
    （槍を投げる・種を打つ）が別に用意されていて、重ねると二重になるため。 */
-function distTo(tgt){
-  if(me.wep.type==="ranged")return 0;
+function distTo(tgt,u){
+  u=u||me;
+  if(u.wep.type==="ranged")return 0;
   let d=0;
-  if(me.rank==="back")d++;
+  if(u.rank==="back")d++;
   if(tgt&&tgt.isFoe&&tgt.rank==="back")d++;
   return d;
 }
@@ -4975,11 +5016,11 @@ function gearWithQuality(g,q){
 function shieldOf(u){ return Math.max(0,u.block||0); }
 /* 1ヒットぶんのダメージからシールドを引く */
 function defOf(u){
-  let d=u.VIT+defSum(u)+(u===me?passOn("guard")+(me.tmpDef||0)-passOn("light")*10
-    +passOn("allround")*3+(me.selfDef||0):0);
-  if(u===me)d+=passOn("grace")*4;
-  if(u===me&&passOn("clean")>0&&!me.hurtThisRound)d+=passOn("clean");
-  if(u===me&&me.beast)d=Math.round(d*me.beast.def);
+  let d=u.VIT+defSum(u)+(!u.isFoe?passOn("guard",u)+(u.tmpDef||0)-passOn("light",u)*10
+    +passOn("allround",u)*3+(u.selfDef||0):0);
+  if(!u.isFoe)d+=passOn("grace",u)*4;
+  if(!u.isFoe&&passOn("clean",u)>0&&!u.hurtThisRound)d+=passOn("clean",u);
+  if(!u.isFoe&&u.beast)d=Math.round(d*u.beast.def);
   d=Math.max(0,d-ailSum(u,"break"));   /* 弱化は敵にも自分にも同じように効く */
   return d;
 }   // 構えは防御値に上乗せされる
@@ -5294,13 +5335,14 @@ async function addDice(extra,thr){
   return out;
 }
 function cellOf(u){
-  return u===me?document.querySelector('.cell[data-me="1"]')
-               :document.querySelector(`.cell[data-id="${u.id}"]`);
+  if(!u)return null;
+  return u.isFoe?document.querySelector(`.cell[data-id="${u.id}"]`)
+               :document.querySelector(`.cell[data-me="${u.pid||0}"]`);
 }
 async function lungeUnit(u){
   const c=cellOf(u);if(!c)return;
   const p=c.querySelector(".por");if(!p)return;
-  const dir=(u===me)?1:-1;
+  const dir=u.isFoe?-1:1;
   p.style.transform=`translateX(${dir*16}px)`;
   await wait(130);
   p.style.transform="translateX(0)";
@@ -5323,14 +5365,14 @@ function setHPBar(u,val){
   if(num)num.textContent=`${Math.max(0,Math.round(val))}/${u.maxHP}`;
 }
 function popOn(f,text,cls){
-  const el=document.querySelector(`.cell[data-id="${f.id}"]`);
+  const el=cellOf(f);
   if(!el)return;
   const p=document.createElement("div");p.className="pop "+(cls||"");p.textContent=text;
   el.appendChild(p);
 
 }
-function popSelf(text,cls){
-  const el=document.querySelector('.cell[data-me="1"]');
+function popSelf(text,cls,u){
+  const el=cellOf(u||me);
   if(!el)return;
   const p=document.createElement("div");p.className="pop "+(cls||"");p.textContent=text;
   el.appendChild(p);
@@ -5840,20 +5882,23 @@ function foeModal(f){
 /* first に "me" / "foe" を渡すと、その回だけ DEX を飛び越えて並べ替える。
    索敵で片方だけ成功したときの 1ラウンド目に使う。 */
 function orderOf(first){
-  const dx=u=>(u===me?dexOf():Math.max(1,u.DEX-ailSum(u,"slow")));
+  const dx=u=>(!u.isFoe?dexOf(u):Math.max(1,u.DEX-ailSum(u,"slow")));
   /* noAct … 手番を持たない相手（ガーディアンハンドのような「部位」）。
      盤には立つし狙えるが、順番には並ばない。 */
-  const list=[me,...alive().filter(f=>!f.noAct)].sort((a,b)=>{
+  const list=[...pAlive(),...alive().filter(f=>!f.noAct)].sort((a,b)=>{
     const d=dx(b)-dx(a);
     if(d)return d;
-    return a===me?-1:1;
+    return !a.isFoe?-1:1;
   });
   if(first==="me"||first==="foe"){
-    const rest=list.filter(u=>u!==me);
-    return first==="me"?[me,...rest]:[...rest,me];
+    const mine=list.filter(u=>!u.isFoe), rest=list.filter(u=>u.isFoe);
+    return first==="me"?[...mine,...rest]:[...rest,...mine];
   }
   return list;
 }
+/* 全滅したか。ゲームオーバーは「味方が全員倒れたら」。
+   味方を数えるところは必ずここを通すこと。 */
+function allDown(){ return pAlive().length===0; }
 function buildQueue(){
   /* 索敵の先制が効くのは 1ラウンド目だけ */
   queue=orderOf(round===1?scoutFirst:null); qi=0;
@@ -5862,49 +5907,53 @@ async function runQueue(){
   while(qi<queue.length){
     const u=queue[qi];
     if(u.HP<=0){qi++;continue;}
-    if(u===me){
-      if(me.again){me.again=false;log(`<span class="a">${me.name}</span> は続けて動く`);busy=false;draw();drawActs();return;}
+    if(!u.isFoe){
+      /* いま手番を持っている味方。ここから先の「自分」は me ではなく u。
+         行動一覧も 狙いの閾値も この者のものを出す（actor() を見よ）。 */
+      cur=u;
+      if(u.again){u.again=false;log(`<span class="a">${u.name}</span> は続けて動く`);busy=false;draw();drawActs();return;}
       /* 構えは「殴られて初めて減る」。誰も殴ってこなかった回は そのまま残す。
          前は自分の手番のたびに必ず 0 に戻していたので、相手が守りや溜めに
          回った回は、防御に使った1手が丸ごと消えていた。
          殴られれば落ちるので、安全な回に積み重ねても意味は無い（積むだけ無駄になる）。 */
       /* シールドは 削られたぶんだけ減る器。殴られただけでは消えない。
          使い切るまで残るので、ここでは何もしない。 */
-      if(me.block>0)log(`<span class="a">${me.name}</span> のシールドが残っている　`+
-        `<span class="c">${me.block}</span>`);
-      me.counter=0;me.selfDef=0;
-      if(me.holdDef){
-        me.holdDef.t--;
-        if(me.holdDef.t<0)me.holdDef=null;
-        else me.block+=me.holdDef.v;
+      if(u.block>0)log(`<span class="a">${u.name}</span> のシールドが残っている　`+
+        `<span class="c">${u.block}</span>`);
+      u.counter=0;u.selfDef=0;
+      if(u.holdDef){
+        u.holdDef.t--;
+        if(u.holdDef.t<0)u.holdDef=null;
+        else u.block+=u.holdDef.v;
       }
-      if(me.dbuffs&&me.dbuffs.length){
-        me.dbuffs.forEach(b=>b.t--);me.dbuffs=me.dbuffs.filter(b=>b.t>=0);}
-      if(me.focus){me.focus.t--;if(me.focus.t<0)me.focus=null;}
-      if(me.coat){me.coat.t--;if(me.coat.t<0)me.coat=null;}
-      if(me.beast){me.beast.t--;if(me.beast.t<0)me.beast=null;}
-      if(me.goldPow){me.goldPow.t--;if(me.goldPow.t<0)me.goldPow=null;}
-      if(me.selfPow){me.selfPow.t--;if(me.selfPow.t<0)me.selfPow=null;}
+      if(u.dbuffs&&u.dbuffs.length){
+        u.dbuffs.forEach(b=>b.t--);u.dbuffs=u.dbuffs.filter(b=>b.t>=0);}
+      if(u.focus){u.focus.t--;if(u.focus.t<0)u.focus=null;}
+      if(u.coat){u.coat.t--;if(u.coat.t<0)u.coat=null;}
+      if(u.beast){u.beast.t--;if(u.beast.t<0)u.beast=null;}
+      if(u.goldPow){u.goldPow.t--;if(u.goldPow.t<0)u.goldPow=null;}
+      if(u.selfPow){u.selfPow.t--;if(u.selfPow.t<0)u.selfPow=null;}
       /* 誓いと 休み明けは「効くラウンド」を持たせる。手番のたびに数を減らす形だと
          同じラウンドで手番の処理が二度走ったときに消えてしまう。
          前はここで毎回 me.vow=null にしていたので、宣言は一度も効かなかった。 */
-      if(me.vow&&(round>me.vow.r||!vowTarget()))me.vow=null;
-      if(me.rest&&round>me.rest.r)me.rest=null;
-      me.hurtThisRound=false;me.fixId=null;me.fixN=0;me.attackedLast=false;me.whim=null;me.holdDef=null;
-      if(await ailDot(me)){
-        if(passOn("endure")>0&&!me.endured){me.endured=true;me.HP=1;draw();
-          popSelf("気 合","heal");log(`<span class="a">気 合</span> HP 1 で耐えた`);}
-        else return finish(false);
+      if(u.vow&&(round>u.vow.r||!vowTarget(u)))u.vow=null;
+      if(u.rest&&round>u.rest.r)u.rest=null;
+      u.hurtThisRound=false;u.fixId=null;u.fixN=0;u.attackedLast=false;u.whim=null;u.holdDef=null;
+      if(await ailDot(u)){
+        if(passOn("endure",u)>0&&!u.endured){u.endured=true;u.HP=1;draw();
+          popSelf("気 合","heal",u);log(`<span class="a">気 合</span> HP 1 で耐えた`);}
+        else if(allDown())return finish(false);
+        else {qi++;draw();continue;}
       }
-      ailTick(me);
-      if(ailHas(me,"palsy")){
-        me.ail=(me.ail||[]).filter(a=>a.k!=="palsy");
-        draw();fxOn(me,"guard");popSelf("麻 痺","blk");
-        log(`<span class="a">${me.name}</span> は痺れて動けない`);
+      ailTick(u);
+      if(ailHas(u,"palsy")){
+        u.ail=(u.ail||[]).filter(a=>a.k!=="palsy");
+        draw();fxOn(u,"guard");popSelf("麻 痺","blk",u);
+        log(`<span class="a">${u.name}</span> は痺れて動けない`);
         await wait(600);qi++;await runQueue();return;}
       busy=false;draw();drawActs();return;}
     await enemyAct(u);
-    if(me.HP<=0)return finish(false);
+    if(allDown())return finish(false);
     if(!alive().length)return finish(true);
     qi++;draw();
   }
@@ -5913,6 +5962,9 @@ async function runQueue(){
 
 /* ---------- 敵1体の行動 ---------- */
 async function enemyAct(f){
+  /* 誰を狙うか。味方が1人のうちは必ず主人公。
+     ここから下の「こちら」は me ではなく tg（狙われている味方）。 */
+  const tg=foeTarget(f);
   f.block=0;tickBuffs(f);if(f.sumCd>0)f.sumCd--;if(f.mendCd>0)f.mendCd--;   // 構えとバフはここで切れる
   draw();
   await wait(260);
@@ -5940,7 +5992,7 @@ async function enemyAct(f){
   if(t.k==="atk"){
     /* vsAil … 相手が状態異常を背負っているときだけ 威力が乗る。
        デバフを放置する重さを作るための札 */
-    const bonus=(t.vsAil&&(me.ail||[]).length)?t.vsAil:0;
+    const bonus=(t.vsAil&&(tg.ail||[]).length)?t.vsAil:0;
     if(bonus)log(`<span class="b">${f.name}</span> は弱ったところを狙っている　`+
       `<span class="m">威力 +${bonus}%</span>`);
     const fpow=powOf(f,{pct:(t.pct||0)+bonus,pow:t.pow||0});
@@ -5951,33 +6003,33 @@ async function enemyAct(f){
     }
     const nd=t.dice+sd;
     const rolls=[];for(let i=0;i<nd;i++)rolls.push(r6());
-    const thr=threshold(f,me,{});
-    await rollDice(rolls,thr,`${f.name} → ${me.name}　<em>${nd}d6 ・ ${thr}以上</em>`);
+    const thr=threshold(f,tg,{});
+    await rollDice(rolls,thr,`${f.name} → ${tg.name}　<em>${nd}d6 ・ ${thr}以上</em>`);
     const hits=rolls.filter(v=>v>=thr).length;
     ovHide();
     const ev=rolls.filter(v=>v>=thr).sort((a,b)=>a-b);
     /* ①出目（＋来歴の倍率）→ ②見切り → ③シールド → ④VIT */
     let evs=ev.map(v=>Math.round(hitDmg(fpow,v,thr)*orgMul("inMul")));
-    const halved=me.half;
-    if(me.half){evs=evs.map(v=>Math.round(v/2));me.half=false;}
-    const sh=shieldOf(me);
+    const halved=tg.half;
+    if(tg.half){evs=evs.map(v=>Math.round(v/2));tg.half=false;}
+    const sh=shieldOf(tg);
     /* シールドは 減っていく器。1発目が食い破れば 2発目からは もう無い。 */
     let shLeft=sh;
     const afterSh=evs.map(v=>{const use=Math.min(shLeft,v);shLeft-=use;return v-use;});
     const soaked=sh-shLeft;
-    me.block=shLeft;
-    const mdef=defOf(me);
+    tg.block=shLeft;
+    const mdef=defOf(tg);
     const evShown=afterSh.map(v=>perHit(v,mdef));
     let dmg=evShown.reduce((a,b)=>a+b,0);
-    let endHP0=me.HP-dmg;
-    if(endHP0<=0&&passOn("endure")>0&&!me.endured){
-      me.endured=true;endHP0=1;
+    let endHP0=tg.HP-dmg;
+    if(endHP0<=0&&passOn("endure",tg)>0&&!tg.endured){
+      tg.endured=true;endHP0=1;
       log(`<span class="a">気 合</span> 倒れずに <span class="m">HP 1</span> で踏みとどまった`);
     }
-    const startHP=me.HP, endHP=Math.max(0,endHP0);
-    me.taken=(me.taken||0)+Math.max(0,startHP-endHP);
+    const startHP=tg.HP, endHP=Math.max(0,endHP0);
+    tg.taken=(tg.taken||0)+Math.max(0,startHP-endHP);
     if(startHP>endHP){
-      me.hurtThisRound=true;
+      tg.hurtThisRound=true;
     }
     /* シールドは 殴られたら役目を終える。丸ごと受け止めた回も使ったことにする */
     if(soaked>0){popSelf("シールド −"+soaked,"blk");}
@@ -5986,14 +6038,14 @@ async function enemyAct(f){
       for(let i=0;i<shown;i++){
         await lungeUnit(f);
         SFX.atk(f.snd);
-        fxOn(me,f.snd);
+        fxOn(tg,f.snd);
         const v=(i===shown-1)?evShown.slice(i).reduce((a,b)=>a+b,0):evShown[i];
         popSelf("−"+v,"each");
-        setHPBar(me,startHP-(startHP-endHP)*(i+1)/shown);
+        setHPBar(tg,startHP-(startHP-endHP)*(i+1)/shown);
         await wait(160);
       }
     }else SFX.miss();
-    me.HP=endHP;
+    tg.HP=endHP;
     if(t.drain&&dmg>0){
       const hl=Math.min(Math.round(dmg*t.drain),f.maxHP-f.HP);
       if(hl>0){f.HP+=hl;fxOn(f,"charge");popOn(f,"+"+hl,"heal");
@@ -6002,14 +6054,14 @@ async function enemyAct(f){
     /* 攻撃そのものに状態異常を乗せる。当たったときだけ効く。
        hex と違って「殴りながら崩す」手が書ける。
          {k:"atk",dice:2,pct:-50,ail:{curse:8,t:2}} */
-    if(t.ail&&hits&&me.HP>0){
+    if(t.ail&&hits&&tg.HP>0){
       const A=t.ail, du=A.t||2, put=[];
-      if(A.curse){ailAdd(me,"break",A.curse,du);put.push(`VIT −${A.curse}`);}
-      if(A.slow){ailAdd(me,"slow",A.slow,du);put.push(`DEX −${A.slow}`);}
-      if(A.weak){ailAdd(me,"weakp",A.weak,du);put.push(`威力 −${A.weak}%`);}
-      if(A.blind){ailAdd(me,"blur",A.blind,du);put.push(`命中 −${A.blind}`);}
-      if(A.fear){ailAdd(me,"fear",A.fear,du);put.push(`恐怖 命中 −${A.fear}`);}
-      if(A.poison){ailAdd(me,"poison",A.poison,du);put.push(`毎ターン 毒 ${A.poison}`);}
+      if(A.curse){ailAdd(tg,"break",A.curse,du);put.push(`VIT −${A.curse}`);}
+      if(A.slow){ailAdd(tg,"slow",A.slow,du);put.push(`DEX −${A.slow}`);}
+      if(A.weak){ailAdd(tg,"weakp",A.weak,du);put.push(`威力 −${A.weak}%`);}
+      if(A.blind){ailAdd(tg,"blur",A.blind,du);put.push(`命中 −${A.blind}`);}
+      if(A.fear){ailAdd(tg,"fear",A.fear,du);put.push(`恐怖 命中 −${A.fear}`);}
+      if(A.poison){ailAdd(tg,"poison",A.poison,du);put.push(`毎ターン 毒 ${A.poison}`);}
       if(put.length){
         draw();popSelf("防御−","each");
         log(`　${put.join("　")}　<span class="s">（${du+1}ターン）</span>`);
@@ -6020,15 +6072,15 @@ async function enemyAct(f){
     if(hits){popSelf("−"+dmg);SFX.dmg();}
     /* 反撃は シールドで消したぶんも含めて返す。
        受け止めた一撃こそ返したいので、HP が減った量ではなく 来た量で測る。 */
-    if(me.counter&&raw>0&&f.HP>0){
-      const back=Math.max(1,Math.round(raw*me.counter));
+    if(tg.counter&&raw>0&&f.HP>0){
+      const back=Math.max(1,Math.round(raw*tg.counter));
       f.HP=Math.max(0,f.HP-back);
       fxOn(f,"slash");popOn(f,"−"+back,"each");SFX.dmg();
       log(`　<span class="a">反撃</span>　<span class="b">${f.name}</span> に <span class="m">${back}</span>`);
       draw();await wait(360);
       if(f.HP<=0)draw();
     }
-    log(`<span class="b">${f.name}</span> → <span class="a">${me.name}</span>　`+
+    log(`<span class="b">${f.name}</span> → <span class="a">${tg.name}</span>　`+
       `${nd}d6 <span class="m">${hits}ヒット</span>　`+
       `威力 ${fpow}　${ev.map((v,i)=>
         `${v}の目 ${evs[i]}${evs[i]!==evShown[i]?`<span class="c">→${evShown[i]}</span>`:""}`
@@ -6127,7 +6179,7 @@ async function enemyAct(f){
     await wait(620);
   }else if(t.k==="hex"){
     /* デバフ専用の手も1回だけ振る。前は判定なしで必ず入っていた */
-    const RA=ailRoll(f,me,{});
+    const RA=ailRoll(f,tg,{});
     if(!RA.ok){
       draw();popSelf("効かない","blk");
       log(`<span class="b">${f.name}</span> の <span class="c">${t.n}</span>　`+
@@ -6138,15 +6190,15 @@ async function enemyAct(f){
        それを読む計算がどこにも無く、ログと表示だけ出て数字が動いていなかった。
        weak は 1 につき 15% の威力低下（前の表示に合わせてある）。 */
     const dur=t.dur||2, msg=[];
-    if(t.curse){ailAdd(me,"break",t.curse,dur);msg.push(`VIT <span class="m">−${t.curse}</span>`);}
-    if(t.weak){ailAdd(me,"weakp",t.weak*15,dur);msg.push(`威力 <span class="m">−${t.weak*15}%</span>`);}
-    if(t.weakPct){ailAdd(me,"weakp",t.weakPct,dur);msg.push(`威力 <span class="m">−${t.weakPct}%</span>`);}
-    if(t.slow){ailAdd(me,"slow",t.slow,dur);msg.push(`DEX <span class="m">−${t.slow}</span>`);}
-    if(t.blind){ailAdd(me,"blur",t.blind,dur);msg.push(`命中が <span class="m">${t.blind}</span> 遠のく`);}
-    if(t.fear){ailAdd(me,"fear",t.fear,dur);msg.push(`竦んで 命中が <span class="m">${t.fear}</span> 遠のく`);}
-    if(t.poison){ailAdd(me,"poison",t.poison,dur);msg.push(`毎ターン <span class="m">${t.poison}</span> の毒`);}
-    if(t.dice){ailAdd(me,"shrink",t.dice,dur);msg.push(`攻撃ダイス <span class="m">−${t.dice}</span>`);}
-    draw();fxOn(me,"magic");
+    if(t.curse){ailAdd(tg,"break",t.curse,dur);msg.push(`VIT <span class="m">−${t.curse}</span>`);}
+    if(t.weak){ailAdd(tg,"weakp",t.weak*15,dur);msg.push(`威力 <span class="m">−${t.weak*15}%</span>`);}
+    if(t.weakPct){ailAdd(tg,"weakp",t.weakPct,dur);msg.push(`威力 <span class="m">−${t.weakPct}%</span>`);}
+    if(t.slow){ailAdd(tg,"slow",t.slow,dur);msg.push(`DEX <span class="m">−${t.slow}</span>`);}
+    if(t.blind){ailAdd(tg,"blur",t.blind,dur);msg.push(`命中が <span class="m">${t.blind}</span> 遠のく`);}
+    if(t.fear){ailAdd(tg,"fear",t.fear,dur);msg.push(`竦んで 命中が <span class="m">${t.fear}</span> 遠のく`);}
+    if(t.poison){ailAdd(tg,"poison",t.poison,dur);msg.push(`毎ターン <span class="m">${t.poison}</span> の毒`);}
+    if(t.dice){ailAdd(tg,"shrink",t.dice,dur);msg.push(`攻撃ダイス <span class="m">−${t.dice}</span>`);}
+    draw();fxOn(tg,"magic");
     popSelf(t.curse?"防御−":t.dice?"手数−":"威力−","each");SFX.atk("magic");
     log(`<span class="b">${f.name}</span> の <span class="c">${t.n}</span>　`+
       (msg.length?msg.join("　")+`　<span class="s">（${dur+1}ターン）</span>`:"効き目がなかった"));
@@ -6219,10 +6271,14 @@ async function enemyAct(f){
 }
 
 async function endRound(){
-  me.sk.forEach(s=>{if(s.cdLeft>0)s.cdLeft--;});
-  me.MP=Math.min(me.maxMP,me.MP+1);
+  /* 再使用待ちと MP の自然回復は 味方ひとりひとりに起きる */
+  party.forEach(u=>{
+    (u.sk||[]).forEach(s=>{if(s.cdLeft>0)s.cdLeft--;});
+    u.MP=Math.min(u.maxMP,u.MP+1);
+    u.hurtThisRound=false;
+  });
   const de0=dragEase();
-  round++;me.hurtThisRound=false;
+  round++;
   /* 段が1つ下りた回だけ知らせる。黙って当たりやすくなると気づけない */
   if(dragEase()>de0)
     log(`<span class="c">長 引 き</span> 双方の命中閾値が <span class="m">−${dragEase()}</span>（${DRAGCAP}まで）`);
@@ -6236,11 +6292,11 @@ async function endRound(){
   await runQueue();
 }
 async function finish(win){
-  over=true;busy=false;pending=null;
+  over=true;busy=false;pending=null;cur=null;
   /* 状態異常は戦闘の中だけのもの。持続をターン数で測っているので、
      手番の無い探索中に持ち越すと永久に減らない。戦闘が終わったら必ず落とす。
      （前は次の戦闘の開始時に消していたので、探索中だけ中途半端に残っていた） */
-  me.ail=[];
+  party.forEach(u=>{u.ail=[];});
   $("#prompt").textContent="";
   if(!win){
     $("#acts").innerHTML=`<div class="end lose">戦 死</div>`;
@@ -6442,7 +6498,7 @@ function runResume(){
   if(!r){ runClear(); drawHome(); return; }
   sel.job=r.sel.job;sel.race=r.sel.race;sel.orig=r.sel.orig;
   sel.area=r.sel.area;sel.luk=r.sel.luk;sel.lukD=r.sel.lukD;
-  me=r.me; owned=r.owned||[];
+  me=r.me; setParty([me]); owned=r.owned||[];
   RUN={id:r.id||runNewId(), act:r.run.act||0, area:r.run.area, seen:r.run.seen||[],
        curKey:r.run.curKey||null, cur:null, path:r.run.path||[],
        M:r.run.M, stock:r.run.stock||null, shopRecipe:r.run.shopRecipe,
@@ -7365,6 +7421,7 @@ function price(base){
 /* ---- 進行 ---- */
 function startRun(){
   me=makeMe();
+  setParty([me]);
   markSeen("w_"+me.baseWep);
   me.gold=(ORIG[sel.orig]&&ORIG[sel.orig].startGold)||30;
   /* id は「どの潜行か」の目印。クラウドと突き合わせるときに、
@@ -9566,10 +9623,16 @@ function prepareBattle(){
   }
   round=1;over=false;busy=true;pending=null;scoutBonus=0;
   fleeUsed=false;foeStart=foes.length;
-  queue=[me,...foes];qi=-1;
+  cur=me;
+  queue=[...party,...foes];qi=-1;
   scoutFirst=null;
-  me.block=0;me.dbuffs=[];me.half=false;me.rank="front";me.tmpPow=0;me.tmpDef=0;me.ail=[];me.counter=0;me.focus=null;me.dexUp=0;me.again=null;me.selfDef=0;me.endured=false;me.coat=null;me.beast=null;me.goldPow=null;me.selfPow=null;me.taken=0;me.vow=null;me.rest=null;
-  me.sk.forEach(k=>k.cdLeft=0);
+  /* 戦闘のあいだだけ持つものは、味方ひとりひとりで落とす */
+  party.forEach(u=>{
+    u.block=0;u.dbuffs=[];u.half=false;u.rank="front";u.tmpPow=0;u.tmpDef=0;u.ail=[];
+    u.counter=0;u.focus=null;u.dexUp=0;u.again=null;u.selfDef=0;u.endured=false;
+    u.coat=null;u.beast=null;u.goldPow=null;u.selfPow=null;u.taken=0;u.vow=null;u.rest=null;
+    (u.sk||[]).forEach(k=>k.cdLeft=0);
+  });
   $("#acts").innerHTML="";
   $("#stageLbl").textContent=`${RUN.act+1}階層　${RUN.cur?RUN.cur.name:""}`+
     (RUN.elite?"　［手練れ］":RUN.boss?"　［ボス］":"");

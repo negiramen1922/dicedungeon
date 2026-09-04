@@ -573,6 +573,48 @@ const defAdd=Math.max(it.def||0, it.defPct?Math.round(me.DEF*it.defPct/100):0);
 だから DEF の割合は **装備に追随する**のであって、レベルには追随しない。
 `shieldAmount` が 最大HP を土台にしているのは、こうならないため。
 
+#### 味方は配列で持つ（`party`／α0.0047・段1）
+
+こちら側は長らく `me` という 1つの変数だった。パーティ（3人）にするにあたり、
+**「こちら側は1人」を前提にした書き方を全部たたんだ**。人数はまだ 1 のまま。
+
+```javascript
+let party=[];              /* party[0] は必ず主人公。pid は盤面のマスを引く番号 */
+let cur=null;              /* いま手番を持っている味方 */
+const actor=()=>cur||me;   /* 戦っていないあいだは主人公 */
+function setParty(list){ party=list||[me]; party.forEach((u,i)=>{u.pid=i;u.isFoe=false;}); }
+const pAlive=()=>party.filter(u=>u.HP>0);
+const pIn=r=>pAlive().filter(u=>u.rank===r);
+const pFrontOpen=()=>pIn("front").length===0;
+function allDown(){ return pAlive().length===0; }   /* ゲームオーバーの判定 */
+function foeTarget(f){ ... }                        /* 敵が狙う味方 */
+```
+
+守るべき決まりは3つ。
+
+1. **`u===me` で味方かどうかを判定しない。`!u.isFoe` を使う。**
+   `powOf` / `defOf` / `threshold` / `orderOf` / `runQueue` は全部これに直した。
+   `u===me` のままだと 2人目が「敵でも味方でもない者」になる。
+2. **「誰の」を受け取る。**`passOn(k,u)` / `passNames(k,u)` / `dexOf(u)` /
+   `distTo(tgt,u)` / `vowTarget(u)` / `wepSkill(u)` は みな第2引数（または引数）に
+   持ち主を取り、省いたときだけ `me` を見る。`PCOND` の条件式も `u=>` の形にした。
+3. **味方を数えるところは必ず `pAlive()` / `allDown()` を通す。**
+   `me.HP<=0` で負けを判定していた枝（`runQueue` の2か所）は `allDown()` にした。
+   ここを直に書くと、2人目を足したときに「1人倒れたら全滅」になる。
+
+盤面（`draw`）・行動順（`orderOf`）・ラウンドの終わり（`endRound`）・
+戦闘の後始末（`finish`）・戦闘の開始（`prepareBattle`）は `party.forEach` で回す。
+マスは `data-me="<pid>"`、引くのは `cellOf(u)`。
+
+**まだ `me` 直書きが残っているのは、こちらの行動そのもの**
+（`playerAttack` / `resolvePlayer` / `drawActs` / `canTarget` / `charModal`）。
+「誰の手番の行動一覧を出すか」は 2人目を足すとき（段2）に `actor()` へ寄せる。
+
+段1 は**挙動を1ミリも変えていない**。確かめ方は
+`audit.mjs`（区画ごとの 被/T）と `statmap.mjs` の出力が **md5 まで一致すること**、
+`thrchk2.mjs` の食い違い 0件、`smoke.mjs` 140戦・`play.mjs` の問題 0件。
+段2 以降も、釣り合いを触らない段では同じ確かめ方をすること。
+
 #### 「効くラウンド」で持つもの（`me.vow`・`me.rest`）
 
 ```javascript
