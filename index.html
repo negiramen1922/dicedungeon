@@ -89,7 +89,7 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 
 /* ===== 戦場 ===== */
 .field{background:var(--panel);border:1px solid var(--line);padding:9px 6px 8px;position:relative}
-.hdr5,.board{display:grid;grid-template-columns:1fr 1fr 20px 1fr 1fr;gap:3px}
+.hdr5,.board{display:grid;grid-template-columns:1fr 1fr 18px 1fr 1fr;gap:3px}
 .hdr5{margin-bottom:4px}
 .hdr5 div{font-size:9px;letter-spacing:.16em;color:var(--ink);text-align:center}
 .hdr5 .mine{color:var(--moss)} .hdr5 .theirs{color:var(--blood)}
@@ -960,10 +960,7 @@ body.play .fh1{padding-right:62px}
     <div class="detail hide" id="detail"></div>
   </div>
   <div class="field">
-    <div class="hdr5">
-      <div class="mine">味方 後列</div><div class="mine">味方 前列</div><div></div>
-      <div class="theirs">敵 前列</div><div class="theirs">敵 後列</div>
-    </div>
+    <div class="hdr5" id="hdr"></div>
     <div class="board" id="board"></div>
     <div class="diceOv" id="diceOv"></div>
   </div>
@@ -3115,7 +3112,7 @@ const ITEMS={
  mana:{n:"マナポーション",d:"MP を 12 回復する",cost:30,mp:12,anywhere:true,tier:1},
  elixir:{n:"エリクサー",d:"MP を 30 回復する",cost:64,mp:30,anywhere:true,tier:3},
  dynamite:{n:"ダイナマイト",d:"敵1体に 70 の固定ダメージ。VITを無視する",cost:44,dmg:70,target:true,tier:1},
- napalm:{n:"ナパーム",d:"敵の一つの列すべてに 55 の固定ダメージ",cost:62,dmg:55,all:true,target:true,tier:2},
+ napalm:{n:"ナパーム",d:"手前の3体に 55 の固定ダメージ",cost:62,dmg:55,all:true,target:true,tier:2},
  harden:{n:"硬化のポーション",d:"次に受けるダメージを半分にする",cost:24,half:true,tier:1},
  might:{n:"力のポーション",d:"この戦闘の間 威力 +20%（最低でも +14）",cost:38,pow:14,powPct:20,tier:1},
  ward:{n:"鋼の護符",d:"この戦闘の間 VIT +30%（最低でも +8）",cost:34,def:8,defPct:30,tier:1},
@@ -3336,11 +3333,11 @@ const GROW={
 };
 const JOB={
   knight:{n:"ナイト",art:"knight",wep:"longsword",scout:3,
-    d:"前で受けて耐える。後列には手が届かない。",
+    d:"前で受けて耐える。奥の相手には 遠さのぶん 当てにくい。",
     st:{STR:30,DEX:18,INT:15,VIT:8,HP:175,MP:16},
     sk:[]},
   archer:{n:"アーチャー",art:"archer",wep:"bow",scout:5,
-    d:"後衛から後列を撃ち抜ける。",
+    d:"どこからでも 奥の相手を 遠さなしで撃ち抜ける。",
     st:{STR:24,DEX:34,INT:18,VIT:5,HP:135,MP:18},
     sk:[]},
   scout:{n:"スカウト",art:"scout",wep:"dagger",scout:7,
@@ -3386,23 +3383,26 @@ const REW={
    {id:"ak6",n:"威 圧",kind:"atk",mp:3,cd:3,powMul:0.5,ail:[{k:"weak",v:12,t:2}],
     d:"相手の威力 −12（3ターン）"},
    {id:"ak7",n:"薙ぎ払い",kind:"atk",mp:5,cd:3,all:true,powMul:0.7,front:true,
-    d:"敵前列すべてを巻き込む（威力 7割）"},
+    d:"手前の3体を巻き込む（威力 7割）"},
   ],
   archer:[
    {id:"aa1",n:"徹甲矢",kind:"atk",mp:6,cd:4,powMul:1.1,pen:1,
     d:"相手の VIT を 完全に 無視する　威力 ×1.1"},
    {id:"aa2",n:"貫通矢",kind:"atk",mp:5,cd:3,column:true,
-    d:"同じ列の 前衛と後衛 を 縦に貫く"},
+    d:"狙った相手と その1つ奥を 貫く"},
    {id:"aa3",n:"集 中",kind:"focus",mp:3,cd:3,thr:2,dur:1,
     d:"命中閾値 −2（2ターンのあいだ）"},
    {id:"aa4",n:"狙 撃",kind:"atk",mp:5,cd:3,powMul:1.12,backOnly:true,
-    d:"敵の後列だけを狙う。前列を無視する　威力 ×1.12"},
+    d:"先頭以外を狙う。手前を飛び越して撃つ　威力 ×1.12"},
    {id:"aa5",n:"乱れ撃ち",kind:"atk",mp:5,cd:3,even:true,powMul:0.85,
     d:"偶数の目がすべて命中になる（威力 85%）"},
+   /* toBack（撃って後衛へ下がる）は 一列にして 隊列が動かなくなったので
+      働かなくなった。旗は残してあるが どこも読んでいない。
+      この技に何を持たせるかは 未決（IDEAS §15）。いまはダイス +1 だけの技。 */
    {id:"aa6",n:"退き撃ち",kind:"atk",mp:5,cd:2,dice:1,toBack:true,
-    d:"後衛に下がりながら射る　攻撃ダイス +1"},
+    d:"身を退きながら射る　攻撃ダイス +1"},
    {id:"aa7",n:"アローレイン",kind:"atk",mp:6,cd:3,all:true,powMul:0.75,
-    d:"一つの列すべてを射る（威力 75%）"},
+    d:"手前の3体を射る（威力 75%）"},
   ],
   scout:[
    {id:"as1",n:"二段突き",kind:"atk",mp:5,cd:3,dice:2,
@@ -3437,10 +3437,10 @@ const REW={
     d:"水　威力 ×1.2　弱化（VIT −10　3ターン）"},
    {id:"am6",n:"インフェルノ",kind:"atk",mp:7,cd:4,all:true,powMul:0.75,el:"fire",
     ail:[{k:"burn",v:8,t:2}],
-    d:"火　一つの列すべて（威力 75%）　火傷（残HPの 8%　3ターン）"},
+    d:"火　手前の3体（威力 75%）　火傷（残HPの 8%　3ターン）"},
    {id:"am7",n:"アースクエイク",kind:"atk",mp:7,cd:4,all:true,powMul:0.75,el:"earth",
     ail:[{k:"slow",v:8,t:2}],
-    d:"土　一つの列すべて（威力 75%）　鈍足（DEX −8　3ターン）"},
+    d:"土　手前の3体（威力 75%）　鈍足（DEX −8　3ターン）"},
   ],
   dwarf:[
    {id:"akd1",n:"岩砕き",kind:"atk",mp:5,cd:3,powMul:1.35,el:"blunt",
@@ -3540,16 +3540,16 @@ const REW={
   knight:[
    {id:"pk1",n:"防 壁",ef:{k:"guard",v:5,w:"always"},d:"常時 → VIT +5"},
    {id:"pk2",n:"仁王立ち",ef:{k:"guard",v:12,w:"hp50"},d:"HP50%以下 → VIT +12"},
-   {id:"pk3",n:"前線騎士",ef:{k:"powp",v:16,w:"front"},d:"前衛にいる間 → 威力 +16%"},
+   {id:"pk3",n:"前線騎士",ef:{k:"powp",v:16,w:"front"},d:"列の先頭に立っている間 → 威力 +16%"},
    {id:"pk4",n:"重 装",ef:{k:"powp",v:14,w:"def10"},d:"VIT が 10 以上 → 威力 +14%"},
    {id:"pk5",n:"硬 化",ef:{k:"guard",v:6,w:"guarded"},d:"防御を選んだターン → VIT がさらに +6"},
   ],
   archer:[
    {id:"pa1",n:"ホークアイ",ef:{k:"scout",v:1,w:"always"},d:"常時 → 索敵ダイス +1"},
    {id:"pa2",n:"初 撃",ef:{k:"powp",v:25,w:"r1"},d:"第1ラウンド → 威力 +25%"},
-   {id:"pa3",n:"遠 見",ef:{k:"powp",v:18,w:"back"},d:"後衛にいる間 → 威力 +18%"},
-   {id:"pa4",n:"羽 音",ef:{k:"dice",v:1,w:"back"},d:"後衛にいる間 → 攻撃ダイス +1"},
-   {id:"pa5",n:"護身術",ef:{k:"guard",v:7,w:"front"},d:"前衛にいる間 → VIT +7"},
+   {id:"pa3",n:"遠 見",ef:{k:"powp",v:18,w:"back"},d:"先頭より後ろにいる間 → 威力 +18%"},
+   {id:"pa4",n:"羽 音",ef:{k:"dice",v:1,w:"back"},d:"先頭より後ろにいる間 → 攻撃ダイス +1"},
+   {id:"pa5",n:"護身術",ef:{k:"guard",v:7,w:"front"},d:"列の先頭に立っている間 → VIT +7"},
   ],
   scout:[
    {id:"ps1",n:"死 角",ef:{k:"six",v:10,w:"always"},d:"6 の目 1 個につき ダメージ +10"},
@@ -3558,7 +3558,7 @@ const REW={
    {id:"ps4",n:"先 手",ef:{k:"dice",v:2,w:"r1"},d:"第1ラウンド → 攻撃ダイス +2"},
    {id:"ps5",n:"影縫い",ef:{k:"pin",v:3,w:"always"},d:"1 度に 3 ヒット以上 当てると 相手が 鈍足になる"},
   ],
-  mage:[{id:"pm1",n:"魔力循環",ef:{k:"powp",v:18,w:"back"},d:"後衛にいる間 → 威力 +18%"},
+  mage:[{id:"pm1",n:"魔力循環",ef:{k:"powp",v:18,w:"back"},d:"先頭より後ろにいる間 → 威力 +18%"},
         {id:"pm2",n:"賢 者",ef:{k:"maxmp",v:8,w:"always"},d:"常時 → 最大MP +8"},
         {id:"pm3",n:"瞑 想",ef:{k:"medit",v:4,w:"always"},d:"防御を選ぶと MP が さらに +4"},
         {id:"pm4",n:"魔力の器",ef:{k:"powp",v:20,w:"mp50"},d:"MP が半分以上 → 威力 +20%"},
@@ -3580,7 +3580,7 @@ const REW={
        {id:"pre4",n:"細 身",ef:{k:"slim",v:1,w:"always"},d:"常時 → DEX +10　最大HP −10%"},
        {id:"pre5",n:"一人主義",ef:{k:"powp",v:10,w:"solo"},d:"同じ列に味方がいなければ 威力 +10%"}],
   beast:[{id:"prb1",n:"血の匂い",ef:{k:"blood",v:20,w:"always"},d:"HP が半分以下の敵への ダメージ +20%"},
-         {id:"prb2",n:"獰 猛",ef:{k:"powp",v:16,w:"front"},d:"前衛にいる間 → 威力 +16%"},
+         {id:"prb2",n:"獰 猛",ef:{k:"powp",v:16,w:"front"},d:"列の先頭に立っている間 → 威力 +16%"},
          {id:"prb3",n:"野生の勘",ef:{k:"scout",v:1,w:"always"},d:"常時 → 索敵ダイス +1"},
          {id:"prb4",n:"牙と爪",ef:{k:"fang",v:1,w:"always"},d:"常時 → DEX +6　威力 +8%"},
          {id:"prb5",n:"捕 食",ef:{k:"feed",v:8,w:"always"},d:"敵を倒すと 最大HPの 8% を回復する"}],
@@ -3627,8 +3627,8 @@ const PCOND={
   hp70:u=>u.HP<=Math.ceil(u.maxHP*0.7),
   hp50:u=>u.HP<=Math.ceil(u.maxHP*0.5),
   hp30:u=>u.HP<=Math.ceil(u.maxHP*0.3),
-  front:u=>u.rank==="front",
-  back:u=>u.rank==="back",
+  front:u=>depthOf(u)===0,      /* 列の先頭に立っている間 */
+  back :u=>depthOf(u)>0,        /* 先頭より後ろにいる間 */
   def10:u=>(u.VIT+(u.block||0))>=10,
   guarded:u=>(u.block||0)>0,
   mp50:u=>u.MP>=u.maxMP*0.5,
@@ -4101,7 +4101,7 @@ function makeMe(){
     base:base,grow:{STR:0,DEX:0,INT:0,VIT:0,HP:0,MP:0},
     eq:{wep:null,armor:null,acc:[]},stash:[],
     gold:0,bag:{},mats:{},recipes:[],lv:1,exp:0,
-    sk:[],pass:[],block:0,half:false,rank:"front"};
+    sk:[],pass:[],block:0,half:false};
   recalcMe(m,true);
   return m;
 }
@@ -4174,6 +4174,8 @@ function makeFoes(){
          こちらの DEX だけが青天井に育ち、スカウトは木漏れ日の森の時点で
          敵の命中閾値が全部 6 に張り付いていた（当たる率 17%）。 */
       DEX:Math.round(f.DEX*(1+(dm-1)*0.6)),
+      /* rank は もう立ち位置ではない。**列のどのあたりに並びたいか**の目安で、
+         下の sortLine が これを見て 手前／奥 を決める。flex はその場で決まる */
       rank:(f.flex?(Math.random()<0.5?"front":"back"):f.rank),turn:0,
       block:0,buffs:[],dbuffs:[],ail:[],stun:false,isFoe:true,tele:null,lastAid:null,sumCd:0,sumUsed:false};
   });
@@ -4184,37 +4186,72 @@ function makeFoes(){
       f.partOf=b?b.id:null;
     }
   });
-  return out;
+  return sortLine(out);        /* ここで一度だけ 1本の列に並べる */
 }
-/* かばう … 守り手（部位）を連れている相手を狙うと、いちばん HP の多い守り手が身代わりになる */
-function coverOf(t){
-  if(!t||!t.isFoe||!t.guardKey)return t;
-  const gs=alive().filter(f=>f.isFoe&&f.key===t.guardKey&&f.partOf===t.id);
-  if(!gs.length)return t;
-  return gs.slice().sort((a,b)=>b.HP-a.HP)[0];
-}
-/* 狙い先をまとめて守り手に振り替える。重なった先は1つにまとめる */
+/* かばう … 一列にしたので、身代わりの特別扱いは要らなくなった。
+   守り手（部位）は sortLine が本体より手前に並べる。手前を片付けなければ
+   本体には +2 を払って殴ることになる、というだけで同じ働きをする。
+   ここは重なった狙い先をまとめるだけの関数として残す。 */
 function coverList(ts){
-  const said=new Set(), out=[];
-  ts.forEach(t=>{
-    const c=coverOf(t);
-    if(c!==t&&!said.has(c.id)){
-      said.add(c.id);
-      log(`<span class="c">${c.name}</span> が <span class="b">${t.name}</span> を かばった`);
-    }
-    if(c.HP>0&&!out.includes(c))out.push(c);
-  });
+  const out=[];
+  ts.forEach(t=>{ if(t&&t.HP>0&&!out.includes(t))out.push(t); });
   return out;
 }
 const alive=()=>foes.filter(f=>f.HP>0);
-/* 味方側。敵の alive / aliveIn / frontOpen と同じ形にそろえてある */
 const pAlive=()=>party.filter(u=>u.HP>0);
-const pIn=r=>pAlive().filter(u=>u.rank===r);
-const pFrontOpen=()=>pIn("front").length===0;
+/* 遭遇の顔ぶれを 1本の列に並べる。並べ方はこの3つだけ。
+     ① 部位（partOf を持つ者）は 本体より手前。門を殴るには まず手を落とす
+     ② FOE の rank が "front" の者が手前、"back" の者が奥。
+        rank はもう立ち位置ではなく、**列のどのあたりに並びたいか**の目安
+     ③ 同じなら 遭遇に書かれた順
+   並べ替えは戦闘に入る前の一度きり。戦闘中に列が動くことはない。 */
+function sortLine(list){
+  const key=f=>(f.partOf!==null&&f.partOf!==undefined)?0:(f.rank==="back"?2:1);
+  return list.map((f,i)=>({f,i}))
+             .sort((a,b)=>(key(a.f)-key(b.f))||(a.i-b.i))
+             .map(x=>x.f);
+}
 const onBoard=()=>foes.filter(f=>f.HP>0);
-const aliveIn=r=>alive().filter(f=>f.rank===r);
-function frontOpen(){return aliveIn("front").length===0;}
-/* 近接で狙えるか：敵前列が生きているなら前列のみ、全滅なら後列も殴れる */
+
+/* ===== 立ち位置 — 横一列（α0.0048） =====
+   味方も敵も 1本の列に並ぶ。party / foes の配列の順が そのまま並び順で、
+   配列の先頭が いちばん手前。前列／後列 という2つの列はもう無い。
+
+   遠さは **生きている者の中で何番目か** で決まる。
+
+     先頭        命中閾値 ±0
+     1つ奥       命中閾値 +1
+     2つ奥から   命中閾値 +2（そこで頭打ち）
+
+   先頭が倒れれば 次の者が繰り上がり、その者の遠さは ひとりでに消える。
+   倒れた者は盤に残るが、遠さの数には入らない。
+
+   **遠隔（弓・術）は 遠さを払わない。**近接だけが払う。
+   自分がどこに立っているかは 命中に効かない（狙われやすさのほうに効く）。
+   届く／届かない という決まりは無くなった。**誰でも狙える。奥ほど当てにくいだけ。** */
+const DEPTHCAP=2;      /* 3番目より奥は みな +2 */
+const AOEMAX=3;        /* 範囲攻撃が巻き込む数（手前から） */
+const LINEMAX=6;       /* 1本の列に並べられる上限（呼ばれた仲間もここまで） */
+const foeLine  =()=>alive();
+const partyLine=()=>pAlive();
+function lineOf(u){ return u.isFoe?foeLine():partyLine(); }
+/* その者が いま列の何番目か（生きている者だけを数える） */
+function depthOf(u){
+  const i=lineOf(u).indexOf(u);
+  return i<0?0:Math.min(DEPTHCAP,i);
+}
+/* その一撃が遠隔か。
+   味方は武器の型。敵は音（弓・術）か、その技が「奥から使う技」（pos:"back"）か。 */
+function isRanged(u,act){
+  if(!u.isFoe)return !!(u.wep&&u.wep.type==="ranged");
+  if(act&&act.pos==="back")return true;
+  return u.snd==="bow"||u.snd==="magic";
+}
+/* 遠さぶんの命中閾値。**狙う相手が その列の何番目にいるか**だけで決まる */
+function reachOf(u,tgt,act){
+  if(!tgt||isRanged(u,act))return 0;
+  return depthOf(tgt);
+}
 function vowTarget(u){
   u=u||actor();
   if(!u.vow||u.vow.id===null)return null;
@@ -4226,24 +4263,24 @@ function vowGone(u){
   return !!(u.vow&&(!t||t.HP<=0));
 }
 /* 敵が狙う味方。いまは 1人しかいないので必ず主人公が返る。
-   段2 で「前列を優先し、たまに後列」といった選び方をここに入れる。
+   奥の味方を狙う敵を作るときは ここに枝を足す。
    敵側が味方を指すところは 必ずこれを通すこと。 */
+/* 敵が狙う味方。列の先頭を狙う。
+   奥を狙う敵を作るときは ここに枝を足すこと（狙えばそのぶん命中閾値を払う）。 */
 function foeTarget(f){
-  /* 味方の前列が立っているうちは そちら。全員下がったら後列も狙われる */
-  const live=pFrontOpen()?pAlive():pIn("front");
-  return live[0]||me;
+  return partyLine()[0]||me;
 }
+/* 狙えるか。一列なので **誰でも狙える**。奥ほど当てにくいだけ。
+   技に付いた条件（狙撃は先頭以外・不意打ちは自分より遅い相手）だけが的を絞る。 */
 function canTarget(f){
   if(f.HP<=0)return false;
-  if(me.vow&&me.vow.id!==null&&round>=me.vow.r&&f.id!==me.vow.id
+  const A=actor();
+  if(A.vow&&A.vow.id!==null&&round>=A.vow.r&&f.id!==A.vow.id
     &&!(pending&&pending.item))return false;
   if(pending&&pending.item)return true;      // 投げる道具はどこにでも届く
-  if(pending&&pending.backOnly)return f.rank==="back";
-  if(pending&&pending.slower)return f.DEX<dexOf();
-  if(me.wep.type==="ranged")return true;
-  /* 後衛からでも近接は届く。そのぶん命中閾値を払う（distTo を見よ）。
-     前は後衛から一切殴れなかったので、近接には「下がる」という手が無かった。 */
-  return f.rank==="front"||frontOpen();
+  if(pending&&pending.backOnly)return depthOf(f)>0;   // 狙撃：先頭以外
+  if(pending&&pending.slower)return f.DEX<dexOf(A);
+  return true;
 }
 
 /* ---------- 予告 ---------- */
@@ -4312,7 +4349,9 @@ async function checkPhase(f){
 }
 function chooseTele(f){
   /* 決まった順番の行動（seq）。味方が絶えたら solo の行動だけを回す */
-  const alone=aliveIn("front").filter(x=>x!==f).length===0;
+  /* ひとりきりか。一列になったので「前列に他がいるか」ではなく
+     「列に自分以外が生きていないか」で見る */
+  const alone=alive().filter(x=>x!==f).length===0;
   if(f.acts.some(a=>a.solo)&&alone){
     const sp=f.acts.filter(a=>a.solo);
     const st=sp.reduce((x,a)=>x+(a.w||1),0);
@@ -4339,10 +4378,15 @@ function chooseTele(f){
   const pool=f.acts.filter(a=>{
     if(a.hidden)return false;                       // 単体では選ばれない
     if(a.seq)return false;                          // 決まった手番でのみ出る
-    if(a.needFront&&aliveIn("front").filter(x=>x!==f).length===0)return false;
-    if(a.noFront&&aliveIn("front").filter(x=>x!==f).length>0)return false;
-    if(a.pos&&a.pos!==f.rank)return false;          // 立ち位置で使い分ける
-    if(a.k==="cheer")return aliveIn("front").length>0;
+    /* 盾になる者が前にいて はじめて使える手（守りの霧・骨の壁）と、
+       前が空いて はじめて使う手。一列では「自分より前に生きている者」で見る */
+    if(a.needFront&&depthOf(f)===0)return false;
+    if(a.noFront&&depthOf(f)>0)return false;
+    /* 立ち位置で使い分ける。pos:"front" は先頭でのみ、pos:"back" は奥でのみ。
+       サハギンなら 先頭で三叉槍、奥から槍を投げる */
+    if(a.pos==="front"&&depthOf(f)!==0)return false;
+    if(a.pos==="back" &&depthOf(f)===0)return false;
+    if(a.k==="cheer")return alive().length>1;
     /* 癒やす手は、深く傷ついた味方がいるときだけ出す。
        元気な相手に撃って手番を捨てられると、置いた意味がなくなる。 */
     /* 祓う手は、状態異常を背負った味方がいるときだけ出す */
@@ -4360,10 +4404,8 @@ function chooseTele(f){
       /* すでに子が出ているなら呼ばない（数えるのは count、既定は呼ぶ相手） */
       if(a.ifUnder){const ks=a.count||[a.who];
         if(alive().filter(x=>x.isFoe&&ks.includes(x.key)).length>=a.ifUnder)return false;}
-      if(a.alone&&alive().filter(x=>x!==me).length>1)return false;
-      /* 前列が満杯でも、後列が空いていれば呼べる */
-      return aliveIn("front").length<3
-        ||(a.back!==false&&aliveIn("back").length<3);
+      if(a.alone&&alive().length>1)return false;
+      return alive().length<LINEMAX;      /* 列に空きがあるうちだけ呼べる */
     }
     if(AIDK.includes(a.k)&&f.lastAid===a.n)return false;   // 同じ強化・弱体は連続しない
     return true;
@@ -4383,18 +4425,19 @@ function telePreview(f,tt){
   const t=tt||f.tele;
   if(!t)return {txt:"—",sub:"",danger:false};
   if(t.k==="atk"){
-    const b0=(t.vsAil&&(me.ail||[]).length)?t.vsAil:0;
+    const tg=foeTarget(f);
+    const b0=(t.vsAil&&(tg.ail||[]).length)?t.vsAil:0;
     const fpow=powOf(f,{pct:(t.pct||0)+b0,pow:t.pow||0});
-    const far=(f.rank==="front"&&me.rank==="back");
+    const far=reachOf(f,tg,t);
     const sd=f.scoutDice||0;
     const nd=t.dice+sd;
-    const thr=threshold(f,me,{});
+    const thr=threshold(f,tg,{act:t});
     /* 予告の数字も 本番と同じ順で出す（出目 → 見切り → シールド → VIT） */
-    const sh=shieldOf(me), mdef=defOf(me);
+    const sh=shieldOf(tg), mdef=defOf(tg);
     /* シールドは 減っていく器なので 1ヒットあたりの数には織り込まない。別に出す。 */
     const one=v=>{
       let d=Math.round(hitDmg(fpow,v,thr)*orgMul("inMul"));
-      if(me.half)d=Math.round(d/2);
+      if(tg.half)d=Math.round(d/2);
       return perHit(d,mdef);
     };
     const per=one(thr), hiOne=one(6);
@@ -4408,7 +4451,7 @@ function telePreview(f,tt){
         (t.ail?`　／　当たると ${[t.ail.curse&&`VIT −${t.ail.curse}`,t.ail.slow&&`DEX −${t.ail.slow}`,
           t.ail.weak&&`威力 −${t.ail.weak}%`,t.ail.blind&&`命中 −${t.ail.blind}`,
           t.ail.poison&&`毒 ${t.ail.poison}`].filter(Boolean).join("・")}`:"")+
-        (far?`　／　<span style="color:#8fd0ff">後衛なので 当てにくい（閾値 +1）</span>`:""),danger:true};
+        (far?`　／　<span style="color:#8fd0ff">${depthOf(tg)+1}番目なので 当てにくい（閾値 +${far}）</span>`:""),danger:true};
   }
   if(t.k==="guard")return {txt:"◈ "+t.n,
     sub:t.defUp?`VIT +${t.defUp}　${t.dur||1}ターン`
@@ -4418,7 +4461,7 @@ function telePreview(f,tt){
        :t.pow?`自分の威力 +${t.pow}　${t.dur||1}ターン`
              :`自分の速さ +${t.dex}　この戦闘のあいだ`,danger:false};
   if(t.k==="cheer")return {txt:"▲ "+t.n,
-    sub:`前列すべての威力 ${t.pctUp?`+${t.pctUp}%　${t.dur||1}ターン`:`+${t.pow}`}`,danger:false};
+    sub:`仲間ぜんぶの威力 ${t.pctUp?`+${t.pctUp}%　${t.dur||1}ターン`:`+${t.pow}`}`,danger:false};
   if(t.k==="summon")return {txt:"✚ "+t.n,
     sub:`${FOE[t.who].n} を 1〜${t.num||3} 体 呼ぶ`,danger:true};
   if(t.k==="regen")return {txt:"✚ "+t.n,sub:`自分の HP を ${t.heal} 回復する`,danger:false};
@@ -4432,7 +4475,7 @@ function telePreview(f,tt){
       `　${(t.dur||2)+1}ターン`+(t.dice?`　＋ ${t.dice}d6 の侵蝕`:"")+
       `　<span class="s">／ 通る率 ${Math.round((7-ailThr(f,me,{}))/6*100)}%</span>`,danger:true};
   if(t.k==="veil")return {txt:"◈ "+t.n,
-    sub:`前列すべてに シールド ${t.block?t.block:`最大HPの ${t.blockPct}%`}`,danger:false};
+    sub:`仲間ぜんぶに シールド ${t.block?t.block:`最大HPの ${t.blockPct}%`}`,danger:false};
   if(t.k==="idle")return {txt:"◦ "+t.n,sub:t.d||"",danger:false};
   if(t.k==="cleanse")return {txt:"✦ "+t.n,
     sub:`味方ひとりの 状態異常を すべて解く`,danger:true};
@@ -4460,14 +4503,15 @@ function shownTele(u){
   return acted?{t:u.next||u.tele,lbl:"次のターン",nx:null}
               :{t:u.tele,lbl:"このターン",nx:u.next};
 }
-function unitCell(u,isMine){
+function unitCell(u,isMine,fig){
+  fig=fig||40;
   const st=isMine?null:shownTele(u);
   const p=isMine?null:telePreview(u,st.t);
   const target=!isMine&&pending&&canTarget(u);
   const col=isMine?"#8fa261":"#b1544a";
   return `<div class="cell ${u.HP<=0?"dead":""} ${target?"sel":""}"
       ${isMine?`data-me="${u.pid||0}"`:`data-id="${u.id}"`}>
-    <div class="por">${isMine?meFig(40):foeFig(u.fig||u.key,40)}</div>
+    <div class="por">${isMine?meFig(fig):foeFig(u.fig||u.key,fig)}</div>
     <div class="cn ${isMine?"mine":"foe"}">${u.name}</div>
     <div class="chp">${Math.max(0,u.HP)}/${u.maxHP}</div>
     <div class="bar ${isMine?"me":""}"><i style="width:${Math.max(0,u.HP/u.maxHP*100)}%"></i></div>
@@ -4495,11 +4539,11 @@ function slotRows(list){
    生きている者を押し出すと、その敵は絵が出ず、的として押せなくなる
    （仲間を呼ぶ敵がいると起きる）。並び順は変えないので位置は動かない。 */
 function boardList(list){
-  if(list.length<=3)return list;
+  if(list.length<=LINEMAX)return list;
   const live=list.filter(f=>f.HP>0);
-  if(live.length>=3)return live.slice(0,3);
+  if(live.length>=LINEMAX)return live.slice(0,LINEMAX);
   const keep=new Set(live);
-  list.filter(f=>f.HP<=0).slice(0,3-live.length).forEach(f=>keep.add(f));
+  list.filter(f=>f.HP<=0).slice(0,LINEMAX-live.length).forEach(f=>keep.add(f));
   return list.filter(f=>keep.has(f));
 }
 /* 行動の種類をアイコンに */
@@ -4566,7 +4610,7 @@ function drawDetail(){
   const mine=`<div class="drow">${meFig(28)}
     <div style="flex:1;min-width:0">
       <div class="dnm" style="color:var(--moss)">${me.name}
-        <span style="color:#6f7a63;font-size:10px">${me.rank==="front"?"前衛":"後衛"}　
+        <span style="color:#6f7a63;font-size:10px">${lineMark(me).replace(/<[^>]*>/g,"")}　
         HP ${Math.max(0,me.HP)}/${me.maxHP}　MP ${me.MP}/${me.maxMP}　VIT ${defOf(me)}　速 ${dexOf()}</span>
         </div>
       ${ailText(me)?`<div class="dline"><span class="k">状 態</span>${ailText(me)}</div>`:""}
@@ -4592,7 +4636,7 @@ function drawDetail(){
     return `<div class="drow">${foeFig(f.key,28)}
       <div style="flex:1;min-width:0">
         <div class="dnm">${f.name}　<span style="color:#6f7a63;font-size:10px">${
-          f.rank==="front"?"前列":"後列"}　HP ${Math.max(0,f.HP)}/${f.maxHP}${
+          lineMark(f).replace(/<[^>]*>/g,"")}　HP ${Math.max(0,f.HP)}/${f.maxHP}${
           c>=3?`　VIT ${defOf(f)}　速 ${Math.max(1,f.DEX-ailSum(f,"slow"))}`:""}</span>${
           w?` <span class="elw">弱 ${ELEM[w].n}</span>`:""}${
           r?` <span class="elr">耐 ${ELEM[r].n}</span>`:""}</div>
@@ -4604,33 +4648,44 @@ function drawDetail(){
       </div></div>`;
   }).join("");
 }
+/* 盤面は 1段の横並び。中央の隙間をはさんで 左が味方、右が敵。
+   **どちらの列も 隙間に近いほうが先頭。**味方は右詰め、敵は左詰めになるので、
+   向かい合った2人がいつも隙間をはさんで隣り合う。
+
+   倒れた者も枠は残す。消すと生き残りが詰めて動き、盤面が縮んで
+   行動一覧の位置が毎ターンずれる（押し間違える）。
+   倒れた枠は unitCell が dead で灰色にし、canTarget が的から外す。 */
 function draw(){
-  const myBack =slotRows(party.filter(u=>u.rank==="back"));
-  const myFront=slotRows(party.filter(u=>u.rank==="front"));
-  /* 倒れた敵も置いたままにする。後列は元からそうしており、前列だけ消していた。
-     消すと生き残りが詰めて動き、盤面が縮んで行動一覧の位置が毎ターンずれる。
-     倒れた枠は unitCell が dead で灰色にし、canTarget が的から外す。 */
-  const fFront=slotRows(boardList(foes.filter(f=>f.rank==="front")));
-  const fBack =slotRows(boardList(foes.filter(f=>f.rank==="back")));
-  /* 使う段だけ描く。3段を常に敷くと、敵1体の戦闘で 200px 以上が空のまま残り、
-     行動一覧が画面の外へ押し出される。
-     段数は倒れた敵を数に入れたまま決めるので、戦闘の途中で盤面の高さは動かない
-     （行動一覧の位置がずれると押し間違える）。呼ばれた仲間が増えたときだけ伸びる。 */
-  const held=[myBack,myFront,fFront,fBack];
-  const rows=[0,1,2].filter(r=>held.some(c=>c[r]));
-  if(!rows.length)rows.push(1);
+  const mine=party.slice(0,LINEMAX);
+  const theirs=boardList(foes).slice(0,LINEMAX);
+  /* 絵の大きさは 列が長いほど小さく。呼ばれた仲間で列が伸びても はみ出さない */
+  const wide=mine.length+theirs.length;
+  const fig=wide>=8?30:wide>=7?34:40;
+  $("#board").style.gridTemplateColumns=
+    `repeat(${mine.length},1fr) 18px repeat(${theirs.length},1fr)`;
+  $("#hdr").style.gridTemplateColumns=
+    `repeat(${mine.length},1fr) 18px repeat(${theirs.length},1fr)`;
   let h="";
-  rows.forEach(r=>{
-    h+=myBack[r] ?unitCell(myBack[r],true) :emptyCell();
-    h+=myFront[r]?unitCell(myFront[r],true):emptyCell();
-    h+=`<div class="gap"></div>`;
-    h+=fFront[r] ?unitCell(fFront[r],false):emptyCell();
-    h+=fBack[r]  ?unitCell(fBack[r],false) :emptyCell();
-  });
+  mine.slice().reverse().forEach(u=>{h+=unitCell(u,true,fig);});   /* 先頭を隙間側へ */
+  h+=`<div class="gap"></div>`;
+  theirs.forEach(f=>{h+=unitCell(f,false,fig);});
   $("#board").innerHTML=h;
+  /* 見出しは「何番目か」。遠さを払う相手がひと目で分かる */
+  let hh="";
+  mine.slice().reverse().forEach(u=>{
+    hh+=`<div class="${u.HP>0?"mine":""}">${u.HP>0?lineMark(u):"—"}</div>`;});
+  hh+=`<div></div>`;
+  theirs.forEach(f=>{
+    hh+=`<div class="${f.HP>0?"theirs":""}">${f.HP>0?lineMark(f):"—"}</div>`;});
+  $("#hdr").innerHTML=hh;
   drawOrder();
   bindCells();
   if(pending)bindTargets();   /* 的を選ぶ最中は、選べるマスだけそちらで上書きする */
+}
+/* 列のなかの位置と、そこを狙うときの上乗せ */
+function lineMark(u){
+  const d=depthOf(u);
+  return d?`${d+1}番目 <b style="color:#e0b83a">+${d}</b>`:"先 頭";
 }
 /* 盤面の誰かを押したら、その者の詳細を開く。
    的を選んでいる最中は選択のほうが大事なので何もしない（bindTargets が受け持つ）。 */
@@ -4837,6 +4892,9 @@ function threshold(u,tgt,opt){
   t-=dragEase();                         /* 長引くほど 双方が当てやすくなる */
   t+=ailSum(u,"blur");                   /* 盲目：狙いが定まらない */
   t+=ailSum(u,"fear");                   /* 恐怖：竦んで手元が狂う */
+  /* 遠さ。狙う相手が その列の何番目にいるかで決まる。敵味方どちらも同じ。
+     遠隔（弓・術）は払わない。opt.act は敵の技（pos:"back" なら投げ物） */
+  t+=reachOf(u,tgt,opt.act);
   if(!u.isFoe&&tgt.key){
     const c=codexLv(tgt.key);
     if(c>=2)t-=1;      /* 3戦 */
@@ -4846,7 +4904,6 @@ function threshold(u,tgt,opt){
     /* 「遠隔武器で前に立つと +1」は外した。
        前に立つ理由が他に無いのに罰だけがあり、
        杖のウィザードは立っているだけで閾値が上限に張り付いていた。 */
-    t+=distTo(tgt,u);                                    // 立ち位置ぶんの遠さ
     t-=(opt.thr||0);
     if(u.focus)t-=u.focus.v;
     if(passOn("rank",u)>0&&tgt.maxHP<u.maxHP)t-=1;
@@ -4865,64 +4922,36 @@ function threshold(u,tgt,opt){
        鈍足をかければ相手の DEX が下がるので、そのぶん当てやすくなる。 */
     t+=dexStep(Math.max(1,tgt.DEX-ailSum(tgt,"slow")));
   }else{
-    /* 前に出ている相手が 後衛のこちらへ手を伸ばすと届きにくい。
-       もとは「1ヒットの威力 ×0.6」という見えない掛け算だったので、
-       画面のどこにも出ず、下がったことが効いているのか分からなかった。
-       掛け算のほうは消し、閾値に移して 内訳（thrWhy）に出るようにしてある。
-       後列から撃ってくる相手（矢・術）には この項は付かない。 */
-    if(!tgt.isFoe&&tgt.rank==="back"&&u.rank==="front")t+=1;
     const td=(!tgt.isFoe)?dexOf(tgt):Math.max(1,tgt.DEX-ailSum(tgt,"slow"));
     t+=dexStep(td-u.DEX);                                /* こちらの回避 */
   }
   return Math.max(2,Math.min(6,t));
 }
-/* 立ち位置ぶんの遠さ。こちらが攻めるときだけ使う。
-   **遠隔は 距離で損をしない。近接だけが 1マスにつき +1 を払う。**
-
-     近接 前衛 → 前衛                    ±0
-     近接 前衛 → 後衛（敵の前列がいる）   届かない（canTarget が弾く）
-     近接 前衛 → 後衛（敵の前列がいない） +1
-     近接 後衛 → 前衛                    +1
-     近接 後衛 → 後衛（敵の前列がいない） +2
-     遠隔 どこから どこへ                ±0
-
-   届くかどうか（敵の前列が生きているか）と、届いたときの罰（距離）は別の話。
-   罰のほうは 純粋に立ち位置だけで決まる。
-   敵が攻めるときは「前に出ている相手 → 後衛のこちら」で +1。
-   後列から撃つ相手（矢・術）には付けない。あちらには後列用の手
-   （槍を投げる・種を打つ）が別に用意されていて、重ねると二重になるため。 */
-function distTo(tgt,u){
-  u=u||me;
-  if(u.wep.type==="ranged")return 0;
-  let d=0;
-  if(u.rank==="back")d++;
-  if(tgt&&tgt.isFoe&&tgt.rank==="back")d++;
-  return d;
-}
 /* 命中閾値が いくつになっているのか、何がそれを動かしているのかを並べて返す。
    threshold() と同じ順で同じものを足すこと。片方だけ直すと嘘の内訳が出る。 */
-function thrWhy(tgt,opt){
+function thrWhy(tgt,opt,u){
   opt=opt||{};
+  u=u||actor();
   const T=[{n:"基 本",v:4}];
   const de=dragEase();
   if(de)T.push({n:"長 引 き",v:-de});
-  const bl=ailSum(me,"blur"), fe=ailSum(me,"fear");
+  const bl=ailSum(u,"blur"), fe=ailSum(u,"fear");
   if(bl)T.push({n:"盲 目",v:bl});
   if(fe)T.push({n:"恐 怖",v:fe});
-  const sk=skillHit(wepSkill());
-  if(sk)T.push({n:SK[wepSkill()].n.replace(/ /g,""),v:-sk});
+  const sk=skillHit(wepSkill(u));
+  if(sk)T.push({n:SK[wepSkill(u)].n.replace(/ /g,""),v:-sk});
   if(tgt&&tgt.key){
     const c=codexLv(tgt.key);
     if(c>=2)T.push({n:"図鑑 3戦",v:-1});
     if(c>=3)T.push({n:"図鑑 6戦",v:-1});
   }
   if(tgt){
-    const dd=distTo(tgt);
-    if(dd)T.push({n:"遠 さ",v:dd});
+    const dd=reachOf(u,tgt);
+    if(dd)T.push({n:`遠 さ（${depthOf(tgt)+1}番目）`,v:dd});
   }
   if(opt.thr)T.push({n:"技 の 補 正",v:-opt.thr});
-  if(me.focus)T.push({n:"狙 い",v:-me.focus.v});
-  if(passOn("rank")>0&&tgt&&tgt.maxHP<me.maxHP)T.push({n:"格 下",v:-1});
+  if(u.focus)T.push({n:"狙 い",v:-u.focus.v});
+  if(passOn("rank",u)>0&&tgt&&tgt.maxHP<u.maxHP)T.push({n:"格 下",v:-1});
   if(tgt){
     const d=dexStep(Math.max(1,tgt.DEX-ailSum(tgt,"slow")));
     if(d)T.push({n:"相手の速さ",v:d});
@@ -5082,21 +5111,8 @@ function drawActs(){
   add("def","防 御 す る",`シールド ${blockValue()}（受けたぶんを肩代わり）　MP +${GUARD_MP}　再使用待ち −1`
     +`　<span style="color:#8fd0ff">使い切るまで残る</span>`,false,
     ()=>doAct({kind:"guard",block:blockValue()}));
-  /* 立ち位置の説明。α0.0040 で「威力4割減」も「後衛から近接できない」も無くなったので、
-     いまの決まり（守りは 前に出ている相手の閾値 +1、攻めは 近接だけが遠さを払う）に合わせる。 */
-  const melee=me.wep.type==="melee";
-  if(me.rank==="front")
-    add("mv","後ろへ下がる",
-      `<span style="color:#8fd0ff">前に出ている相手の 命中閾値 +1</span>　`+
-      (melee?`<span style="color:#e0b83a">近接の命中閾値も +1</span>`
-            :`遠隔の当たり方は 変わらない`),false,
-      ()=>doAct({kind:"move",to:"back"}));
-  else
-    add("mv","前へ出る",
-      `<span style="color:#e0b83a">前に出ている相手に 当てられやすくなる</span>　`+
-      (melee?`<span style="color:#8fd0ff">近接の命中閾値が 元に戻る</span>`
-            :`遠隔の当たり方は 変わらない`),false,
-      ()=>doAct({kind:"move",to:"front"}));
+  /* 「前へ出る／後ろへ下がる」は 一列にしたときに外した（α0.0048）。
+     戦闘に入ったら 隊列は動かない。組み替えは戦闘の外でする。 */
   {
     const od=fleeOdds();
     add("flee","逃 げ る",
@@ -5108,18 +5124,18 @@ function drawActs(){
   }
   me.sk.forEach((s,i)=>{
     const noMp=me.MP<s.mp,onCd=s.cdLeft>0;
-    const needFront=s.front&&me.rank!=="front";
+    const needFront=s.front&&depthOf(actor())!==0;
     const tooLate=s.earlyOnly&&round>s.earlyOnly;
     const noTgt=s.kind==="atk"&&(s.backOnly
-      ? !alive().some(f=>f.rank==="back")
+      ? !alive().some(f=>depthOf(f)>0)
       : (s.slower? !alive().some(f=>f.DEX<dexOf()) : !foes.some(canTarget)))
       ||(s.kind==="atk"&&vowGone());
-    const why=needFront?"前衛でのみ":noTgt?"届く相手がいない":
+    const why=needFront?"先頭でのみ":noTgt?"狙える相手がいない":
       (onCd?`あと ${s.cdLeft} ターン`:`MP ${s.mp}・再使用 ${s.cd}`);
     /* 当てる技だけ、その技の補正込みの閾値を出す */
     let tt="";
     if(s.kind==="atk"&&!noTgt&&!needFront&&!tooLate){
-      const f=s.backOnly?(x=>x.rank==="back"&&x.HP>0)
+      const f=s.backOnly?(x=>depthOf(x)>0&&x.HP>0)
              :s.slower ?(x=>x.DEX<dexOf()&&x.HP>0)
              :null;
       const t=thrText({thr:s.thr||0,even:s.even},f);
@@ -5224,12 +5240,10 @@ function fleeBack(){
   resultModal("逃 走",lines,btns);
 }
 
-/* 同じ縦位置の相手を探す（貫通矢） */
+/* 貫通矢が抜けた先。一列になったので「狙った相手の 1つ奥」 */
 function columnMate(t){
-  const same=alive().filter(f=>f.rank===t.rank);
-  const i=same.indexOf(t);
-  const other=alive().filter(f=>f.rank!==t.rank);
-  return other[i]||null;
+  const L=foeLine(), i=L.indexOf(t);
+  return (i<0?null:L[i+1])||null;
 }
 function askTarget(a){
   const s=a.kind==="skill"?me.sk[a.i]:null;
@@ -5667,10 +5681,6 @@ async function resolvePlayer(a,target){
   }else if(a.kind==="skill"){
     const s=me.sk[a.i];
     me.MP-=s.mp;s.cdLeft=s.cd;
-    if(s.toBack&&me.rank!=="back"){
-      me.rank="back";draw();
-      log(`<span class="a">${me.name}</span> は後衛へ下がった`);
-    }
     log(`<span class="a">${me.name}</span> が <span class="c">${s.n}</span>（MP −${s.mp}）`);
     if(s.kind==="guard"){
       const amt=shieldAmount(me,s);
@@ -5766,14 +5776,16 @@ async function resolvePlayer(a,target){
     else{
       let ts=[target];
       if(s.all){
-        const rank=s.anyRank?(aliveIn("back").length&&me.wep.type==="ranged"&&aliveIn("front").length===0?"back":"front"):"front";
-        ts=aliveIn(rank);
+        /* 範囲は 手前から3体。前は「前列ぜんぶ（最大3）」だったので、
+           一列にしても重みが変わらないよう 3 で止める */
+        ts=foeLine().slice(0,AOEMAX);
         if(!ts.length)ts=alive();
         log(`<span class="a">範囲攻撃</span> ${ts.map(x=>x.name).join("・")} を巻き込む`);
       }
       if(s.pierce){
-        const same=alive().filter(x=>x.rank===target.rank);
-        ts=same.slice(0,2);
+        /* 貫通は 狙った相手と その1つ奥。一列になって ようやく言葉どおりになった */
+        const L=foeLine(), i=L.indexOf(target);
+        ts=i<0?[target]:L.slice(i,i+2);
         if(ts.length>1)log(`<span class="a">貫通</span> ${ts.map(x=>x.name).join("・")} を貫く`);
       }
       if(s.allFoes){
@@ -5821,10 +5833,6 @@ async function resolvePlayer(a,target){
     log(`<span class="a">${me.name}</span> は身を固めた　<span class="c">VIT ${me.VIT}+${me.block}</span>`+
       (gm?`　MP <span class="m">+${gm}</span>`:"")+`　再使用待ちが1進む`);
     await wait(600);
-  }else if(a.kind==="move"){
-    me.rank=a.to;SFX.move();draw();
-    log(`<span class="a">${me.name}</span> は ${a.to==="front"?"前へ出た":"後ろへ下がった"}`);
-    await wait(500);
   }else if(a.kind==="flee"){
     fleeUsed=true;
     const ok=await fleeRoll();
@@ -5855,7 +5863,7 @@ function foeModal(f){
     <div style="text-align:center;line-height:0;margin-bottom:8px">${foeFig(f.fig||f.key,64)}</div>
     <div class="mgrow">
       HP <b>${Math.max(0,f.HP)}</b>/${f.maxHP}　
-      ${f.rank==="front"?"前列":"後列"}　
+      ${lineMark(f).replace(/<[^>]*>/g,"")}　
       図鑑 ${c}/5${nx?`<span class="s">（あと ${nx} 戦）</span>`:""}
       ${ek.weak?`　<span class="elw">弱 ${ELEM[ek.weak].n}</span>`:""}
       ${ek.resist?`　<span class="elr">耐 ${ELEM[ek.resist].n}</span>`:""}
@@ -6003,7 +6011,7 @@ async function enemyAct(f){
     }
     const nd=t.dice+sd;
     const rolls=[];for(let i=0;i<nd;i++)rolls.push(r6());
-    const thr=threshold(f,tg,{});
+    const thr=threshold(f,tg,{act:t});
     await rollDice(rolls,thr,`${f.name} → ${tg.name}　<em>${nd}d6 ・ ${thr}以上</em>`);
     const hits=rolls.filter(v=>v>=thr).length;
     ovHide();
@@ -6124,18 +6132,19 @@ async function enemyAct(f){
     await wait(450);
   }else if(t.k==="cheer"){
     f.lastAid=t.n;
-    aliveIn("front").forEach(x=>{
+    /* 一列になったので「前列へ」ではなく「自分以外の仲間 全員へ」 */
+    const cheered=alive().filter(x=>x!==f);
+    cheered.forEach(x=>{
       addBuff(x,t.pctUp?Math.round(x.STR*t.pctUp/100):t.pow,t.dur||1);});
-    draw();aliveIn("front").forEach(x=>{fxOn(x,"charge");
+    draw();cheered.forEach(x=>{fxOn(x,"charge");
       popOn(x,t.pctUp?"力+"+t.pctUp+"%":"力+"+t.pow,"blk");});SFX.open();
-    log(`<span class="b">${f.name}</span> が前列を鼓舞した（威力 `+
+    log(`<span class="b">${f.name}</span> が仲間を鼓舞した（威力 `+
       (t.pctUp?`<span class="m">+${t.pctUp}%</span>　${t.dur||1}ターン`:`+${t.pow}`)+`）`);await wait(500);
   }else if(t.k==="summon"){
     f.lastAid=t.n;f.sumUsed=true;f.sumCd=t.cd||0;
     /* 前列が埋まっていたら後列へ回す。num で 1dN を指定できる（既定 1d3） */
     const roll=1+Math.floor(Math.random()*(t.num||3));
-    const n=Math.min(roll,(3-aliveIn("front").length)
-      +(t.back!==false?3-aliveIn("back").length:0));
+    const n=Math.min(roll,LINEMAX-alive().length);   /* 列の空きぶんだけ */
     if(n<=0){log(`<span class="b">${f.name}</span> は呼んだが、誰も来なかった`);await wait(450);}
     else{
       const dm=depthMul();
@@ -6143,11 +6152,10 @@ async function enemyAct(f){
         const base=FOE[t.who];
         const hp=Math.round(base.HP*dm);
         const nf={...base,id:foes.length,key:t.who,
-          name:base.n+" "+"ABCVIT"[foes.filter(x=>x.key===t.who).length],
+          name:base.n+" "+"ABCDEF"[foes.filter(x=>x.key===t.who).length],
           maxHP:hp,HP:hp,STR:Math.round(base.STR*(1+(dm-1)*0.6)),
           DEX:Math.round(base.DEX*(1+(dm-1)*0.6)),
           block:0,buffs:[],ail:[],stun:false,isFoe:true,owner:f.id,
-          rank:aliveIn("front").length<3?"front":"back",
           tele:null,next:null,lastAid:null,turn:0,sumCd:0,sumUsed:false};
         nf.tele=chooseTele(nf);nf.next=chooseTele(nf);
         foes.push(nf);
@@ -6251,21 +6259,24 @@ async function enemyAct(f){
     /* 割れて中身が出る。殻そのものは消え、同じ立ち位置を中身が引き継ぐ */
     const dm=depthMul(), base=FOE[t.who], hp=Math.round(base.HP*dm);
     const nf={...base,id:foes.length,key:t.who,
-      name:base.n+" "+"ABCVIT"[foes.filter(x=>x.key===t.who).length],
+      name:base.n+" "+"ABCDEF"[foes.filter(x=>x.key===t.who).length],
       maxHP:hp,HP:hp,STR:Math.round(base.STR*(1+(dm-1)*0.6)),
       DEX:Math.round(base.DEX*(1+(dm-1)*0.6)),
-      block:0,buffs:[],ail:[],stun:false,isFoe:true,rank:f.rank,
+      block:0,buffs:[],ail:[],stun:false,isFoe:true,
       tele:null,next:null,lastAid:null,turn:0,sumCd:0,sumUsed:false};
     f.HP=0;                                   // 殻は割れて残らない
     nf.tele=chooseTele(nf);nf.next=chooseTele(nf);
-    foes.push(nf);queue.push(nf);
+    /* 殻のいた場所に そのまま入る。列の最後尾に付け足すと、
+       手前で割れたはずの中身が いきなり奥から出てくることになる */
+    foes.splice(foes.indexOf(f)+1,0,nf);queue.push(nf);
     draw();drawOrder();fxOn(nf,"charge");SFX.found();
     log(`<span class="c">${f.name}</span> が割れ、<span class="b">${nf.name}</span> が這い出した`);
     await wait(700);
   }else if(t.k==="veil"){
-    aliveIn("front").forEach(x=>{const a=shieldAmount(x,t);x.block+=a;});
-    draw();aliveIn("front").forEach(x=>{fxOn(x,"guard");popOn(x,"+"+shieldAmount(x,t),"blk");});SFX.open();
-    log(`<span class="b">${f.name}</span> が霧を張った（前列に <span class="c">シールド</span>）`);await wait(500);
+    const veiled=alive().filter(x=>x!==f);
+    veiled.forEach(x=>{const a=shieldAmount(x,t);x.block+=a;});
+    draw();veiled.forEach(x=>{fxOn(x,"guard");popOn(x,"+"+shieldAmount(x,t),"blk");});SFX.open();
+    log(`<span class="b">${f.name}</span> が霧を張った（仲間に <span class="c">シールド</span>）`);await wait(500);
   }
   await opening();          /* 大振りの技は、振り抜いたあと隙になる */
 }
@@ -8846,7 +8857,7 @@ function chBodyEq(){
         me.eq.wep?me.eq.wep.n:w.n}</b>　${w.d||""}
       <br><span style="color:var(--ink)">攻撃ダイス ${w.hands}　威力 ${
         Math.round(statMul(w)*100)}%（${w.stat} ×${statMul(w).toFixed(2)}）　${
-        w.type==="melee"?"近接・敵前列のみ":"遠隔・後列も狙える"}
+        w.type==="melee"?"近接・奥は 遠さのぶん当てにくい":"遠隔・奥でも 遠さを払わない"}
         　→ 1ヒット <b>${powOf(me,{})}</b></span></span></div>`;
   h+=eqRow(me.eq.armor?itemIcon(armorIcon(me.eq.armor),16):tagFig("armor",12),"防 具",me.eq.armor);
   for(let i=0;i<ACCMAX;i++){
@@ -9491,7 +9502,8 @@ async function doItem(k,tgt){
     log(`<span class="a">${it.n}</span> が <span class="b">${tgt.name}</span> を捕らえた`);
   }
   if(it.dmg){
-    const list=coverList(it.all?alive().filter(f=>f!==me&&f.rank===(tgt?tgt.rank:"front")):[tgt]);
+    /* ナパームのような「一つの列すべて」は 手前から AOEMAX 体 */
+    const list=coverList(it.all?foeLine().slice(0,AOEMAX):[tgt]);
     for(const t of list){
       if(!t)continue;
       const d=it.dmg+Math.round(it.dmg*0.25*RUN.act);
@@ -9628,7 +9640,7 @@ function prepareBattle(){
   scoutFirst=null;
   /* 戦闘のあいだだけ持つものは、味方ひとりひとりで落とす */
   party.forEach(u=>{
-    u.block=0;u.dbuffs=[];u.half=false;u.rank="front";u.tmpPow=0;u.tmpDef=0;u.ail=[];
+    u.block=0;u.dbuffs=[];u.half=false;u.tmpPow=0;u.tmpDef=0;u.ail=[];
     u.counter=0;u.focus=null;u.dexUp=0;u.again=null;u.selfDef=0;u.endured=false;
     u.coat=null;u.beast=null;u.goldPow=null;u.selfPow=null;u.taken=0;u.vow=null;u.rest=null;
     (u.sk||[]).forEach(k=>k.cdLeft=0);
@@ -10052,7 +10064,7 @@ function cxBody(){
         return `<div class="cxrow"><span class="cxfig">${foeFig(k,30)}</span>
           <span class="cxn">${f.n}<i>${c}/5</i>${
             nx?`<em class="cxnx">あと ${nx} 戦</em>`:""}</span>
-          <span class="cxd">${f.rank==="front"?"前列":"後列"}${
+          <span class="cxd">${f.rank==="back"?"奥に立つ":"手前に立つ"}${
             c>=2?`　HP ${f.HP}　攻 ${f.STR}`:""}${
             c>=3?`　VIT ${f.VIT}　速 ${f.DEX}`:""}${
             ek.weak?`　<b class="elw">弱 ${ELEM[ek.weak].n}</b>`:""}${
