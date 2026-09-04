@@ -621,6 +621,19 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .lvrow b{color:var(--bone)} .lvrow b.up{color:var(--moss)}
 /* ===== ホーム ===== */
 #home{text-align:center;padding:40px 0 20px}
+.townnote{text-align:center;font-size:11px;color:var(--dim);margin:6px 0 2px;
+  font-family:"DotGothic16",ui-monospace,monospace;letter-spacing:.04em}
+.townnote b{color:var(--bone)}
+.townparty{display:flex;gap:5px;justify-content:center;margin:10px 0 4px;flex-wrap:wrap}
+.tpc{background:var(--panel);border:1px solid var(--line);color:var(--bone);
+  display:flex;flex-direction:column;align-items:center;gap:1px;
+  padding:7px 9px;cursor:pointer;font-family:inherit;min-width:78px}
+.tpc:hover{border-color:var(--brass)}
+.tpc svg{display:block}
+.tpn{font-size:10px;letter-spacing:.06em;margin-top:3px}
+.tph{font-size:9px;color:var(--dim);font-family:"DotGothic16",ui-monospace,monospace}
+.tph.down{color:var(--blood)}
+.tpl{font-size:9px;color:#c9a227;font-family:"DotGothic16",ui-monospace,monospace}
 .hometitle{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:27px;
   letter-spacing:.34em;color:var(--bone);margin-bottom:8px}
 .homesub{font-size:12px;color:var(--ink);letter-spacing:.14em;margin-bottom:26px}
@@ -910,14 +923,17 @@ body.play .fh1{padding-right:62px}
 
 <section id="home">
   <div class="hometitle">ダ イ ス ダ ン ジ ョ ン</div>
-  <div class="homesub">賽の目に身を委ね、深みへ降りる</div>
+  <div class="homesub" id="homeSub">賽の目に身を委ね、深みへ降りる</div>
+  <div class="townnote" id="townNote"></div>
   <div class="homestat" id="homeStat"></div>
+  <div class="townparty" id="townParty"></div>
   <div class="homemenu">
     <button class="go hide" id="hCont">つ づ き か ら</button>
     <div class="contnote hide" id="hContNote"></div>
     <button class="go" id="hGo">潜 る</button>
+    <button class="topbtn hide" id="hChar">一 味 を 見 る</button>
     <button class="topbtn" id="hWorld">世 界 地 図</button>
-    <button class="topbtn" id="hHall">殿 堂</button>
+    <button class="topbtn" id="hHall">潜 行 の 記 録</button>
     <button class="topbtn" id="hCodex">図 鑑</button>
     <button class="topbtn" id="hQuiz">見 立 て</button>
     <button class="topbtn" id="hTut">遊 び 方</button>
@@ -952,7 +968,8 @@ body.play .fh1{padding-right:62px}
     <div class="fh1"><span id="fName">—</span><em id="fSub"></em></div>
     <div class="fstat" id="fStat"></div>
     <div style="margin-top:9px"><button class="topbtn" id="charBtn2">装備・状態を見る</button>
-      <button class="topbtn" id="worldBtn">世 界 地 図</button></div>
+      <button class="topbtn" id="worldBtn">世 界 地 図</button>
+      <button class="topbtn" id="leaveBtn">町 へ 帰 る</button></div>
   </div>
   <div class="mapwrap"><div id="mapbox"></div><div class="actTtl" id="actTtl"></div></div>
   <div id="mapinfo"></div>
@@ -987,7 +1004,7 @@ body.play .fh1{padding-right:62px}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.001";
+const VERSION="α1.0.002";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1000,6 +1017,15 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1000",tag:"up",v:"α1.0.002",d:"2026-09-04",n:"ローグライクをやめ、町から何度でも潜る形になりました",b:[
+   "<b>周回が無くなりました。</b>一味は残り続けます。町から潜って、拾って、帰ってくる — その繰り返しです",
+   "<b>いつでも町へ帰れます。</b>地図の「町 へ 帰 る」で引き返せて、拾ったものはすべて持ち帰れます。<b>どこで引くかが 毎回の判断</b>になります",
+   "<b>全滅しても やり直せます。</b>町へ戻され、<b>その潜行で拾ったものだけ</b>を失います。レベルと 町に置いてあったものは そのままです",
+   "<b>倒れた仲間は 町へ帰れば起き上がります</b>（HP・MP とも 30%）。傷は残るので、癒やすのは焚き火や道具の仕事です",
+   "<b>区画は 抜けると その先が開きます。</b>次からは町で行き先を選べます",
+   "<b>地図は潜るたびに作り直されます。</b>同じ道は二度と出ません",
+   "<b>殿堂は「潜行の記録」になりました。</b>1回ごとに どこへ潜って どう終わったかが残ります",
+   "<b>版の付け方が α1.0.000 の形になりました。</b>いちばん左は「ゲームの形が変わったとき」に上がります"]},
  {id:"v0054",tag:"fix",v:"α0.0054",d:"2026-09-04",n:"「カウンター」が一度も働いていませんでした",b:[
    "<b>反撃の構えを取って殴られると、その場で処理が止まっていました。</b>返すはずのダメージを計算する元の数が どこにも用意されていなかったためです",
    "<b>守りをシールドに直したときから ずっとこうでした。</b>構えを取らなければ通らない枝なので、これまで気づけませんでした",
@@ -6465,7 +6491,7 @@ async function finish(win){
     $("#acts").innerHTML=`<div class="end lose">戦 死</div>`;
     SFX.lose();
     await wait(1200);
-    endRun(false);return;
+    goTown("wipe");return;
   }
   SFX.win();
   ovMsg(`討 伐`,true);
@@ -6564,21 +6590,26 @@ function metaClear(){
    RUN.cur は RUN.M.node の中身を指しているだけなので控えない。
    読み戻すときに curKey から繋ぎ直す。
    RUN.preview・RUN.lootLines はその場かぎりのものなので落とす。 */
-const RKEY="dd.run", RVER=1;
+/* 控えの形。α1 で「1周ぶんの潜行」から「一味そのもの」に変わったので上げた。
+   v1（ローグライクの潜行）は読まない。 */
+const RKEY="dd.run", RVER=2;
 let runBroken=false;
 function runNewId(){
   return Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 }
+/* 控えるのは **一味そのもの**。潜行中なら そのぶんも一緒に控える。
+   町にいるときは run が null になる。 */
 function runSnapshot(){
-  if(!RUN||RUN.over||!RUN.M||!me)return null;
+  if(!me)return null;
   return {
-    v:RVER, ver:VERSION, t:Date.now(), id:RUN.id||null,
+    v:RVER, ver:VERSION, t:Date.now(), id:(RUN&&RUN.id)||null,
     sel:{job:sel.job,race:sel.race,orig:sel.orig,area:sel.area,
          luk:sel.luk,lukD:sel.lukD},
     me, mates:party.filter(u=>u!==me), owned,
-    run:{act:RUN.act,area:RUN.area,seen:RUN.seen||[],curKey:RUN.curKey||null,
+    run:inDive()?{act:RUN.act,area:RUN.area,seen:RUN.seen||[],curKey:RUN.curKey||null,
          path:RUN.path||[],M:RUN.M,stock:RUN.stock||null,
-         shopRecipe:RUN.shopRecipe===undefined?null:RUN.shopRecipe},
+         shopRecipe:RUN.shopRecipe===undefined?null:RUN.shopRecipe,
+         entry:RUN.entry||null}:null,
   };
 }
 function runSave(){
@@ -6596,23 +6627,19 @@ function runPut(o){
 function runRaw(){
   try{ return JSON.parse(localStorage.getItem(RKEY)||"null"); }catch(e){ return null; }
 }
-function runClear(){
-  try{localStorage.removeItem(RKEY);}catch(e){}
-  CloudHook.mark();                /* 消したことをクラウドにも伝える */
-}
 /* 読めるかどうかまで見る。表の中身が変わって指し先が消えていたら捨てる */
 function runLoad(r){
   if(r===undefined)r=runRaw();
-  if(!r||r.v!==RVER||!r.me||!r.run||!r.run.M||!r.sel)return null;
-  if(r.id&&META.ended[r.id])return null;   /* もう終わった潜行 */
+  if(!r||r.v!==RVER||!r.me||!r.sel)return null;
   if(!JOB[r.sel.job]||!RACE[r.sel.race]||!ORIG[r.sel.orig])return null;
-  if(!AREAS[r.run.area])return null;
-  const N=r.run.M.node||{};
-  const ok=Object.keys(N).every(k=>{
-    const nd=N[k];
-    return !nd.e||!!ENCS[nd.e];        /* 遭遇の鍵が今の表にあるか */
-  });
-  if(!ok||!Object.keys(N).length)return null;
+  /* 潜行中の控えなら、地図が いまの表で通るかまで見る。
+     通らないときは 地図だけ捨てて 町にいることにする（一味は失わない）。 */
+  if(r.run){
+    const N=(r.run.M&&r.run.M.node)||{};
+    const ok=AREAS[r.run.area]&&Object.keys(N).length
+      &&Object.keys(N).every(k=>{const nd=N[k];return !nd.e||!!ENCS[nd.e];});
+    if(!ok)r.run=null;
+  }
   return r;
 }
 function runHas(){ return !!runLoad(); }
@@ -6658,7 +6685,7 @@ function runPickModal(l,c){
 /* 続きから始める */
 function runResume(){
   const r=runLoad();
-  if(!r){ runClear(); drawHome(); return; }
+  if(!r){ drawHome(); return; }
   sel.job=r.sel.job;sel.race=r.sel.race;sel.orig=r.sel.orig;
   sel.area=r.sel.area;sel.luk=r.sel.luk;sel.lukD=r.sel.lukD;
   me=r.me;
@@ -6666,23 +6693,26 @@ function runResume(){
   /* 控えに仲間が入っていれば そのまま。無ければ（古い控え）その場で組む */
   setParty([me,...(r.mates||[])]);
   owned=r.owned||[];
-  RUN={id:r.id||runNewId(), act:r.run.act||0, area:r.run.area, seen:r.run.seen||[],
+  RUN=r.run?{id:r.id||runNewId(), act:r.run.act||0, area:r.run.area, seen:r.run.seen||[],
        curKey:r.run.curKey||null, cur:null, path:r.run.path||[],
        M:r.run.M, stock:r.run.stock||null, shopRecipe:r.run.shopRecipe,
-       preview:null, over:false, cleared:false, elite:false, boss:false};
-  RUN.cur=RUN.curKey?(RUN.M.node[RUN.curKey]||null):null;
+       entry:r.run.entry||null,
+       preview:null, over:false, cleared:false, elite:false, boss:false}:null;
+  if(RUN)RUN.cur=RUN.curKey?(RUN.M.node[RUN.curKey]||null):null;
   party.forEach(u=>recalcMe(u));      /* 式が変わっていても組み直す */
   if(party.length<2)buildParty();     /* 仲間の無い古い控えは ここで組む */
   syncMates();
   /* 覚えるものを選ばずに閉じた控えは、続きから始めたときに選ばせる */
   setTimeout(()=>mateLearnQueue(()=>{}),0);
   $("#log").innerHTML="";
-  drawFloor();showScreen("floor");window.scrollTo(0,0);
-  setTimeout(introScroll,120);
+  if(RUN){ drawFloor();showScreen("floor");window.scrollTo(0,0);
+           setTimeout(introScroll,120); }
+  else   { townScreen("none"); }
 }
 /* 家に出す一行。どこまで潜っていたか */
 function runLabel(rec){
   const r=runLoad(rec); if(!r)return null;
+  if(!r.run)return null;          /* 町にいる控えは「つづきから」を出さない */
   const A=AREAS[r.run.area]||{};
   const nd=r.run.curKey?(r.run.M.node||{})[r.run.curKey]:null;
   const d=Math.round((Date.now()-(r.t||0))/60000);
@@ -7590,26 +7620,106 @@ function price(base){
 }
 
 /* ---- 進行 ---- */
-function startRun(){
+/* ===== 町と潜行（α1） =====
+   ローグライクをやめ、町と持ち帰りにした（IDEAS §16）。
+
+     町      … 一味と持ち物が置いてある場所。ここから何度でも潜る
+     潜行    … 区画に降りて、拾って、帰ってくるまで
+     全滅    … 町へ戻される。**その潜行で拾ったものを失う**
+
+   「拾ったものを失う」は、拾う場所（20か所以上ある）を一つずつ数えるのではなく、
+   **潜るときに町の持ち物を写しておいて、全滅したらそこへ戻す**ことで作る。
+   拾ったものも 潜行中に使ったものも まとめて「なかったこと」になる。
+   レベルと経験は写さないので **失わない**（拾ったものではないため）。 */
+function inDive(){ return !!(RUN&&RUN.M&&!RUN.over); }
+/* 町の持ち物の写し。深さのいるものだけ丁寧に写す */
+function townSnap(){
+  return {
+    gold:me.gold,
+    mats:{...me.mats}, bag:{...me.bag},
+    stash:me.stash.slice(), recipes:me.recipes.slice(),
+    eq:{wep:me.eq.wep, armor:me.eq.armor, acc:(me.eq.acc||[]).slice()},
+    owned:owned.slice(),
+  };
+}
+function townRestore(o){
+  if(!o)return;
+  me.gold=o.gold;
+  me.mats={...o.mats}; me.bag={...o.bag};
+  me.stash=o.stash.slice(); me.recipes=o.recipes.slice();
+  me.eq={wep:o.eq.wep, armor:o.eq.armor, acc:(o.eq.acc||[]).slice()};
+  owned=o.owned.slice();
+  recalcMe(me,false);
+}
+
+/* はじめの一度だけ。以後は町から潜る */
+function newGame(){
   me=makeMe();
   buildParty();                  /* 主人公と仲間2人で一味を組む */
   markSeen("w_"+me.baseWep);
   me.gold=(ORIG[sel.orig]&&ORIG[sel.orig].startGold)||30;
-  /* id は「どの潜行か」の目印。クラウドと突き合わせるときに、
-     同じ潜行の進み具合の違いなのか、別々の潜行なのかを見分ける */
-  RUN={id:runNewId(),act:0,area:sel.area,seen:[],cur:null,curKey:null,path:[],
-       over:false,cleared:false};
-  owned=[];META.runs++;touchMeta();
+  RUN=null; owned=[];
+  META.runs++;touchMeta();
   $("#log").innerHTML="";
-  enterArea(sel.area,true);  /* 名前は出立の支度が終わってから出す */
   const n=(ORIG[sel.orig]&&ORIG[sel.orig].startGear)||1;
-  startPick(n);
+  startPick(n);                  /* 支度が済んだら 仲間の学び → 町へ */
+}
+/* 区画へ降りる。地図は潜るたびに作り直す */
+function dive(ak){
+  ak=ak||sel.area;
+  sel.area=ak;
+  RUN={id:runNewId(),act:0,area:ak,seen:[],cur:null,curKey:null,path:[],
+       over:false,cleared:false,
+       entry:townSnap()};        /* 全滅したら ここへ戻す */
+  $("#log").innerHTML="";
+  enterArea(ak,true);
+  runSave();
+  actTitle();
+}
+/* 町へ戻る。why … "clear"（区画を抜けた）／"leave"（自分で引いた）／"wipe"（全滅） */
+let RUN_woke=null;               /* 町で起き上がった者の名。知らせに使う */
+function goTown(why){
+  RUN_woke=null;
+  const lost=(why==="wipe");
+  const before=lost?{gold:me.gold,mats:{...me.mats},bag:{...me.bag},
+                     stash:me.stash.length,recipes:me.recipes.length}:null;
+  if(lost)townRestore(RUN&&RUN.entry);
+  logDive(why);                  /* 潜行の記録に残す */
+  RUN=null;
+  /* 町へ帰ったら 倒れた者は起き上がる。ここで起きないと 詰んでしまう。
+     **傷は残る**（HP・MP はそのまま）。癒やすのは 焚き火・道具・宿の仕事。 */
+  const woke=party.filter(u=>u.HP<=0);
+  woke.forEach(u=>{
+    u.HP=Math.max(1,Math.round(u.maxHP*REVIVEPCT));
+    u.MP=Math.round(u.maxMP*REVIVEPCT);
+  });
+  party.forEach(u=>{u.ail=[];u.block=0;u.buffs=[];u.dbuffs=[];});
+  if(woke.length)RUN_woke=woke.map(u=>u.short);
+  runSave();
+  townScreen(why,before);
+}
+/* 潜行の記録。周回の墓標ではなく「1回の潜行で何をしたか」 */
+function logDive(why){
+  if(!RUN)return;
+  META.hall.push({
+    t:Date.now(), no:META.runs, why,
+    cleared:(why==="clear"), depth:(RUN.seen||[]).length||1,
+    dun:areaOf().n||"", acts:(RUN.seen||[]).length,
+    route:(RUN.seen||[]).map(k=>AREAS[k]?AREAS[k].n:"").filter(Boolean),
+    job:sel.job, race:sel.race, orig:sel.orig,
+    lv:me.lv, hp:Math.max(0,me.HP), maxHP:me.maxHP,
+    party:party.map(u=>u.short),
+    wep:me.wep.n, gold:me.gold,
+    kills:Object.values(META.codex).reduce((a,b)=>a+b,0),
+  });
+  if(META.hall.length>HALLMAX)META.hall=META.hall.slice(-HALLMAX);
+  touchMeta();
 }
 function startPick(left){
   /* 1階層目は装備選びの窓が先に出るので、それが片づいてから名前を出す。
      窓の下でぼわぁとやっても見えない。 */
-  if(left<=0){                                /* 支度が済んだ姿を控える */
-    return mateLearnQueue(()=>{drawFloor();runSave();actTitle();});
+  if(left<=0){                                /* 支度が済んだら 町へ */
+    return mateLearnQueue(()=>{runSave();townScreen("start");});
   }
   choiceModal("出 立 の 支 度",
     left>1?`装備を ${left} つ選べる（傲慢）`:"",
@@ -7618,32 +7728,6 @@ function startPick(left){
 }
 /* 見つかった入口から行き先を選ぶ。
    同じ道の続きか、別の場所か。ここが「地図どうしが繋がっている」の入口。 */
-function gateModal(ways){
-  let h=`<div class="mtitle">入 口 を 選 ぶ</div>
-    <div class="msub">${RUN.act+1} 区画を抜けた。次はここへ降りられる</div>
-    <div class="wmwrap">${worldMap("gate",ways)}</div>
-    <div class="wmnote">光っている場所を押しても選べる</div>
-    <div class="acts">`;
-  ways.forEach((w,i)=>{
-    const same=(w.a.tier===areaTier());
-    h+=`<button class="act rew cgear" data-i="${i}">
-      <span class="rcat">${same?"同じ道の先":"別 の 場 所"}</span>
-      <span class="an">${w.a.n}</span>
-      <span class="ad">${w.a.d||""}</span>
-      <span class="rmeta">第 ${w.a.tier} 階層　${
-        (w.a.to||[]).some(t=>AREAS[t]&&!AREAS[t].wip)?"さらに先へ続く":"ここが行き止まり"}</span>
-    </button>`;});
-  h+=`</div>`;
-  openModal(h);
-  const go=key=>{
-    const w=ways.find(x=>x.key===key);if(!w)return;
-    SFX.pick();closeModal();RUN.act++;enterArea(w.key);
-  };
-  $("#mbox").querySelectorAll("[data-i]").forEach(b=>{
-    b.onclick=()=>go(ways[+b.dataset.i].key);});
-  $("#mbox").querySelectorAll("[data-w]").forEach(g=>{
-    g.onclick=()=>go(g.dataset.w);});
-}
 /* 世界地図だけを見せる窓。家からも探索中からも開く */
 function worldModal(back){
   const mode=(RUN&&!RUN.over&&RUN.area)?"run":"home";
@@ -7726,7 +7810,7 @@ function roomInfo(nd){
   return t;
 }
 function drawFloor(){
-  if(RUN.over)return drawEnd();
+  if(!RUN)return;                 /* 町にいる（潜っていない） */
   const A=areaOf();
   const cur=RUN.curKey?RUN.M.node[RUN.curKey]:null;
   $("#fName").innerHTML=`${A.n}　<em>第 ${A.tier} 階層 ・ ${RUN.act+1} 区画目</em>`;
@@ -8861,70 +8945,8 @@ function result(title,lines){
   b.innerHTML=`<h3>${title}</h3>`+lines.map(l=>`<p>${l}</p>`).join("");
   b.classList.remove("hide");
 }
-function endRun(cleared){
-  RUN.over=true;RUN.cleared=cleared;      /* 曲は結果のものに変わる（showScreen） */
-  const depth=RUN.act+1;
-  if(depth>META.best)META.best=depth;
-  META.hall.push({
-    t:Date.now(),               /* 統合のときの目印。同じ一件を二重に持たないため */
-    no:META.runs, cleared, depth,
-    dun:areaOf().n||"", acts:(RUN.seen||[]).length,
-    route:(RUN.seen||[]).map(k=>AREAS[k]?AREAS[k].n:"").filter(Boolean),
-    job:sel.job, race:sel.race, orig:sel.orig,
-    lv:me.lv, hp:Math.max(0,me.HP), maxHP:me.maxHP,
-    wep:me.wep.n, armor:me.eq.armor?me.eq.armor.n:null,
-    acc:(me.eq.acc||[]).map(g=>g.n),
-    sk:me.sk.map(x=>x.n), pass:me.pass.map(x=>x.n),
-    gold:me.gold, kills:Object.values(META.codex).reduce((a,b)=>a+b,0),
-  });
-  if(META.hall.length>HALLMAX)META.hall=META.hall.slice(-HALLMAX);
-  /* 終わった潜行に印を残す。もう1台に古い控えが残っていても、
-     この印が届けば「つづきから」に出さない。 */
-  if(RUN.id){META.ended[RUN.id]=true;endedTrim();}
-  runClear();                      /* 終わった潜行の続きは無い */
-  metaTimer&&clearTimeout(metaTimer);metaTimer=null;metaWrite();
-  CloudHook.flush();               /* 1周の終わりは端末にもクラウドにも確実に残す */
-  drawEnd();showScreen("floor");window.scrollTo(0,0);
-}
-function drawEnd(){
-  $("#fName").textContent=RUN.cleared?"踏 破":"戦 死";
-  $("#fSub").textContent="";
-  $("#fStat").innerHTML=`<span>HP ${Math.max(0,me.HP)}/${me.maxHP}</span>`+
-    `<span>技 ${me.sk.length}</span><span>パッシブ ${me.pass.length}</span>`;
-  $("#mapbox").innerHTML="";$("#mapinfo").innerHTML="";
-  const lines=[];
-  if(RUN.cleared){
-    lines.push(`最奥を抜けた。<span class="gain">思い出結晶</span> として記録された。`);
-    lines.push(`持ち帰れたのは知識だけ。金貨も素材も装備も置いてきた。`);
-    lines.push(`技 ${me.sk.map(x=>x.n).join("・")||"なし"}`);
-    lines.push(`パッシブ ${me.pass.map(x=>x.n).join("・")||"なし"}`);
-  }else{
-    lines.push(`${RUN.act+1}階層で力尽きた。<span class="loss">亡霊</span> として記録された。`);
-    lines.push(`持ち帰れたのは知識だけ。金貨も素材も装備も失った。`);
-  }
-  const cx=Object.keys(META.codex).map(k=>`${FOE[k].n} ${codexLv(k)}/5`).join("　");
-  lines.push(`引き継ぐ図鑑：${cx||"なし"}`);
-  lines.push(`記憶した部屋：${Object.keys(META.rooms).length} 箇所`);
-  result(RUN.cleared?"踏 破":"死 亡",lines);
-  const b=document.createElement("div");
-  b.className="ctrl";
-  b.innerHTML=`<button id="newrun" class="pri">新しい冒険者で潜る</button>`+
-    `<button id="tohome">ホームに戻る</button>`;
-  $("#mapinfo").appendChild(b);
-  const nb=$("#newrun");
-  if(nb)nb.onclick=()=>{newChar();showScreen("make");metaNote();window.scrollTo(0,0);};
-  const hb=$("#tohome");
-  if(hb)hb.onclick=()=>{newChar();goHome();window.scrollTo(0,0);};
-}
-function metaNote(){
-  const el=$("#metaNote");if(!el)return;
-  if(!META.runs){el.innerHTML=
-    `技は持たずに始まる。勝つたびに <b style="color:var(--brass)">スキル／パッシブ／装備</b> から一つ選ぶ。<br>`+
-    `階層ごとに15段。倒した敵は図鑑に残り、次の冒険者に引き継がれる。`;return;}
-  const cx=Object.keys(META.codex).map(k=>`${FOE[k].n} ${codexLv(k)}/5`).join("　");
-  el.innerHTML=`${META.runs} 回目の挑戦　最高到達 ${META.best} 階層<br>`+
-    `図鑑：${cx||"なし"}　／　記憶した部屋 ${Object.keys(META.rooms).length}`;
-}
+/* endRun と drawEnd（1周の墓標）は α1 で消した。
+   終わり方は goTown("clear"／"leave"／"wipe") のひとつだけ。 */
 
 /* ---------- せり出す窓 ---------- */
 /* 外側を押して閉じてよいのは「見るだけの窓」だけ。
@@ -9729,22 +9751,16 @@ function nextStage(){
     META.areas[RUN.area]=true;touchMeta();
     if(firstTime)out.push(
       `<span class="gain">${areaOf().n}</span> の名を知った　<span class="s">（世界地図に残る）</span>`);
-    if(!ways.length){
-      /* 行ける先が見つからない。ここが終点 */
-      drawFloor();showScreen("floor");
-      resultModal(cleared,
-        out.concat([`HP <span class="gain">+${h}</span>　MP 全快`,
-          `<span class="gain">この先へ続く道は見つからなかった</span>`,
-          `　<span class="s">${RUN.act+1} 区画を抜けた</span>`]),
-        [{n:"地上へ戻る",cb:()=>endRun(true)}]);
-      return;
-    }
+    /* 区画を抜けたら 町へ帰る。先へ続く道は 世界地図に残り、次から選んで潜れる */
     drawFloor();showScreen("floor");
+    const nx=ways.map(k=>AREAS[k]?AREAS[k].n:"").filter(Boolean);
     resultModal(cleared,
       out.concat([`HP <span class="gain">+${h}</span>　MP 全快`,
-        ways.length>1?`<span class="gain">道が二股に分かれていた</span>`
-                     :`<span class="gain">先へ続く入口が見つかった</span>`]),
-      [{n:"入口を見る",cb:()=>gateModal(ways)}]);
+        nx.length?`<span class="gain">${nx.join("・")}</span> への道が見つかった`
+                 :`<span class="s">この先へ続く道は見つからなかった</span>`,
+        nx.length?`　<span class="s">次からは 町で行き先に選べる</span>`:""]
+        .filter(Boolean)),
+      [{n:"持ち帰って 町へ",cb:()=>goTown("clear")}]);
     return;
   }
   backToFloor(r?r.name:"戦闘",out);
@@ -10349,21 +10365,81 @@ function codexCount(){
     + Object.keys(RECIPES).filter(k=>META.seen[k]).length;
   return {all,got,pct:Math.round(got/all*100)};
 }
+/* 町へ戻る。why と、全滅なら失う前の持ち物を渡す */
+function townScreen(why,before){
+  drawHome();showScreen("home");window.scrollTo(0,0);
+  if(!why||why==="none")return;
+  const L=[];
+  if(why==="start"){
+    L.push(`<span class="gain">${areaOf().n||"最初の区画"}</span> の入口に立った`);
+    L.push(`ここが 拠点になる。潜って、拾って、帰ってくる。`);
+  }else if(why==="clear"){
+    L.push(`<span class="gain">${areaOf().n}</span> を抜けて 戻った`);
+    L.push(`持ち帰ったものは すべて残る`);
+  }else if(why==="leave"){
+    L.push(`引き返して 戻った`);
+    L.push(`持ち帰ったものは すべて残る`);
+  }else if(why==="wipe"){
+    L.push(`<span class="loss">一味は倒れ、気づけば町にいた</span>`);
+    const d=[];
+    if(before){
+      const dg=before.gold-me.gold;
+      if(dg>0)d.push(`金貨 ${dg}`);
+      const dm=Object.keys(before.mats).reduce((a,k)=>a+Math.max(0,(before.mats[k]||0)-(me.mats[k]||0)),0);
+      if(dm>0)d.push(`素材 ${dm}`);
+      const db=Object.keys(before.bag).reduce((a,k)=>a+Math.max(0,(before.bag[k]||0)-(me.bag[k]||0)),0);
+      if(db>0)d.push(`道具 ${db}`);
+      const ds=before.stash-me.stash.length;
+      if(ds>0)d.push(`装備 ${ds}`);
+      const dr=before.recipes-me.recipes.length;
+      if(dr>0)d.push(`覚え書き ${dr}`);
+    }
+    L.push(d.length?`<span class="loss">この潜行で拾ったものを失った</span>　<span class="s">${d.join("・")}</span>`
+                   :`失うものは 何も持っていなかった`);
+    L.push(`<span class="s">レベルと 町に置いてあったものは そのまま。</span>`);
+  }
+  if(RUN_woke&&RUN_woke.length)
+    L.push(`<span class="gain">${RUN_woke.join("・")}</span> が起き上がった`+
+      `　<span class="s">（HP・MP は 最大の ${Math.round(REVIVEPCT*100)}%）</span>`);
+  resultModal(why==="wipe"?"全 滅":why==="clear"?"踏 破":why==="start"?"出 立":"帰 還",
+    L,[{n:"町へ"}]);
+}
 function drawHome(){
-  const cleared=META.hall.filter(h=>h.cleared).length;
   const c=codexCount();
+  const started=!!me;
+  const dives=META.hall.length;
+  const cleared=META.hall.filter(h=>h.cleared).length;
+  $("#homeSub").textContent=started?"賽の目に身を委ね、深みへ降りる":"賽の目に身を委ね、深みへ降りる";
+  /* 町にいるあいだの持ち物。潜る前に見えていないと 支度ができない */
+  $("#townNote").innerHTML=started
+    ? `<span style="color:#c9a227">金貨 <b>${me.gold}</b></span>`+
+      `　<span>素材 <b>${Object.values(me.mats||{}).reduce((a,b)=>a+b,0)}</b></span>`+
+      `　<span>道具 <b>${Object.values(me.bag||{}).reduce((a,b)=>a+b,0)}</b></span>`+
+      `　<span>予備の装備 <b>${(me.stash||[]).length}</b></span>`
+    : "";
   $("#homeStat").innerHTML=
-    `<span>潜った回数 <b>${META.runs}</b></span>`+
-    `<span>踏破 <b>${cleared}</b></span>`+
+    `<span>潜った回数 <b>${dives}</b></span>`+
+    `<span>抜けた区画 <b>${cleared}</b></span>`+
     `<span>最も深く <b>${META.best}</b> 階層</span>`+
     `<span>図鑑 <b>${c.got}</b>/${c.all}　<b>${c.pct}%</b></span>`;
+  /* 一味の顔ぶれ。押すと その者の詳細 */
+  $("#townParty").innerHTML=started
+    ? party.map((u,i)=>`<button class="tpc" data-tp="${i}">
+        ${meFig(30,u)}
+        <span class="tpn">${u.short}</span>
+        <span class="tph${u.HP<=0?" down":""}">${u.HP<=0?"倒れている":`HP ${u.HP}/${u.maxHP}`}</span>
+        <span class="tpl">Lv ${u.lv}</span></button>`).join("")
+    : "";
+  $("#townParty").querySelectorAll("[data-tp]").forEach(b=>{
+    b.onclick=()=>{SFX.click();charModal(null,party[+b.dataset.tp]);};});
   /* 途中の潜行が控えてあれば「つづきから」を出す */
   const lb=runLabel();
   $("#hCont").classList.toggle("hide",!lb);
   $("#hContNote").classList.toggle("hide",!lb);
   $("#hContNote").innerHTML=lb||"";
-  $("#hGo").textContent=lb?"新しく 作 っ て 潜 る":"潜 る";
-  $("#hGo").classList.toggle("sub",!!lb);
+  $("#hChar").classList.toggle("hide",!started);
+  $("#hGo").textContent=started?"潜 る":"は じ め る";
+  $("#hGo").classList.remove("sub");
 }
 function goHome(){drawHome();showScreen("home");window.scrollTo(0,0);}
 
@@ -10528,15 +10604,49 @@ function cxBody(){
 
 $("#hCont").onclick=()=>{SFX.pick();runResume();};
 $("#hGo").onclick=()=>{
-  const lb=runLabel();
-  const go=()=>{runClear();newChar();mkStep=0;drawMake();
-    showScreen("make");window.scrollTo(0,0);};
-  if(!lb)return go();
-  resultModal("新 し く 潜 る",
-    [`途中の潜行が残っている`,`　${lb}`,
-     `<span class="loss">新しく作ると この続きは消える</span>`],
-    [{n:"やめる"},{n:"消して 新しく作る",cb:go}]);
+  /* まだ一味がいなければ キャラを作るところから。いれば 行き先を選んで潜る */
+  if(!me){
+    newChar();mkStep=0;drawMake();showScreen("make");window.scrollTo(0,0);return;
+  }
+  SFX.pick();diveModal();
 };
+$("#hChar").onclick=()=>{SFX.click();charModal();};
+/* どこへ潜るかを選ぶ。抜けたことのある区画と、そこから続く道が並ぶ */
+function diveModal(){
+  const list=diveTargets();
+  let h=`<div class="mtitle">ど こ へ 潜 る か</div>
+    <div class="msub">抜けた区画から 道が続いていく</div><div class="acts">`;
+  list.forEach((k,i)=>{
+    const A=AREAS[k], done=areaCleared(k);
+    h+=`<button class="act rew ${done?"cgear":"cskill"}" data-d="${i}">
+      <span class="rcat">${done?"抜けた":"未 踏"}</span><span class="an">${A.n}</span>
+      <span class="ad">${A.d||""}</span>
+      <span class="rmeta">${A.wip?"まだ作りかけ":`${A.tier} 段目の深さ`}</span></button>`;
+  });
+  h+=`</div><button class="mclose" id="dvX">やめる</button>`;
+  openModal(h,true);
+  $("#mbox").querySelectorAll("[data-d]").forEach(b=>{
+    b.onclick=()=>{const k=list[+b.dataset.d];closeModal();
+      party.forEach(u=>{if(u.HP<=0)return;});
+      dive(k);drawFloor();showScreen("floor");window.scrollTo(0,0);};});
+  $("#dvX").onclick=closeModal;
+}
+/* 潜れる区画。**はじめの区画と、抜けた区画・その先**。
+   areaKnown は「はじめの区画」も真になるので ここでは使えない。
+   先を開くのは 抜けた（ボスを倒した）ことだけ。 */
+function areaCleared(k){ return !!META.areas[k]; }
+function startArea(){ return Object.keys(AREAS).find(k=>AREAS[k].start)||"plain"; }
+function diveTargets(){
+  const out=[];
+  const add=k=>{if(k&&AREAS[k]&&!AREAS[k].wip&&!out.includes(k))out.push(k);};
+  add(startArea());
+  Object.keys(AREAS).forEach(k=>{
+    if(!areaCleared(k))return;
+    add(k);
+    (AREAS[k].to||[]).forEach(add);   /* 抜けた区画の先が開く */
+  });
+  return out;
+}
 $("#hWorld").onclick=()=>{SFX.click();worldModal();};
 $("#hHall").onclick=()=>{drawHall();showScreen("hall");window.scrollTo(0,0);};
 $("#hCodex").onclick=()=>{drawCodex();showScreen("codex");window.scrollTo(0,0);};
@@ -10549,10 +10659,25 @@ $("#tutOK").onclick=()=>{
 $("#hallBack").onclick=goHome;
 $("#mkBack").onclick=goHome;
 $("#cxBack").onclick=goHome;
-if(!META.tutSeen){drawTut();showScreen("tut");}else goHome();
+/* 起動。控えがあれば 一味を戻してから町を出す（潜行中なら そこへ戻る） */
+if(runLoad()) runResume();
+else if(!META.tutSeen){drawTut();showScreen("tut");}
+else goHome();
 $("#charBtn").onclick =()=>charModal();
 $("#charBtn2").onclick=()=>charModal();
 $("#worldBtn").onclick=()=>{SFX.click();worldModal();};
+/* 潜行の途中で 町へ引き返す。拾ったものは そのまま持ち帰れる */
+$("#leaveBtn").onclick=()=>{
+  SFX.click();
+  const down=party.filter(u=>u.HP<=0).length;
+  resultModal("町 へ 帰 る",
+    [`ここまでで引き返す`,
+     `<span class="gain">拾ったものは すべて持ち帰れる</span>`,
+     down?`<span class="loss">倒れている仲間 ${down}人 は 町の宿で起こす</span>`:"",
+     `<span class="s">地図はここで閉じる。次に潜るときは 新しい道になる</span>`]
+      .filter(Boolean),
+    [{n:"まだ潜る"},{n:"引き返す",cb:()=>goTown("leave")}]);
+};
 $("#modal").onclick=e=>{if(e.target.id==="modal"&&modalFree())closeModal();};
 $("#detBtn").onclick=()=>{
   const d=$("#detail"),b=$("#detBtn");

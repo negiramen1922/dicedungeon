@@ -10,11 +10,11 @@ const out=await pg.evaluate(async()=>{
   window.addDice=async(a)=>a;window.ovHide=()=>{};window.lungeUnit=async()=>{};
   window.fxOn=()=>{};window.popOn=()=>{};window.popSelf=()=>{};window.setHPBar=()=>{};
   sel.job="knight";sel.race="hume";sel.orig="greed";
-  startRun();closeModal();
+  newGame();closeModal();
   for(let i=1;i<15;i++){me.lv++;growUp();syncMates();}
   const all=[];
   Object.entries(REW.act).forEach(([grp,list])=>list.forEach(s=>all.push({grp,s})));
-  enterArea("plain",true);sel.enc="p_hard";RUN.elite=true;RUN.boss=false;
+  dive("plain");sel.enc="p_hard";RUN.elite=true;RUN.boss=false;
   startBattle();await engage();
   for(const {grp,s} of all){
     try{
