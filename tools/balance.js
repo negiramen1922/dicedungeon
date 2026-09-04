@@ -6,7 +6,7 @@
     node tools/balance.js --try      調整案を並べて比べる
 
   測っているもの（すべて初期装備・装飾なし）
-    火力   1ターンの見込みダメージ。敵のDEFの分布と、出目の期待値を通す
+    火力   1ターンの見込みダメージ。敵のVITの分布と、出目の期待値を通す
            索敵で勝ったぶんの初撃ボーナスも、倒すまでのターン数で薄めて足している
     耐久   敵の攻撃を受けて倒れるまでのターン数
     総合   火力 × 耐久（1戦でどれだけ働けるかの目安）
@@ -20,7 +20,7 @@ const {JOB, RACE, GROW, WEP, FOE, ENCS, AREAS, SKJOB, SKRACE} = api;
 
 /* ---- 敵の側の代表値。実データから作る ---- */
 function foeStats(actIdx) {
-  /* その階層に出る敵を集め、DEF と 威力 の中央値を取る */
+  /* その階層に出る敵を集め、VIT と 威力 の中央値を取る */
   /* actIdx は 0 起点。担当階層（tier）は 1 起点なので +1 して引く */
   const keys = new Set();
   Object.values(AREAS).forEach(A => {
@@ -32,7 +32,7 @@ function foeStats(actIdx) {
   const med = a => a.slice().sort((x,y)=>x-y)[Math.floor(a.length/2)];
   const dm = (1 + actIdx*0.34) * (actIdx === 0 ? 1.0 : actIdx === 1 ? 1.14 : 1.3);   /* 深さ倍率のおよそ */
   return {
-    DEF: med(list.map(f => f.DEF)),
+    VIT: med(list.map(f => f.VIT)),
     STR: Math.round(med(list.map(f => f.STR)) * (1 + (dm-1)*0.6)),
     HP:  Math.round(med(list.map(f => f.HP)) * dm),
     /* 戦闘の長さは遭遇まるごとで見る。索敵ボーナスは1戦に1回しか乗らないので、
@@ -93,11 +93,12 @@ function scoutBonusExp(mD, fD) {
 
 function build(job, race, lv, grow) {
   const st = {};
-  ["STR","DEX","INT","VIT","DEF"].forEach(k => st[k] = JOB[job].st[k] + (RACE[race].st[k]||0));
+  ["STR","DEX","INT","VIT"].forEach(k => st[k] = JOB[job].st[k] + (RACE[race].st[k]||0));
   const g = (grow && grow[job]) || GROW[job];
   Object.keys(g).forEach(k => st[k] += g[k] * (lv-1));
   const w = WEP[JOB[job].wep];
-  return {st, w, maxHP: Math.round(st.VIT*4 + 35), block: 5 + Math.floor(st.VIT/7)};
+  const hp=(JOB[job].st.HP||0)+(RACE[race].st.HP||0);
+  return {st, w, maxHP: hp, block: Math.round(hp*0.09)};
 }
 
 /* 敵の 75% が前列。後衛に下がれる職業は、その分の被害が 4割減る（enemyAct の reach）。
@@ -127,14 +128,14 @@ function rate(job, race, lv, foe, grow) {
      1戦のうち1回ぶんなので、倒すのにかかるターン数で薄めて数える。 */
   const myScout = JOB[job].scout + RACE[race].scout + 1 + Math.floor(b.st.DEX/13);
   const bonus = scoutBonusExp(myScout, foe.scout);
-  const perTurn = perHit(pow, foe.DEF) * diceExp(thr);
+  const perTurn = perHit(pow, foe.VIT) * diceExp(thr);
   const turnsToKill = Math.max(1, foe.encHP / (perTurn * b.w.hands));
   const dmg = Math.round(perTurn * (b.w.hands + bonus/turnsToKill));
-  let taken = Math.max(1, perHit(foe.STR, b.st.DEF) * foe.dice * diceExp(thrFoe));
+  let taken = Math.max(1, perHit(foe.STR, b.st.VIT) * foe.dice * diceExp(thrFoe));
   if (ranged) taken *= (1 - FRONT_RATIO*0.4);      /* 後衛に下がっていられる */
   const turns = b.maxHP / taken;
   return {名:`${RACE[race].n} ${JOB[job].n}`, job, race, 列:ranged?"後":"前",
-          HP:b.maxHP, DEF:b.st.DEF, 威力:pow, ダイス:b.w.hands,
+          HP:b.maxHP, VIT:b.st.VIT, 威力:pow, ダイス:b.w.hands,
           攻:thr, 防:thrFoe, 索敵:+bonus.toFixed(1),
           火力:dmg, 耐久:+turns.toFixed(1), 総合:Math.round(dmg*turns)};
 }
@@ -146,12 +147,12 @@ function table(lv, actIdx, grow, label) {
   const avg = k => rows.reduce((a,b)=>a+b[k],0)/rows.length;
   const A = {火力:avg("火力"), 耐久:avg("耐久"), 総合:avg("総合")};
   rows.sort((x,y)=>y.総合-x.総合);
-  console.log(`\n=== ${label}　Lv${lv}／${actIdx+1}階層の敵（DEF ${foe.DEF}・威力 ${foe.STR}・${foe.dice}発・遭遇まるごとで HP ${foe.encHP}・索敵 ${foe.scout}D）===`);
-  console.log("  組み合わせ".padEnd(19)+"  HP  DEF 威力 ダイス  攻  防 索敵   火力      耐久        総合");
+  console.log(`\n=== ${label}　Lv${lv}／${actIdx+1}階層の敵（VIT ${foe.VIT}・威力 ${foe.STR}・${foe.dice}発・遭遇まるごとで HP ${foe.encHP}・索敵 ${foe.scout}D）===`);
+  console.log("  組み合わせ".padEnd(19)+"  HP  VIT 威力 ダイス  攻  防 索敵   火力      耐久        総合");
   rows.forEach(s => {
     const p = k => `${String(s[k]).padStart(5)}(${String(Math.round(s[k]/A[k]*100)).padStart(3)}%)`;
     console.log("  "+s.名.padEnd(16,"　").slice(0,16)+
-      String(s.HP).padStart(5)+String(s.DEF).padStart(5)+String(s.威力).padStart(5)+
+      String(s.HP).padStart(5)+String(s.VIT).padStart(5)+String(s.威力).padStart(5)+
       String(s.ダイス).padStart(5)+String(s.攻).padStart(4)+String(s.防).padStart(4)+
       String(s.索敵).padStart(5)+"  "+p("火力")+" "+p("耐久")+" "+p("総合"));
   });
@@ -261,8 +262,8 @@ if (require.main === module) {
     /* エルフの案を1つ当てて、16通りの内訳をそのまま見る */
     const key = process.argv.find(a => a.startsWith("--elf=")).slice(6);
     const OPTS = {
-      a:{STR:0}, b:{STR:0,VIT:6}, c:{STR:0,VIT:6,DEF:2},
-      d:{STR:2,VIT:6,DEF:2}, f:{STR:2,VIT:6,DEF:2,INT:9},
+      a:{STR:0}, b:{STR:0,VIT:6}, c:{STR:0,VIT:6,VIT:2},
+      d:{STR:2,VIT:6,VIT:2}, f:{STR:2,VIT:6,VIT:2,INT:9},
     };
     Object.assign(RACE.elf.st, OPTS[key] || {});
     [[1,0],[10,1]].forEach(([lv,act]) => table(lv, act, null, "エルフ案 "+key));
@@ -271,8 +272,8 @@ if (require.main === module) {
     GROW.scout = {DEX:5,STR:2,VIT:2};
     GROW.mage  = {INT:5,VIT:3};
     JOB.scout.st.STR  = 26;
-    JOB.knight.st.DEF = 10;
-    RACE.dwarf.st.DEF = 5;
+    JOB.knight.st.VIT = 10;
+    RACE.dwarf.st.VIT = 5;
     ["dagger","twindagger","fang","rapier","clawblade","shadowfang","assassin"]
       .forEach(k => { if (WEP[k]) WEP[k].mul = +(WEP[k].mul/1.15).toFixed(2); });
     [[1,0],[10,1],[16,2]].forEach(([lv,act]) => table(lv, act, null, "調整前"));

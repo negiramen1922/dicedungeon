@@ -353,6 +353,29 @@ const add=[];for(let i=0;i<q;i++)add.push(r6());
 **さらに抑えるなら 手数そのものか、1回の攻撃の上限を触ることになる**
 （案：追加ダイスの威力を落とす／与ダメージに「平均の◯倍」の天井を置く）。
 
+#### 押したボタンに焦点を残さない
+
+```javascript
+document.addEventListener("click",e=>{
+  const b=e.target&&e.target.closest&&e.target.closest("button");
+  if(b&&b.blur)b.blur();
+});
+```
+
+**焦点が残っていると Enter でもう一度押せる。**宝箱の部屋に入る札で これをやると
+**抽選をやり直せた**（α0.0045 で塞いだ）。この盤は指と鼠で触るものなので、
+焦点を辿る操作は無い。窓や演出を開くときも `blurActive()` を呼ぶ。
+
+Enter／Space は `primaryBtn()` が返すボタンだけを押す。
+
+* 宝箱の演出中 … null（「と ば す」は Enter では押さない。連打で見せ場が飛ぶ）
+* 宝箱の結果  … 受 け 取 る（`.ndbtn .go2`）
+* ふつうの窓  … 確 認（`.ndbtn .go2`）
+* 3択の窓    … null（どれを選ぶかは Enter では決めない）
+
+**null のときも、窓や演出が出ていれば `preventDefault()` する。**
+後ろのボタンを叩かせないため。
+
 #### 1発が HP に届くまでの順番（α0.0044）
 
 ```
@@ -549,6 +572,135 @@ const defAdd=Math.max(it.def||0, it.defPct?Math.round(me.DEF*it.defPct/100):0);
 ナイトは 13、ウィザードは 7 のまま Lv30 まで来る。伸びるのは装備だけ（積んで 41／35）。
 だから DEF の割合は **装備に追随する**のであって、レベルには追随しない。
 `shieldAmount` が 最大HP を土台にしているのは、こうならないため。
+
+#### 隊列は横一列（α0.0048）
+
+前列／後列 という2つの列は **もう無い**。味方も敵も 1本の列に並ぶ。
+`party` と `foes` の**配列の順が そのまま並び順**で、配列の先頭がいちばん手前。
+
+```javascript
+const DEPTHCAP=2;   /* 3番目より奥は みな +2 */
+const LINEMAX=6;    /* 1本の列に並べられる上限（呼ばれた仲間もここまで） */
+const AOEMAX=3;     /* 範囲攻撃が巻き込む数（手前から） */
+function depthOf(u){ ... }          /* 生きている者だけを数えて 何番目か */
+function isRanged(u,act){ ... }     /* 味方は武器の型、敵は snd と act.pos */
+function reachOf(u,tgt,act){ ... }  /* 遠さぶんの命中閾値 */
+```
+
+決まりはこれだけ。
+
+* 遠さは **狙う相手が その列の何番目にいるか**だけで決まる。自分の位置は効かない
+* **数えるのは 生きている者だけ。**先頭が倒れれば 次が繰り上がり、遠さは
+  ひとりでに消える。倒れた者は盤に残るが 数には入らない
+* **遠隔（弓・術）は 遠さを払わない。**近接だけが払う
+* **届く／届かない は無い。**誰でも狙える。奥ほど当てにくいだけ
+
+`FOE` の `rank:"front"/"back"` は **もう立ち位置ではない**。「列のどのあたりに
+並びたいか」の目安で、`sortLine()` が戦闘に入る前に一度だけ読む。並べ方は
+① 部位（`partOf`）は本体より手前 ② `front` が手前・`back` が奥 ③ 遭遇の順。
+
+読み替えた場所（同じ言葉で書かれていた別の概念を ほどいたもの）:
+
+| 前 | 後 |
+|---|---|
+| パッシブ `w:"front"` / `"back"` | `depthOf(u)===0` / `>0`（列の先頭かどうか） |
+| 敵の技 `pos:"front"` / `"back"` | 同上。サハギンは先頭で三叉槍、奥から槍を投げる |
+| `a.needFront` / `a.noFront` | 自分より前に生きている者がいるか |
+| 範囲 `all`（前列ぜんぶ 最大3） | 手前から `AOEMAX`（=3）体。重みは同じ |
+| 貫通 `pierce`（同じ列の2体） | **狙った相手と その1つ奥**。言葉どおりになった |
+| 鼓舞 `cheer` / 霧 `veil`（前列へ） | 自分以外の仲間 全員へ |
+| 呼べる数（前列3＋後列3） | `LINEMAX - alive().length` |
+| かばう `coverOf`（身代わり） | **廃止**。部位を本体より手前に並べれば同じことが起きる |
+
+**触ってはいけない対応:**
+`threshold` に足す遠さは `reachOf` ひとつだけ。`thrWhy` にも同じ項を出すこと
+（`thrchk2.mjs` が 1584通りで突き合わせる）。`telePreview` も同じ `reachOf` を使う。
+
+#### 味方は3人（α0.0048）
+
+主人公と 仲間2人。仲間の職は `MATEJOBS`（`knight, mage, archer, scout` の順）から
+主人公の職を除いた先頭2つ。**必ず 前で受ける者と 遠くから撃つ者が揃う。**
+並びの既定は `LINEPREF`（knight 0 ／ scout 1 ／ archer 2 ／ mage 3）。
+
+| | 主人公 | 仲間 |
+|---|---|---|
+| レベル | 経験で上がる | **主人公に追従**（`syncMates`） |
+| 技・特 | 戦利品で選ぶ | 職と種族のプールから自動（`fillMate`） |
+| 欲望 | 持つ | **持たない**（`orig:null`。倍率は等倍） |
+| 金貨・道具・素材・レシピ・戦利品 | 持つ | **持たない**（一味の共有物は主人公が持つ） |
+| 装備 | 付け替えられる | 素の武器のみ（付け替えは未実装） |
+
+**per-unit と 共有 の切り分けを間違えないこと。**
+`me.gold` / `me.bag` / `me.mats` / `me.recipes` / `me.stash` / `me.exp` は
+一味の共有物なので **必ず `me`**。それ以外の状態（HP・MP・能力値・技・特・
+シールド・状態異常）は **手番の主 `actor()`**。
+`drawActs` / `resolvePlayer` / `doAct` / `playerAttack` / `askTarget` /
+`doItem` の中では `const A=actor();` を置いて `A` を使う。
+
+仲間が覚えるものは **主人公と同じように 遊ぶ人が選ぶ**（α0.0049）。
+自動で割り振らない。
+
+```javascript
+const MATELV=[1,3,6,9,12,15,18];   /* このレベルで ひとつ覚えられる（計7回） */
+const MATESKMAX=3;                 /* 仲間が持てるスキル */
+const MATEPASSMAX=4;               /* 仲間が持てるパッシブ */
+matePool(m,cat)     /* 候補。職と種族のプールだけ（欲望は持たない） */
+matePending(m)      /* あと何回 覚えられるか＝開いた回数 − m.picks */
+mateLearnQueue(af)  /* 覚えられる者が居なくなるまで 窓をつないで出す */
+```
+
+窓を出す場所は3つ。**増やすときは この3つと同じところに足すこと。**
+
+1. `startPick` の終わり（出立の支度のあと。Lv1 の1回ぶん）
+2. `levelUpModal` の `done`（主人公が上がると仲間も上がる）
+3. `runResume`（覚えずに閉じた控えを 続きから始めたとき）
+
+`mateLearn` は **枠を二重に見る**。`closeModal` は窓を隠すだけで消さないので、
+古い窓のボタンが二度押されても 枠を超えないようにしてある。
+
+`REVIVEPCT`（焚き火で起こしたときに戻る割合）は 0.30。
+
+#### 味方は配列で持つ（`party`／α0.0047・段1）
+
+こちら側は長らく `me` という 1つの変数だった。パーティ（3人）にするにあたり、
+**「こちら側は1人」を前提にした書き方を全部たたんだ**。人数はまだ 1 のまま。
+
+```javascript
+let party=[];              /* party[0] は必ず主人公。pid は盤面のマスを引く番号 */
+let cur=null;              /* いま手番を持っている味方 */
+const actor=()=>cur||me;   /* 戦っていないあいだは主人公 */
+function setParty(list){ party=list||[me]; party.forEach((u,i)=>{u.pid=i;u.isFoe=false;}); }
+const pAlive=()=>party.filter(u=>u.HP>0);
+const pIn=r=>pAlive().filter(u=>u.rank===r);
+const pFrontOpen=()=>pIn("front").length===0;
+function allDown(){ return pAlive().length===0; }   /* ゲームオーバーの判定 */
+function foeTarget(f){ ... }                        /* 敵が狙う味方 */
+```
+
+守るべき決まりは3つ。
+
+1. **`u===me` で味方かどうかを判定しない。`!u.isFoe` を使う。**
+   `powOf` / `defOf` / `threshold` / `orderOf` / `runQueue` は全部これに直した。
+   `u===me` のままだと 2人目が「敵でも味方でもない者」になる。
+2. **「誰の」を受け取る。**`passOn(k,u)` / `passNames(k,u)` / `dexOf(u)` /
+   `distTo(tgt,u)` / `vowTarget(u)` / `wepSkill(u)` は みな第2引数（または引数）に
+   持ち主を取り、省いたときだけ `me` を見る。`PCOND` の条件式も `u=>` の形にした。
+3. **味方を数えるところは必ず `pAlive()` / `allDown()` を通す。**
+   `me.HP<=0` で負けを判定していた枝（`runQueue` の2か所）は `allDown()` にした。
+   ここを直に書くと、2人目を足したときに「1人倒れたら全滅」になる。
+
+盤面（`draw`）・行動順（`orderOf`）・ラウンドの終わり（`endRound`）・
+戦闘の後始末（`finish`）・戦闘の開始（`prepareBattle`）は `party.forEach` で回す。
+マスは `data-me="<pid>"`、引くのは `cellOf(u)`。
+
+**まだ `me` 直書きが残っているのは、こちらの行動そのもの**
+（`playerAttack` / `resolvePlayer` / `drawActs` / `canTarget` / `charModal`）。
+「誰の手番の行動一覧を出すか」は 2人目を足すとき（段2）に `actor()` へ寄せる。
+
+段1 は**挙動を1ミリも変えていない**。確かめ方は
+`audit.mjs`（区画ごとの 被/T）と `statmap.mjs` の出力が **md5 まで一致すること**、
+`thrchk2.mjs` の食い違い 0件、`smoke.mjs` 140戦・`play.mjs` の問題 0件。
+段2 以降も、釣り合いを触らない段では同じ確かめ方をすること。
 
 #### 「効くラウンド」で持つもの（`me.vow`・`me.rest`）
 
