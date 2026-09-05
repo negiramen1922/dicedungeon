@@ -19,4 +19,4 @@ node_modules/
 .DS_Store
 
 # Artifact 用の書き出し（tools/labpub.js が作る中間ファイル）
-lab/.dice.artifact.html
+lab/.*.artifact.html
