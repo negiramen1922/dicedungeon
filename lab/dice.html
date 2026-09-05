@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>必要成功数の試作 ── ダイスダンジョン</title>
+<style>
+:root{
+  --bg:#1b1d18; --panel:#232720; --panel2:#2b3028; --line:#3a3f34;
+  --bone:#e9e4d4; --dim:#8b9080; --brass:#c9a227; --moss:#8fa261;
+  --blood:#b1544a; --ink:#6f7a63; --blue:#6f92ab;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--bone);
+  font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",system-ui,sans-serif;
+  font-size:15px;line-height:1.7;padding:14px 12px 60px;max-width:800px;margin:0 auto}
+h1{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:21px;
+  font-weight:600;letter-spacing:.14em;margin:0 0 2px}
+.sub{color:var(--dim);font-size:11px;letter-spacing:.2em;margin-bottom:6px}
+.lead{color:var(--dim);font-size:12px;margin:0 0 4px;line-height:1.85}
+.lead b{color:var(--brass);font-weight:600}
+h2{font-size:11px;letter-spacing:.24em;color:var(--brass);font-weight:600;
+  margin:26px 0 8px;border-bottom:1px solid var(--line);padding-bottom:5px}
+.note{color:var(--dim);font-size:11px;margin:-2px 0 10px;line-height:1.8}
+.note b{color:var(--bone);font-weight:600}
+.panel{background:var(--panel);border:1px solid var(--line);padding:11px 12px;margin-bottom:10px}
+.pttl{font-size:10px;letter-spacing:.2em;color:var(--ink);margin:0 0 6px}
+
+/* ---- つまみ ---- */
+.knob{display:flex;align-items:center;gap:10px;margin:6px 0;flex-wrap:wrap}
+.knob>.k{font-size:11px;letter-spacing:.12em;color:var(--dim);width:98px;flex:none}
+.knob input[type=range]{flex:1;min-width:120px;accent-color:var(--brass);background:transparent}
+.knob>.v{font-variant-numeric:tabular-nums;min-width:66px;text-align:right;font-size:12px;color:var(--dim)}
+.knob>.v b{color:var(--brass);font-size:16px}
+.seg{display:flex;gap:5px;flex-wrap:wrap;flex:1}
+.seg button{background:var(--panel2);border:1px solid var(--line);color:var(--dim);
+  font-family:inherit;font-size:12px;padding:5px 10px;cursor:pointer}
+.seg button:hover{border-color:var(--ink);color:var(--bone)}
+.seg button.on{border-color:var(--brass);color:var(--brass);background:#2f3327}
+.hint{color:var(--ink);font-size:11px;margin:3px 0 8px 108px;line-height:1.65}
+.hint b{font-weight:600}
+@media(max-width:460px){ .hint{margin-left:0} }
+
+/* ---- しきい値 ---- */
+.thr{display:flex;align-items:center;gap:14px;background:var(--panel2);
+  border:1px solid var(--line);padding:11px 13px;flex-wrap:wrap}
+.thrbig{font-family:"Hiragino Mincho ProN",serif;font-size:34px;color:var(--brass);
+  line-height:1;font-variant-numeric:tabular-nums}
+.thrtx{font-size:12px;color:var(--dim);line-height:1.65}
+.thrtx b{color:var(--bone)}
+.thrwhy{margin-left:auto;text-align:right;font-size:11px;color:var(--dim);line-height:1.7}
+
+/* ---- 表 ---- */
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:12px;
+  font-variant-numeric:tabular-nums;min-width:520px}
+th,td{border-bottom:1px solid var(--line);padding:6px 4px;text-align:right;white-space:nowrap}
+th{color:var(--dim);font-weight:600;font-size:10px;letter-spacing:.08em;
+  border-bottom-color:var(--ink);vertical-align:bottom}
+/* 狭い画面では表が横にはみ出す。名前の列が流れて消えると
+   どの行を見ているのか分からなくなるので、左に貼り付けておく。 */
+td.nm,th.nm{text-align:left;color:var(--bone);white-space:nowrap;padding-right:10px;
+  position:sticky;left:0;background:var(--bg);z-index:1}
+tr.best td.nm{background:#272c20}
+tr.dead td.nm{background:var(--bg)}
+td.nm small{color:var(--ink);font-size:10px;display:block;line-height:1.35;white-space:nowrap}
+tr.dead td{color:#4d5346}
+tr.dead td.nm{color:#5d6356}
+tr.best td{background:#272c20}
+input.num{width:48px;background:#171a14;border:1px solid var(--line);color:var(--bone);
+  font-family:inherit;font-size:12px;padding:3px 4px;text-align:right;
+  font-variant-numeric:tabular-nums}
+input.num:focus{outline:none;border-color:var(--brass)}
+.tagP{color:var(--blood);font-size:10px}
+.tagM{color:var(--blue);font-size:10px}
+.pct{color:var(--moss)} .pct.mid{color:var(--brass)} .pct.bad{color:var(--blood)}
+button.roll{background:transparent;border:1px solid var(--line);color:var(--dim);
+  font-family:inherit;font-size:11px;padding:4px 10px;cursor:pointer}
+button.roll:hover:not(:disabled){border-color:var(--brass);color:var(--brass)}
+button.roll:disabled{opacity:.3;cursor:default}
+
+/* ---- 出目 ---- */
+.rollbox{background:var(--panel);border:1px solid var(--line);padding:13px;
+  min-height:92px;display:flex;flex-direction:column;gap:9px;justify-content:center;margin-top:10px}
+.dice{display:flex;gap:7px;flex-wrap:wrap}
+.die{width:36px;height:36px;border:1px solid var(--line);background:#171a14;
+  display:grid;place-items:center;font-family:"Hiragino Mincho ProN",serif;
+  font-size:19px;color:#5d6356;animation:pop .18s ease-out}
+.die.hit{border-color:var(--moss);color:var(--moss);background:#1e2419}
+@keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+.rres{font-size:13px;line-height:1.75}
+.rres .ok{color:var(--moss)} .rres .ng{color:var(--blood)} .rres b{color:var(--brass)}
+.rres small{color:var(--dim);font-size:11px}
+
+.big{background:var(--brass);border:none;color:#1b1d18;font-family:inherit;
+  font-size:13px;letter-spacing:.14em;padding:10px 18px;cursor:pointer;font-weight:600}
+.big:hover{background:#dcb42f}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.warn{border-left:2px solid var(--blood);padding-left:10px;color:var(--dim);
+  font-size:11px;line-height:1.8;margin:10px 0}
+.warn b{color:var(--blood);font-weight:600}
+.good{border-left:2px solid var(--moss);padding-left:10px;color:var(--dim);
+  font-size:11px;line-height:1.8;margin:10px 0}
+.good b{color:var(--moss);font-weight:600}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:560px){ .two{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+
+<h1>必 要 成 功 数</h1>
+<div class="sub">戦 闘 シ ス テ ム の 試 作　lab / dice</div>
+<p class="lead">
+本体（<b>index.html</b>）には触っていません。<b>手触りを確かめるだけの台</b>です。<br>
+種族は<b>ヒューム</b>、職は<b>ナイト</b>、技能は<b>格闘</b>だけに絞ってあります。<br>
+威力は <b>物理＝STR の n%</b>／<b>魔法＝INT の n%</b>。<b>敵も同じ仕組み</b>で振ります。
+</p>
+<p class="note">防御（VIT）は入れていません ── 必要成功数そのものを見たいので、余計なものを混ぜていません。</p>
+
+<!-- ============ しきい値 ============ -->
+<h2>し き い 値</h2>
+<div class="thr">
+  <div class="thrbig" id="thrBig">4</div>
+  <div class="thrtx">以上で<b>成功</b><br><span id="thrPct"></span></div>
+  <div class="thrwhy" id="thrWhy"></div>
+</div>
+<p class="note">
+素は <b>4</b>。DEX の差が <b>25</b> で ±1、<b>40</b> で ±2。上は <b>2以上</b>、下は <b>6のみ</b>で止まります。
+</p>
+
+<div class="two">
+  <div class="panel">
+    <div class="pttl">自 分 ── ヒュームのナイト</div>
+    <div class="knob"><span class="k">STR</span><input type="range" id="myStr" min="5" max="150" value="45"><span class="v"><b id="myStrV">45</b></span></div>
+    <div class="knob"><span class="k">INT</span><input type="range" id="myInt" min="5" max="150" value="28"><span class="v"><b id="myIntV">28</b></span></div>
+    <div class="knob"><span class="k">DEX</span><input type="range" id="myDex" min="1" max="150" value="45"><span class="v"><b id="myDexV">45</b></span></div>
+    <div class="knob"><span class="k">格闘ダイス</span><input type="range" id="nDice" min="1" max="8" value="2"><span class="v"><b id="nDiceV">2</b> 個</span></div>
+    <div class="knob"><span class="k">HP / MP</span><input type="range" id="myHP" min="40" max="500" step="10" value="160"><span class="v"><b id="myHPV">160</b></span></div>
+    <div class="knob"><span class="k">MP</span><input type="range" id="myMP" min="0" max="150" step="5" value="40"><span class="v"><b id="myMPV">40</b></span></div>
+  </div>
+  <div class="panel">
+    <div class="pttl">敵 ── 同 じ 仕 組 み で 振 る</div>
+    <div class="knob"><span class="k">STR</span><input type="range" id="foeStr" min="5" max="150" value="38"><span class="v"><b id="foeStrV">38</b></span></div>
+    <div class="knob"><span class="k">DEX</span><input type="range" id="foeDex" min="1" max="150" value="45"><span class="v"><b id="foeDexV">45</b></span></div>
+    <div class="knob"><span class="k">ダイス</span><input type="range" id="foeDice" min="1" max="8" value="2"><span class="v"><b id="foeDiceV">2</b> 個</span></div>
+    <div class="knob"><span class="k">HP</span><input type="range" id="foeHP" min="20" max="900" step="10" value="240"><span class="v"><b id="foeHPV">240</b></span></div>
+    <div class="pttl" style="margin-top:9px">敵 の 技（必要成功／STR倍率）</div>
+    <div class="scroll"><table id="foeTbl" style="min-width:0"></table></div>
+  </div>
+</div>
+
+<!-- ============ 決めごと ============ -->
+<h2>決 め ご と（つ ま み）</h2>
+<div class="panel">
+  <div class="knob"><span class="k">威力の出し方</span>
+    <div class="seg" id="segPow">
+      <button data-v="flat" class="on">STR・INT の n%（固定）</button>
+      <button data-v="excess">超過成功で伸びる</button>
+    </div></div>
+  <div class="hint" id="powHint"></div>
+  <div class="knob" id="exRow"><span class="k">超過1つの伸び</span>
+    <input type="range" id="exGain" min="0" max="100" step="5" value="50"><span class="v"><b id="exGainV">50</b>%</span></div>
+  <div class="knob"><span class="k">届かなかったら</span>
+    <div class="seg" id="segFail">
+      <button data-v="lose" class="on">ダメージなし・MPは消える</button>
+      <button data-v="half">ダメージなし・MP半分もどる</button>
+      <button data-v="partial">届いたぶんだけ弱く出る</button>
+    </div></div>
+  <div class="hint" id="failHint"></div>
+</div>
+
+<!-- ============ 技 ============ -->
+<h2>自 分 の 技</h2>
+<p class="note">
+必要成功・倍率・MP は<b>仮の値</b>です。その場で書き換えられます。<br>
+倍率は <b>物理なら STR</b>、<b>魔法なら INT</b> に掛かります。1ターンの期待ダメージがいちばん高い技に色が付きます。
+</p>
+<div class="scroll">
+<table id="skTbl">
+  <thead><tr>
+    <th class="nm">技</th><th>系統</th><th>必要<br>成功</th><th>倍率<br>%</th><th>MP</th>
+    <th>威力</th><th>成功率</th><th>期待<br>ダメージ</th><th>／MP</th><th></th>
+  </tr></thead>
+  <tbody id="skBody"></tbody>
+</table>
+</div>
+<div class="rollbox" id="rollBox"><div class="rres" style="color:var(--dim)">技の「振る」を押してください</div></div>
+
+<!-- ============ 確率表 ============ -->
+<h2>確 率 表（い ま の し き い 値）</h2>
+<div class="scroll"><table id="probTbl"></table></div>
+<div id="trapNote"></div>
+
+<!-- ============ 通し ============ -->
+<h2>撃 ち 合 い</h2>
+<p class="note">
+両方が必要成功数で振ります。DEX の高いほうが先手。<br>
+「その技だけを使い続けたら勝てるか」を 3000 回まわします。MP が切れたら通常攻撃に落ちます。
+</p>
+<div class="row"><button class="big" id="runBtn">3 0 0 0 回 ま わ す</button>
+  <span class="note" style="margin:0" id="runNote"></span></div>
+<div class="scroll"><table id="simTbl"></table></div>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s);
+const r6=()=>1+Math.floor(Math.random()*6);
+const f1=x=>x.toFixed(1), num=id=>+$("#"+id).value;
+
+/* ============ 決めごと ============
+   「必要成功数」だけを確かめたいので、隊列・状態異常・装備・防御は入れていない。 */
+
+/* 威力は 物理＝STR の n%、魔法＝INT の n%。
+   倍率は仮の値 ── 必要成功が1つ増えるごとに重くなる置き方にしてある。 */
+const ACTS=[
+  {id:"a1",n:"通常攻撃",  ki:"p", need:1, mul:100, mp:0,  memo:"武器で殴る"},
+  {id:"a2",n:"斬 撃",    ki:"p", need:2, mul:200, mp:4,  memo:""},
+  {id:"a3",n:"強 撃",    ki:"p", need:3, mul:350, mp:8,  memo:""},
+  {id:"a4",n:"大技（仮）", ki:"p", need:4, mul:550, mp:14, memo:"名前は未定"},
+  {id:"m1",n:"火の術（仮）",ki:"m", need:2, mul:260, mp:6,  memo:"名前は未定"},
+];
+/* 敵も同じ仕組み。敵の技も 必要成功 と STR倍率を持つ */
+const FOEACTS=[
+  {n:"体当たり", need:1, mul:100},
+  {n:"噛みつく", need:2, mul:210},
+];
+
+/* しきい値。素は4。DEX の差 25 で ±1、40 で ±2。
+   上は 2以上（83%）で止める ── 1以上（必ず成功）にすると、
+   格下相手では必要成功5の大技まで確実に通り、仕組みそのものが消えるため。 */
+const DEXA=25, DEXB=40;
+const dexShift=d=>Math.sign(d)*(Math.abs(d)>=DEXB?2:Math.abs(d)>=DEXA?1:0);
+const threshold=(a,d)=>Math.max(2,Math.min(6,4-dexShift(a-d)));
+const pOf=thr=>(7-thr)/6;
+
+const comb=(n,k)=>{let r=1;for(let i=0;i<k;i++)r=r*(n-i)/(i+1);return r;};
+const exactly=(n,k,p)=>comb(n,k)*Math.pow(p,k)*Math.pow(1-p,n-k);
+function atLeast(n,k,p){ if(k>n)return 0; let s=0; for(let i=k;i<=n;i++)s+=exactly(n,i,p); return s; }
+
+const S={powMode:"flat", failMode:"lose", exGain:.5};
+
+/* 技の素の威力。物理は STR、魔法は INT */
+const powOf=(a,str,int_)=>(a.ki==="m"?int_:str)*a.mul/100;
+/* 成功数 k のときのダメージ。どの出し方でも「必要成功ちょうど」で 威力 になる */
+function dmgOf(a,k,pow){
+  if(k<a.need) return S.failMode==="partial" ? pow*(k/a.need) : 0;
+  return S.powMode==="excess" ? pow*(1+S.exGain*(k-a.need)) : pow;
+}
+const mpOf=(a,k)=>(k>=a.need||S.failMode!=="half") ? a.mp : a.mp/2;
+function expect(a,n,p,pow){
+  let d=0,m=0;
+  for(let k=0;k<=n;k++){ const q=exactly(n,k,p); d+=q*dmgOf(a,k,pow); m+=q*mpOf(a,k); }
+  return {dmg:d, mp:m, ok:atLeast(n,a.need,p)};
+}
+const pctClass=x=>x>=.6?"pct":x>=.3?"pct mid":"pct bad";
+
+/* ---------- 描き直し ---------- */
+function draw(){
+  const myS=num("myStr"), myI=num("myInt"), myD=num("myDex"), n=num("nDice");
+  const foS=num("foeStr"), foD=num("foeDex"), fn=num("foeDice");
+  ["myStr","myInt","myDex","nDice","myHP","myMP","foeStr","foeDex","foeDice","foeHP"]
+    .forEach(id=>$("#"+id+"V").textContent=num(id));
+  $("#exGainV").textContent=Math.round(S.exGain*100);
+  $("#exRow").style.display = S.powMode==="excess" ? "" : "none";
+
+  const thr=threshold(myD,foD), p=pOf(thr), d=myD-foD, sh=dexShift(d);
+  $("#thrBig").textContent=thr;
+  $("#thrPct").textContent=`ダイス1個あたり ${f1(p*100)}%`;
+  $("#thrWhy").innerHTML=
+    `素 <b style="color:var(--bone)">4</b>　DEX の差 <b style="color:var(--bone)">${d>0?"+":""}${d}</b> → `+
+    `<b style="color:${sh>0?"var(--moss)":sh<0?"var(--blood)":"var(--dim)"}">${sh>0?"−"+sh:sh<0?"+"+(-sh):"±0"}</b>`+
+    (thr===2?`<br><span style="color:var(--brass)">上限（2以上）で止めた</span>`:
+     thr===6?`<br><span style="color:var(--brass)">下限（6のみ）で止めた</span>`:"")+
+    `<br><span style="color:var(--ink)">敵が振るときは ${threshold(foD,myD)}以上</span>`;
+
+  drawActs(n,p,myS,myI);
+  drawFoeActs(fn,pOf(threshold(foD,myD)),foS);
+  drawProb(p,n);
+}
+
+function drawActs(n,p,str,int_){
+  const rows=ACTS.map(a=>({a,pow:powOf(a,str,int_),e:expect(a,n,p,powOf(a,str,int_)),dead:a.need>n}));
+  const live=rows.filter(r=>!r.dead);
+  const best=live.length?Math.max(...live.map(r=>r.e.dmg)):-1;
+  $("#skBody").innerHTML=rows.map((r,i)=>{
+    const {a,pow,e,dead}=r, perMp=e.mp>0?e.dmg/e.mp:null;
+    return `<tr class="${dead?"dead":e.dmg===best?"best":""}">
+      <td class="nm">${a.n}${a.memo?`<small>${a.memo}</small>`:""}</td>
+      <td><span class="${a.ki==="m"?"tagM":"tagP"}">${a.ki==="m"?"魔法 INT":"物理 STR"}</span></td>
+      <td><input class="num" data-f="need" data-i="${i}" type="number" min="1" max="8" value="${a.need}"></td>
+      <td><input class="num" data-f="mul"  data-i="${i}" type="number" min="1" max="2000" value="${a.mul}"></td>
+      <td><input class="num" data-f="mp"   data-i="${i}" type="number" min="0" max="99" value="${a.mp}"></td>
+      <td style="color:var(--dim)">${f1(pow)}</td>
+      <td class="${pctClass(e.ok)}">${dead?"振れない":f1(e.ok*100)+"%"}</td>
+      <td${e.dmg===best&&!dead?' style="color:var(--brass)"':''}>${dead?"—":f1(e.dmg)}</td>
+      <td>${perMp==null?'<span style="color:var(--ink)">—</span>':dead?"—":f1(perMp)}</td>
+      <td><button class="roll" data-roll="${i}"${dead?" disabled":""}>振 る</button></td>
+    </tr>`;}).join("");
+  $("#skBody").querySelectorAll("input.num").forEach(el=>{
+    el.oninput=()=>{ const a=ACTS[+el.dataset.i], v=+el.value;
+      if(isFinite(v))a[el.dataset.f]=Math.max(el.dataset.f==="mp"?0:1,v); draw(); };});
+  $("#skBody").querySelectorAll("[data-roll]").forEach(el=>{
+    el.onclick=()=>rollAct(ACTS[+el.dataset.roll]);});
+}
+
+function drawFoeActs(n,p,str){
+  $("#foeTbl").innerHTML=`<tbody>`+FOEACTS.map((a,i)=>{
+    const pow=str*a.mul/100, ok=atLeast(n,a.need,p);
+    return `<tr${a.need>n?' class="dead"':''}>
+      <td class="nm">${a.n}</td>
+      <td><input class="num" data-ff="need" data-i="${i}" type="number" min="1" max="8" value="${a.need}"></td>
+      <td><input class="num" data-ff="mul" data-i="${i}" type="number" min="1" max="2000" value="${a.mul}"></td>
+      <td style="color:var(--dim)">威力 ${f1(pow)}</td>
+      <td class="${pctClass(ok)}">${a.need>n?"振れない":f1(ok*100)+"%"}</td></tr>`;}).join("")+`</tbody>`;
+  $("#foeTbl").querySelectorAll("input.num").forEach(el=>{
+    el.oninput=()=>{ const a=FOEACTS[+el.dataset.i], v=+el.value;
+      if(isFinite(v))a[el.dataset.ff]=Math.max(1,v); draw(); };});
+}
+
+/* 手で振る。ここが手触りの本体 */
+function rollAct(a){
+  const n=num("nDice"), thr=threshold(num("myDex"),num("foeDex"));
+  const pow=powOf(a,num("myStr"),num("myInt"));
+  const rolls=[]; for(let i=0;i<n;i++)rolls.push(r6());
+  const k=rolls.filter(v=>v>=thr).length, ok=k>=a.need;
+  const dmg=dmgOf(a,k,pow), ex=k-a.need;
+  $("#rollBox").innerHTML=
+    `<div class="dice">${rolls.map(v=>`<div class="die${v>=thr?" hit":""}">${v}</div>`).join("")}</div>`+
+    `<div class="rres"><b>${a.n}</b>　${n}d6・${thr}以上　→　成功 <b>${k}</b> ／ 必要 <b>${a.need}</b>`+
+      `　<small>${a.ki==="m"?"INT":"STR"} の ${a.mul}% ＝ 威力 ${f1(pow)}</small><br>`+
+      (ok ? `<span class="ok">通った</span>　ダメージ <b>${f1(dmg)}</b>`+
+            (ex>0&&S.powMode==="excess"?`　<small>超過 ${ex} で ${Math.round(S.exGain*ex*100)}% 増し</small>`:"")
+          : `<span class="ng">届かなかった</span>`+
+            (S.failMode==="partial"?`　弱く出た ダメージ <b>${f1(dmg)}</b>`:`　ダメージ <b>0</b>`))+
+      `　<small>MP −${f1(mpOf(a,k))}</small></div>`;
+}
+
+function drawProb(p,nNow){
+  let h=`<thead><tr><th class="nm">ダイス</th>`;
+  for(let k=1;k<=6;k++)h+=`<th>必要 ${k}</th>`;
+  h+=`</tr></thead><tbody>`;
+  for(let n=1;n<=8;n++){
+    h+=`<tr${n===nNow?' class="best"':''}><td class="nm">${n}個${
+      n===nNow?' <span style="color:var(--brass)">◀ いま</span>':''}</td>`;
+    for(let k=1;k<=6;k++)
+      h+= k>n ? `<td style="color:#3f443a">—</td>`
+              : `<td class="${pctClass(atLeast(n,k,p))}">${f1(atLeast(n,k,p)*100)}</td>`;
+    h+=`</tr>`;
+  }
+  $("#probTbl").innerHTML=h+`</tbody>`;
+
+  /* 「覚えた瞬間がいちばん弱い」を、いま覚えたばかりの技で出す */
+  const just=ACTS.filter(a=>a.need<=nNow).sort((a,b)=>b.need-a.need)[0];
+  if(!just){ $("#trapNote").innerHTML=""; return; }
+  const need=just.need;
+  const half=(()=>{for(let n=need;n<=16;n++)if(atLeast(n,need,p)>=.5)return n;return null;})();
+  $("#trapNote").innerHTML=
+    `<div class="warn"><b>覚えた瞬間がいちばん弱い</b> ── <b style="color:var(--bone)">${just.n}</b>（必要成功 ${need}）を `+
+    `ダイス ${need}個 で覚えると <b>${f1(atLeast(need,need,p)*100)}%</b>、`+
+    `いまの ${nNow}個 で <b>${f1(atLeast(nNow,need,p)*100)}%</b>。`+
+    (half?`半々に届くのは <b>${half}個</b>（覚えてから ＋${half-need}）。`:`このしきい値では半々に届かない。`)+
+    `<br>失敗の扱いをやわらげても ここは直りません。直すなら「<b>覚える段のほうを ダイス＝必要成功＋2 に合わせる</b>」ほうです。</div>`;
+}
+
+/* ---------- 撃ち合い ---------- */
+function fight(myAct,cfg){
+  let hp=cfg.myHP, mp=cfg.myMP, fhp=cfg.foeHP, r=0;
+  const meFirst=cfg.myDex>=cfg.foeDex;
+  const swing=(acts,nd,thr,pick)=>{           /* 1人ぶんの手番 */
+    const a=pick(acts);
+    let k=0; for(let i=0;i<nd;i++)if(r6()>=thr)k++;
+    return {a,k};
+  };
+  while(hp>0&&fhp>0&&r<200){
+    r++;
+    const order=meFirst?[0,1]:[1,0];
+    for(const side of order){
+      if(hp<=0||fhp<=0)break;
+      if(side===0){
+        const a=(mp>=myAct.mp)?myAct:ACTS[0];
+        let k=0; for(let i=0;i<cfg.n;i++)if(r6()>=cfg.thr)k++;
+        fhp-=dmgOf(a,k,powOf(a,cfg.myStr,cfg.myInt));
+        mp=Math.max(0,mp-mpOf(a,k));
+      }else{
+        /* 敵は 使える中で 期待ダメージがいちばん高いものを選ぶ */
+        let best=FOEACTS[0], bv=-1;
+        for(const a of FOEACTS){
+          if(a.need>cfg.fn)continue;
+          const v=atLeast(cfg.fn,a.need,cfg.fp)*cfg.foeStr*a.mul/100;
+          if(v>bv){bv=v;best=a;}
+        }
+        let k=0; for(let i=0;i<cfg.fn;i++)if(r6()>=cfg.fthr)k++;
+        if(k>=best.need)hp-=cfg.foeStr*best.mul/100;
+        else if(S.failMode==="partial")hp-=cfg.foeStr*best.mul/100*(k/best.need);
+      }
+    }
+  }
+  return {win:fhp<=0&&hp>0, rounds:r, hpLeft:Math.max(0,hp)/cfg.myHP};
+}
+$("#runBtn").onclick=()=>{
+  const cfg={
+    myStr:num("myStr"), myInt:num("myInt"), myDex:num("myDex"), n:num("nDice"),
+    myHP:num("myHP"), myMP:num("myMP"),
+    foeStr:num("foeStr"), foeDex:num("foeDex"), fn:num("foeDice"), foeHP:num("foeHP"),
+  };
+  cfg.thr=threshold(cfg.myDex,cfg.foeDex); cfg.fthr=threshold(cfg.foeDex,cfg.myDex);
+  cfg.fp=pOf(cfg.fthr);
+  const T=3000;
+  const rows=ACTS.map(a=>{
+    if(a.need>cfg.n)return {a,dead:true};
+    let w=0,r=0,h=0;
+    for(let i=0;i<T;i++){ const o=fight(a,cfg); if(o.win)w++; r+=o.rounds; h+=o.hpLeft; }
+    return {a,win:w/T,rounds:r/T,hp:h/T};
+  });
+  const live=rows.filter(r=>!r.dead);
+  /* 勝率だけで並べると、どちらも 99% を超えたところで差が消える。
+     倒す速さと 残る HP にも印を付けて、3つを並べて見る。 */
+  const bW=Math.max(...live.map(r=>r.win)),
+        bR=Math.min(...live.map(r=>r.rounds)),
+        bH=Math.max(...live.map(r=>r.hp));
+  const mk=(v,b,txt)=>v===b?`<span style="color:var(--brass)">${txt}</span>`:txt;
+  $("#simTbl").innerHTML=
+    `<thead><tr><th class="nm">これだけを使い続ける</th><th>勝率</th><th>倒すまでの<br>ラウンド</th>`+
+    `<th>残り<br>HP</th><th class="nm">　</th></tr></thead><tbody>`+
+    rows.map(r=>r.dead
+      ? `<tr class="dead"><td class="nm">${r.a.n}</td><td>振れない</td><td>—</td><td>—</td><td class="nm"></td></tr>`
+      : `<tr class="${r.win===bW?"best":""}"><td class="nm">${r.a.n}</td>
+          <td class="${pctClass(r.win)}">${mk(r.win,bW,f1(r.win*100)+"%")}</td>
+          <td>${mk(r.rounds,bR,r.rounds.toFixed(2))}</td>
+          <td>${mk(r.hp,bH,f1(r.hp*100)+"%")}</td>
+          <td class="nm"><span style="color:var(--ink)">${
+            [r.win===bW?"勝率":"",r.rounds===bR?"速さ":"",r.hp===bH?"残り":""]
+              .filter(Boolean).join("・")||"—"}</span></td></tr>`).join("")+`</tbody>`;
+  $("#runNote").textContent=
+    `自分 HP${cfg.myHP}/MP${cfg.myMP}・${cfg.n}d6・${cfg.thr}以上　対　敵 HP${cfg.foeHP}・${cfg.fn}d6・${cfg.fthr}以上　／ ${T} 回`;
+};
+
+/* ---------- つまみの配線 ---------- */
+["myStr","myInt","myDex","nDice","myHP","myMP","foeStr","foeDex","foeDice","foeHP","exGain"]
+  .forEach(id=>{ $("#"+id).oninput=()=>{ if(id==="exGain")S.exGain=num("exGain")/100; draw(); }; });
+function seg(sel,key,el,map){
+  const box=$(sel);
+  box.querySelectorAll("button").forEach(b=>{
+    b.onclick=()=>{
+      box.querySelectorAll("button").forEach(x=>x.classList.remove("on"));
+      b.classList.add("on"); S[key]=b.dataset.v; $(el).innerHTML=map[b.dataset.v]; draw();};});
+  $(el).innerHTML=map[S[key]];
+}
+seg("#segPow","powMode","#powHint",{
+  flat:"通ったかどうかだけ。<b style='color:var(--moss)'>技の階段がきれいに並ぶ</b>（通常→斬撃→強撃→大技 の順に、ダイスが増えるたび主役が入れ替わる）",
+  excess:"必要成功を越えたぶんだけ強くなる。<b style='color:var(--blood)'>階段がつぶれる</b> ── 必要成功の小さい技ほど超過しやすいので、斬撃がいつまでも強いままになる",
+});
+seg("#segFail","failMode","#failHint",{
+  lose:"外したらダメージ 0、MP も消える。<b style='color:var(--moss)'>階段はこれでちゃんと機能する</b>",
+  half:"外しても MP は半分返る。挑む気になりやすい",
+  partial:"必要2で1成功なら半分の威力。<b style='color:var(--blood)'>門がぼやける</b>ので、必要成功の大きい技ほど得になってしまう",
+});
+draw();
+</script>
+</body>
+</html>
