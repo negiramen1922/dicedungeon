@@ -14,51 +14,59 @@
 html,body{margin:0;padding:0}
 body{background:var(--bg);color:var(--bone);
   font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",system-ui,sans-serif;
-  font-size:15px;line-height:1.7;padding:12px 12px 40px;max-width:540px;margin:0 auto}
+  font-size:15px;line-height:1.7;padding:12px 10px 40px;max-width:560px;margin:0 auto}
 button{font-family:inherit}
 
 .stagebar{font-size:10px;letter-spacing:.2em;color:var(--brass);text-align:center;margin-bottom:7px}
-.lead{color:var(--dim);font-size:11.5px;line-height:1.8;margin:0 0 12px;
+.lead{color:var(--dim);font-size:11.5px;line-height:1.8;margin:0 0 10px;
   border-left:2px solid var(--line);padding-left:10px}
 .lead b{color:var(--brass);font-weight:600}
 
-/* ---- 盤面。横一列 ---- */
-.field{background:var(--panel);border:1px solid var(--line);padding:10px 5px 9px;position:relative}
-.hdr,.board{display:grid;grid-template-columns:1.15fr 14px 1fr 1fr 1fr;gap:2px}
-.hdr{margin-bottom:4px}
-.hdr div{font-size:8.5px;letter-spacing:.14em;text-align:center;color:var(--ink)}
+/* ---- 行動順 ---- */
+.ordwrap{background:var(--panel);border:1px solid var(--line);border-bottom:none;
+  padding:6px 8px;display:flex;gap:5px;align-items:center;overflow-x:auto}
+.ord{flex:none;font-size:9px;letter-spacing:.06em;padding:3px 7px;border:1px solid #2f3429;
+  color:var(--ink);white-space:nowrap}
+.ord.mine{color:var(--moss)} .ord.foe{color:var(--blood)}
+.ord.now{border-color:var(--brass);color:var(--brass);background:#2f3327}
+.ord.gone{opacity:.3;text-decoration:line-through}
+
+/* ---- 盤面。両方が横一列 ---- */
+.field{background:var(--panel);border:1px solid var(--line);padding:8px 4px;position:relative}
+.hdr,.board{display:grid;grid-template-columns:1fr 1fr 1fr 12px 1fr 1fr 1fr;gap:2px}
+.hdr{margin-bottom:3px}
+.hdr div{font-size:8px;letter-spacing:.1em;text-align:center;color:var(--ink)}
 .hdr .mine{color:var(--moss)} .hdr .theirs{color:var(--blood)}
 .gap{position:relative}
 .gap::before{content:"";position:absolute;left:50%;top:2px;bottom:2px;width:1px;background:#2f3429}
-.cell{min-height:150px;padding:3px 1px;display:flex;flex-direction:column;
+.cell{min-height:146px;padding:3px 0;display:flex;flex-direction:column;
   align-items:center;justify-content:flex-start;position:relative;border:1px solid transparent}
-.cell.dead{opacity:.22;filter:grayscale(1)}
+.cell.dead{opacity:.2;filter:grayscale(1)}
 .cell.acting{background:#1d2117;box-shadow:inset 0 0 0 1px #6f7a63}
 .cell.pick{cursor:pointer}
 .cell.pick:hover{background:#262b1e}
 .cell.aim{border-color:var(--brass);background:#262b1e}
-.por{padding:2px 3px}
 .por svg{display:block}
-.cn{font-size:9.5px;line-height:1.3;text-align:center;margin-top:3px}
+.cn{font-size:9px;line-height:1.25;text-align:center;margin-top:2px}
 .cn.mine{color:var(--moss)} .cn.foe{color:var(--blood)}
-.chp{font-family:ui-monospace,monospace;font-size:8.5px;color:var(--dim);margin-top:1px}
-.bar{height:3px;background:#14160f;width:80%;margin-top:3px}
+.chp{font-family:ui-monospace,monospace;font-size:8px;color:var(--dim);margin-top:1px}
+.bar{height:3px;background:#14160f;width:82%;margin-top:2px}
 .bar i{display:block;height:100%;background:var(--blood);transition:width .25s ease-out}
 .bar.me i{background:var(--moss)}
 .bar.mpb i{background:var(--blue)}
-.cst{font-size:8.5px;color:var(--ink);margin-top:4px;text-align:center;line-height:1.45}
+.cst{font-size:8px;color:var(--ink);margin-top:3px;text-align:center;line-height:1.4}
 .cst b{color:var(--bone);font-weight:600}
-/* 列の何番目か。ここが今回の主役 */
-.dep{margin-top:5px;font-size:8.5px;letter-spacing:.08em;padding:2px 5px;
-  border:1px solid #2f3429;color:var(--ink);white-space:nowrap}
+.dep{margin-top:4px;font-size:8px;letter-spacing:.04em;padding:1px 4px;
+  border:1px solid #2f3429;color:var(--ink);white-space:nowrap;text-align:center}
 .dep.d0{color:var(--moss);border-color:#3d4a30}
 .dep.d1{color:var(--brass);border-color:#4d431c}
 .dep.d2{color:var(--blood);border-color:#4d2a25}
+.far{font-size:8px;color:var(--blue);margin-top:2px;letter-spacing:.04em}
 
-.pop{position:absolute;top:30px;left:50%;transform:translateX(-50%);
-  font-family:"Hiragino Mincho ProN",serif;font-size:22px;color:var(--blood);
+.pop{position:absolute;top:26px;left:50%;transform:translateX(-50%);
+  font-family:"Hiragino Mincho ProN",serif;font-size:20px;color:var(--blood);
   pointer-events:none;animation:pop 1s ease-out forwards;text-shadow:0 0 8px #1b1d18;z-index:5}
-.pop.miss{color:var(--dim);font-size:14px}
+.pop.miss{color:var(--dim);font-size:13px}
 .pop.big{color:var(--brass)}
 @keyframes pop{0%{opacity:0;transform:translate(-50%,6px) scale(.8)}
   22%{opacity:1;transform:translate(-50%,-4px) scale(1.1)}
@@ -67,17 +75,16 @@ button{font-family:inherit}
 
 /* ---- ダイスの覆い ---- */
 .diceOv{position:absolute;inset:0;background:rgba(20,22,15,.95);
-  display:none;flex-direction:column;align-items:center;justify-content:center;gap:9px;
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;
   z-index:20;padding:10px}
 .diceOv.on{display:flex}
 .dvWho{font-size:10px;letter-spacing:.2em;color:var(--brass)}
-.dvNeed{font-size:11px;color:var(--dim);letter-spacing:.06em;text-align:center;line-height:1.6}
-.dvNeed b{color:var(--bone)}
-.dvNeed .pen{color:var(--blood)}
-.dice{display:flex;gap:7px;flex-wrap:wrap;justify-content:center}
-.die{width:40px;height:40px;border:1px solid var(--line);background:#171a14;
+.dvNeed{font-size:11px;color:var(--dim);letter-spacing:.04em;text-align:center;line-height:1.6}
+.dvNeed b{color:var(--bone)} .dvNeed .pen{color:var(--blood)} .dvNeed .free{color:var(--blue)}
+.dice{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.die{width:38px;height:38px;border:1px solid var(--line);background:#171a14;
   display:grid;place-items:center;font-family:"Hiragino Mincho ProN",serif;
-  font-size:21px;color:#5d6356;font-variant-numeric:tabular-nums}
+  font-size:20px;color:#5d6356;font-variant-numeric:tabular-nums}
 .die.roll{animation:shake .13s linear infinite}
 .die.hit{border-color:var(--moss);color:var(--moss);background:#1e2419;
   box-shadow:0 0 10px -2px rgba(143,162,97,.55)}
@@ -87,9 +94,8 @@ button{font-family:inherit}
 @keyframes shake{0%{transform:translate(-1px,1px) rotate(-3deg)}
   50%{transform:translate(1px,-1px) rotate(3deg)}100%{transform:translate(-1px,1px) rotate(-3deg)}}
 @keyframes land{from{transform:scale(1.35)}to{transform:scale(1)}}
-.dvRes{font-size:14px;letter-spacing:.04em;min-height:38px;text-align:center;line-height:1.6}
-.dvRes .ok{color:var(--moss)} .dvRes .ng{color:var(--blood)}
-.dvRes .xs{color:var(--brass)}
+.dvRes{font-size:13.5px;letter-spacing:.04em;min-height:36px;text-align:center;line-height:1.6}
+.dvRes .ok{color:var(--moss)} .dvRes .ng{color:var(--blood)} .dvRes .xs{color:var(--brass)}
 .dvRes small{display:block;font-size:10.5px;color:var(--dim);letter-spacing:0;margin-top:2px}
 
 /* ---- 命中閾値 ---- */
@@ -100,7 +106,7 @@ button{font-family:inherit}
 .thrt{font-size:10.5px;color:var(--dim);line-height:1.5}
 .thrt b{color:var(--bone)}
 .thrx{margin-left:auto;text-align:right;font-size:9.5px;color:var(--ink);line-height:1.55}
-.thrx b{color:var(--blood)}
+.thrx b{color:var(--blood)} .thrx .free{color:var(--blue)}
 
 /* ---- 行動 ---- */
 .prompt{font-size:12px;color:var(--brass);letter-spacing:.08em;margin:12px 0 5px;
@@ -109,7 +115,7 @@ button{font-family:inherit}
 .acts{display:grid;grid-template-columns:1fr 1fr;gap:5px}
 .act{background:var(--panel);border:1px solid var(--line);padding:7px 9px;cursor:pointer;
   text-align:left;color:var(--bone);display:flex;flex-direction:column;gap:3px;
-  min-height:62px;justify-content:center}
+  min-height:60px;justify-content:center}
 .act:hover:not(:disabled){border-color:var(--brass);background:var(--panel2)}
 .act:disabled{opacity:.34;cursor:not-allowed}
 .act:focus-visible{outline:2px solid var(--brass);outline-offset:1px}
@@ -117,8 +123,8 @@ button{font-family:inherit}
 .act.sk{border-left:3px solid var(--brass)}
 .act.def{border-left:3px solid var(--blue)}
 .act.wide{grid-column:1/-1;min-height:0;flex-direction:row;align-items:center;gap:9px}
-.an{font-size:13.5px;letter-spacing:.04em;line-height:1.25;display:flex;
-  align-items:center;gap:7px;flex-wrap:wrap}
+.an{font-size:13px;letter-spacing:.03em;line-height:1.25;display:flex;
+  align-items:center;gap:6px;flex-wrap:wrap}
 .ad{font-size:10px;color:var(--dim);line-height:1.45;font-variant-numeric:tabular-nums}
 .ad em{font-style:normal;color:var(--moss)}
 .ad em.mid{color:var(--brass)} .ad em.bad{color:var(--blood)}
@@ -135,7 +141,7 @@ button{font-family:inherit}
 .lg.rnd{color:var(--brass);font-family:ui-monospace,monospace;font-size:9.5px;
   letter-spacing:.2em;border-top:1px solid #2e332a;padding-top:8px;margin-top:4px}
 .lg .a{color:var(--moss)} .lg .b{color:var(--blood)} .lg .x{color:var(--brass)}
-.lg .m{font-family:ui-monospace,monospace}
+.lg .c{color:var(--blue)} .lg .m{font-family:ui-monospace,monospace}
 .end{margin-top:10px;padding:12px;text-align:center;border:1px solid var(--brass);
   color:var(--brass);font-family:"Hiragino Mincho ProN",serif;letter-spacing:.2em;font-size:14px}
 .end.lose{border-color:var(--blood);color:var(--blood)}
@@ -145,18 +151,18 @@ button{font-family:inherit}
 .ttl{font-size:9.5px;letter-spacing:.22em;color:var(--ink);margin:0 0 8px}
 .ttl.mid{margin-top:14px;border-top:1px solid #2e332a;padding-top:12px}
 .trow{display:flex;align-items:center;gap:8px;margin:7px 0;flex-wrap:wrap}
-.trow>.k{font-size:11px;color:var(--dim);letter-spacing:.08em;width:86px;flex:none}
+.trow>.k{font-size:11px;color:var(--dim);letter-spacing:.06em;width:96px;flex:none}
 .tval{font-family:ui-monospace,monospace;font-size:13px;color:var(--brass);
-  min-width:24px;text-align:center;font-variant-numeric:tabular-nums}
+  min-width:22px;text-align:center;font-variant-numeric:tabular-nums}
 .tbtn{background:var(--panel2);border:1px solid var(--line);color:var(--bone);
-  width:30px;height:28px;font-size:15px;cursor:pointer;line-height:1;padding:0}
+  width:28px;height:26px;font-size:14px;cursor:pointer;line-height:1;padding:0}
 .tbtn:hover:not(:disabled){border-color:var(--brass);color:var(--brass)}
 .tbtn:disabled{opacity:.3;cursor:default}
-.tbtn.w{width:auto;padding:0 11px;font-size:11.5px;height:28px}
+.tbtn.w{width:auto;padding:0 10px;font-size:11.5px;height:26px}
 .tbtn.on{border-color:var(--brass);color:var(--brass);background:#2f3327}
 .tnote{font-size:10px;color:var(--ink);line-height:1.7;margin-top:7px}
-.tnote b{color:var(--dim)}
-.tnote .warn{color:var(--blood)}
+.tnote b{color:var(--dim)} .tnote .warn{color:var(--blood)}
+.tnote .good{color:var(--moss)}
 @media(prefers-reduced-motion:reduce){ .die.roll,.pop,.die.set{animation:none} }
 </style>
 </head>
@@ -164,20 +170,20 @@ button{font-family:inherit}
 
 <div class="stagebar">必 要 成 功 数 ── た た か い の 試 作</div>
 <p class="lead">
-技には <b>必要な成功の数</b>があります。玉（<b>●●○</b>）がその数。<br>
-超えたぶんは <b>威力の上乗せ</b>（金の目が超過）。<b>2つまで</b>数えます。<br>
-相手は<b>横一列</b>。<b>奥にいるほど当てにくい</b> ── その付け方を下で切り替えられます。
+技には <b>必要な成功の数</b>（玉 ●●○）。超えたぶんは <b>威力の上乗せ</b>で、<b>2つまで</b>数えます。<br>
+<b>両方が横一列。</b>奥にいるほど当てにくい ── ただし <b class="free" style="color:#6f92ab">弓と杖は奥ゆきを払いません</b>。<br>
+だからナイトが前に立つと、奥のウィザードは守られたまま撃てます。
 </p>
 
+<div class="ordwrap" id="ordBar"></div>
 <div class="field">
-  <div class="hdr"><div class="mine">こ ち ら</div><div></div>
-    <div class="theirs">先 頭</div><div class="theirs">2 番 目</div><div class="theirs">3 番 目</div></div>
+  <div class="hdr">
+    <div class="mine">先 頭</div><div class="mine">2 番</div><div class="mine">3 番</div><div></div>
+    <div class="theirs">先 頭</div><div class="theirs">2 番</div><div class="theirs">3 番</div></div>
   <div class="board">
-    <div class="cell" id="cMe"></div>
+    <div class="cell" id="cA0"></div><div class="cell" id="cA1"></div><div class="cell" id="cA2"></div>
     <div class="gap"></div>
-    <div class="cell" id="cF0"></div>
-    <div class="cell" id="cF1"></div>
-    <div class="cell" id="cF2"></div>
+    <div class="cell" id="cF0"></div><div class="cell" id="cF1"></div><div class="cell" id="cF2"></div>
   </div>
   <div class="diceOv" id="diceOv"></div>
 </div>
@@ -202,16 +208,7 @@ button{font-family:inherit}
   <div class="tnote" id="xNote2" style="margin-top:0"></div>
 
   <div class="ttl mid">稽 古</div>
-  <div class="trow"><span class="k">格闘ダイス</span>
-    <button class="tbtn" id="dMinus">−</button>
-    <span class="tval" id="dVal">2</span>
-    <button class="tbtn" id="dPlus">＋</button>
-    <span class="tnote" style="margin:0" id="dNote"></span></div>
-  <div class="trow"><span class="k">こちらの DEX</span>
-    <button class="tbtn" id="xMinus">−</button>
-    <span class="tval" id="xVal">20</span>
-    <button class="tbtn" id="xPlus">＋</button>
-    <span class="tnote" style="margin:0" id="xNote"></span></div>
+  <div id="diceRows"></div>
   <div class="trow"><span class="k">相手の顔ぶれ</span>
     <div id="foePick" style="display:flex;gap:4px;flex-wrap:wrap"></div></div>
   <div class="trow"><span class="k">　</span>
@@ -227,17 +224,18 @@ const r6=()=>1+Math.floor(Math.random()*6);
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 
 /* ================= 決めごと =================
-   ・技ごとに「必要な成功の数」がある。届かなければ **ダメージなし**（MP は消える）
-   ・超えたぶん（超過）は **威力の上乗せ**
-   ・威力は 物理＝STR の n%
+   ・技ごとに「必要な成功の数」。届かなければ ダメージなし（MP は消える）
+   ・超えたぶん（超過）は 威力の上乗せ。**2つまで数える**
+     （上限が無いと 必要成功1の技が 必要成功2の技を超えてしまう）
+   ・威力は 得物の見る数値の n%（剣と弓は STR、杖は INT）
    ・しきい値は素 4。DEX の差 25 で ±1、40 で ±2。上は 2以上、下は 6のみ
-   ・相手は横一列。奥ゆきの罰の付け方は 4案あって まだ決めていない
+   ・**両方が横一列。**奥ゆきの罰の付け方は 4案あって まだ決めていない
+   ・**遠隔（弓・杖）は奥ゆきを払わない**（本編の isRanged と同じ）
    ・敵も同じ仕組みで振る                                          */
 const DEXA=25, DEXB=40;
 const dexShift=d=>Math.sign(d)*(Math.abs(d)>=DEXB?2:Math.abs(d)>=DEXA?1:0);
 const baseThr=(atk,def)=>Math.max(2,Math.min(6,4-dexShift(atk-def)));
 
-/* 奥ゆきの罰。d は 0（先頭）／1／2 */
 const DRULE={
   thr2:{n:"しきい値 +1／+2", d:"いまの本体と同じ足し方。<span class='warn'>必要成功と噛み合うと きつすぎる恐れ</span>",
         thr:d=>d,             dice:d=>0,  pow:d=>1},
@@ -248,91 +246,116 @@ const DRULE={
   pow :{n:"威力だけ減る",     d:"通るかどうかは変えない。奥は削りにくいだけ（−25%／−45%）",
         thr:d=>0,             dice:d=>0,  pow:d=>[1,.75,.55][d]},
 };
-/* 超過の伸び。o は 超過した成功の数。
-   **上限があるのは「必要成功1の技が 必要成功2の技を超えない」ため。**
-   上限なしだと ダイスが増えたとき 通常攻撃が8個成功して 88 になり、
-   斬撃の素 64 を超えてしまう。上限2個なら どの組でも超えない。 */
 const XRULE={
   x25c2:{n:"+25%／個・上限2", g:.25, cap:2,
     d:"<b>決めた形。</b>控えめに伸びて、上限があるので <b>必要成功の小さい技が 大きい技を超えない</b>",
     f:o=>1+.25*Math.min(2,o)},
   x25  :{n:"+25%／上限なし",  g:.25, cap:99,
-    d:"<span class='warn'>上限が無いと 条件が崩れる</span> ── 通常攻撃が8個成功すると 88 で 斬撃の素 64 を超える",
+    d:"<span class='warn'>上限が無いと 条件が崩れる</span> ── 通常攻撃が8個成功すると 素の 2.75倍 になる",
     f:o=>1+.25*o},
   x50c2:{n:"+50%／個・上限2", g:.5,  cap:2,
-    d:"大成功が派手。ただし 斬撃の最大 128 が 強撃の素 115 を超える",
-    f:o=>1+.5*Math.min(2,o)},
+    d:"大成功が派手。ただし 斬撃の最大が 強撃の素を超える", f:o=>1+.5*Math.min(2,o)},
   none :{n:"伸びない",        g:0,   cap:0,
     d:"通ったかどうかだけ。比べるための基準", f:o=>1},
 };
 let DMODE="thr2", XMODE="x25c2";
 
-/* ヒュームのナイト Lv1。数字は本編の JOB.knight から借りている */
-const BASE={n:"ヒュームのナイト",STR:32,DEX:20,HP:175,MP:16};
-/* 敵は本編の FOE から借りている */
+/* ---------- 顔ぶれ。数字は本編の JOB＋RACE(ヒューム) から借りている ----------
+   技の名前は 通常攻撃・斬撃・強撃 がご提案のもの。それ以外は（仮）。
+   **本編の技能に「術」が無い。**杖は type:"ranged" なので wepSkill は 射撃を返す。
+   ウィザードが射撃で測られると 技能35 ＝ ダイス1個になってしまうので、
+   ここでは 術 という技能を仮に立てている。本体へ移すなら SK に足す必要がある。 */
+const JOBS={
+  knight:{n:"ナイト",  fig:"knight", sk:"格 闘", far:false, stat:"STR", pref:0,
+    STR:35, INT:20, DEX:23, HP:207, MP:19, dice:2,
+    acts:[{n:"通常攻撃",  cls:"atk",need:1,mul:100,mp:0},
+          {n:"斬 撃",    cls:"sk", need:2,mul:200,mp:3},
+          {n:"強 撃",    cls:"sk", need:3,mul:360,mp:6}]},
+  archer:{n:"アーチャー",fig:"archer", sk:"射 撃", far:true,  stat:"STR", pref:2,
+    STR:29, INT:23, DEX:39, HP:167, MP:21, dice:2,
+    acts:[{n:"射 る",     cls:"atk",need:1,mul:100,mp:0},
+          {n:"二本射ち（仮）",cls:"sk", need:2,mul:195,mp:3},
+          {n:"貫き撃ち（仮）",cls:"sk", need:3,mul:350,mp:6}]},
+  mage:  {n:"ウィザード",fig:"mage",   sk:"術（仮）",far:true,  stat:"INT", pref:3,
+    STR:23, INT:43, DEX:28, HP:147, MP:32, dice:2,
+    acts:[{n:"魔 弾",     cls:"atk",need:1,mul:100,mp:0},
+          {n:"連 弾（仮）", cls:"sk", need:2,mul:200,mp:4},
+          {n:"大魔弾（仮）",cls:"sk", need:3,mul:365,mp:8}]},
+};
 const FOE={
-  slime:  {n:"スライム",  HP:95, STR:22, DEX:6,  dice:2, art:"slime",
+  slime:  {n:"スライム",  HP:95, STR:22, DEX:6,  dice:2, far:false,
     acts:[{n:"体当たり",need:1,mul:100},{n:"のびる",need:2,mul:200}]},
-  gslime: {n:"草スライム", HP:80, STR:23, DEX:26, dice:2, art:"gslime",
-    acts:[{n:"跳ねかかる",need:1,mul:100},{n:"芽を飛ばす",need:2,mul:190}]},
-  wslime: {n:"水スライム", HP:175,STR:36, DEX:5,  dice:3, art:"wslime",
+  gslime: {n:"草スライム", HP:80, STR:23, DEX:26, dice:3, far:false,
+    acts:[{n:"跳ねかかる",need:1,mul:100},
+          /* 投げ物。奥ゆきを払わないので 後列にも届く（本編の pos:"back"） */
+          {n:"芽を飛ばす",need:2,mul:190,far:true}]},
+  wslime: {n:"水スライム", HP:175,STR:36, DEX:5,  dice:3, far:false,
     acts:[{n:"押し流す",need:1,mul:90},{n:"飲み込む",need:3,mul:290}]},
 };
 const GROUPS={
   three:{n:"スライム ３",list:["slime","slime","slime"]},
   mixed:{n:"混 成",     list:["gslime","slime","wslime"]},
   two:  {n:"２ 体",     list:["slime","gslime"]},
-  one:  {n:"１ 体",     list:["slime"]},
+  one:  {n:"１ 体",     list:["wslime"]},
 };
-/* 技。通常攻撃・斬撃・強撃 はご提案のもの。大技は名前が未定なので仮 */
-const ACTS=[
-  {id:"a1",n:"通常攻撃",  cls:"atk", need:1, mul:100, mp:0},
-  {id:"a2",n:"斬 撃",    cls:"sk",  need:2, mul:200, mp:3},
-  {id:"a3",n:"強 撃",    cls:"sk",  need:3, mul:360, mp:6},
-  {id:"a4",n:"大技（仮）", cls:"sk",  need:4, mul:560, mp:10},
-];
 
 /* ---------- 図 ---------- */
-const knightFig=s=>`<svg width="${s}" height="${s}" viewBox="0 0 40 40" aria-hidden="true">
-  <g fill="none" stroke="#8fa261" stroke-width="1.4" stroke-linejoin="round">
-    <path d="M14 12h12v9a6 6 0 0 1-6 6 6 6 0 0 1-6-6z"/><path d="M14 12l6-6 6 6"/>
-    <path d="M17 17h6" stroke-width="2"/><path d="M13 28h14l2 9H11z"/>
-    <path d="M31 9v22" stroke-width="2"/><path d="M28 15h6"/></g></svg>`;
-const slimeFig=(s,c)=>`<svg width="${s}" height="${s}" viewBox="0 0 40 40" aria-hidden="true">
-  <path d="M6 32c0-9 5-18 14-18s14 9 14 18z" fill="${c}22" stroke="${c}"
-    stroke-width="1.4" stroke-linejoin="round"/><path d="M6 32h28" stroke="${c}" stroke-width="1.4"/>
-  <circle cx="16" cy="25" r="1.5" fill="${c}"/><circle cx="24" cy="25" r="1.5" fill="${c}"/>
-  <path d="M13 19q3-4 7-3" stroke="${c}" stroke-width="1.1" fill="none" opacity=".7"/></svg>`;
-const foeFig=(k,s)=>slimeFig(s,k==="gslime"?"#8fa261":k==="wslime"?"#6f92ab":"#b1544a");
+const FIG={
+ knight:c=>`<g fill="none" stroke="${c}" stroke-width="1.5" stroke-linejoin="round">
+   <path d="M14 12h12v9a6 6 0 0 1-12 0z"/><path d="M14 12l6-6 6 6"/><path d="M17 17h6" stroke-width="2"/>
+   <path d="M13 28h14l2 9H11z"/><path d="M31 9v22" stroke-width="2"/><path d="M28 15h6"/></g>`,
+ archer:c=>`<g fill="none" stroke="${c}" stroke-width="1.5" stroke-linejoin="round">
+   <circle cx="20" cy="10" r="4.5"/><path d="M16 17h8l3 11H13z"/><path d="M15 28l-2 9M25 28l2 9"/>
+   <path d="M31 8q5 12 0 24" stroke-width="1.2"/><path d="M31 8L31 32" stroke-width="1"/>
+   <path d="M22 20h11" stroke-width="1.2"/></g>`,
+ mage:c=>`<g fill="none" stroke="${c}" stroke-width="1.5" stroke-linejoin="round">
+   <path d="M20 5l6 9h-12z"/><circle cx="20" cy="17" r="4"/><path d="M14 23h12l3 14H11z"/>
+   <path d="M31 10v26" stroke-width="1.6"/><circle cx="31" cy="8" r="2.6" fill="${c}44"/></g>`,
+ slime:c=>`<g><path d="M6 32c0-9 5-18 14-18s14 9 14 18z" fill="${c}22" stroke="${c}"
+   stroke-width="1.4" stroke-linejoin="round"/><path d="M6 32h28" stroke="${c}" stroke-width="1.4"/>
+   <circle cx="16" cy="25" r="1.5" fill="${c}"/><circle cx="24" cy="25" r="1.5" fill="${c}"/></g>`,
+};
+const fig=(k,s,c)=>`<svg width="${s}" height="${s}" viewBox="0 0 40 40" aria-hidden="true">${
+  (FIG[k]||FIG.slime)(c)}</svg>`;
+const foeColor=k=>k==="gslime"?"#8fa261":k==="wslime"?"#6f92ab":"#b1544a";
 
 /* ---------- 状態 ---------- */
-let me, foes=[], groupKey="three", nDice=2, aim=0, round=0, busy=false, over=false, god=false;
+let party=[], foes=[], groupKey="three", round=0, busy=false, over=false, god=false;
+let order=[], turn=0, aim=0;
 
-const alive=()=>foes.filter(f=>f.hp>0);
-/* 列の何番目か。倒れた者は詰めるので、先頭が倒れると 2番目が先頭になる */
-const depthOf=f=>{ const i=alive().indexOf(f); return i<0?0:Math.min(2,i); };
-const aimFoe=()=>foes[aim]&&foes[aim].hp>0 ? foes[aim] : alive()[0];
+const alive=l=>l.filter(u=>u.hp>0);
+/* 列の何番目か。倒れた者は詰めるので、先頭が倒れると次が先頭になる */
+const depthOf=u=>{ const l=alive(u.foe?foes:party), i=l.indexOf(u); return i<0?0:Math.min(2,i); };
+const now=()=>order[turn];
+const aimFoe=()=>foes[aim]&&foes[aim].hp>0 ? foes[aim] : alive(foes)[0];
 
-/* その相手を狙ったときの しきい値・ダイス数・威力の掛け率 */
-function ctxOf(f){
-  const R=DRULE[DMODE], d=depthOf(f);
-  return {d,
-    thr:Math.max(2,Math.min(6,baseThr(me.DEX,f.DEX)+R.thr(d))),
-    n:Math.max(1,nDice+R.dice(d)),
+/* 攻める者 u が 守る者 t を狙うときの しきい値・ダイス数・威力の掛け率。
+   **遠隔（far）は 相手の奥ゆきを払わない。**本編の reachOf と同じ考え方。 */
+function ctxOf(u,t,act){
+  /* 得物が遠隔なら払わない。技そのものが投げ物（act.far）でも払わない。
+     本編の isRanged が act.pos==="back" を遠隔として扱うのと同じ。 */
+  const far=!!(u.far||(act&&act.far));
+  const R=DRULE[DMODE], d=far?0:depthOf(t);
+  return {d, far, raw:depthOf(t),
+    thr:Math.max(2,Math.min(6,baseThr(u.DEX,t.DEX)+R.thr(d))),
+    n:Math.max(1,u.dice+R.dice(d)),
     pow:R.pow(d)};
 }
 const comb=(n,k)=>{let r=1;for(let i=0;i<k;i++)r=r*(n-i)/(i+1);return r;};
 function atLeast(n,k,p){ if(k>n)return 0; let s=0;
   for(let i=k;i<=n;i++)s+=comb(n,i)*Math.pow(p,i)*Math.pow(1-p,n-i); return s; }
+const powOf=(u,a)=>u[u.stat||"STR"]*a.mul/100;
 
 function reset(keep){
-  const keepDex=(keep&&me)?me.DEX:BASE.DEX;
-  if(!keep)nDice=2;
-  me={...BASE, DEX:keepDex, hp:BASE.HP, mp:BASE.MP};
-  foes=GROUPS[groupKey].list.map(k=>({...FOE[k], key:k, hp:FOE[k].HP}));
-  aim=0; round=0; over=false; busy=false;
+  const keepDice=keep&&party.length?party.map(u=>u.dice):null;
+  party=["knight","archer","mage"].map((k,i)=>({...JOBS[k], key:k, foe:false,
+    hp:JOBS[k].HP, mp:JOBS[k].MP, dice:keepDice?keepDice[i]:2}))
+    .sort((a,b)=>a.pref-b.pref);          /* 本編の LINEPREF と同じ並び */
+  foes=GROUPS[groupKey].list.map(k=>({...FOE[k], key:k, foe:true, stat:"STR",
+    hp:FOE[k].HP, mp:0, acts:FOE[k].acts}));
+  round=0; over=false; busy=false; aim=0;
   $("#log").innerHTML=""; $("#endBox").innerHTML="";
-  log(`<span class="b">${foes.map(f=>f.n).join("・")}</span> が横一列に立ちふさがった`,"rnd");
+  log(`<span class="b">${foes.map(f=>f.n).join("・")}</span> と 向かい合った`,"rnd");
   newRound();
 }
 function log(html,cls){
@@ -340,148 +363,179 @@ function log(html,cls){
   d.className="lg"+(cls?" "+cls:""); d.innerHTML=html;
   $("#log").appendChild(d); $("#log").scrollTop=1e6;
 }
-function newRound(){ round++; log(`ラウンド ${round}`,"rnd"); drawAll(); }
-
-/* ---------- 描く ---------- */
-function drawAll(){ drawBoard(); drawThr(); drawActs(); drawTrain(); }
-
-function drawBoard(){
-  $("#cMe").className="cell"+(over?"":" acting")+(me.hp<=0?" dead":"");
-  $("#cMe").innerHTML=
-    `<div class="por">${knightFig(44)}</div>
-     <div class="cn mine">${me.n}</div>
-     <div class="chp">HP ${Math.max(0,Math.round(me.hp))}/${me.HP}</div>
-     <div class="bar me"><i style="width:${Math.max(0,me.hp/me.HP*100)}%"></i></div>
-     <div class="chp" style="color:var(--blue)">MP ${me.mp}/${me.MP}</div>
-     <div class="bar mpb"><i style="width:${me.mp/me.MP*100}%"></i></div>
-     <div class="cst">STR <b>${me.STR}</b>　DEX <b>${me.DEX}</b><br>ダイス <b>${nDice}</b>個${
-       god?'<br><span style="color:var(--brass)">倒れない</span>':""}</div>`;
-  const tgt=aimFoe();
-  for(let i=0;i<3;i++){
-    const el=$("#cF"+i), f=foes[i];
-    if(!f){ el.className="cell"; el.innerHTML=""; continue; }
-    const dead=f.hp<=0, d=depthOf(f);
-    const R=DRULE[DMODE];
-    const mark=dead?"倒れた":d===0?"先 頭":`${d+1}番目`;
-    const pen=dead?"":d===0?"":
-      DMODE==="thr2"||DMODE==="thr1"?`しきい値 +${R.thr(d)}`
-      :DMODE==="dice"?`ダイス ${R.dice(d)}`
-      :`威力 −${Math.round((1-R.pow(d))*100)}%`;
-    el.className="cell"+(dead?" dead":" pick")+(!dead&&f===tgt?" aim":"");
-    el.dataset.f=i;
-    el.innerHTML=
-      `<div class="por">${foeFig(f.key,40)}</div>
-       <div class="cn foe">${f.n}</div>
-       <div class="chp">HP ${Math.max(0,Math.round(f.hp))}/${f.HP}</div>
-       <div class="bar"><i style="width:${Math.max(0,f.hp/f.HP*100)}%"></i></div>
-       <div class="cst">STR <b>${f.STR}</b>　DEX <b>${f.DEX}</b><br>ダイス <b>${f.dice}</b>個</div>
-       <div class="dep d${dead?0:d}">${mark}${pen?"　"+pen:""}</div>`;
-  }
-  document.querySelectorAll("[data-f]").forEach(el=>{
-    el.onclick=()=>{ if(busy||over)return;
-      const f=foes[+el.dataset.f]; if(!f||f.hp<=0)return;
-      aim=+el.dataset.f; drawAll(); };});
+/* 行動順は DEX の高い順。本編と同じ */
+function newRound(){
+  round++;
+  order=[...alive(party),...alive(foes)].sort((a,b)=>b.DEX-a.DEX);
+  turn=0;
+  log(`ラウンド ${round}`,"rnd");
+  step();
+}
+async function step(){
+  while(turn<order.length && order[turn].hp<=0)turn++;
+  if(turn>=order.length){ if(!over)newRound(); return; }
+  const u=now();
+  if(u.foe){ busy=true; drawAll(); await foeAct(u); }
+  else { busy=false; drawAll(); }        /* 味方は 押されるのを待つ */
+}
+function nextTurn(){
+  if(over)return;
+  turn++;
+  step();
 }
 
+/* ---------- 描く ---------- */
+function drawAll(){ drawOrder(); drawBoard(); drawThr(); drawActs(); drawTrain(); }
+
+function drawOrder(){
+  $("#ordBar").innerHTML=order.map((u,i)=>
+    `<span class="ord ${u.foe?"foe":"mine"}${i===turn&&!over?" now":""}${
+      u.hp<=0?" gone":""}">${u.n}</span>`).join("")||`<span class="ord">—</span>`;
+}
+function unitCell(el,u,i,side){
+  if(!u){ el.className="cell"; el.innerHTML=""; el.removeAttribute("data-t"); return; }
+  const dead=u.hp<=0, d=depthOf(u), R=DRULE[DMODE];
+  const mark=dead?"倒れた":d===0?"先 頭":`${d+1}番目`;
+  const pen=dead||d===0?"":
+    (DMODE==="thr2"||DMODE==="thr1")?`+${R.thr(d)}`
+    :DMODE==="dice"?`${R.dice(d)}個`
+    :`−${Math.round((1-R.pow(d))*100)}%`;
+  const isAim=side==="foe"&&!dead&&u===aimFoe();
+  el.className="cell"+(dead?" dead":"")+(side==="foe"&&!dead?" pick":"")
+    +(isAim?" aim":"")+(u===now()&&!over&&!dead?" acting":"");
+  if(side==="foe")el.dataset.t=i; else el.removeAttribute("data-t");
+  el.innerHTML=
+    `<div class="por">${fig(u.fig||"slime",38,side==="me"?"#8fa261":foeColor(u.key))}</div>
+     <div class="cn ${side==="me"?"mine":"foe"}">${u.n}</div>
+     <div class="chp">HP ${Math.max(0,Math.round(u.hp))}</div>
+     <div class="bar ${side==="me"?"me":""}"><i style="width:${Math.max(0,u.hp/u.HP*100)}%"></i></div>`+
+    (side==="me"?`<div class="chp" style="color:var(--blue)">MP ${u.mp}</div>
+     <div class="bar mpb"><i style="width:${u.mp/u.MP*100}%"></i></div>`:"")+
+    `<div class="cst">${side==="me"?u.sk:"STR "+u.STR}<br>ダイス <b>${u.dice}</b>個</div>`+
+    (u.far?`<div class="far">奥ゆきを払わない</div>`
+      :(u.acts||[]).some(a=>a.far)?`<div class="far">投げ物あり</div>`:"")+
+    `<div class="dep d${dead?0:d}">${mark}${pen?" "+pen:""}</div>`;
+}
+function drawBoard(){
+  for(let i=0;i<3;i++)unitCell($("#cA"+i),party[i],i,"me");
+  for(let i=0;i<3;i++)unitCell($("#cF"+i),foes[i],i,"foe");
+  document.querySelectorAll("[data-t]").forEach(el=>{
+    el.onclick=()=>{ if(busy||over)return;
+      const f=foes[+el.dataset.t]; if(!f||f.hp<=0)return;
+      aim=+el.dataset.t; drawAll(); };});
+}
 function drawThr(){
-  const f=aimFoe();
-  if(!f){ $("#thrN").textContent="—"; $("#thrP").textContent=""; $("#thrX").innerHTML=""; return; }
-  const c=ctxOf(f), base=baseThr(me.DEX,f.DEX), dd=me.DEX-f.DEX, sh=dexShift(dd);
+  const u=now(), f=aimFoe();
+  if(!u||u.foe||!f){ $("#thrN").textContent="—"; $("#thrP").textContent=""; $("#thrX").innerHTML=""; return; }
+  const c=ctxOf(u,f), base=baseThr(u.DEX,f.DEX), dd=u.DEX-f.DEX, sh=dexShift(dd);
   $("#thrN").textContent=c.thr;
   $("#thrP").textContent=`ダイス1個が成功する見込み ${Math.round((7-c.thr)/6*100)}%`;
   $("#thrX").innerHTML=
-    `${f.n} を狙う　素 4　DEX の差 ${dd>0?"+":""}${dd} → ${sh>0?"−"+sh:sh<0?"+"+(-sh):"±0"}`+
-    (c.d?`<br>奥ゆき ${c.d} → ${DMODE==="dice"?`ダイス <b>${DRULE.dice.dice(c.d)}</b>個`
-      :DMODE==="pow"?`威力 <b>−${Math.round((1-c.pow)*100)}%</b>`
-      :`しきい値 <b>+${c.thr-base}</b>`}`:"");
+    `${u.n} → ${f.n}　素 4　DEX の差 ${dd>0?"+":""}${dd} → ${sh>0?"−"+sh:sh<0?"+"+(-sh):"±0"}`+
+    (c.raw
+      ? (c.far?`<br><span class="free">${c.raw}コ奥だが 遠隔なので払わない</span>`
+             :`<br>奥ゆき ${c.raw} → ${DMODE==="dice"?`ダイス <b>${DRULE.dice.dice(c.d)}</b>個`
+               :DMODE==="pow"?`威力 <b>−${Math.round((1-c.pow)*100)}%</b>`
+               :`しきい値 <b>+${c.thr-base}</b>`}`)
+      :"");
 }
-
 function pips(need,have){
   const n=Math.max(need,have); let h="";
   for(let i=0;i<n;i++)h+=`<span class="pip${i<need?"":" off"}"></span>`;
   return `<span class="pips" aria-label="必要な成功 ${need}">${h}</span>`;
 }
 function drawActs(){
-  if(over){ $("#acts").innerHTML=""; $("#prompt").innerHTML=""; return; }
+  const u=now();
+  if(over||!u||u.foe||busy){ $("#acts").innerHTML=""; $("#prompt").innerHTML=over?"":
+    `<em>${u&&u.foe?u.n+" の番":""}</em>`; return; }
   const f=aimFoe(); if(!f)return;
-  const c=ctxOf(f), p=(7-c.thr)/6;
-  $("#prompt").innerHTML=`ど う す る<em>ねらい ${f.n}（${
-    c.d===0?"先頭":(c.d+1)+"番目"}）　${c.n}d6・${c.thr}以上　相手の札を押すと狙いが変わる</em>`;
-  $("#acts").innerHTML=ACTS.map(a=>{
-    const noDice=a.need>c.n, noMp=a.mp>me.mp, off=noDice||noMp||busy;
-    const ok=atLeast(c.n,a.need,p), cls=ok>=.6?"":ok>=.3?"mid":"bad";
-    const pw=Math.round(me.STR*a.mul/100*c.pow);
-    return `<button class="act ${a.cls}" data-a="${a.id}"${off?" disabled":""}>
+  const c=ctxOf(u,f,u.acts[0]), p=(7-c.thr)/6;
+  $("#prompt").innerHTML=`${u.n} は ど う す る<em>ねらい ${f.n}（${
+    c.raw===0?"先頭":(c.raw+1)+"番目"}${c.raw&&c.far?"・払わない":""}）　${c.n}d6・${c.thr}以上</em>`;
+  $("#acts").innerHTML=u.acts.map((a,i)=>{
+    const ca=ctxOf(u,f,a), pa=(7-ca.thr)/6;
+    const noDice=a.need>ca.n, noMp=a.mp>u.mp, off=noDice||noMp;
+    const ok=atLeast(ca.n,a.need,pa), cls=ok>=.6?"":ok>=.3?"mid":"bad";
+    const pw=Math.round(powOf(u,a)*ca.pow);
+    return `<button class="act ${a.cls}" data-a="${i}"${off?" disabled":""}>
       <span class="an">${a.n} ${pips(a.need,c.n)}</span>
       <span class="ad">${
-        noDice?`<span class="nogo">ダイスが ${a.need}個 要る（いま ${c.n}個）</span>`
+        noDice?`<span class="nogo">ダイスが ${a.need}個 要る（いま ${ca.n}個）</span>`
         :noMp ?`<span class="nogo">MP が足りない</span>`
         :`成功 <em class="${cls}">${Math.round(ok*100)}%</em>　威力 ${pw}${a.mp?`　MP ${a.mp}`:""}`}</span>
     </button>`;}).join("")+
-    `<button class="act def wide" data-a="guard"${busy?" disabled":""}>
+    `<button class="act def wide" data-a="guard">
       <span class="an">守 る</span>
       <span class="ad">この番の被害を半分にして MP を 4 戻す</span></button>`;
-  $("#acts").querySelectorAll("[data-a]").forEach(b=>{ b.onclick=()=>doTurn(b.dataset.a); });
+  $("#acts").querySelectorAll("[data-a]").forEach(b=>{ b.onclick=()=>doAct(b.dataset.a); });
 }
-
+/* 敵が いま誰を狙いたがるか。foeAct と同じ式で選ぶ */
+function wantTarget(f){
+  let tg=null, bv=-1, nm="";
+  for(const t of alive(party)){
+    for(const a of f.acts){
+      const cc=ctxOf(f,t,a), p=(7-cc.thr)/6;
+      if(a.need>cc.n)continue;
+      const v=atLeast(cc.n,a.need,p)*f.STR*a.mul/100*cc.pow/t.HP;
+      if(v>bv){ bv=v; tg=t; nm=a.n; }
+    }
+  }
+  return tg?`${tg.n}（${nm}）`:"—";
+}
 function drawTrain(){
-  $("#dVal").textContent=nDice;
-  $("#dMinus").disabled=nDice<=1||busy; $("#dPlus").disabled=nDice>=8||busy;
-  $("#xVal").textContent=me.DEX;
-  $("#xMinus").disabled=me.DEX<=5||busy; $("#xPlus").disabled=me.DEX>=120||busy;
   $("#godBtn").className="tbtn w"+(god?" on":"");
-  const seg=(box,tbl,cur,attr)=>{
-    $(box).innerHTML=Object.keys(tbl).map(k=>
-      `<button class="tbtn w${k===cur?" on":""}" ${attr}="${k}"${busy?" disabled":""}>${tbl[k].n}</button>`).join("");
-  };
+  /* 一人ずつ ダイスを増やせる。技能ごとに違うのが この仕組みの肝 */
+  $("#diceRows").innerHTML=party.map((u,i)=>
+    `<div class="trow"><span class="k">${u.n}</span>
+      <button class="tbtn" data-dm="${i}"${u.dice<=1||busy?" disabled":""}>−</button>
+      <span class="tval">${u.dice}</span>
+      <button class="tbtn" data-dp="${i}"${u.dice>=8||busy?" disabled":""}>＋</button>
+      <span class="tnote" style="margin:0">${u.sk}　${
+        u.far?'<span style="color:var(--blue)">奥ゆきを払わない</span>':"奥ゆきを払う"}　${
+        (()=>{const nx=u.acts.find(a=>a.need===u.dice+1);
+              return nx?`＋1 で <b>${nx.n}</b>`:"<b>ぜんぶ選べる</b>";})()}</span>
+    </div>`).join("");
+  $("#diceRows").querySelectorAll("[data-dm]").forEach(b=>{
+    b.onclick=()=>{ const u=party[+b.dataset.dm]; if(u.dice>1){u.dice--;drawAll();} };});
+  $("#diceRows").querySelectorAll("[data-dp]").forEach(b=>{
+    b.onclick=()=>{ const u=party[+b.dataset.dp]; if(u.dice<8){u.dice++;drawAll();} };});
+
+  const seg=(box,tbl,cur,attr)=>{ $(box).innerHTML=Object.keys(tbl).map(k=>
+    `<button class="tbtn w${k===cur?" on":""}" ${attr}="${k}"${busy?" disabled":""}>${tbl[k].n}</button>`).join(""); };
   seg("#dPick",DRULE,DMODE,"data-d"); seg("#xPick",XRULE,XMODE,"data-x");
   $("#dNote2").innerHTML=DRULE[DMODE].d;
-  {const X=XRULE[XMODE];
-   /* 「必要N の技が 必要N+1 の素を超えない」を その場の数字で確かめて見せる */
-   const rows=[];
-   for(let i=0;i<ACTS.length-1;i++){
-     const a=ACTS[i], b=ACTS[i+1];
-     const top=me.STR*a.mul/100*X.f(Math.min(X.cap,8-a.need)), base=me.STR*b.mul/100;
-     rows.push({a,b,top,base,ok:top<base});
+  {const X=XRULE[XMODE], u=party[0], rows=[];
+   for(let i=0;i<u.acts.length-1;i++){
+     const a=u.acts[i], b=u.acts[i+1];
+     rows.push({a,b,top:powOf(u,a)*X.f(Math.min(X.cap,8-a.need)),base:powOf(u,b)});
    }
-   const ng=rows.filter(r=>!r.ok);
+   const ng=rows.filter(r=>r.top>=r.base);
    $("#xNote2").innerHTML=X.d+
-     `<br>必要1の技は最大 <b>${Math.round(rows[0].top)}</b>、必要2の素は <b>${
+     `<br>${u.n}の 必要1の技は最大 <b>${Math.round(rows[0].top)}</b>、必要2の素は <b>${
        Math.round(rows[0].base)}</b> ── `+
-     (ng.length
-       ? `<span class="warn">${ng.map(r=>r.a.n.replace(/ /g,"")).join("・")} が 上の技を超えてしまう</span>`
-       : `<span style="color:var(--moss)">どの技も 上の技を超えない ○</span>`);}
-  $("#dPick").querySelectorAll("[data-d]").forEach(b=>{
-    b.onclick=()=>{ DMODE=b.dataset.d; drawAll(); };});
-  $("#xPick").querySelectorAll("[data-x]").forEach(b=>{
-    b.onclick=()=>{ XMODE=b.dataset.x; drawAll(); };});
+     (ng.length?`<span class="warn">${ng.map(r=>r.a.n).join("・")} が 上の技を超えてしまう</span>`
+               :`<span class="good">どの技も 上の技を超えない ○</span>`);}
   $("#foePick").innerHTML=Object.keys(GROUPS).map(k=>
-    `<button class="tbtn w${k===groupKey?" on":""}" data-g="${k}"${busy?" disabled":""}>${
-      GROUPS[k].n}</button>`).join("");
+    `<button class="tbtn w${k===groupKey?" on":""}" data-g="${k}"${busy?" disabled":""}>${GROUPS[k].n}</button>`).join("");
   $("#foePick").querySelectorAll("[data-g]").forEach(b=>{
     b.onclick=()=>{ groupKey=b.dataset.g; reset(true); };});
 
-  const next=ACTS.find(a=>a.need===nDice+1);
-  $("#dNote").innerHTML=next?`＋1 で <b>${next.n}</b> が選べる`:`<b>ぜんぶ選べる</b>`;
-  const f=aimFoe();
-  if(f){ const now=ctxOf(f).thr,
-    up=Math.max(2,Math.min(6,baseThr(Math.min(120,me.DEX+5),f.DEX)+DRULE[DMODE].thr(depthOf(f)))),
-    dn=Math.max(2,Math.min(6,baseThr(Math.max(5,me.DEX-5),f.DEX)+DRULE[DMODE].thr(depthOf(f))));
-    $("#xNote").innerHTML= up!==now?`＋5 で しきい値が <b>${up}</b>`
-      : dn!==now?`−5 で しきい値が <b>${dn}</b>`
-      : `相手との差 ${me.DEX-f.DEX}（<b>25</b> で動く）`; }
-
-  /* 奥ゆきが どれだけ効いているか、その場の数字で見せる */
-  if(f&&alive().length>1){
-    const back=alive()[alive().length-1], cb=ctxOf(back), cf=ctxOf(alive()[0]);
-    const a=ACTS.find(x=>x.need<=cf.n&&x.need>=2)||ACTS[0];
-    const pf=atLeast(cf.n,a.need,(7-cf.thr)/6), pb=atLeast(cb.n,a.need,(7-cb.thr)/6);
+  /* 前に立つことに意味があるか、その場の数字で見せる */
+  const fr=alive(foes)[0], kn=party.find(u=>!u.far&&u.hp>0), mg=party.find(u=>u.far&&u.hp>0);
+  if(fr&&kn&&mg&&alive(party).length>1){
+    const back=alive(party)[alive(party).length-1];
+    const cAtkBack=ctxOf(fr,back), cAtkFront=ctxOf(fr,alive(party)[0]);
+    const a=fr.acts[0];
+    const pF=atLeast(cAtkFront.n,a.need,(7-cAtkFront.thr)/6),
+          pB=atLeast(cAtkBack.n, a.need,(7-cAtkBack.thr)/6);
     $("#tips").innerHTML=
-      `<b>${a.n}</b>（必要 ${a.need}）── 先頭には <b>${Math.round(pf*100)}%</b>、`+
-      `いちばん奥（${cb.d+1}番目）には <b>${Math.round(pb*100)}%</b>`+
-      (cb.pow<1?`　威力は ${Math.round(cb.pow*100)}%`:"")+
-      `<br>── 奥ゆきの罰を切り替えて、この差を見比べてください。`+
-      `<span class="warn">先頭を倒すと 奥が繰り上がって罰が消えます。</span>`;
+      `<b>${fr.n}</b> の ${a.n} ── こちらの先頭（${alive(party)[0].n}）には <b>${
+        Math.round(pF*100)}%</b>、いちばん奥（${back.n}）には <b>${Math.round(pB*100)}%</b>`+
+      (cAtkBack.pow<1?`　威力 ${Math.round(cAtkBack.pow*100)}%`:"")+
+      `<br>── <span class="good">前に立つ者が 奥を守っている</span>のがここ。`+
+      `<b>${mg.n}</b> は遠隔なので、奥に居ながら罰なしで撃てます。`+
+      `<span class="warn">先頭が倒れると 奥が繰り上がって この守りは消えます。</span>`+
+      `<br>いまの案だと <b>${fr.n}</b> は <b>${wantTarget(fr)}</b> を狙いたがる`;
   }else $("#tips").innerHTML="";
 }
 
@@ -492,31 +546,30 @@ async function rollDice(who,n,thr,need,label,sub){
   ov.innerHTML=
     `<div class="dvWho">${who}</div>
      <div class="dvNeed">${label}　${n}d6・<b>${thr}以上</b>　必要な成功 <b>${need}</b>${
-       sub?`<br><span class="pen">${sub}</span>`:""}</div>
+       sub?`<br>${sub}`:""}</div>
      <div class="dice">${Array.from({length:n},()=>`<div class="die roll">?</div>`).join("")}</div>
      <div class="dvRes" id="dvRes"></div>`;
   const els=[...ov.querySelectorAll(".die")];
   const spin=setInterval(()=>els.forEach(e=>{ if(!e.dataset.set)e.textContent=r6(); }),70);
-  await wait(400);
+  await wait(380);
+  const X=XRULE[XMODE];
   const rolls=[]; let hit=0;
   for(const e of els){
     const v=r6(); rolls.push(v);
     e.dataset.set="1"; e.textContent=v;
     e.classList.remove("roll"); e.classList.add("set");
     /* 数える超過だけ 金にする。上限で切られたぶんは 緑のまま */
-    if(v>=thr){ hit++; e.classList.add(hit>need&&hit<=need+XRULE[XMODE].cap?"over":"hit"); }
-    await wait(150);
+    if(v>=thr){ hit++; e.classList.add(hit>need&&hit<=need+X.cap?"over":"hit"); }
+    await wait(140);
   }
   clearInterval(spin);
-  const k=rolls.filter(v=>v>=thr).length, ok=k>=need, o=k-need;
-  const X=XRULE[XMODE], cut=Math.min(X.cap,o);
+  const k=rolls.filter(v=>v>=thr).length, ok=k>=need, o=k-need, cut=Math.min(X.cap,o);
   $("#dvRes").innerHTML= ok
     ? `<span class="ok">成功 ${k} ／ 必要 ${need}　通った</span>`+
-      (o>0?`<small><span class="xs">超過 ${o}${
-        cut<o?`（${X.cap}つまで数える）`:""} → 威力 ×${X.f(o).toFixed(2)}</span></small>`
-          :`<small>ちょうど</small>`)
+      (o>0?`<small><span class="xs">超過 ${o}${cut<o?`（${X.cap}つまで数える）`:""} → 威力 ×${
+        X.f(o).toFixed(2)}</span></small>`:`<small>ちょうど</small>`)
     : `<span class="ng">成功 ${k} ／ 必要 ${need}　届かなかった</span>`;
-  await wait(ok&&o>0?820:ok?620:760);
+  await wait(ok&&o>0?760:ok?580:700);
   ov.className="diceOv";
   return k;
 }
@@ -526,91 +579,105 @@ function popNum(sel,txt,cls){
   d.className="pop"+(cls?" "+cls:""); d.textContent=txt;
   c.appendChild(d); setTimeout(()=>d.remove(),1000);
 }
+const cellOf=u=>u.foe?"#cF"+foes.indexOf(u):"#cA"+party.indexOf(u);
 
-/* ---------- 手番 ---------- */
-async function doTurn(id){
+/* ---------- 味方の手番 ---------- */
+async function doAct(id){
   if(busy||over)return;
+  const u=now(); if(!u||u.foe)return;
   busy=true; drawActs(); drawTrain();
-  let guard=false;
   if(id==="guard"){
-    guard=true; me.mp=Math.min(me.MP,me.mp+4);
-    log(`<span class="a">${me.n}</span> は身を固めた　<span class="m">MP +4</span>`);
-    drawBoard(); await wait(400);
+    u.guard=true; u.mp=Math.min(u.MP,u.mp+4);
+    log(`<span class="a">${u.n}</span> は身を固めた　<span class="m">MP +4</span>`);
+    drawBoard(); await wait(360);
   }else{
-    const a=ACTS.find(x=>x.id===id), f=aimFoe();
-    const c=ctxOf(f), idx=foes.indexOf(f);
-    me.mp-=a.mp;
-    const sub=c.d?`${c.d+1}番目を狙う ── ${DRULE[DMODE].n}`:"";
-    const k=await rollDice("こ ち ら の 番",c.n,c.thr,a.need,`${a.n} → ${f.n}`,sub);
+    const a=u.acts[+id], f=aimFoe(), c=ctxOf(u,f,a);
+    u.mp-=a.mp;
+    const sub=c.raw
+      ? (c.far?`<span class="free">${c.raw+1}番目だが 遠隔なので払わない</span>`
+             :`<span class="pen">${c.raw+1}番目を狙う ── ${DRULE[DMODE].n}</span>`)
+      :"";
+    const k=await rollDice("こ ち ら の 番",c.n,c.thr,a.need,`${u.n} の ${a.n} → ${f.n}`,sub);
     if(k>=a.need){
       const o=k-a.need, mul=XRULE[XMODE].f(o);
-      const dmg=Math.round(me.STR*a.mul/100*c.pow*mul);
+      const dmg=Math.round(powOf(u,a)*c.pow*mul);
       f.hp-=dmg;
-      popNum("#cF"+idx,"−"+dmg,o>0?"big":"");
-      log(`<span class="a">${me.n}</span> の ${a.n} → ${f.n}　`+
-        `<span class="m">成功 ${k}/${a.need}</span>`+
-        (o>0?`　<span class="x">超過 ${o}（×${mul.toFixed(2)}）</span>`:"")+
+      popNum(cellOf(f),"−"+dmg,o>0?"big":"");
+      log(`<span class="a">${u.n}</span> の ${a.n} → ${f.n}　<span class="m">成功 ${k}/${a.need}</span>`+
+        (o>0?`　<span class="x">超過 ${Math.min(XRULE[XMODE].cap,o)}（×${mul.toFixed(2)}）</span>`:"")+
         ` → <span class="b">${dmg}</span> のダメージ`);
-      if(f.hp<=0){
-        log(`<span class="b">${f.n}</span> を退けた`+
-          (alive().length>1?`　<span class="x">奥が繰り上がる</span>`:""));
-      }
+      if(f.hp<=0)log(`<span class="b">${f.n}</span> を退けた`+
+        (alive(foes).length?`　<span class="x">奥が繰り上がる</span>`:""));
     }else{
-      popNum("#cF"+idx,"届かず","miss");
-      log(`<span class="a">${me.n}</span> の ${a.n} → ${f.n}　`+
-        `<span class="m">成功 ${k}/${a.need}</span> → 届かなかった`+(a.mp?`　<span class="m">MP −${a.mp}</span>`:""));
-    }
-    drawBoard(); await wait(340);
-  }
-  if(!alive().length)return finish(true);
-  await foeTurn(guard);
-}
-
-async function foeTurn(guard){
-  for(const f of alive()){
-    /* こちらは1人なので 奥ゆきの罰は無い（本編で仲間が並べば ここにも付く） */
-    const thr=baseThr(f.DEX,me.DEX), p=(7-thr)/6;
-    let best=f.acts[0], bv=-1;
-    for(const a of f.acts){
-      if(a.need>f.dice)continue;
-      const v=atLeast(f.dice,a.need,p)*f.STR*a.mul/100;
-      if(v>bv){bv=v;best=a;}
-    }
-    const k=await rollDice("相 手 の 番",f.dice,thr,best.need,`${f.n} の ${best.n}`);
-    if(k>=best.need){
-      const o=k-best.need, mul=XRULE[XMODE].f(o);
-      let dmg=Math.round(f.STR*best.mul/100*mul);
-      if(guard)dmg=Math.round(dmg/2);
-      if(!god)me.hp-=dmg;
-      popNum("#cMe","−"+dmg,o>0?"big":"");
-      log(`<span class="b">${f.n}</span> の ${best.n}　<span class="m">成功 ${k}/${best.need}</span>`+
-        (o>0?`　<span class="x">超過 ${o}（×${mul.toFixed(2)}）</span>`:"")+
-        ` → <span class="b">${dmg}</span> のダメージ`+
-        (guard?`　<span class="m">（守って半分）</span>`:"")+
-        (god?`　<span class="m">（倒れない）</span>`:""));
-    }else{
-      popNum("#cMe","届かず","miss");
-      log(`<span class="b">${f.n}</span> の ${best.n}　<span class="m">成功 ${k}/${best.need}</span> → 届かなかった`);
+      popNum(cellOf(f),"届かず","miss");
+      log(`<span class="a">${u.n}</span> の ${a.n} → ${f.n}　<span class="m">成功 ${k}/${a.need}</span>`+
+        ` → 届かなかった`+(a.mp?`　<span class="m">MP −${a.mp}</span>`:""));
     }
     drawBoard(); await wait(300);
-    if(me.hp<=0)return finish(false);
   }
-  busy=false; newRound();
+  if(!alive(foes).length)return finish(true);
+  nextTurn();
+}
+
+/* ---------- 敵の手番 ---------- */
+async function foeAct(f){
+  /* **狙う相手も選ぶ。**先頭しか狙わないと 味方側の奥ゆきが一度も働かず、
+     4案の違いが見えない。見込み（成功率×威力）のいちばん高い 相手と技の組を選ぶ。
+     奥ゆきの罰が重い案ほど、自然に前の者ばかり狙うことになる。 */
+  let tg=null, best=null, bv=-1, c=null;
+  for(const t of alive(party)){
+    for(const a of f.acts){
+      const cc=ctxOf(f,t,a), p=(7-cc.thr)/6;
+      if(a.need>cc.n)continue;
+      /* 相手の丈夫さで割る。「どれだけ倒れに近づけるか」で比べる。
+         こうしないと 投げ物が 誰を撃っても同じ値になり、先頭に落ちてしまう。 */
+      const v=atLeast(cc.n,a.need,p)*f.STR*a.mul/100*cc.pow/t.HP;
+      if(v>bv){ bv=v; tg=t; best=a; c=cc; }
+    }
+  }
+  if(!tg){ tg=alive(party)[0]; if(!tg)return finish(false);
+           best=f.acts[0]; c=ctxOf(f,tg,best); }
+  const p=(7-c.thr)/6;
+  const k=await rollDice("相 手 の 番",c.n,c.thr,best.need,`${f.n} の ${best.n} → ${tg.n}`,
+    c.raw?(c.far?`<span class="free">${c.raw+1}番目だが 投げ物なので払わない</span>`
+                :`<span class="pen">${c.raw+1}番目を狙う</span>`):"");
+  if(k>=best.need){
+    const o=k-best.need, mul=XRULE[XMODE].f(o);
+    let dmg=Math.round(f.STR*best.mul/100*c.pow*mul);
+    if(tg.guard)dmg=Math.round(dmg/2);
+    if(!god)tg.hp-=dmg;
+    popNum(cellOf(tg),"−"+dmg,o>0?"big":"");
+    log(`<span class="b">${f.n}</span> の ${best.n} → ${tg.n}　<span class="m">成功 ${k}/${best.need}</span>`+
+      (o>0?`　<span class="x">超過 ${Math.min(XRULE[XMODE].cap,o)}（×${mul.toFixed(2)}）</span>`:"")+
+      ` → <span class="b">${dmg}</span> のダメージ`+
+      (tg.guard?`　<span class="m">（守って半分）</span>`:"")+(god?`　<span class="m">（倒れない）</span>`:""));
+    if(tg.hp<=0)log(`<span class="a">${tg.n}</span> が倒れた`+
+      (alive(party).length?`　<span class="x">次の者が前に出る</span>`:""));
+  }else{
+    popNum(cellOf(tg),"届かず","miss");
+    log(`<span class="b">${f.n}</span> の ${best.n} → ${tg.n}　<span class="m">成功 ${k}/${best.need}</span> → 届かなかった`);
+  }
+  drawBoard(); await wait(280);
+  if(!alive(party).length)return finish(false);
+  nextTurn();
 }
 
 function finish(win){
-  over=true; busy=false; drawAll();
-  $("#endBox").innerHTML=`<div class="end${win?"":" lose"}">${win?"す べ て 退 け た":"倒 れ た"}</div>`;
-  log(win?`<span class="a">列を抜いた</span>`:`<span class="b">${me.n}</span> は倒れた`,"rnd");
+  over=true; busy=false;
+  party.forEach(u=>u.guard=false);
+  drawAll();
+  $("#endBox").innerHTML=`<div class="end${win?"":" lose"}">${win?"す べ て 退 け た":"全 滅 し た"}</div>`;
+  log(win?`<span class="a">列を抜いた</span>`:`<span class="b">一味は倒れた</span>`,"rnd");
 }
 
 /* ---------- つまみ ---------- */
-$("#dMinus").onclick=()=>{ if(nDice>1){nDice--;drawAll();} };
-$("#dPlus").onclick =()=>{ if(nDice<8){nDice++;drawAll();} };
-$("#xMinus").onclick=()=>{ me.DEX=Math.max(5,me.DEX-5);drawAll(); };
-$("#xPlus").onclick =()=>{ me.DEX=Math.min(120,me.DEX+5);drawAll(); };
 $("#godBtn").onclick=()=>{ god=!god; drawAll(); };
 $("#again").onclick =()=>reset(true);
+document.addEventListener("click",e=>{
+  const d=e.target.closest("[data-d]"), x=e.target.closest("[data-x]");
+  if(d&&d.dataset.d in DRULE){ DMODE=d.dataset.d; drawAll(); }
+  if(x&&x.dataset.x in XRULE){ XMODE=x.dataset.x; drawAll(); }
+});
 reset(false);
 </script>
 </body>
