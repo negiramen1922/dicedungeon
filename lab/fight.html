@@ -62,6 +62,9 @@ button{font-family:inherit}
 .dep.d1{color:var(--brass);border-color:#4d431c}
 .dep.d2{color:var(--blood);border-color:#4d2a25}
 .far{font-size:8px;color:var(--blue);margin-top:2px;letter-spacing:.04em}
+.prep{font-size:8px;color:var(--brass);margin-top:2px;letter-spacing:.04em;
+  border:1px solid #4d431c;padding:1px 4px}
+.dvNeed .xs2{color:var(--brass)}
 
 .pop{position:absolute;top:26px;left:50%;transform:translateX(-50%);
   font-family:"Hiragino Mincho ProN",serif;font-size:20px;color:var(--blood);
@@ -173,7 +176,10 @@ button{font-family:inherit}
 技には <b>必要な成功の数</b>（玉 ●●○）。超えたぶんは <b>威力の上乗せ</b>で、<b>2つまで</b>数えます。<br>
 <b>両方が横一列。</b>奥にいるほど <b>しきい値が +1／+2</b> ── ただし
 <b style="color:#6f92ab">弓と杖は奥ゆきを払いません</b>。<br>
-だからナイトが前に立つと、奥のウィザードは守られたまま撃てます。
+だからナイトが前に立つと、奥のウィザードは守られたまま撃てます。<br>
+<b>ダイスは技能で決まり、素の上限は5個</b>（技能100）。
+<b style="color:#c9a227">仕込みの技</b>で ダイスを増やす／しきい値を下げると、
+そこを一時的に越えられます ── <b>必要4の大技はそのための技</b>です。
 </p>
 
 <div class="ordwrap" id="ordBar"></div>
@@ -263,26 +269,38 @@ let DMODE="thr2", XMODE="x25c2";
 
 /* ---------- 顔ぶれ。数字は本編の JOB＋RACE(ヒューム) から借りている ----------
    技の名前は 通常攻撃・斬撃・強撃 がご提案のもの。それ以外は（仮）。
-   **本編の技能に「術」が無い。**杖は type:"ranged" なので wepSkill は 射撃を返す。
-   ウィザードが射撃で測られると 技能35 ＝ ダイス1個になってしまうので、
-   ここでは 術 という技能を仮に立てている。本体へ移すなら SK に足す必要がある。 */
+   技能は **近接・遠距離・魔法** の3つ（本体の SK に「魔法」を足す前提）。
+   杖は snd:"magic" なので 魔法で測る。いまの本体は type:"ranged" だけを見て
+   射撃を返すので、ウィザードが射撃35＝ダイス1個になってしまう。 */
 const JOBS={
-  knight:{n:"ナイト",  fig:"knight", sk:"格 闘", far:false, stat:"STR", pref:0,
+  knight:{n:"ナイト",  fig:"knight", sk:"近 接", far:false, stat:"STR", pref:0,
     STR:35, INT:20, DEX:23, HP:207, MP:19, dice:2,
     acts:[{n:"通常攻撃",  cls:"atk",need:1,mul:100,mp:0},
           {n:"斬 撃",    cls:"sk", need:2,mul:200,mp:3},
-          {n:"強 撃",    cls:"sk", need:3,mul:360,mp:6}]},
-  archer:{n:"アーチャー",fig:"archer", sk:"射 撃", far:true,  stat:"STR", pref:2,
+          {n:"強 撃",    cls:"sk", need:3,mul:360,mp:6},
+          {n:"大技（仮）", cls:"sk", need:4,mul:560,mp:10}]},
+  archer:{n:"アーチャー",fig:"archer", sk:"遠距離", far:true,  stat:"STR", pref:2,
     STR:29, INT:23, DEX:39, HP:167, MP:21, dice:2,
     acts:[{n:"射 る",     cls:"atk",need:1,mul:100,mp:0},
           {n:"二本射ち（仮）",cls:"sk", need:2,mul:195,mp:3},
           {n:"貫き撃ち（仮）",cls:"sk", need:3,mul:350,mp:6}]},
-  mage:  {n:"ウィザード",fig:"mage",   sk:"術（仮）",far:true,  stat:"INT", pref:3,
+  mage:  {n:"ウィザード",fig:"mage",   sk:"魔 法", far:true,  stat:"INT", pref:3,
     STR:23, INT:43, DEX:28, HP:147, MP:32, dice:2,
     acts:[{n:"魔 弾",     cls:"atk",need:1,mul:100,mp:0},
           {n:"連 弾（仮）", cls:"sk", need:2,mul:200,mp:4},
-          {n:"大魔弾（仮）",cls:"sk", need:3,mul:365,mp:8}]},
+          {n:"大魔弾（仮）",cls:"sk", need:3,mul:365,mp:8},
+          {n:"大呪文（仮）",cls:"sk", need:4,mul:570,mp:13}]},
 };
+/* 仕込みの技。**素のダイス上限は5**なので、必要4の大技は
+   仕込んでからでないと通らない（素 18.8% → 仕込んで 50%前後）。
+   しきい値−1 のほうが ダイス+1 より常に強いので、MP で差をつけてある。
+   効き目は **次の攻撃ひとつぶん**。名前は（仮）。 */
+const PREP=[
+  {id:"p1",n:"構 え る（仮）", cls:"def", mp:2, dice:1, thr:0,
+   d:"次の攻撃の ダイス +1"},
+  {id:"p2",n:"狙 う（仮）",   cls:"def", mp:4, dice:0, thr:1,
+   d:"次の攻撃の しきい値 −1"},
+];
 const FOE={
   slime:  {n:"スライム",  HP:95, STR:22, DEX:6,  dice:2, far:false,
     acts:[{n:"体当たり",need:1,mul:100},{n:"のびる",need:2,mul:200}]},
@@ -337,9 +355,10 @@ function ctxOf(u,t,act){
      本編の isRanged が act.pos==="back" を遠隔として扱うのと同じ。 */
   const far=!!(u.far||(act&&act.far));
   const R=DRULE[DMODE], d=far?0:depthOf(t);
-  return {d, far, raw:depthOf(t),
-    thr:Math.max(2,Math.min(6,baseThr(u.DEX,t.DEX)+R.thr(d))),
-    n:Math.max(1,u.dice+R.dice(d)),
+  const B=u.prep||{dice:0,thr:0};      /* 仕込みの効き目 */
+  return {d, far, raw:depthOf(t), prep:(B.dice||B.thr)?B:null,
+    thr:Math.max(2,Math.min(6,baseThr(u.DEX,t.DEX)+R.thr(d)-(B.thr||0))),
+    n:Math.max(1,u.dice+R.dice(d)+(B.dice||0)),
     pow:R.pow(d)};
 }
 const comb=(n,k)=>{let r=1;for(let i=0;i<k;i++)r=r*(n-i)/(i+1);return r;};
@@ -415,6 +434,7 @@ function unitCell(el,u,i,side){
     `<div class="cst">${side==="me"?u.sk:"STR "+u.STR}<br>ダイス <b>${u.dice}</b>個</div>`+
     (u.far?`<div class="far">奥ゆきを払わない</div>`
       :(u.acts||[]).some(a=>a.far)?`<div class="far">投げ物あり</div>`:"")+
+    (u.prep?`<div class="prep">${u.prep.dice?`ダイス +${u.prep.dice}`:`しきい値 −${u.prep.thr}`}</div>`:"")+
     `<div class="dep d${dead?0:d}">${mark}${pen?" "+pen:""}</div>`;
 }
 function drawBoard(){
@@ -465,10 +485,18 @@ function drawActs(){
         :noMp ?`<span class="nogo">MP が足りない</span>`
         :`成功 <em class="${cls}">${Math.round(ok*100)}%</em>　威力 ${pw}${a.mp?`　MP ${a.mp}`:""}`}</span>
     </button>`;}).join("")+
+    PREP.map(p=>{
+      const off=p.mp>u.mp||!!u.prep;
+      return `<button class="act ${p.cls}" data-p="${p.id}"${off?" disabled":""}>
+        <span class="an">${p.n}</span>
+        <span class="ad">${u.prep?`<span class="nogo">もう仕込んである</span>`
+          :p.mp>u.mp?`<span class="nogo">MP が足りない</span>`
+          :`${p.d}　MP ${p.mp}`}</span></button>`;}).join("")+
     `<button class="act def wide" data-a="guard">
       <span class="an">守 る</span>
       <span class="ad">この番の被害を半分にして MP を 4 戻す</span></button>`;
   $("#acts").querySelectorAll("[data-a]").forEach(b=>{ b.onclick=()=>doAct(b.dataset.a); });
+  $("#acts").querySelectorAll("[data-p]").forEach(b=>{ b.onclick=()=>doPrep(b.dataset.p); });
 }
 /* 敵が いま誰を狙いたがるか。foeAct と同じ式で選ぶ */
 function wantTarget(f){
@@ -490,16 +518,17 @@ function drawTrain(){
     `<div class="trow"><span class="k">${u.n}</span>
       <button class="tbtn" data-dm="${i}"${u.dice<=1||busy?" disabled":""}>−</button>
       <span class="tval">${u.dice}</span>
-      <button class="tbtn" data-dp="${i}"${u.dice>=8||busy?" disabled":""}>＋</button>
+      <button class="tbtn" data-dp="${i}"${u.dice>=6||busy?" disabled":""}>＋</button>
       <span class="tnote" style="margin:0">${u.sk}　${
         u.far?'<span style="color:var(--blue)">奥ゆきを払わない</span>':"奥ゆきを払う"}　${
         (()=>{const nx=u.acts.find(a=>a.need===u.dice+1);
-              return nx?`＋1 で <b>${nx.n}</b>`:"<b>ぜんぶ選べる</b>";})()}</span>
+              return nx?`＋1 で <b>${nx.n}</b>`:u.dice>=6?'<b style="color:var(--brass)">限界突破</b>':"<b>ぜんぶ選べる</b>";})()}${
+        u.dice>=5?`　<span style="color:var(--brass)">技能 ${u.dice*20}</span>`:`　技能 ${u.dice*20}〜${u.dice*20+19}`}</span>
     </div>`).join("");
   $("#diceRows").querySelectorAll("[data-dm]").forEach(b=>{
     b.onclick=()=>{ const u=party[+b.dataset.dm]; if(u.dice>1){u.dice--;drawAll();} };});
   $("#diceRows").querySelectorAll("[data-dp]").forEach(b=>{
-    b.onclick=()=>{ const u=party[+b.dataset.dp]; if(u.dice<8){u.dice++;drawAll();} };});
+    b.onclick=()=>{ const u=party[+b.dataset.dp]; if(u.dice<6){u.dice++;drawAll();} };});
 
   const seg=(box,tbl,cur,attr)=>{ $(box).innerHTML=Object.keys(tbl).map(k=>
     `<button class="tbtn w${k===cur?" on":""}" ${attr}="${k}"${busy?" disabled":""}>${tbl[k].n}</button>`).join(""); };
@@ -594,6 +623,7 @@ async function doAct(id){
   }else{
     const a=u.acts[+id], f=aimFoe(), c=ctxOf(u,f,a);
     u.mp-=a.mp;
+    const usedPrep=u.prep; u.prep=null;      /* 効き目は 攻撃ひとつぶん */
     const sub=c.raw
       ? (c.far?`<span class="free">${c.raw+1}番目だが 遠隔なので払わない</span>`
              :`<span class="pen">${c.raw+1}番目を狙う ── ${DRULE[DMODE].n}</span>`)
@@ -617,6 +647,21 @@ async function doAct(id){
     drawBoard(); await wait(300);
   }
   if(!alive(foes).length)return finish(true);
+  nextTurn();
+}
+
+/* 仕込む。手番を1つ使って、次の攻撃を強くする */
+async function doPrep(id){
+  if(busy||over)return;
+  const u=now(); if(!u||u.foe||u.prep)return;
+  const p=PREP.find(x=>x.id===id); if(!p||p.mp>u.mp)return;
+  busy=true; drawActs();
+  u.mp-=p.mp;
+  u.prep={dice:p.dice,thr:p.thr,n:p.n};
+  log(`<span class="a">${u.n}</span> は ${p.n}　<span class="x">${
+    p.dice?`次の攻撃 ダイス +${p.dice}`:`次の攻撃 しきい値 −${p.thr}`}</span>`+
+    `　<span class="m">MP −${p.mp}</span>`);
+  drawBoard(); await wait(420);
   nextTurn();
 }
 
