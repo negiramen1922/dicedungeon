@@ -165,7 +165,7 @@ button{font-family:inherit}
 <div class="stagebar">必 要 成 功 数 ── た た か い の 試 作</div>
 <p class="lead">
 技には <b>必要な成功の数</b>があります。玉（<b>●●○</b>）がその数。<br>
-超えたぶんは <b>威力の上乗せ</b>になります（金の目が超過）。<br>
+超えたぶんは <b>威力の上乗せ</b>（金の目が超過）。<b>2つまで</b>数えます。<br>
 相手は<b>横一列</b>。<b>奥にいるほど当てにくい</b> ── その付け方を下で切り替えられます。
 </p>
 
@@ -248,14 +248,24 @@ const DRULE={
   pow :{n:"威力だけ減る",     d:"通るかどうかは変えない。奥は削りにくいだけ（−25%／−45%）",
         thr:d=>0,             dice:d=>0,  pow:d=>[1,.75,.55][d]},
 };
-/* 超過の伸び。o は 超過した成功の数 */
+/* 超過の伸び。o は 超過した成功の数。
+   **上限があるのは「必要成功1の技が 必要成功2の技を超えない」ため。**
+   上限なしだと ダイスが増えたとき 通常攻撃が8個成功して 88 になり、
+   斬撃の素 64 を超えてしまう。上限2個なら どの組でも超えない。 */
 const XRULE={
-  x25    :{n:"+25%／個",       d:"控えめ。技の階段はそのまま保たれる", f:o=>1+.25*o},
-  x50c2  :{n:"+50%／個・上限2", d:"大成功が気持ちいい。上限があるので階段は保たれる", f:o=>1+.5*Math.min(2,o)},
-  x50    :{n:"+50%／上限なし",  d:"<span class='warn'>階段がつぶれる</span> ── 必要成功の小さい技ほど超過しやすく、大技が一度も主役にならない", f:o=>1+.5*o},
-  none   :{n:"伸びない",        d:"通ったかどうかだけ。比べるための基準", f:o=>1},
+  x25c2:{n:"+25%／個・上限2", g:.25, cap:2,
+    d:"<b>決めた形。</b>控えめに伸びて、上限があるので <b>必要成功の小さい技が 大きい技を超えない</b>",
+    f:o=>1+.25*Math.min(2,o)},
+  x25  :{n:"+25%／上限なし",  g:.25, cap:99,
+    d:"<span class='warn'>上限が無いと 条件が崩れる</span> ── 通常攻撃が8個成功すると 88 で 斬撃の素 64 を超える",
+    f:o=>1+.25*o},
+  x50c2:{n:"+50%／個・上限2", g:.5,  cap:2,
+    d:"大成功が派手。ただし 斬撃の最大 128 が 強撃の素 115 を超える",
+    f:o=>1+.5*Math.min(2,o)},
+  none :{n:"伸びない",        g:0,   cap:0,
+    d:"通ったかどうかだけ。比べるための基準", f:o=>1},
 };
-let DMODE="thr2", XMODE="x25";
+let DMODE="thr2", XMODE="x25c2";
 
 /* ヒュームのナイト Lv1。数字は本編の JOB.knight から借りている */
 const BASE={n:"ヒュームのナイト",STR:32,DEX:20,HP:175,MP:16};
@@ -426,7 +436,21 @@ function drawTrain(){
   };
   seg("#dPick",DRULE,DMODE,"data-d"); seg("#xPick",XRULE,XMODE,"data-x");
   $("#dNote2").innerHTML=DRULE[DMODE].d;
-  $("#xNote2").innerHTML=XRULE[XMODE].d;
+  {const X=XRULE[XMODE];
+   /* 「必要N の技が 必要N+1 の素を超えない」を その場の数字で確かめて見せる */
+   const rows=[];
+   for(let i=0;i<ACTS.length-1;i++){
+     const a=ACTS[i], b=ACTS[i+1];
+     const top=me.STR*a.mul/100*X.f(Math.min(X.cap,8-a.need)), base=me.STR*b.mul/100;
+     rows.push({a,b,top,base,ok:top<base});
+   }
+   const ng=rows.filter(r=>!r.ok);
+   $("#xNote2").innerHTML=X.d+
+     `<br>必要1の技は最大 <b>${Math.round(rows[0].top)}</b>、必要2の素は <b>${
+       Math.round(rows[0].base)}</b> ── `+
+     (ng.length
+       ? `<span class="warn">${ng.map(r=>r.a.n.replace(/ /g,"")).join("・")} が 上の技を超えてしまう</span>`
+       : `<span style="color:var(--moss)">どの技も 上の技を超えない ○</span>`);}
   $("#dPick").querySelectorAll("[data-d]").forEach(b=>{
     b.onclick=()=>{ DMODE=b.dataset.d; drawAll(); };});
   $("#xPick").querySelectorAll("[data-x]").forEach(b=>{
@@ -479,14 +503,17 @@ async function rollDice(who,n,thr,need,label,sub){
     const v=r6(); rolls.push(v);
     e.dataset.set="1"; e.textContent=v;
     e.classList.remove("roll"); e.classList.add("set");
-    if(v>=thr){ hit++; e.classList.add(hit>need?"over":"hit"); }
+    /* 数える超過だけ 金にする。上限で切られたぶんは 緑のまま */
+    if(v>=thr){ hit++; e.classList.add(hit>need&&hit<=need+XRULE[XMODE].cap?"over":"hit"); }
     await wait(150);
   }
   clearInterval(spin);
   const k=rolls.filter(v=>v>=thr).length, ok=k>=need, o=k-need;
+  const X=XRULE[XMODE], cut=Math.min(X.cap,o);
   $("#dvRes").innerHTML= ok
     ? `<span class="ok">成功 ${k} ／ 必要 ${need}　通った</span>`+
-      (o>0?`<small><span class="xs">超過 ${o} → 威力 ×${XRULE[XMODE].f(o).toFixed(2)}</span></small>`
+      (o>0?`<small><span class="xs">超過 ${o}${
+        cut<o?`（${X.cap}つまで数える）`:""} → 威力 ×${X.f(o).toFixed(2)}</span></small>`
           :`<small>ちょうど</small>`)
     : `<span class="ng">成功 ${k} ／ 必要 ${need}　届かなかった</span>`;
   await wait(ok&&o>0?820:ok?620:760);

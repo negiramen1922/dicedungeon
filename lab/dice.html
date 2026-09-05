@@ -155,12 +155,15 @@ button.roll:disabled{opacity:.3;cursor:default}
 <div class="panel">
   <div class="knob"><span class="k">威力の出し方</span>
     <div class="seg" id="segPow">
-      <button data-v="flat" class="on">STR・INT の n%（固定）</button>
-      <button data-v="excess">超過成功で伸びる</button>
+      <button data-v="excess" class="on">超過成功で伸びる</button>
+      <button data-v="flat">伸びない（固定）</button>
     </div></div>
   <div class="hint" id="powHint"></div>
   <div class="knob" id="exRow"><span class="k">超過1つの伸び</span>
-    <input type="range" id="exGain" min="0" max="100" step="5" value="50"><span class="v"><b id="exGainV">50</b>%</span></div>
+    <input type="range" id="exGain" min="0" max="100" step="5" value="25"><span class="v"><b id="exGainV">25</b>%</span></div>
+  <div class="knob" id="capRow"><span class="k">数える超過の上限</span>
+    <input type="range" id="exCap" min="0" max="8" step="1" value="2"><span class="v"><b id="exCapV">2</b> 個まで</span></div>
+  <div class="hint" id="capHint"></div>
   <div class="knob"><span class="k">届かなかったら</span>
     <div class="seg" id="segFail">
       <button data-v="lose" class="on">ダメージなし・MPは消える</button>
@@ -216,8 +219,8 @@ const f1=x=>x.toFixed(1), num=id=>+$("#"+id).value;
 const ACTS=[
   {id:"a1",n:"通常攻撃",  ki:"p", need:1, mul:100, mp:0,  memo:"武器で殴る"},
   {id:"a2",n:"斬 撃",    ki:"p", need:2, mul:200, mp:4,  memo:""},
-  {id:"a3",n:"強 撃",    ki:"p", need:3, mul:350, mp:8,  memo:""},
-  {id:"a4",n:"大技（仮）", ki:"p", need:4, mul:550, mp:14, memo:"名前は未定"},
+  {id:"a3",n:"強 撃",    ki:"p", need:3, mul:360, mp:8,  memo:""},
+  {id:"a4",n:"大技（仮）", ki:"p", need:4, mul:560, mp:14, memo:"名前は未定"},
   {id:"m1",n:"火の術（仮）",ki:"m", need:2, mul:260, mp:6,  memo:"名前は未定"},
 ];
 /* 敵も同じ仕組み。敵の技も 必要成功 と STR倍率を持つ */
@@ -238,14 +241,16 @@ const comb=(n,k)=>{let r=1;for(let i=0;i<k;i++)r=r*(n-i)/(i+1);return r;};
 const exactly=(n,k,p)=>comb(n,k)*Math.pow(p,k)*Math.pow(1-p,n-k);
 function atLeast(n,k,p){ if(k>n)return 0; let s=0; for(let i=k;i<=n;i++)s+=exactly(n,i,p); return s; }
 
-const S={powMode:"flat", failMode:"lose", exGain:.5};
+const S={powMode:"excess", failMode:"lose", exGain:.25, exCap:2};
 
 /* 技の素の威力。物理は STR、魔法は INT */
 const powOf=(a,str,int_)=>(a.ki==="m"?int_:str)*a.mul/100;
 /* 成功数 k のときのダメージ。どの出し方でも「必要成功ちょうど」で 威力 になる */
 function dmgOf(a,k,pow){
   if(k<a.need) return S.failMode==="partial" ? pow*(k/a.need) : 0;
-  return S.powMode==="excess" ? pow*(1+S.exGain*(k-a.need)) : pow;
+  /* 上限があるのは「必要成功1の技が 必要成功2の技を超えない」ため。
+     上限なしだと 通常攻撃が8個成功して 88 になり、斬撃の素 64 を超える。 */
+  return S.powMode==="excess" ? pow*(1+S.exGain*Math.min(S.exCap,k-a.need)) : pow;
 }
 const mpOf=(a,k)=>(k>=a.need||S.failMode!=="half") ? a.mp : a.mp/2;
 function expect(a,n,p,pow){
@@ -262,7 +267,27 @@ function draw(){
   ["myStr","myInt","myDex","nDice","myHP","myMP","foeStr","foeDex","foeDice","foeHP"]
     .forEach(id=>$("#"+id+"V").textContent=num(id));
   $("#exGainV").textContent=Math.round(S.exGain*100);
-  $("#exRow").style.display = S.powMode==="excess" ? "" : "none";
+  $("#exCapV").textContent=S.exCap;
+  $("#exRow").style.display=$("#capRow").style.display=
+    $("#capHint").style.display = S.powMode==="excess" ? "" : "none";
+  /* 「必要N の技が 必要N+1 の素を超えない」を確かめて出す */
+  {const rows=[];
+   for(let i=0;i<ACTS.length-1;i++){
+     const a=ACTS[i], b=ACTS[i+1];
+     if(a.ki!==b.ki)continue;                       /* 物理と魔法は比べない */
+     const pa=powOf(a,myS,myI), pb=powOf(b,myS,myI);
+     const top=S.powMode==="excess"?pa*(1+S.exGain*Math.min(S.exCap,8-a.need)):pa;
+     rows.push({a,b,top,base:pb,ok:top<pb});
+   }
+   const ng=rows.filter(r=>!r.ok);
+   $("#capHint").innerHTML=
+     `必要N の技が 必要N+1 の素を超えないための上限。`+
+     rows.map(r=>`<br>${r.a.n.replace(/ /g,"")} 最大 <b style="color:${
+       r.ok?"var(--moss)":"var(--blood)"}">${f1(r.top)}</b> ／ ${
+       r.b.n.replace(/ /g,"")}の素 ${f1(r.base)}`).join("")+
+     `<br><b style="color:${ng.length?"var(--blood)":"var(--moss)"}">${
+       ng.length?"✗ "+ng.map(r=>r.a.n.replace(/ /g,"")).join("・")+" が上の技を超えてしまう"
+                :"○ どの技も 上の技を超えない"}</b>`;}
 
   const thr=threshold(myD,foD), p=pOf(thr), d=myD-foD, sh=dexShift(d);
   $("#thrBig").textContent=thr;
@@ -437,8 +462,11 @@ $("#runBtn").onclick=()=>{
 };
 
 /* ---------- つまみの配線 ---------- */
-["myStr","myInt","myDex","nDice","myHP","myMP","foeStr","foeDex","foeDice","foeHP","exGain"]
-  .forEach(id=>{ $("#"+id).oninput=()=>{ if(id==="exGain")S.exGain=num("exGain")/100; draw(); }; });
+["myStr","myInt","myDex","nDice","myHP","myMP","foeStr","foeDex","foeDice","foeHP","exGain","exCap"]
+  .forEach(id=>{ $("#"+id).oninput=()=>{
+    if(id==="exGain")S.exGain=num("exGain")/100;
+    if(id==="exCap")S.exCap=num("exCap");
+    draw(); }; });
 function seg(sel,key,el,map){
   const box=$(sel);
   box.querySelectorAll("button").forEach(b=>{
@@ -448,8 +476,8 @@ function seg(sel,key,el,map){
   $(el).innerHTML=map[S[key]];
 }
 seg("#segPow","powMode","#powHint",{
-  flat:"通ったかどうかだけ。<b style='color:var(--moss)'>技の階段がきれいに並ぶ</b>（通常→斬撃→強撃→大技 の順に、ダイスが増えるたび主役が入れ替わる）",
-  excess:"必要成功を越えたぶんだけ強くなる。<b style='color:var(--blood)'>階段がつぶれる</b> ── 必要成功の小さい技ほど超過しやすいので、斬撃がいつまでも強いままになる",
+  flat:"通ったかどうかだけ。比べるための基準",
+  excess:"<b style='color:var(--moss)'>決めた形。</b>必要成功を越えたぶんだけ強くなる。伸びを控えめ（+25%）にして上限（2個）を付ければ、技の階段は保たれる ── 伸ばしすぎ（+50%・上限なし）だと 必要成功の小さい技ほど超過しやすく、大技が一度も主役にならない",
 });
 seg("#segFail","failMode","#failHint",{
   lose:"外したらダメージ 0、MP も消える。<b style='color:var(--moss)'>階段はこれでちゃんと機能する</b>",
