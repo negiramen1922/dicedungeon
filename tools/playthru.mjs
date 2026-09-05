@@ -13,7 +13,9 @@ await pg.reload();await pg.waitForTimeout(900);
 /* 演出だけ速くする（押す道すじは本物のまま） */
 await pg.evaluate(()=>{window.wait=async()=>{};window.ovMsg=()=>{};});
 const log=[];
-const scr=()=>pg.evaluate(()=>curScreen+(modalOpen()?"+窓":""));
+const chestOn=()=>pg.evaluate(()=>{const O=document.querySelector("#chestOv");return !!(O&&O.classList.contains("on"));});
+const scr=()=>pg.evaluate(()=>curScreen+(modalOpen()?"+窓":"")+
+  (document.querySelector("#chestOv")&&document.querySelector("#chestOv").classList.contains("on")?"+覆":""));
 const tap=async(sel,name)=>{
   const el=await pg.$(sel);
   if(!el||!(await el.isVisible())){log.push(`✗ ${name} が押せない（${sel}）`);return false;}
@@ -30,14 +32,31 @@ const tapText=async(txt,name)=>{
 };
 /* 窓を1つ進める。選ぶ札（先頭）→ 進める札（末尾）→ 閉じる札 の順で試す。
    窓は非同期でつながるので、次が描かれるまで何度か待つ。 */
+const ttlSeen={};
 const once=async()=>{
   /* 窓が開いているあいだは 窓の中だけを見る。後ろの画面の札を掴むと
      キャラ作成をやり直してしまう（実際に踏んだ） */
+  /* 宝箱の覆いは 画面ぜんぶを覆う。開いたままだと 後ろの札が押せない */
+  if(await chestOn()){
+    for(const q of ['#chestOv .ndbtn .go2','#chestOv .ndbtn button','#chestOv #cSkip','#chestOv button']){
+      const es=await pg.$$(q); if(!es.length)continue;
+      try{ await es[es.length-1].click({force:true,timeout:2500}); }catch(e){ continue; }
+      await pg.waitForTimeout(260); return true;
+    }
+    return false;
+  }
   const inModal=await pg.evaluate(()=>modalOpen());
+  /* 行商の窓は「買う→確かめ→行商」と回り続ける。同じ窓が続いたら 閉じる */
+  const ttl=inModal?await pg.evaluate(()=>{
+    const t=document.querySelector("#mbox .mtitle");return t?t.textContent.trim():"";}):"";
+  if(ttl)ttlSeen[ttl]=(ttlSeen[ttl]||0)+1;
+  const stuck=ttl&&ttlSeen[ttl]>=3;   /* 同じ窓に3度戻ったら 堂々巡り */
   const list=inModal
-    ?[['#mbox [data-i]',0],['#mbox [data-d]',0],['#mbox [data-b]',1],
-      ['#mbox [data-keep]',0],['#mbox [data-skip]',0],
-      ['#mbox .ndbtn button',1],['#mbox .mclose',0],['#mbox button',1]]
+    ?(stuck
+      ?[['#mbox .mclose',0],['#mbox .ndbtn button',1],['#mbox button',1]]
+      :[['#mbox [data-i]',0],['#mbox [data-d]',0],['#mbox [data-b]',1],
+        ['#mbox [data-keep]',0],['#mbox [data-skip]',0],
+        ['#mbox .ndbtn button',1],['#mbox .mclose',0],['#mbox button',1]])
     :[['#mkBody [data-k]',0],['#mkBody [data-w]',0]];
   for(const [q,last] of list){
     const els=await pg.$$(q);
@@ -96,7 +115,8 @@ log.push(`⑥ 地図 → ${await scr()}　部屋 ${await pg.evaluate(()=>RUN&&RU
 /* ⑦ 部屋を進んで 戦闘まで */
 let battles=0,wasFight=false;
 const trail=[];
-for(let step=0;step<26;step++){
+for(let step=0;step<40;step++){
+  if(battles>=3&&!wasFight&&!(await scr()).startsWith("fight"))break;   /* 3戦したら 帰り道の確かめへ */
   const s=await scr();
   trail.push(s+(s.endsWith("窓")?"["+(await pg.evaluate(()=>{
     const t=document.querySelector("#mbox .mtitle");return t?t.textContent.trim().replace(/\s/g,""):"?";}))+"]":""));
@@ -121,6 +141,7 @@ for(let step=0;step<26;step++){
     continue;
   }
   wasFight=false;
+  if(await chestOn()){ if(!await firstCard("宝箱の覆い"))break; continue; }
   if(await pg.evaluate(()=>modalOpen())){ if(!await firstCard("窓"))break; continue; }
   /* 地図の部屋を押す */
   /* SVG の部屋は 本物のマウスだと当たり判定が細いので、その者の onclick を呼ぶ。
@@ -137,13 +158,19 @@ for(let step=0;step<26;step++){
 }
 log.push(`   道すじ ${trail.join(" ")}`);
 log.push(`⑦ ${battles} 戦した　画面 ${await scr()}　Lv ${await pg.evaluate(()=>me?me.lv:"-")}　金貨 ${await pg.evaluate(()=>me?me.gold:"-")}`);
-/* ⑧ 町へ帰る */
-if(await scr()==="floor"){
+/* ⑧ 町へ帰る。窓が開いたまま止まっていることがあるので まず閉じる */
+for(let i=0;i<8;i++){ if(!await pg.evaluate(()=>modalOpen())&&!await chestOn())break; if(!await once())break; }
+if((await scr()).startsWith("floor")){
   await tap("#leaveBtn","町へ帰る");
-  await pg.waitForTimeout(350);
-  await firstCard("引き返す");            /* 窓の末尾の札＝引き返す */
-  await pg.waitForTimeout(400);
-  for(let i=0;i<4;i++){ if(!await pg.evaluate(()=>modalOpen()))break; if(!await firstCard("町へ"))break; }
+  try{ await pg.waitForSelector('#mbox .ndbtn button',{timeout:4000}); }catch(e){}
+  /* 確かめの窓は「まだ潜る／引き返す」。末尾の札が 引き返す */
+  const nd=[];
+  for(const e of await pg.$$('#mbox .ndbtn button'))if(await e.isVisible())nd.push(e);
+  if(nd.length){ try{ await nd[nd.length-1].click({force:true}); }
+                 catch(e){ log.push("✗ 引き返す が押せない"); } }
+  else log.push("✗ 引き返す の札が無い");
+  await pg.waitForTimeout(600);
+  for(let i=0;i<5;i++){ if(!await pg.evaluate(()=>modalOpen()))break; if(!await once())break; }
 }
 log.push(`⑧ 町へ帰った → ${await scr()}　金貨 ${await pg.evaluate(()=>me?me.gold:"-")}　RUN=${await pg.evaluate(()=>RUN===null?"null":"あり")}`);
 await pg.screenshot({path:'/tmp/pt_town.png'});

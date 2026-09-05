@@ -657,6 +657,11 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .slotdel{background:transparent;border:1px solid var(--line);color:var(--dim);
   font-family:inherit;font-size:10px;padding:5px 10px;margin-top:8px;cursor:pointer}
 .slotdel:hover{border-color:var(--blood);color:var(--blood)}
+/* 小さな札（消す以外の用に）。slotdel と同じ形で、ホバーだけ真鍮 */
+.minib{background:transparent;border:1px solid var(--line);color:var(--dim);
+  font-family:inherit;font-size:10px;padding:5px 10px;cursor:pointer}
+.minib:hover:not(:disabled){border-color:var(--brass);color:var(--brass)}
+.minib:disabled{opacity:.4;cursor:default}
 /* 潜る先の一覧（世界地図の下） */
 .dvlist{margin-top:10px}
 .dvrow{border:1px solid var(--line);background:var(--panel);padding:8px 10px;
@@ -985,6 +990,7 @@ body.attitle #brand{display:none}
   <div class="townparty" id="townParty"></div>
   <div class="homemenu">
     <button class="go" id="hGo">潜 る</button>
+    <button class="topbtn hide" id="hHire">仲 間 を 雇 う</button>
     <button class="topbtn hide" id="hChar">一 味 を 見 る</button>
     <button class="topbtn" id="hWorld">世 界 地 図</button>
     <button class="topbtn" id="hHall">潜 行 の 記 録</button>
@@ -1059,7 +1065,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.006";
+const VERSION="α1.0.007";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1072,6 +1078,13 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1007",tag:"up",v:"α1.0.007",d:"2026-09-05",n:"町で仲間を雇えるようになりました。場所ごとに 何人で挑む前提かが決まります",b:[
+   "<b>町で仲間を雇えます。</b>3人の候補から選びます。<b>1人目はただ</b>で、2人目からは金貨がいります",
+   "<b>一味に入れられるのは3人まで。</b>それ以上は 控えに回ります。雇える人数に上限はありません",
+   "<b>一味と控えの入れ替えは 町でも道でも、戦っていないあいだなら いつでも。</b>「一味を見る」から",
+   "<b>場所ごとに 何人で挑む前提かが決まりました。</b>原始の草原の前半は1人、後半から2人、木漏れ日の森より先は3人です。前提の人数に合わせて 敵の丈夫さが変わります",
+   "<b>雇った仲間は 主人公と同じLvに揃います。</b>3の倍数のLvで 技か特性を選びます",
+   "<b>同じ職の仲間が並んだときは 種族まで出します。</b>それでも重なるなら 番号がつきます"]},
  {id:"v1006",tag:"up",v:"α1.0.006",d:"2026-09-04",n:"表題画面と 3つの記録、世界地図で潜る先を選ぶ形にしました",b:[
    "<b>表題画面ができました。</b>「ダイスダンジョン ／ サイコロに導かれる運命」から始まります",
    "<b>記録を3つまで持てます。</b>別々のキャラで同時に遊べます。図鑑と潜行の記録は どの記録でも共通です",
@@ -4337,6 +4350,27 @@ function recalcMe(m,full){
 /* 測り直すときに差し替えられるよう let にしてある（tools の計測が上書きする）。
    遊んでいるあいだに変わることはない。 */
 let FOEHP=2.5, FOESTR=1.0;
+/* ===== その場が 何人を前提にしているか（α1.0.007） =====
+   ひとりで始まって 町で仲間を雇っていく形にしたので、
+   「いつでも3人」を前提にすると 始まりが詰む。場所ごとに前提を変える。
+
+     第1階層 前半（地図の半分まで）  1人
+     第1階層 後半                   2人
+     第2階層から                    3人
+
+   敵の最大HP に PARTYHP を掛けて 前提の人数ぶん軽くする。
+   3人前提が 素の値（1.0）で、そこから測って決めた。 */
+function wantParty(){
+  if(areaTier()>=2)return 3;
+  const r=(RUN&&RUN.cur)?RUN.cur.r:0;
+  return r>=Math.floor(ROWS/2)?2:1;
+}
+/* 3人前提を 1.0 として、1人・2人でも同じ手応えになる倍率を測って決めた
+   （草原 Lv4 で 普通 ×6.9／精鋭 ×2.2／ボス ×1.9 に揃う）。
+   人数ではなく **その場所が何人を前提にしているか** で決まるので、
+   ひとりで後半へ踏み込めば そのぶん重くなる。 */
+let PARTYHP={1:0.22,2:0.55,3:1};
+function partyMul(){ return PARTYHP[wantParty()]||1; }
 function depthAt(tier){ return 1+((tier||1)-1)*0.34; }
 function depthMul(){
   const r=(RUN&&RUN.cur)?RUN.cur.r:0;
@@ -4356,7 +4390,7 @@ function makeFoes(){
     const nth=list.slice(0,i).filter(x=>x===k).length;
     return {...f,id:i,key:k,
       name:f.n+(same>1?" "+((f.nm&&f.nm[nth])||"ABC"[nth]):""),
-      maxHP:Math.round(f.HP*dm*FOEHP),HP:Math.round(f.HP*dm*FOEHP),
+      maxHP:Math.round(f.HP*dm*FOEHP*partyMul()),HP:Math.round(f.HP*dm*FOEHP*partyMul()),
       STR:Math.round(f.STR*(1+(dm-1)*0.6)*FOESTR),
       /* DEX も深さで伸ばす。前は HP と STR だけ伸ばしていたので、
          こちらの DEX だけが青天井に育ち、スカウトは木漏れ日の森の時点で
@@ -6402,7 +6436,7 @@ async function enemyAct(f){
       const dm=depthMul();
       for(let i=0;i<n;i++){
         const base=FOE[t.who];
-        const hp=Math.round(base.HP*dm*FOEHP);
+        const hp=Math.round(base.HP*dm*FOEHP*partyMul());
         const nf={...base,id:foes.length,key:t.who,
           name:base.n+" "+"ABCDEF"[foes.filter(x=>x.key===t.who).length],
           maxHP:hp,HP:hp,STR:Math.round(base.STR*(1+(dm-1)*0.6)*FOESTR),
@@ -6509,7 +6543,7 @@ async function enemyAct(f){
     await wait(520);
   }else if(t.k==="hatch"){
     /* 割れて中身が出る。殻そのものは消え、同じ立ち位置を中身が引き継ぐ */
-    const dm=depthMul(), base=FOE[t.who], hp=Math.round(base.HP*dm*FOEHP);
+    const dm=depthMul(), base=FOE[t.who], hp=Math.round(base.HP*dm*FOEHP*partyMul());
     const nf={...base,id:foes.length,key:t.who,
       name:base.n+" "+"ABCDEF"[foes.filter(x=>x.key===t.who).length],
       maxHP:hp,HP:hp,STR:Math.round(base.STR*(1+(dm-1)*0.6)*FOESTR),
@@ -6699,7 +6733,7 @@ function runSnapshot(){
     v:RVER, ver:VERSION, t:Date.now(), id:(RUN&&RUN.id)||null,
     sel:{job:sel.job,race:sel.race,orig:sel.orig,area:sel.area,
          luk:sel.luk,lukD:sel.lukD},
-    me, mates:party.filter(u=>u!==me), owned,
+    me, mates:party.filter(u=>u!==me), bench, hireOffer, owned,
     run:inDive()?{act:RUN.act,area:RUN.area,seen:RUN.seen||[],curKey:RUN.curKey||null,
          path:RUN.path||[],M:RUN.M,stock:RUN.stock||null,
          shopRecipe:RUN.shopRecipe===undefined?null:RUN.shopRecipe,
@@ -6788,6 +6822,8 @@ function runResume(){
   fixUnit(me);            /* 古い控えは 職・種族・欲望を持っていない。先に繕う */
   /* 控えに仲間が入っていれば そのまま。無ければ（古い控え）その場で組む */
   setParty([me,...(r.mates||[])]);
+  bench=(r.bench||[]).map(u=>fixUnit(u));
+  hireOffer=r.hireOffer||null;
   owned=r.owned||[];
   RUN=r.run?{id:r.id||runNewId(), act:r.run.act||0, area:r.run.area, seen:r.run.seen||[],
        curKey:r.run.curKey||null, cur:null, path:r.run.path||[],
@@ -7784,7 +7820,7 @@ function newGame(){
   setParty([me]);
   markSeen("w_"+me.baseWep);
   me.gold=(ORIG[sel.orig]&&ORIG[sel.orig].startGold)||30;
-  RUN=null; owned=[];
+  RUN=null; owned=[]; bench=[]; hireOffer=null;
   META.runs++;touchMeta();
   $("#log").innerHTML="";
   const n=(ORIG[sel.orig]&&ORIG[sel.orig].startGear)||1;
@@ -9310,6 +9346,17 @@ function chBodySk(U){
 }
 /* いま戦っているか。戦闘中は隊列を動かせない */
 function inBattle(){ return curScreen==="fight"&&!over; }
+/* 一味と控えに 同じ職が並ぶと 見分けがつかない。かぶったときだけ
+   種族まで（＝name）出し、それでもかぶるなら 番号を足す。
+   名前そのものは まだ決めていない（決まったら ここは要らなくなる）。 */
+const RNUM="①②③④⑤⑥⑦⑧⑨";
+function rosterName(u){
+  const L=[...party,...bench];
+  if(L.filter(x=>x.short===u.short).length<=1)return u.short;
+  const same=L.filter(x=>x.name===u.name);
+  if(same.length<=1)return u.name;
+  return u.name+(RNUM[same.indexOf(u)]||"");
+}
 /* 一味のうち いま見ている者。盤面や行動順から開いたときは その者になる */
 let chWho=0;
 function charModal(back,U){
@@ -9326,7 +9373,7 @@ function charModal(back,U){
   if(party.length>1)
     h+=`<div class="tabs chtabs">${party.map((u,i)=>
       `<button class="tab${i===chWho?" on":""}" data-who="${i}">
-        <span class="tabn">${u.short}</span><span class="tabc">${
+        <span class="tabn">${rosterName(u)}</span><span class="tabc">${
           u.HP<=0?"倒れた":`${lineMark(u).replace(/<[^>]*>/g,"")}`}</span></button>`).join("")}</div>`;
   const uJ=JOB[U.job]||JOB[sel.job]||{n:"—"}, uR=RACE[U.race]||RACE[sel.race]||{n:"—"};
   h+=`<div class="msub">${tagFig(U.job,14)} ${uJ.n}　${
@@ -9348,12 +9395,34 @@ function charModal(back,U){
       <div class="mitem lineRow">
         <span class="eqk">いまの並び</span>
         <span class="eqv">${party.map((u,j)=>
-          `${j?" ▸ ":""}<b${j===i?' style="color:var(--brass)"':""}>${u.short}</b>`).join("")}
+          `${j?" ▸ ":""}<b${j===i?' style="color:var(--brass)"':""}>${rosterName(u)}</b>`).join("")}
           <span class="s">　先頭ほど狙われる。奥ほど狙いにくい</span></span></div>
       <div class="ndbtn">
         <button class="no2" data-mv="-1"${i===0?" disabled":""}>ひとつ前へ</button>
         <button class="no2" data-mv="1"${i===party.length-1?" disabled":""}>ひとつ後ろへ</button>
       </div>`;
+    /* 控えとの入れ替え。主人公は外せない */
+    if(bench.length||party.length<PARTYMAX){
+      h+=`<div class="msec">控 え</div>`;
+      if(!bench.length)h+=`<div class="mitem" style="color:#4d5346">控えは いない</div>`;
+      /* 一味がいっぱいなら「誰と入れ替えるか」が要る。主人公とは入れ替えられないので、
+         主人公を見ているあいだは押せない札にして、そのわけを添える。
+         （黙って効かない札だった。α1.0.007 で直した） */
+      const full=party.length>=PARTYMAX, noSwap=full&&U===me;
+      bench.forEach((u,j)=>{
+        h+=`<div class="mitem eqrow">
+          <span class="eqk">${meFig(20,u)} ${rosterName(u)}</span>
+          <span class="eqv">Lv ${u.lv}　HP ${u.HP}/${u.maxHP}　技${u.sk.length} 特${u.pass.length}
+            <button class="minib" style="margin:0 0 0 8px" data-in="${j}"${
+              noSwap?" disabled":""}>${
+              full?(noSwap?"入れ替える":rosterName(U)+" と 入れ替える"):"一味に入れる"}</button>
+          </span></div>`;
+      });
+      if(noSwap&&bench.length)
+        h+=`<div class="mitem" style="color:#4d5346">上の札で 入れ替える者を選ぶ（主人公は外せない）</div>`;
+      if(party.length>1&&U!==me)
+        h+=`<div class="ndbtn"><button class="no2" data-out="1">${rosterName(U)} を 控えへ</button></div>`;
+    }
   }
   h+= chNow==="eq" ?chBodyEq()
     : chNow==="st" ?chBodySt(U)
@@ -9363,6 +9432,25 @@ function charModal(back,U){
   openModal(h,true);
   $("#mbox").querySelectorAll("[data-who]").forEach(b=>{
     b.onclick=()=>{chWho=+b.dataset.who;SFX.click();charModal(back);};});
+  $("#mbox").querySelectorAll("[data-in]").forEach(b=>{
+    b.onclick=()=>{
+      const j=+b.dataset.in, m=bench[j];
+      if(party.length<PARTYMAX){ bench.splice(j,1); setParty([...party,m]); }
+      else{
+        if(U===me)return;                 /* 主人公とは入れ替えられない */
+        const l=party.slice(); l[l.indexOf(U)]=m;
+        bench.splice(j,1); bench.push(U);
+        setParty(l); chWho=Math.max(0,party.indexOf(m));
+      }
+      SFX.pick();runSave();charModal(back);
+    };});
+  $("#mbox").querySelectorAll("[data-out]").forEach(b=>{
+    b.onclick=()=>{
+      if(U===me||party.length<=1)return;
+      const l=party.filter(u=>u!==U); bench.push(U);
+      setParty(l); chWho=0;
+      SFX.click();runSave();charModal(back);
+    };});
   $("#mbox").querySelectorAll("[data-mv]").forEach(b=>{
     b.onclick=()=>{
       const d=+b.dataset.mv, j=chWho+d;
@@ -9652,10 +9740,55 @@ function mateLearn(m,cat,r){
   m.picks=(m.picks||0)+1;
   recalcMe(m,false);
 }
+/* ===== 雇 用（α1.0.007・段C） =====
+   ひとりで始まり、町で仲間を雇う。
+
+     ・一味に入れられるのは **3人まで**（主人公を含む）
+     ・雇った者は 何人でも控えに置ける
+     ・**1人目は無料。**そのあとは金貨がいる（HIRE1・HIREUP は仮の値）
+     ・雇える顔ぶれは 町に来ている者。雇うまで変わらない
+
+   仲間の育ち方は 主人公と同じ（レベルは追従、技と特は選ぶ）。 */
+const PARTYMAX=3;
+const HIRE1=150, HIREUP=150;          /* 2人目 150、以降 +150。仮の値 */
+let bench=[];                          /* 雇ったが 一味に入っていない者 */
+let hireOffer=null;                    /* 町に来ている 雇える者たち */
+function hiredCount(){ return (party.length-1)+bench.length; }
+function hireCost(){ const n=hiredCount(); return n===0?0:HIRE1+(n-1)*HIREUP; }
+/* 町に来ている顔ぶれ。主人公と違う職を先に、種族はばらばらに */
+function rollHire(){
+  const jobs=Object.keys(JOB).filter(j=>j!==sel.job);
+  const races=Object.keys(RACE);
+  const pick=[];
+  while(pick.length<3){
+    const j=jobs[Math.floor(Math.random()*jobs.length)];
+    const r=races[Math.floor(Math.random()*races.length)];
+    pick.push(makeMate(j,r,me.lv));
+  }
+  hireOffer=pick;
+  return pick;
+}
+/* 一味に入れる。いっぱいなら控えへ */
+function takeMate(m){
+  syncOne(m);
+  if(party.length<PARTYMAX){
+    const l=party.slice();
+    /* 前に立ちたい者ほど手前へ。あとから隊列は組み替えられる */
+    l.push(m);
+    l.sort((a,b)=>{const p=u=>{const v=LINEPREF[u.job];return v===undefined?9:v;};return p(a)-p(b);});
+    setParty(l);
+  }else bench.push(m);
+}
+/* 雇ったばかりの者を いまのレベルに合わせる */
+function syncOne(m){
+  while(m.lv<me.lv){ m.lv++; growUp(m); }
+  recalcMe(m,false);
+  m.HP=m.maxHP;m.MP=m.maxMP;
+}
 /* 仲間のレベルは主人公に追従する。差のぶんだけ成長表を回して追いつかせる。
    経験と戦利品は主人公ひとりが受け取り、仲間はここで追いつく。 */
 function syncMates(){
-  party.forEach(u=>{
+  [...party,...bench].forEach(u=>{
     if(u===me)return;
     while(u.lv<me.lv){ u.lv++; growUp(u); }
     /* 覚えるものは自分では決めない。matePending が溜まり、
@@ -9764,8 +9897,8 @@ function levelUpModal(after){
    枠が満杯の種類は候補に出さない（スキル3・パッシブ4まで）。 */
 function mateLearnQueue(after){
   after=after||function(){};
-  const m=party.find(u=>u!==me&&u.HP>0&&matePending(u)>0)
-       ||party.find(u=>u!==me&&matePending(u)>0);
+  const m=[...party,...bench].find(u=>u!==me&&u.HP>0&&matePending(u)>0)
+       ||[...party,...bench].find(u=>u!==me&&matePending(u)>0);
   if(!m)return after();
   const canS=m.sk.length<MATESKMAX, canP=m.pass.length<MATEPASSMAX;
   if(!canS&&!canP){ m.picks=(m.picks||0)+1; return mateLearnQueue(after); }
@@ -10557,13 +10690,16 @@ function drawHome(){
   $("#townParty").querySelectorAll("[data-tp]").forEach(b=>{
     b.onclick=()=>{SFX.click();charModal(null,party[+b.dataset.tp]);};});
   $("#hChar").classList.toggle("hide",!started);
+  $("#hHire").classList.toggle("hide",!started);
+  if(started)$("#hHire").textContent=
+    hireCost()?`仲 間 を 雇 う（${hireCost()} 金貨）`:"仲 間 を 雇 う（は じ め は た だ）";
   $("#hGo").textContent=started?"潜 る":"は じ め る";
   $("#hGo").classList.remove("sub");
 }
 function goHome(){drawHome();showScreen("home");window.scrollTo(0,0);}
 /* ===== 表題 と 記録の選択（α1.0.006） ===== */
 function goTitle(){
-  slot=null;me=null;party=[];RUN=null;
+  slot=null;me=null;party=[];RUN=null;bench=[];hireOffer=null;
   drawTitle();showScreen("title");window.scrollTo(0,0);
 }
 function drawTitle(){
@@ -10790,6 +10926,7 @@ $("#hGo").onclick=()=>{
   SFX.pick();diveModal();
 };
 $("#hChar").onclick=()=>{SFX.click();charModal();};
+$("#hHire").onclick=()=>{SFX.click();hireModal();};
 /* どこへ潜るかを 世界地図で選ぶ。**光っている場所だけ押せる。**
    開くのは 抜けた区画と その先（diveTargets）。最初は 原始の草原だけ。 */
 function diveModal(){
@@ -10814,6 +10951,48 @@ function diveModal(){
   $("#mbox").querySelectorAll("[data-w]").forEach(g=>{g.onclick=()=>go(g.dataset.w);});
   $("#mbox").querySelectorAll("[data-d]").forEach(g=>{g.onclick=()=>go(g.dataset.d);});
   $("#dvX").onclick=closeModal;
+}
+/* 仲間を雇う窓 */
+function hireModal(){
+  if(!hireOffer||!hireOffer.length)rollHire();
+  const cost=hireCost(), full=(party.length>=PARTYMAX);
+  let h=`<div class="mtitle">仲 間 を 雇 う</div>
+    <div class="mgrow">${cost?`ひとり <b style="color:#c9a227">${cost}</b> 金貨`
+      :`<b style="color:#8fa261">はじめの ひとりは ただ</b>`}　
+      <span class="s">所持 ${me.gold}　一味 ${party.length}/${PARTYMAX}人`+
+      (bench.length?`　控え ${bench.length}人`:"")+`</span></div>
+    <div class="msub">${full
+      ?"一味はいっぱい。雇った者は 控えに入る"
+      :"雇うと そのまま一味に加わる"}</div><div class="acts">`;
+  hireOffer.forEach((m,i)=>{
+    h+=`<button class="act rew cskill" data-h="${i}" ${me.gold<cost?"disabled":""}>
+      <span class="rcat">${JOB[m.job].n}</span>
+      <span class="an">${meFig(22,m)} ${m.name}</span>
+      <span class="ad">${JOB[m.job].d}</span>
+      <span class="rmeta">Lv ${me.lv}　HP ${m.maxHP}　MP ${m.maxMP}　
+        STR ${m.STR} DEX ${m.DEX} INT ${m.INT} VIT ${m.VIT}　
+        ${RACE[m.race].n}</span></button>`;
+  });
+  h+=`</div><button class="mclose" id="hrX">やめる</button>`;
+  openModal(h,true);
+  $("#mbox").querySelectorAll("[data-h]").forEach(b=>{
+    b.onclick=()=>{
+      const i=+b.dataset.h, m=hireOffer[i], c=hireCost();
+      if(me.gold<c)return;
+      me.gold-=c;
+      hireOffer.splice(i,1);
+      takeMate(m);
+      SFX.found();closeModal();
+      runSave();drawHome();
+      /* 雇ったばかりの者に 覚えるものを選ばせる */
+      mateLearnQueue(()=>{drawHome();
+        resultModal("仲 間 が 加 わ っ た",
+          [`<span class="gain">${m.name}</span> が一味に加わった`,
+           party.includes(m)?`一味 ${party.map(u=>u.short).join(" ▸ ")}`
+                            :`控えに入った　<span class="s">一味は ${PARTYMAX}人まで</span>`],
+          [{n:"よろしく"}]);});
+    };});
+  $("#hrX").onclick=closeModal;
 }
 /* 潜れる区画。**はじめの区画と、抜けた区画・その先**。
    areaKnown は「はじめの区画」も真になるので ここでは使えない。

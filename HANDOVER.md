@@ -28,9 +28,17 @@
 ### リポジトリの中身
 
 ```
-index.html                          本体。839 KB・5998 行。これ1つで動く
+index.html                          本体。これ1つで動く
 tools/probe.js                      Node でデータを検証するための足場
 tools/bump.js                       版（VERSION）を1つ上げる
+tools/playthru.mjs                  本物のクリックだけで 起動から町へ帰るまで通す
+tools/hire.mjs                      雇用と 一味／控えの入れ替えを通す
+tools/sizechk.mjs                   場所ごとの前提の人数と 実際の人数での手応え
+tools/skillsweep.mjs                全スキルを「使って → 殴られる」まで通す
+tools/audit4.mjs                    手応えを測る（solo / raw を渡せる）
+tools/pace.mjs                      育ちの速さを測る
+tools/town.mjs                      町と持ち帰り（潜る・帰る・全滅・控え）
+tools/sim.js  tools/balance.js      区画ごとの手応え／職業×種族の差
 README.md
 
 audio/bgm/                          BGM。場面ごとに1曲（区画によっては複数）
@@ -620,7 +628,45 @@ townSnap()/townRestore(o)
 * 起動は `goTitle()`。自動で控えを読むことはもうしない
 * 潜る先は `diveModal()` が `worldMap("gate",pick)` を出す。
   押せるのは `diveTargets()` が返した区画だけ（`data-w`）
-* **ひとりで始まる。**`buildParty`（仮の3人組）は消した。仲間は町で雇う（段C）
+* **ひとりで始まる。**`buildParty`（仮の3人組）は消した。仲間は町で雇う〔α1.0.007・済〕
+
+#### 雇用と 人数の前提（α1.0.007・段C）
+
+**場所ごとに「何人で挑む前提か」が決まっている。**敵の丈夫さは そこに合わせる。
+
+```javascript
+function wantParty(){                    /* その部屋の 前提の人数 */
+  if(areaTier()>=2)return 3;             /* 木漏れ日の森より先は 3人 */
+  const r=(RUN&&RUN.cur)?RUN.cur.r:0;
+  return r>=Math.floor(ROWS/2)?2:1;      /* 草原は 前半 1人・後半 2人 */
+}
+let PARTYHP={1:0.22,2:0.55,3:1};
+function partyMul(){ return PARTYHP[wantParty()]||1; }
+```
+
+**`partyMul()` を掛け忘れると そこだけ 3人向けの硬さになる。**掛ける場所は3つ:
+`makeFoes` / 召喚 / 孵化。敵を作る道を増やしたら ここも足すこと。
+
+数字は「3人ぶんの敵」を基準に、1人・2人で同じ手応えになる倍率を測って決めた
+（`tools/sizechk.mjs`）。**敵の素の HP を触ったら 3つとも測り直すこと。**
+
+```javascript
+const PARTYMAX=3;                   /* 一味に入れられるのは3人まで */
+const HIRE1=150, HIREUP=150;        /* 1人目 ただ・2人目 150・以降 +150。**仮の値** */
+let bench=[];                       /* 控え。人数に上限は無い */
+let hireOffer=null;                 /* 候補3人。雇うまで変わらない（引き直しは無い） */
+hiredCount() hireCost() rollHire() takeMate(m) syncOne(m)
+```
+
+* **雇った者は 主人公と同じ Lv に揃う**（`syncOne` が `growUp` を回す）。
+  そのあと `mateLearnQueue` が 3の倍数の Lv ぶんの技・特性を選ばせる
+* `syncMates` / `mateLearnQueue` は **`[...party,...bench]` を回す**。
+  控えを外すと 戻したとき Lv が置いていかれる
+* 控えとの入れ替えは 装備・状態の窓（`data-in` / `data-out`）。
+  **戦っているあいだは出ない**（`inBattle()`）。主人公は外せない
+* `rosterName(u)` — 同じ職が並ぶと `short` だけでは見分けがつかない。
+  かぶったときだけ 種族まで（`name`）、それでも重なるなら 番号。
+  **仲間の名前が決まったら この関数は要らなくなる**
 
 #### 〔修正済〕まっさらから始めると 遊べなかった
 
@@ -637,6 +683,16 @@ townSnap()/townRestore(o)
 
 （窓の中を押すときは `modalOpen()` を見て **窓の中だけ**を探すこと。
 後ろの画面の札を掴むと キャラ作成をやり直してしまう。実際に踏んだ。）
+
+**画面の見方は `curScreen` と `modalOpen()` だけでは足りない。**宝箱の演出
+（`#chestOv.on`）は `position:fixed;inset:0` で **画面ぜんぶを覆う**。開いたまま
+だと 後ろの札は「見えていて・使える」のに クリックが覆いに吸われる。
+`force:true` でも吸われる（当たり判定の座標が覆いの上だから）。
+α1.0.007 で `playthru.mjs` が「町へ帰る」を押したつもりで空振りしていた。
+いまは `scr()` が `+覆` を出し、`once()` が先に覆いを片づける。
+
+**行商の窓は 買う→確かめ→行商 と回り続ける。**先頭の札を押し続ける作りだと
+そこで止まる。同じ表題に3度戻ったら `.mclose` を押すようにした。
 
 #### 世界の深さと 格下（α1.0.003・段B）
 
