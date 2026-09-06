@@ -205,6 +205,30 @@ if((await scr()).startsWith("fight")){
   await pg.waitForTimeout(400);
   for(let i=0;i<10;i++){ if(!await pg.evaluate(()=>modalOpen())&&!await chestOn())break; if(!await once())break; }
 }
+/* まだ戦闘の画面なら **なぜ抜けられないのか**を残す。
+   決着（over）はしていても 戦利品の窓が閉じきれないと画面は fight のままで、
+   下の「町へ帰る」が丸ごと飛ばされる。前はここが無言だったので
+   「✗ 町に戻れていない」だけが出て、何が起きたのか分からなかった。 */
+if((await scr()).startsWith("fight")){
+  const d=await pg.evaluate(()=>{
+    const t=document.querySelector("#mbox .mtitle");
+    return {
+      over, busy, run:!!RUN,
+      modal:modalOpen(), chest:!!(document.querySelector("#chestOv")||{classList:{contains:()=>false}}).classList.contains("on"),
+      title:t?t.textContent.trim():"（窓なし）",
+      btns:[...document.querySelectorAll("#mbox button")]
+        .map(b=>b.innerText.replace(/\s+/g,"").slice(0,14)+(b.disabled?"[×]":"")).join(" ")||"（札なし）",
+      foes:(typeof foes!=="undefined"?foes:[]).filter(f=>f.HP>0).length,
+      acts:[...document.querySelectorAll("#acts .act")]
+        .map(b=>b.querySelector(".an").innerText.replace(/\s+/g,"")).join(" ")||"（札なし）",
+    };
+  });
+  log.push(`   戦闘から抜けられない　over=${d.over} busy=${d.busy} RUN=${d.run}`+
+    `　窓=${d.modal} 覆=${d.chest}　生きた敵 ${d.foes}`);
+  log.push(`   窓の題 ${d.title}`);
+  log.push(`   窓の札 ${d.btns}`);
+  log.push(`   行動の札 ${d.acts}`);
+}
 if((await scr()).startsWith("floor")){
   await tap("#leaveBtn","町へ帰る");
   try{ await pg.waitForSelector('#mbox .ndbtn button',{timeout:4000}); }catch(e){}
