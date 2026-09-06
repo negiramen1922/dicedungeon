@@ -114,7 +114,7 @@ log.push(`⑥ 地図 → ${await scr()}　部屋 ${await pg.evaluate(()=>RUN&&RU
 /* ⑦ 部屋を進んで 戦闘まで */
 let battles=0,wasFight=false;
 const trail=[];
-for(let step=0;step<40;step++){
+for(let step=0;step<60;step++){          /* 部屋が増えたので 40 → 60 */
   if(battles>=3&&!wasFight&&!(await scr()).startsWith("fight"))break;   /* 3戦したら 帰り道の確かめへ */
   const s=await scr();
   trail.push(s+(s.endsWith("窓")?"["+(await pg.evaluate(()=>{
@@ -159,6 +159,25 @@ log.push(`   道すじ ${trail.join(" ")}`);
 log.push(`⑦ ${battles} 戦した　画面 ${await scr()}　Lv ${await pg.evaluate(()=>me?me.lv:"-")}　金貨 ${await pg.evaluate(()=>me?me.gold:"-")}`);
 /* ⑧ 町へ帰る。窓が開いたまま止まっていることがあるので まず閉じる */
 for(let i=0;i<8;i++){ if(!await pg.evaluate(()=>modalOpen())&&!await chestOn())break; if(!await once())break; }
+/* 歩数が尽きて **戦いの最中**で止まっていることがある。町へは戻れないので
+   まず決着まで押し切る。ここを飛ばすと ⑧ が「町へ帰った → fight」と
+   出るのに 何も確かめていない、という嘘の緑になる（α1.0.018 で踏んだ）。 */
+if((await scr()).startsWith("fight")){
+  log.push("   戦いの最中で歩数が尽きた → 決着まで押す");
+  for(let t=0;t<120;t++){
+    if(await pg.evaluate(()=>over))break;
+    if(await pg.evaluate(()=>busy)){await pg.waitForTimeout(60);continue;}
+    const cells=await pg.$$('#board .cell.sel');
+    if(cells.length){await cells[0].click({force:true});await pg.waitForTimeout(90);continue;}
+    const atk=await pg.$('#acts .act.atk');
+    if(atk&&await atk.isEnabled()){await atk.click({force:true});await pg.waitForTimeout(130);continue;}
+    const def=await pg.$('#acts .act.def');
+    if(def)await def.click({force:true});
+    await pg.waitForTimeout(120);
+  }
+  await pg.waitForTimeout(400);
+  for(let i=0;i<10;i++){ if(!await pg.evaluate(()=>modalOpen())&&!await chestOn())break; if(!await once())break; }
+}
 if((await scr()).startsWith("floor")){
   await tap("#leaveBtn","町へ帰る");
   try{ await pg.waitForSelector('#mbox .ndbtn button',{timeout:4000}); }catch(e){}
@@ -171,8 +190,15 @@ if((await scr()).startsWith("floor")){
   await pg.waitForTimeout(600);
   for(let i=0;i<5;i++){ if(!await pg.evaluate(()=>modalOpen()))break; if(!await once())break; }
 }
-log.push(`⑧ 町へ帰った → ${await scr()}　金貨 ${await pg.evaluate(()=>me?me.gold:"-")}　RUN=${await pg.evaluate(()=>RUN===null?"null":"あり")}`);
+const endScr=await scr(), endRun=await pg.evaluate(()=>RUN===null?"null":"あり");
+log.push(`⑧ 町へ帰った → ${endScr}　金貨 ${await pg.evaluate(()=>me?me.gold:"-")}　RUN=${endRun}`);
+/* **ここまで来たら 町に居ること。**前は floor で無ければ黙って飛ばしており、
+   「町へ帰った → fight」と出るのに 何も確かめていなかった。 */
+const homeOK=endScr.startsWith("home")&&endRun==="null";
+if(!homeOK)log.push(`✗ 町に戻れていない（画面 ${endScr}／RUN ${endRun}）`);
 await pg.screenshot({path:'/tmp/pt_town.png'});
 console.log(log.join("\n"));
 console.log(errs.length?"⚠ "+[...new Set(errs)].slice(0,8).join("\n⚠ "):"例外なし");
+console.log(homeOK?"✓ 起動から町へ帰るまで 通った":"✗ 通し切れていない");
 await b.close();
+process.exit(homeOK&&!errs.length?0:1);
