@@ -41,7 +41,9 @@ const r=await pg.evaluate(()=>{
   /* 仲間 */
   const m=makeMate("mage","elf",10);
   o.push(["仲間 Lv10 の残り点",m.skp,0]);
-  o.push(["仲間は 得物の技能へ",skillOf("magic",m),57+9]);
+  /* 期待値は **その版から引く**。開始値を直書きすると 技能表を触るたびに
+     嘘の失敗が出る（α1.0.020 で踏んだ） */
+  o.push(["仲間は 得物の技能へ",skillOf("magic",m),skillBorn("magic",m)+skPtsOf(m.lv)]);
   return o;
 });
 let ng=0;

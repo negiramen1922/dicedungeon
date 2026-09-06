@@ -31,6 +31,16 @@ button.opt:hover{border-color:var(--ink);color:var(--bone)}
 button.opt.on{background:var(--panel2);border-color:var(--brass);color:var(--brass)}
 button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .note{font-size:12px;color:var(--dim);margin-top:6px;min-height:1.7em}
+/* 技の階段の 玉（●●○）と 成功率（α1.0.020） */
+.pips{display:inline-flex;gap:3px;align-items:center;margin-left:5px;vertical-align:middle}
+.pip{width:8px;height:8px;border:1px solid var(--brass);border-radius:50%;
+  background:var(--brass);flex:0 0 auto}
+.pip.off{background:transparent;border-color:#4d5346}
+.pct{color:var(--moss)}
+.pct.mid{color:#e0b83a}
+.pct.bad{color:var(--blood)}
+.nogo{color:#6b6257}
+.act.prep{border-left-color:#8fd0ff}
 .go{display:block;width:100%;margin-top:18px;padding:13px;background:var(--brass);
   color:#1b1d18;border:0;font-family:inherit;font-size:15px;font-weight:700;
   letter-spacing:.1em;cursor:pointer}
@@ -1066,7 +1076,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.019";
+const VERSION="α1.0.020";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1079,6 +1089,14 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1020",tag:"up",v:"α1.0.020",d:"2026-09-06",n:"戦闘を「技の階段」にしました。届かない段も 灰色で見えています",b:[
+   "<b>コマンド欄そのものが 階段になりました。</b>通常攻撃 ● ／ 斬撃 ●● ／ 強撃 ●●● ／ 大技 ●●●● が <b>はじめから全部並びます</b>。覚える技ではありません",
+   "<b>玉（●●○）で 必要な成功の数が見えます。</b>成功する確率も 色つきで出ます（緑・黄・赤）",
+   "<b>届かない段も 札として並びます。</b>「ダイスが 3個 要る（いま 2個）」と灰色で出るので、<b>技能を伸ばす先が いつも画面にあります</b>",
+   "<b>仕込みが入りました。</b>「構える」でダイス +1、「狙う」でしきい値 −1。次の攻撃ひとつぶん。<b>一手ためると 上の段が開きます</b>",
+   "<b>出だしのダイスを 2個に戻しました。</b>通常攻撃 75%、斬撃は<b>両方成功しないと</b>通らず 25%、強撃と大技は<b>そもそも振れません</b>。技能を伸ばすと開いていきます",
+   "〔戻し〕α1.0.013 でダイスの刻みを「25ごと＋1個」にしていました。出だしが3個になり、通常攻撃がほぼ必ず当たって <b>関門が一度も閉じていませんでした</b>。20ごとに戻しています",
+   "<b>いまは ヒュームのナイトだけ</b>選べます。ほかの職と種族は 数字も手触りもまだ見ていないので、作りながら開けていきます"]},
  {id:"v1019",tag:"fix",v:"α1.0.019",d:"2026-09-06",n:"遊びはじめの数戦に「必要な成功の数」が一度も出ていませんでした",b:[
    "<b>職ごとに はじめの技を持って始まります。</b>ナイトは渾身、アーチャーは徹甲矢、スカウトは急所突き、ウィザードはインフェルノ ── どれも <b>必要成功2</b> の技です",
    "これまで Lv1 は <b>技をひとつも持っていなかった</b>ので、押せるのは通常攻撃（必要1）だけ。仕組みの真ん中にあるはずの「必要な成功の数」が 数戦のあいだ 画面に出ていませんでした",
@@ -3520,11 +3538,15 @@ const WARSK=Object.keys(SK).filter(k=>SK[k].war);
 /* 職ごとの生まれつきの技能値。**技能が買うのは ダイスの数だけ**
    （α1.0.017 で `skillHit` を外した）。25ごとに1個 ＋下駄1個なので、
    得意は 45〜60 で 3個から始まり、育ちの99点で 100（5個）まで届く。 */
+/* 〔α1.0.020〕得意の値を下げた。**出だしのダイスを2個にするため。**
+   ヒュームは全技能 +5 なので、45 → 50 → 20ごとで **2個**。
+   遊ぶ人の設計（ヒュームのナイトは初期ダイス2）に合わせた。
+   育ちの99点で 100（5個）まで届くのは変わらない。 */
 const SKJOB={
-  knight:{search:20, shoot:15, fight:55, magic: 5, heal:10, forge:30, cook:20},
-  archer:{search:40, shoot:55, fight:25, magic:10, heal:15, forge:20, cook:25},
-  scout: {search:55, shoot:35, fight:45, magic: 5, heal:10, forge:15, cook:20},
-  mage:  {search:30, shoot:30, fight:20, magic:45, heal:30, forge:20, cook:30},
+  knight:{search:20, shoot:15, fight:45, magic: 5, heal:10, forge:30, cook:20},
+  archer:{search:40, shoot:45, fight:25, magic:10, heal:15, forge:20, cook:25},
+  scout: {search:45, shoot:35, fight:40, magic: 5, heal:10, forge:15, cook:20},
+  mage:  {search:30, shoot:30, fight:20, magic:40, heal:30, forge:20, cook:30},
 };
 const SKRACE={
   hume: {search: 5, shoot: 5, fight: 5, magic: 5, heal: 5, forge: 5, cook: 5},
@@ -3604,23 +3626,27 @@ function wepSkill(u,act){
   if(w.snd==="magic")return "magic";
   return w.type==="ranged"?"shoot":"fight";
 }
-/* 技能から振れるダイスの数。**25ごとに1個、＋下駄1個。**
+/* 技能から振れるダイスの数。**20ごとに1個。**
 
-     技能   0〜24  25〜49  50〜74  75〜99  100
-     ダイス   1      2       3       4      5
+     技能   20  40  60  80  100  〔限界突破〕120
+     ダイス  1   2   3   4   5    6
 
-   〔なぜ「20ごと」から変えたか（α1.0.013）〕
-   20ごとだと **職と種族の組み合わせしだいで 出だしが2個**になった
-   （スカウトの近接50・ウィザードの魔術50・エルフのナイト50）。
-   ビーストのウィザードに至っては 魔術37 で **1個**しかなく、
-   どの術も半分は空振りだった。必要成功2の技は 2個では 25%、
-   必要成功3は **そもそも振れない**。**階段が下の段から働かない。**
-   25ごと＋下駄にすると、どの職も 得意は3個から始まり、上限は 100 で
-   5個のまま変わらない。 */
-const SKDIESTEP=25;
+   〔α1.0.013 で 25ごと＋下駄1個 にしたのを、α1.0.020 で戻した〕
+   あのとき「出だし2個では 必要3が振れない。階段が下の段から働かない」と
+   見て下駄を足したが、**「今のままではつかえない」は 遊ぶ人が
+   設計として書いていたこと**だった。
+
+     ヒュームのナイトは初期ダイス2 なので どちらかが成功で攻撃が成功します。
+     斬撃は必要成功2なので 両方成功しないと。
+     強撃は必要成功3なので **今のままではつかえない**
+
+   下駄を足すと 出だしが3個になり、通常攻撃はほぼ必ず当たり、
+   余ったぶんが毎回「超過」になる ── **関門が一度も閉じない。**
+   届かない段が画面に灰色で並んでいて、技能を伸ばすと開く。そこが遊び。 */
+const SKDIESTEP=20;
 const SKDIEMAX=6;   /* 限界突破ぶんを含む上限 */
 function skillDice(k,u){
-  return Math.max(1,Math.min(SKDIEMAX,1+Math.floor(skillOf(k,u)/SKDIESTEP)));
+  return Math.max(1,Math.min(SKDIEMAX,Math.floor(skillOf(k,u)/SKDIESTEP)));
 }
 
 const RACE={
@@ -3689,28 +3715,65 @@ const JOB={
     sk:[]},
 };
 
-/* ===== 職ごとの はじめの技（α1.0.019） =====
-   これまで Lv1 は **技を持っていなかった**ので、押せるのは通常攻撃（必要1）だけ。
-   「必要な成功の数」が仕組みの真ん中なのに、遊びはじめて数戦のあいだ
-   **画面に「必要 1」しか出なかった。**職の顔つきも 得物の違いだけになっていた。
+/* ===== 技 の 階 段（α1.0.020・試作 lab/fight.html から） =====
 
-   そこで職ごとに **必要成功2以上の技を1つ**持たせる。
-   はじめの一手から「安く確実な通常攻撃か、当たれば重い技か」を選べる。
+   **戦いの背骨。**覚える技ではなく、はじめから全部が札として並ぶ。
+   届かない段も **灰色で見えている** ── そこが「技能を伸ばす先」になる。
 
-   〔値は仮〕どれも既にある技から選んだだけで、新しくは作っていない。
-   ウィザードだけ 必要2 が全体技（インフェルノ／アースクエイク）しかないので、
-   単体の重い術ができたら そちらへ移す。 */
-const JOBSTART={
-  knight:"ak4",   /* 渾 身　　　　必要2 ×1.9　mp6 cd4 */
-  archer:"aa1",   /* 徹 甲 矢　　必要2 ×1.75　mp6 cd4　VIT を無視する */
-  scout: "as3",   /* 急 所 突 き　必要2 ×1.9　mp3 cd2　いちばん安い */
-  mage:  "am6",   /* インフェルノ　必要2 ×1.15／体　mp7 cd4　手前の3体 */
+     通常攻撃 ●     必要1  ×1.0   MP 0
+     斬 撃   ●●    必要2  ×2.0   MP 3
+     強 撃   ●●●   必要3  ×3.6   MP 6
+     大 技   ●●●●  必要4  ×5.6   MP 10
+
+   ヒュームのナイトは 出だし **2個**なので、
+   通常攻撃は75%、斬撃は **両方成功しないと**通らず 25%、
+   強撃と大技は **そもそも振れない**。技能を伸ばすと 段が開いていく。
+
+   階段は **技能ごと**に持つ（得物ではなく）。近接・射撃・魔術。
+   覚える技（`REW.act` の62個）は そのまま「味つけ」── 状態異常・属性・
+   全体・条件つき ── として 階段の下に並ぶ。
+
+   〔値は試作のまま・仮〕名前も（仮）。 */
+const LADDER={
+  fight:[{n:"通常攻撃",need:1,mul:1.0, mp:0},
+         {n:"斬 撃",  need:2,mul:2.0, mp:3},
+         {n:"強 撃",  need:3,mul:3.6, mp:6},
+         {n:"大 技",  need:4,mul:5.6, mp:10}],
+  shoot:[{n:"射 る",  need:1,mul:1.0, mp:0},
+         {n:"二本射ち",need:2,mul:1.95,mp:3},
+         {n:"貫き撃ち",need:3,mul:3.5, mp:6},
+         {n:"雨 撃 ち",need:4,mul:5.4, mp:10}],
+  magic:[{n:"魔 弾",  need:1,mul:1.0, mp:0},
+         {n:"炎 掌",  need:2,mul:2.3, mp:4},
+         {n:"大 魔 弾",need:3,mul:3.65,mp:8},
+         {n:"大 呪 文",need:4,mul:5.6, mp:12}],
 };
-function startSkill(job){
-  const id=JOBSTART[job];if(!id)return null;
-  const r=(REW.act[job]||[]).find(x=>x.id===id);
-  return r?{...r,cdLeft:0}:null;
+function ladderOf(u){ return LADDER[wepSkill(u)]||LADDER.fight; }
+/* 必要な成功の数を 玉で見せる。●が必要ぶん、○が余っているダイス */
+function pips(need,have){
+  const n=Math.max(need,have||0); let h="";
+  for(let i=0;i<n;i++)h+=`<span class="pip${i<need?"":" off"}"></span>`;
+  return `<span class="pips" aria-label="必要な成功 ${need}">${h}</span>`;
 }
+/* n個振って しきい値 thr のとき need 以上 成功する確率 */
+function atLeast(n,need,thr){
+  if(need>n)return 0;
+  const p=Math.max(0,Math.min(1,(7-thr)/6));
+  const C=(a,b)=>{let r=1;for(let i=0;i<b;i++)r=r*(a-i)/(i+1);return r;};
+  let o=0;for(let k=need;k<=n;k++)o+=C(n,k)*Math.pow(p,k)*Math.pow(1-p,n-k);
+  return o;
+}
+
+/* ===== 仕 込 み（α1.0.020・試作から） =====
+   一手を使って **次の攻撃ひとつ**を強くする。届かない段へ手を伸ばすための札。
+   素のダイス上限は5個なので、必要4の大技は 仕込まないと通らない
+   （素 18.8% → 仕込んで 50%前後）。
+   しきい値−1 のほうが ダイス+1 より常に強いので、MP で差をつけてある。
+   重ねがけはできない。 */
+const PREP=[
+  {id:"p1",n:"構 え る",mp:2,dice:1,thr:0,d:"次の攻撃の ダイス +1"},
+  {id:"p2",n:"狙 う",  mp:4,dice:0,thr:1,d:"次の攻撃の しきい値 −1"},
+];
 
 /* ---------- 報酬プール ----------
    cat は3種類。抽選では必ず1枚ずつ出る
@@ -4588,8 +4651,8 @@ function lvScale(t){ t=(t||areaTier()||1); return LVSCALE[t-1]||LVSCALE[LVSCALE.
 
    1.0 が素。**最大HP と 与ダメの両方**に掛かるので、余裕は 1/k² で動く。
    `tools/audit4.mjs` で測って決める。**敵や遭遇を触ったら測り直すこと。** */
-const AREATOUGH={plain:0.98,seed:1.00,wtree:0.83,cave:1.23,hall:0.87,city:0.80};
-const BOSSTOUGH={plain:0.93,seed:0.87,wtree:0.98,cave:0.73,hall:1.07,city:0.70};
+const AREATOUGH={plain:0.86,seed:0.93,wtree:0.79,cave:1.13,hall:0.85,city:0.78};
+const BOSSTOUGH={plain:0.94,seed:0.86,wtree:0.96,cave:0.73,hall:1.07,city:0.69};
 function areaTough(){ return AREATOUGH[RUN&&RUN.area]||1; }
 function bossTough(){ return BOSSTOUGH[RUN&&RUN.area]||1; }
 /* 敵ひとりに掛かる合計の倍率 */
@@ -5634,12 +5697,34 @@ function drawActs(){
   const skA=wepSkill(A);
   const baseN=skillDice(skA,A);
   const nAtk=Math.max(1,baseN+scoutBonus+passOn("dice",A)-ailSum(A,"shrink"));
-  add("atk",A.wep.n+"で攻撃",
-    anyTarget?`${SK[skA].n.replace(/ /g,"")} <b>${nAtk}d6</b>${
-      nAtk!==baseN?`<span class="m">（${baseN}${nAtk>baseN?"＋":"−"}${Math.abs(nAtk-baseN)}）</span>`:""
-      }・<b class="thr">${thrText()}</b>・必要 <b>1</b>・${pOne(1)}〜${pOne(1+XGAIN*XCAP)}`:
-      "届く相手がいない",
-    !anyTarget,()=>askTarget({kind:"atk"}));
+  /* ===== 技 の 階 段（α1.0.020） =====
+     **届かない段も灰色で並べる。**「ダイスが3個 要る（いま2個）」と出して、
+     技能を伸ばす先が いつも画面にあるようにする。 */
+  const prep=A.prep||null;
+  const thrNow=pvT?threshold(A,pvT,{thr:(prep&&prep.thr)||0}):4;
+  const nWith=nAtk+((prep&&prep.dice)||0);
+  ladderOf(A).forEach((r,i)=>{
+    const noDice=r.need>nWith, noMp=r.mp>A.MP;
+    const ok=atLeast(nWith,r.need,thrNow);
+    const cls=ok>=.6?"":ok>=.3?" mid":" bad";
+    const lo=pOne(r.mul), hi=pOne(r.mul*(1+XGAIN*XCAP));
+    add("atk",`${r.n} ${pips(r.need,nWith)}`,
+      !anyTarget?"届く相手がいない"
+      :noDice?`<span class="nogo">ダイスが ${r.need}個 要る（いま ${nWith}個）</span>`
+      :noMp  ?`<span class="nogo">MP が足りない（${r.mp}）</span>`
+      :`${SK[skA].n.replace(/ /g,"")} <b>${nWith}d6</b>・<b class="thr">${thrNow}以上</b>`+
+       `　成功 <b class="pct${cls}">${Math.round(ok*100)}%</b>　威力 ${lo}〜${hi}${
+         r.mp?`　MP ${r.mp}`:""}`,
+      !anyTarget||noDice||noMp,()=>askTarget({kind:"rung",i}));
+  });
+  /* 仕込み。次の攻撃ひとつぶん。重ねがけはできない */
+  PREP.forEach(pz=>{
+    add("prep",pz.n,
+      prep?`<span class="nogo">もう仕込んである（${prep.n}）</span>`
+      :pz.mp>A.MP?`<span class="nogo">MP が足りない（${pz.mp}）</span>`
+      :`${pz.d}　MP ${pz.mp}`,
+      !!prep||pz.mp>A.MP,()=>doAct({kind:"prep",id:pz.id}));
+  });
   if(bagCount()){
     add("bag","道 具 を 使 う",`持ち物 ${bagLabel()}`,false,()=>bagPanel());
   }
@@ -5975,6 +6060,13 @@ async function playerAttack(targets,opt){
   }
   const restD=(A.rest&&A.rest.r===round&&A.rest.dice)||0;
   if(restD)log(`<span class="c">明日やる</span> 休んだぶん 攻撃ダイス <span class="m">+${restD}</span>`);
+  /* 仕込み（構える／狙う）。**次の攻撃ひとつぶん**なので ここで食う */
+  const prep=A.prep||null;
+  if(prep){
+    A.prep=null;
+    log(`<span class="c">${prep.n}</span> ${prep.dice?`攻撃ダイス <span class="m">+${prep.dice}</span>`:""}${
+      prep.thr?`しきい値 <span class="m">−${prep.thr}</span>`:""}`);
+  }
   /* ===== 特性は **手番の主（A）のもの**（α1.0.015） =====
      ここは長らく `passOn("dice")` のように u を渡しておらず、
      中で必ず `me`（主人公）を見ていた。仲間の手番でも
@@ -5982,15 +6074,16 @@ async function playerAttack(targets,opt){
      仲間が覚えた特性は働かず、主人公の特性が仲間の攻撃に漏れていた。
      （`skillHit` で α1.0.008 に直したのと同じ食い違い。仲間は特性を
        4つまで持てる ── `MATEPASSMAX`） */
-  let n=Math.max(1,baseDice+(opt.dice||0)+lostD+restD+scoutBonus+passOn("dice",A)
-    -ailSum(A,"shrink"));
+  let n=Math.max(1,baseDice+(opt.dice||0)+lostD+restD+((prep&&prep.dice)||0)
+    +scoutBonus+passOn("dice",A)-ailSum(A,"shrink"));
   const pn=passNames("dice",A);
   if(pn.length)log(`<span class="c">${pn.join("・")}</span> 攻撃ダイス <span class="m">+${passOn("dice",A)}</span>`);
   if(scoutBonus){
     log(`<span class="a">先制</span> 探索で先を取った　攻撃ダイス <span class="m">+${scoutBonus}</span>`);
     scoutBonus=0;
   }
-  const thr=threshold(A,targets[0],{...opt,thr:(opt.thr||0)+passOn("thr",A)});
+  const thr=threshold(A,targets[0],
+    {...opt,thr:(opt.thr||0)+((prep&&prep.thr)||0)+passOn("thr",A)});
   /* 成功の数え方。**乱れ撃ち（even）は偶数の目、激昂（rush）は6が2つぶん。**
      ここを opt にまとめて、ダイスの窓にも同じものを渡す ── でないと
      窓に出る数と 実際に数える数が食い違う。 */
@@ -6223,6 +6316,24 @@ async function resolvePlayer(a,target){
   if(a.kind==="atk"){
     A.lastSk=null;
     await playerAttack([target],{});
+  }else if(a.kind==="rung"){
+    /* 技の階段（α1.0.020）。覚える技ではなく はじめから持っている手 */
+    const r=ladderOf(A)[a.i];
+    A.lastSk=null;
+    if(r.mp){ A.MP-=r.mp;
+      log(`<span class="a">${A.name}</span> が <span class="c">${r.n}</span>（MP −${r.mp}）`); }
+    await playerAttack([target],{suc:r.need,powMul:r.mul});
+  }else if(a.kind==="prep"){
+    /* 仕込み。次の攻撃ひとつぶん。重ねがけはできない */
+    const pz=PREP.find(x=>x.id===a.id);
+    if(pz&&!A.prep&&A.MP>=pz.mp){
+      A.MP-=pz.mp;
+      A.prep={n:pz.n,dice:pz.dice,thr:pz.thr};
+      draw();fxOn(A,"charge");popSelf(pz.n.replace(/ /g,""),"blk");SFX.open();
+      log(`<span class="a">${A.name}</span> は <span class="c">${pz.n}</span>（MP −${pz.mp}）　`+
+        `<span class="s">次の攻撃に ${pz.d.replace("次の攻撃の ","")}</span>`);
+      await wait(650);
+    }
   }else if(a.kind==="skill"){
     const s=A.sk[a.i];
     A.MP-=s.mp;s.cdLeft=s.cd;
@@ -8095,10 +8206,6 @@ function newGame(){
      buildParty（決め打ちの3人）は 仮の形だったので もう呼ばない。 */
   setParty([me]);
   markSeen("w_"+me.baseWep);
-  /* 職の はじめの技。押せるのが通常攻撃だけだと
-     「必要な成功の数」が数戦のあいだ画面に出てこない（α1.0.019） */
-  const st=startSkill(sel.job);
-  if(st){ me.sk=[st]; markSeen(st.id); }
   me.gold=(ORIG[sel.orig]&&ORIG[sel.orig].startGold)||30;
   RUN=null; owned=[]; bench=[]; hireOffer=null;
   META.runs++;touchMeta();
@@ -10713,6 +10820,7 @@ function prepareBattle(){
   party.forEach(u=>{
     u.block=0;u.dbuffs=[];u.half=false;u.tmpPow=0;u.tmpDef=0;u.ail=[];
     u.counter=0;u.focus=null;u.dexUp=0;u.again=null;u.selfDef=0;u.endured=false;
+    u.prep=null;                 /* 仕込みは 戦いをまたがない */
     u.coat=null;u.beast=null;u.goldPow=null;u.selfPow=null;u.taken=0;u.vow=null;u.rest=null;
     (u.sk||[]).forEach(k=>k.cdLeft=0);
   });
@@ -10886,6 +10994,15 @@ function dunArt(k){
 }
 
 /* ---------- キャラ作成（段階式） ---------- */
+/* ===== いま遊べる組み合わせ（α1.0.020） =====
+   技の階段を **ヒュームのナイト**で先に作っている途中。
+   ほかの職・種族は 数字も手触りもまだ見ていないので、選べないようにしてある。
+   ここを空にすれば 全部選べる形に戻る。 */
+const PLAYABLE={ job:["knight"], race:["hume"] };
+function canPick(k,key){
+  const l=PLAYABLE[k];
+  return !l||!l.length||l.includes(key);
+}
 const MKSTEPS=[
   {k:"job", ttl:"職 業", data:()=>JOB,  sub:"何で戦うか"},
   {k:"race",ttl:"種 族", data:()=>RACE, sub:"どんな体か"},
@@ -10910,16 +11027,18 @@ function drawMake(){
   const D=S.data();
   let h=`<div class="mkq">${S.ttl}　<span>${S.sub}</span></div><div class="acts">`;
   Object.keys(D).forEach(k=>{
-    const o=D[k], on=(sel[S.k]===k);
-    h+=`<button class="act rew${on?" mkon":""}" data-k="${k}">
+    const o=D[k], on=(sel[S.k]===k), ok=canPick(S.k,k);
+    h+=`<button class="act rew${on?" mkon":""}" data-k="${k}"${ok?"":" disabled"}>
       <span class="an">${tagFig(k,15)} ${o.n}</span>
-      <span class="ad">${o.d||""}</span></button>`;
+      <span class="ad">${ok?(o.d||"")
+        :`<span class="nogo">まだ 作っている途中（いまは ヒュームのナイトだけ）</span>`}</span></button>`;
   });
   h+=`</div>`;
   if(mkStep>0)h+=`<button class="mclose" id="mkPrev">ひとつ もどる</button>`;
   $("#mkBody").innerHTML=h;
   $("#mkBody").querySelectorAll("[data-k]").forEach(b=>{
-    b.onclick=()=>{ sel[S.k]=b.dataset.k;
+    b.onclick=()=>{ if(!canPick(S.k,b.dataset.k))return;
+      sel[S.k]=b.dataset.k;
       SFX.open();mkStep++;drawMake();window.scrollTo(0,0); };});
   const pv=$("#mkPrev");
   if(pv)pv.onclick=()=>{mkStep--;drawMake();window.scrollTo(0,0);};
