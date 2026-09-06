@@ -1156,7 +1156,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.030";
+const VERSION="α1.0.031";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1169,6 +1169,12 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1031",tag:"up",v:"α1.0.031",d:"2026-09-06",n:"町で MP も戻ります。大癒しは 蘇生になりました",b:[
+   "<b>町へ帰ると HP も MP も全快します。</b>町は 立て直す場所です",
+   "<b>宿は しばらく出てきません。</b>癒すものが無くなったので。役どころを決め直すまで 眠らせています",
+   "<b>「大 癒 し」を「蘇 生」に変えました。</b>倒れた仲間を 最大HPの 50% で起こします（必要成功 3・MP 9・再使用 4）",
+   "<b>蘇生でこそ 治療の決めごとが効きます。</b>必要3 に届かなくても、1成功なら 9%、2成功なら 30% で <b>かろうじて息を吹き返します</b>。空振りだけが 本当に何も起きません",
+   "倒れた仲間がいなければ 札は押せません"]},
  {id:"v1030",tag:"up",v:"α1.0.030",d:"2026-09-06",n:"町に帰れば傷は癒えます。癒しにも階段ができました",b:[
    "<b>町へ帰ると 一味の HP が全快します。</b>これまでは傷が残ったので、帰るたびに 宿代を払うか 道具を割かないと 次に潜れませんでした。町は 立て直す場所です",
    "<b>MP は戻りません。</b>そこが宿の仕事です。HP が満ちているぶん <b>宿代はぐっと安く</b>なります",
@@ -3921,8 +3927,12 @@ const REW={
     d:"最大HPの 30% を回復する"},
    {id:"a6",n:"癒 し",kind:"heal",mp:5,cd:3,heal:0.55,suc:2,
     d:"最大HPの 55% を回復する"},
-   {id:"a7",n:"大 癒 し",kind:"heal",mp:9,cd:4,heal:0.90,suc:3,
-    d:"最大HPの 90% を回復する"},
+   /* 蘇 生。倒れた仲間ひとりを起こす。相手は選ばない ── 倒れている者が
+      いなければ そもそも押せないので、いる者を自分で拾う。
+      治療の決めごとどおり **届かなくても目減りして出る**ので、
+      1成功でも「かろうじて息を吹き返す」ことはある。 */
+   {id:"a7",n:"蘇 生",kind:"revive",mp:9,cd:4,heal:0.50,suc:3,
+    d:"倒れた仲間を 最大HPの 50% で起こす"},
    {id:"a2",n:"見切り",kind:"buff",mp:3,cd:3,half:true,
     d:"次に受けるダメージを 半分にする"},
    {id:"a3",n:"鉄 壁",kind:"guard",mp:3,cd:2,blockPct:8,hold:1,
@@ -5623,6 +5633,22 @@ function healRate(hits,need){
    しきい値は 自分にかけるので 遠さも素早さの差も無い ── 素の4から
    盲目・恐怖・長引き・仕込みだけが動かす。
    超過は 攻撃と同じ +25%／個・上限2個。 */
+/* 治療のひと振り。癒しも蘇生も 同じ振り方をする（α1.0.031）。
+   ここを1本にしておかないと、片方だけ決めごとが変わって
+   **説明と実際がずれる**（攻撃で二度やった） */
+async function healRoll(A,s,top,T){
+  const need=Math.max(1,s.suc||1);
+  const thr=healThr(A,{thr:s.thr||0});
+  const n=Math.max(1,healDice(A)+(s.dice||0));
+  const rolls=[];for(let i=0;i<n;i++)rolls.push(r6());
+  await rollDice(rolls,thr,
+    `${A.name} の <em>${s.n}</em>${T&&T!==A?` → ${T.name}`:""}　<em>${n}d6 ・ ${thr}以上</em>`,
+    top,{need});
+  const hits=countSuc(rolls,thr,{});
+  ovHide();
+  const over=Math.max(0,hits-need);
+  return {hits,need,thr,n,over,rate:healRate(hits,need),mul:1+XGAIN*Math.min(XCAP,over)};
+}
 function healDice(u){ return Math.max(1,skillDice("heal",u)+passOn("dice",u)-ailSum(u,"shrink")); }
 function healThr(u,opt){ return threshold(u,u,{...(opt||{}),noReach:true}); }
 const AILTHR=1;
@@ -6004,6 +6030,10 @@ function drawActs(){
     const noMp=A.MP<s.mp,onCd=s.cdLeft>0;
     const needFront=s.front&&depthOf(actor())!==0;
     const tooLate=s.earlyOnly&&round>s.earlyOnly;
+    /* 蘇生も 治療の振り方（α1.0.031）。倒れた仲間がいなければ 押せない */
+    const isRev=s.kind==="revive";
+    const isHeal=s.kind==="heal"||isRev;
+    const noDown=isRev&&!party.some(u=>u.HP<=0);
     const noTgt=s.kind==="atk"&&(s.backOnly
       ? !alive().some(f=>depthOf(f)>0)
       : (s.slower? !alive().some(f=>f.DEX<dexOf()) : !foes.some(canTarget)))
@@ -6032,8 +6062,9 @@ function drawActs(){
     }
     /* 札には 名前と「MP・再使用」だけ。押せないときは その訳を短く。
        効き目の説明・必要な成功・成功率・通ったときのダメージは 帯に出す */
-    const blocked=noMp||onCd||needFront||noTgt||tooLate||noDice;
-    const sub=tooLate?`<span class="nogo">もう使えない</span>`
+    const blocked=noMp||onCd||needFront||noTgt||tooLate||noDice||noDown;
+    const sub=noDown?`<span class="nogo">倒れた仲間がいない</span>`
+      :tooLate?`<span class="nogo">もう使えない</span>`
       :needFront?`<span class="nogo">先頭でのみ</span>`
       :noTgt?`<span class="nogo">狙える相手がいない</span>`
       :noDice?`<span class="nogo">ダイス ${sNeed}個 要る（いま ${sDice}）</span>`
@@ -6042,7 +6073,6 @@ function drawActs(){
       :`MP ${s.mp}${s.cd?`・再使用 ${s.cd}`:""}`;
     /* 成功率は 当てる技だけ。閾値は その技の補正込みで、
        仮の相手（いちばん手前）で見積もる ── 札に出していたときと同じ見方 */
-    const isHeal=s.kind==="heal";
     const sThr=isHeal?healThr(A,{thr:s.thr||0})
       :(s.kind==="atk"&&pvT)?threshold(A,pvT,{thr:s.thr||0,even:s.even}):null;
     const hN=isHeal?Math.max(1,healDice(A)+(s.dice||0)):0;
@@ -6058,7 +6088,8 @@ function drawActs(){
         const pk=C(hN,k)*Math.pow(p,k)*Math.pow(1-p,hN-k);
         e+=pk*healRate(k,sNeed)*(1+XGAIN*Math.min(XCAP,Math.max(0,k-sNeed)));
       }
-      return Math.round(A.maxHP*s.heal*e);
+      const T=isRev?(party.find(u=>u.HP<=0)||A):A;
+      return Math.round(T.maxHP*s.heal*e);
     })():0;
     /* 威力は powMul（倍率）と pow（足し算）の2つ。
        〔`s.pow` を百分率と読み違えて 見込みダメージが出ていなかった〕 */
@@ -6073,13 +6104,17 @@ function drawActs(){
       infoHtml({
         name:(s.kind==="atk"||isHeal)?`${s.n} ${pips(sNeed,isHeal?hN:sDice)}`:s.n,
         d:isHeal
-          ? `${s.d}　<span class="k">届かなくても 足りない1つにつき ×${HEALSHORT} で出る（0成功だけ ゼロ）</span>`
+          ? (noDown?`<span class="nogo">倒れた仲間がいない</span>　${s.d}`
+             :`${s.d}　<span class="k">届かなくても 足りない1つにつき ×${HEALSHORT} で出る（0成功だけ ゼロ）</span>`)
           : s.d,
         need:(s.kind==="atk"||isHeal)?sNeed:0,
         dice:isHeal?hN:(s.kind==="atk"?sDice:0),
         thr:s.even?"偶数":sThr, ok:sOk,
-        heal:isHeal?[Math.round(A.maxHP*s.heal),
-          Math.round(A.maxHP*s.heal*(1+XGAIN*XCAP)),hAvg]:null,
+        heal:(isHeal&&!noDown)?(()=>{
+          const T=isRev?(party.find(u=>u.HP<=0)||A):A;
+          return [Math.round(T.maxHP*s.heal),
+                  Math.round(T.maxHP*s.heal*(1+XGAIN*XCAP)),hAvg];
+        })():null,
         dmg:(s.kind==="atk"&&!blocked)?[pSk(sMul),pSk(sMul*(1+XGAIN*XCAP))]:null,
       }),
       pending&&pending.pickKey==="sk"+i);
@@ -6800,39 +6835,40 @@ async function resolvePlayer(a,target){
       }
       await wait(650);
     }
-    else if(s.kind==="heal"){
+    else if(s.kind==="heal"||s.kind==="revive"){
       /* ===== 治療も ダイスで決まる（α1.0.028） =====
          攻撃と違うのは **届かなくても目減りして出る**こと
          （足りない1つにつき ×0.3）。0成功だけが 本当のゼロ。
-         癒しを外して仲間が死ぬのは 痛すぎるので。 */
-      const hNeed=Math.max(1,s.suc||1);
-      const hThr=healThr(A,{thr:s.thr||0});
-      const hN=Math.max(1,healDice(A)+(s.dice||0));
-      const rolls=[];for(let i=0;i<hN;i++)rolls.push(r6());
-      await rollDice(rolls,hThr,
-        `${A.name} の <em>${s.n}</em>　<em>${hN}d6 ・ ${hThr}以上</em>`,
-        "癒 や す",{need:hNeed});
-      const hits=countSuc(rolls,hThr,{});
-      ovHide();
-      const rate=healRate(hits,hNeed);
-      const hOver=Math.max(0,hits-hNeed);
-      const hMul=1+XGAIN*Math.min(XCAP,hOver);
-      const full=Math.round(A.maxHP*s.heal);
-      const h=Math.min(Math.round(full*rate*hMul),A.maxHP-A.HP);
+         癒しを外して仲間が死ぬのは 痛すぎるので。
+
+         蘇生（α1.0.031）も同じ振り方。**倒れた仲間を自分で拾う**ので
+         相手は選ばない ── 倒れている者がいなければ 札が押せない。 */
+      const rev=(s.kind==="revive");
+      const T=rev?(party.find(u=>u.HP<=0)||null):A;
+      if(rev&&!T){ log(`<span class="s">倒れている仲間がいない</span>`);await wait(300); }
+      else{
+      const R=await healRoll(A,s,rev?"蘇 ら せ る":"癒 や す",T);
+      const full=Math.round(T.maxHP*s.heal);
+      const h=Math.min(Math.round(full*R.rate*R.mul),T.maxHP-Math.max(0,T.HP));
+      const pop=(t,c)=>{ if(T===A)popSelf(t,c); else popOn(T,t,c); };
       if(h>0){
-        A.HP+=h;draw();fxOn(A,"charge");popSelf("+"+h,"heal");SFX.found();
-        log(`<span class="a">${A.name}</span> の <span class="c">${s.n}</span>　`+
-          `${hN}d6・${hThr}以上 <span class="m">成功 ${hits}</span>／必要 ${hNeed}　`+
-          (rate<1?`<span class="c">${Math.round(rate*100)}% だけ効いた</span>　`
-            :hOver?`<span class="c">超過 ${Math.min(XCAP,hOver)}（×${hMul.toFixed(2)}）</span>　`:"")+
-          `HP <span class="m">+${h}</span>`);
+        T.HP=Math.max(0,T.HP)+h;
+        draw();fxOn(T,"charge");pop("+"+h,"heal");SFX.found();
+        log(`<span class="a">${A.name}</span> の <span class="c">${s.n}</span>`+
+          (rev?` → <span class="a">${T.name}</span>`:"")+`　`+
+          `${R.n}d6・${R.thr}以上 <span class="m">成功 ${R.hits}</span>／必要 ${R.need}　`+
+          (R.rate<1?`<span class="c">${Math.round(R.rate*100)}% だけ効いた</span>　`
+            :R.over?`<span class="c">超過 ${Math.min(XCAP,R.over)}（×${R.mul.toFixed(2)}）</span>　`:"")+
+          (rev?`<span class="a">起き上がった</span>　`:"")+`HP <span class="m">+${h}</span>`);
       }else{
-        draw();popSelf(hits<=0?"効かず":"満 身","miss");SFX.miss();
+        draw();pop(R.hits<=0?"効かず":"満 身","miss");SFX.miss();
         log(`<span class="a">${A.name}</span> の <span class="c">${s.n}</span>　`+
-          `${hN}d6・${hThr}以上 <span class="m">成功 ${hits}</span>／必要 ${hNeed}　`+
-          (hits<=0?`<span class="b">空振り</span>　何も起きなかった`:`もう傷が無い`));
+          `${R.n}d6・${R.thr}以上 <span class="m">成功 ${R.hits}</span>／必要 ${R.need}　`+
+          (R.hits<=0?`<span class="b">空振り</span>　何も起きなかった`
+            :rev?`起こしきれなかった`:`もう傷が無い`));
       }
       await wait(650);
+      }
     }
     else if(s.kind==="breath"){
       const g=Math.min(s.mpGain,A.maxMP-A.MP);
@@ -8653,11 +8689,11 @@ function goTown(why){
      宿代を払うか 道具を割くかしないと 次に潜れなかった。
      町は 立て直す場所であって、罰を持ち帰る場所ではない。
 
-     **MP は戻らない。**そこが宿の仕事として残る
-     （`innCost` は 足りないぶんから代金を出すので、
-     HP が満ちていれば おのずと MP のぶんだけになる）。 */
+     **MP も戻る**（α1.0.031）。宿は `innCost` が 0 になるので
+     おのずと出なくなる ── 役どころを決め直すまで 眠らせておく。 */
   const woke=party.filter(u=>u.HP<=0);
-  party.forEach(u=>{u.HP=u.maxHP;u.ail=[];u.block=0;u.buffs=[];u.dbuffs=[];});
+  party.forEach(u=>{u.HP=u.maxHP;u.MP=u.maxMP;
+    u.ail=[];u.block=0;u.buffs=[];u.dbuffs=[];});
   /* 控えは潜っていないので、町に戻ったところで **ただで癒えている**。
      宿代を払うのは 連れて行った者のぶんだけ（α1.0.018）。
      ここで癒やさないと、傷ついた者を控えに回して 別の者を入れる、という
