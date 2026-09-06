@@ -40,7 +40,34 @@ const out=await pg.evaluate(async()=>{
   const back=healThr(party[party.length-1]||me,{});
   R.push(`しきい値　先頭 ${front}　いちばん後ろ ${back}`);
   if(front!==back)bad.push(`後ろに立つと しきい値が変わる（${front}→${back}）`);
-  /* ④ 実際に使って ならした回復量。ダイスは本物を振る */
+  /* ④ 癒しの階段。段ごと・技能ごとに **ならした回復量**を出す。
+     期待値は その版の healRate / XGAIN / XCAP から引く（直書きしない）。 */
+  const HL=REW.act.common.filter(x=>x.kind==="heal");
+  const C=(a,b)=>{let r=1;for(let i=0;i<b;i++)r=r*(a-i)/(i+1);return r;};
+  const avgOf=(need,n,thr)=>{
+    const q=Math.max(0,Math.min(1,(7-thr)/6));let e=0;
+    for(let k=0;k<=n;k++)
+      e+=C(n,k)*Math.pow(q,k)*Math.pow(1-q,n-k)
+         *healRate(k,need)*(1+XGAIN*Math.min(XCAP,Math.max(0,k-need)));
+    return e;
+  };
+  R.push("癒しの階段（最大HPに対する ならした回復量）");
+  R.push("  技能  "+HL.map(h=>`${h.n.replace(/ /g,"")}(必要${h.suc||1}/MP${h.mp})`).join("  "));
+  for(const v of [10,20,40,60,80,100]){
+    setHeal(v);
+    const n=healDice(me),thr=healThr(me,{});
+    R.push(`  ${String(v).padStart(3)}(${n}d6)  `+
+      HL.map(h=>`${(avgOf(h.suc||1,n,thr)*h.heal*100).toFixed(0)}%`.padStart(6)).join("  "));
+  }
+  /* 段が上がるほど 満ちた技能では強くなること */
+  setHeal(100);
+  {
+    const n=healDice(me),thr=healThr(me,{});
+    const v=HL.map(h=>avgOf(h.suc||1,n,thr)*h.heal);
+    for(let i=1;i<v.length;i++)
+      if(v[i]<=v[i-1])bad.push(`技能100 で ${HL[i].n} が ${HL[i-1].n} を超えない（${v[i].toFixed(2)} ≤ ${v[i-1].toFixed(2)}）`);
+  }
+  /* ⑤ 実際に使って ならした回復量。ダイスは本物を振る */
   setParty([me]);
   const s={...REW.act.common.find(x=>x.kind==="heal"),cdLeft:0};
   me.sk=[s];
