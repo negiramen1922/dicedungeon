@@ -3421,6 +3421,19 @@ node tools/tune.mjs old.html
 
 行番号で切るより、`/* ===== 区切り ===== */` のコメント帯を目印にしたほうが安全。
 
+### 通しテストを回している最中に index.html を触らない
+
+道具はどれも `http://localhost:8765/index.html` を **その場で読む**ので、
+走っている最中に本体を編集すると **偽の失敗**が出る。
+
+実際に踏んだ例（α1.0.018）── 宿の札を足した瞬間に町の札が1つ増え、
+走っていた `hire.mjs` が `#hHire` を掴めずに
+`elementHandle.click: Element is not visible` で落ちた。**本体は無事だった。**
+
+`skillsweep` は 6分、`playthru` は 1〜2分かかる。**回し始めたら編集は待つ**か、
+編集したいときは版を控えて（`git show <版>:index.html > tmp.html`）
+そちらを渡すこと。物差しは どれも版のファイル名を取れる。
+
 ### 検証は Node でできる
 
 `tools/probe.js` が DOM のダミーを与えて `<script>` を読み込む。
