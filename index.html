@@ -394,6 +394,11 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .act.mv{border-left:3px solid var(--ink)}
 .act.sk{border-left:3px solid var(--brass)}
 .act.cancel{border-left:3px solid var(--dim)}
+/* いま選んでいる手（狙いを決めている間・α1.0.026）。
+   手を並べたままにしたので、どれを選んだのかが分かる必要がある */
+.act.on{border-color:var(--brass);background:var(--panel2);
+  box-shadow:inset 0 0 0 1px var(--brass)}
+.act.on .an{color:var(--brass)}
 /* 報酬カード：種類ごとに色を分ける */
 .act.rew{grid-column:1 / -1;min-height:0;padding:9px 11px;gap:4px;position:relative;
   display:flex;flex-direction:column;align-items:stretch}
@@ -1146,7 +1151,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.025";
+const VERSION="α1.0.026";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1159,6 +1164,11 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1026",tag:"up",v:"α1.0.026",d:"2026-09-06",n:"狙いを決めている間も 手は並んだままになりました",b:[
+   "これまでは 手を押すと <b>コマンド欄が「やめる」だけ</b>になっていました。手を選び直すのに いちいち「やめる」を押す必要がありました",
+   "<b>手は並んだままです。</b>いま選んでいる手には 金の枠が付きます",
+   "<b>別の手を押せば そのまま乗り換わります。</b>「やめる」を挟む必要はありません",
+   "道具を投げる相手を選んでいるときも 同じです"]},
  {id:"v1025",tag:"up",v:"α1.0.025",d:"2026-09-06",n:"札は名前だけにして、数字は 盤面の下にまとめました",b:[
    "<b>札に書くのは 名前と ごく短い添え書きだけ</b>になりました。通常攻撃は <b>得物の名</b>、技は <b>MP・再使用</b>。押せないときは その訳（「ダイス 3個 要る（いま 2）」）",
    "これまでは「近接 2d6・4以上　成功 75%　威力 36〜57」を札に詰め込んでいて、<b>2行に折り返して読めませんでした</b>",
@@ -5831,9 +5841,9 @@ function drawActs(){
      触る画面には hover が無いので、**押し込んだ時点**でも帯を書き替える
      （pointerdown は click より先に来る）。指を離す前に読める。 */
   let firstInfo=null;
-  const add=(cls,name,sub,dis,fn,info)=>{
+  const add=(cls,name,sub,dis,fn,info,on)=>{
     const b=document.createElement("button");
-    b.className="act "+cls;b.disabled=!!dis;
+    b.className="act "+cls+(on?" on":"");b.disabled=!!dis;
     b.innerHTML=`<span class="an">${name}</span>`+
       (sub?`<span class="ad">${sub}</span>`:"");
     if(info){
@@ -5898,7 +5908,8 @@ function drawActs(){
           :noDice?`<span class="nogo">${SK[skA].n.replace(/ /g,"")}の技能を伸ばすと 振れるダイスが増える</span>`
           :`${wepName(A)} で ${SK[skA].n.replace(/ /g,"")}${
              r.mul!==1?`　<b>威力 ×${r.mul.toFixed(1)}</b>`:"　素の一撃"}`,
-      }));
+      }),
+      pending&&pending.kind==="rung"&&pending.i===i);
   });
   /* 仕込み。次の攻撃ひとつぶん。重ねがけはできない */
   PREP.forEach(pz=>{
@@ -5995,11 +6006,27 @@ function drawActs(){
         need:s.kind==="atk"?sNeed:0, dice:s.kind==="atk"?sDice:0,
         thr:s.even?"偶数":sThr, ok:sOk,
         dmg:(s.kind==="atk"&&!blocked)?[pSk(sMul),pSk(sMul*(1+XGAIN*XCAP))]:null,
-      }));
+      }),
+      pending&&pending.kind==="skill"&&pending.i===i);
   });
+  /* ===== 狙いを決めている間も 手は並べたまま（α1.0.026） =====
+     前は `#acts` を空にして「やめる」だけにしていたので、
+     **手を選び直すのに いちいち「やめる」を押す**ことになっていた。
+     並べたままにして、いま選んでいる手に印を付ける。
+     ほかの手を押せば そのまま乗り換わる。 */
+  if(pending){
+    const back=document.createElement("button");
+    back.className="act cancel wide";
+    back.innerHTML=`<span class="an">やめる</span>`;
+    back.onclick=()=>{pending=null;draw();drawActs();};
+    host.appendChild(back);
+    $("#prompt").textContent=pending.item
+      ? `▸ ${ITEMS[pending.item].n} を投げる相手を選ぶ`
+      : "▸ 狙う相手を選ぶ　（別の手を押せば 選び直せる）";
+  }
   /* まだ何も触っていないときは いちばん上の手（通常攻撃）を出しておく。
      帯が空のままだと「何を読む場所なのか」が伝わらない */
-  if(firstInfo)setActInfo(firstInfo);
+  if(firstInfo&&!pending)setActInfo(firstInfo);
 }
 /* ---------- 逃 走 ----------
    1戦闘に1回だけ、1ターンを使って挑戦できる。
@@ -6106,15 +6133,11 @@ function askTarget(a){
   const s=a.kind==="skill"?A.sk[a.i]:null;
   if(s&&s.all){ doAct(a,null); return; }
   pending=s?{...a,backOnly:s.backOnly,slower:s.slower}:a;
-  $("#prompt").textContent="▸ 狙う相手を選ぶ";
-  $("#acts").innerHTML="";
-  const b=document.createElement("button");
-  b.className="act cancel wide";b.innerHTML=`<span class="an">やめる</span>`;
-  b.onclick=()=>{pending=null;draw();drawActs();};
-  $("#acts").appendChild(b);
-  draw();
+  /* 手は消さない。drawActs が 印と「やめる」まで面倒を見る（α1.0.026） */
+  draw();drawActs();
 }
-function doAct(a,t){resolvePlayer(a,t);}
+/* 狙いを取らない手を押したら、前に選んでいた狙いは捨てる */
+function doAct(a,t){pending=null;resolvePlayer(a,t);}
 
 /* ---------- ダイス演出 ---------- */
 function ovShow(label,top){
@@ -10819,14 +10842,8 @@ async function useItem(k){
   const it=ITEMS[k];
   if(it.target){
     pending={item:k};
-    $("#prompt").textContent=`▸ ${it.n} を投げる相手を選ぶ`;
-    const host=$("#acts");host.innerHTML="";
-    const c=document.createElement("button");
-    c.className="act cancel wide";
-    c.innerHTML=`<span class="an">やめる</span>`;
-    c.onclick=()=>{pending=null;drawActs();};
-    host.appendChild(c);
-    draw();bindTargets();
+    /* 道具も 手を並べたまま（α1.0.026）。drawActs が「やめる」を足す */
+    draw();drawActs();bindTargets();
     return;
   }
   await doItem(k,null);
