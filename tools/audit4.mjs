@@ -24,7 +24,20 @@ const out=await pg.evaluate(({solo,raw,grow})=>{
     if(A.wip)return;
     sel.job="knight";sel.race="hume";sel.orig="greed";sel.area=ak;
     newGame();dive(ak);
-    if(solo)setParty([me]);
+    /* **その場所が前提にしている人数**まで一味を組む。
+       α1 は ひとりで始まって町で雇う形になったので `newGame()` は
+       `setParty([me])` を呼ぶ。ここを直さないまま
+       「一味3人・横一列」と見出しに書いていた（α1.0.016 で直した）。
+       敵の丈夫さは `PARTYHP` が前提の人数で割ってあるので、
+       ひとりで測ると 段2以降が必ず「勝てない」と出る ── それは設計どおり。 */
+    RUN.cur={r:8};
+    if(!solo){
+      const want=wantParty();
+      const jobs=["mage","archer","scout"];
+      const l=[me];
+      for(let i=0;l.length<want&&i<jobs.length;i++)l.push(makeMate(jobs[i],"hume",me.lv));
+      setParty(l);
+    }else setParty([me]);
     for(let i=1;i<LV[ak];i++){me.lv++;growUp();syncMates();}
     /* 主人公は自分で注がないので、注がない形が既定。grow なら全部 得物の技能へ */
     if(grow)party.forEach(u=>{ if((u.skp|0)>0)skUp(wepSkill(u),u,u.skp); });
@@ -83,7 +96,7 @@ const out=await pg.evaluate(({solo,raw,grow})=>{
 },{solo,raw,grow});
 const GN={norm:"普通",hard:"重い",elite:"精鋭"};
 let all=[];
-console.log((solo?"味方1人":"一味3人・横一列")+(raw?"／敵は昔のまま":`／敵 HP×${2.5} STR×${1.4}`));
+console.log((solo?"味方1人（昔の形）":"その場所が前提にしている人数で組む")+(raw?"／敵は昔のまま":""));
 for(const a of out){
   console.log(`\n══ ${a.n}  Lv${a.lv}　一味の合計HP ${a.ourHP}`);
   for(const g of ["norm","hard","elite"]){

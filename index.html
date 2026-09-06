@@ -1065,7 +1065,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.015";
+const VERSION="α1.0.016";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1078,6 +1078,12 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1016",tag:"bal",v:"α1.0.016",d:"2026-09-06",n:"区画ごとの手応えを揃えました。終盤のボスが 勝てない重さでした",b:[
+   "<b>水没都市のボスが 相打ちにも届かない重さでした</b>（余裕 ×0.41）。ほかの区画のボスは ×1.0〜1.6 だったので、終盤だけ跳ね上がっていました。いまは <b>どの区画も ×1.2〜1.6</b> です",
+   "<b>苔むした洞窟が 木漏れ日の森より 1.8倍 楽でした。</b>同じ第2階層なのに 顔ぶれの違いで軽くなっていたので 揃えました",
+   "<b>ふつうの戦いは 進むほど じわじわ重くなります。</b>草原 ×4.3 → 都市 ×2.3。前は 草原 ×4.4 → 都市 ×1.7 で 終盤だけ急に苦しくなっていました",
+   "区画ごと・ボスごとの倍率を <b>持ち替えられる形</b>にしました（AREATOUGH / BOSSTOUGH）。敵や遭遇を足したら <b>tools/tune4.mjs</b> で測り直せます",
+   "〔修正〕手応えの物差し（audit4）が <b>「一味3人」と書きながら 主人公ひとりで測っていました</b>。α1 で「ひとりで始めて町で雇う」形にしたときの取り残しです。<b>その場所が前提にしている人数</b>で組むようにしました"]},
  {id:"v1015",tag:"fix",v:"α1.0.015",d:"2026-09-06",n:"仲間が覚えた特性が 働いていませんでした",b:[
    "<b>仲間の手番でも 特性だけ主人公のものを見ていました。</b>得物も技能も仲間のものを使うのに、特性だけ主人公 ── という食い違いが 14 か所ありました",
    "<b>仲間が覚えた特性は 何も効いていませんでした。</b>仲間は特性を4つまで持てます",
@@ -4527,6 +4533,22 @@ function depthAt(tier){ return 1+((tier||1)-1)*0.34; }
    TIERLV を触ったら 測り直すこと。** */
 const LVSCALE=[1.66,2.22,2.78,3.04];
 function lvScale(t){ t=(t||areaTier()||1); return LVSCALE[t-1]||LVSCALE[LVSCALE.length-1]; }
+
+/* ===== 区画ごとの手応えの微調整（α1.0.016・段4） =====
+   段が同じでも、並ぶ敵の顔ぶれで軽重が出る。**苔むした洞窟は
+   木漏れ日の森の 1.8倍 楽**だった（同じ第2階層）。ここで揃える。
+
+   ボスは別に持つ。深い区画ほど ボスだけが飛び抜けて重くなっていた
+   （水没都市のボスは 余裕 ×0.41 ＝ 相打ちにも届かない）。
+
+   1.0 が素。**最大HP と 与ダメの両方**に掛かるので、余裕は 1/k² で動く。
+   `tools/audit4.mjs` で測って決める。**敵や遭遇を触ったら測り直すこと。** */
+const AREATOUGH={plain:1.01,seed:1.03,wtree:0.98,cave:1.22,hall:0.95,city:0.88};
+const BOSSTOUGH={plain:0.99,seed:0.85,wtree:0.89,cave:0.76,hall:1.02,city:0.70};
+function areaTough(){ return AREATOUGH[RUN&&RUN.area]||1; }
+function bossTough(){ return BOSSTOUGH[RUN&&RUN.area]||1; }
+/* 敵ひとりに掛かる合計の倍率 */
+function foeScale(boss){ return lvScale()*areaTough()*(boss?bossTough():1); }
 function depthMul(){
   const r=(RUN&&RUN.cur)?RUN.cur.r:0;
   const d=depthAt(areaTier());
@@ -4535,6 +4557,7 @@ function depthMul(){
 }
 function makeFoes(){
   const dm=depthMul();
+  const sc=foeScale(RUN&&RUN.boss);
   const list=ENCS[sel.enc].list;
   const out=list.map((k,i)=>{
     const f=FOE[k];
@@ -4545,9 +4568,9 @@ function makeFoes(){
     const nth=list.slice(0,i).filter(x=>x===k).length;
     return {...f,id:i,key:k,
       name:f.n+(same>1?" "+((f.nm&&f.nm[nth])||"ABC"[nth]):""),
-      maxHP:Math.round(f.HP*dm*FOEHP*partyMul()*lvScale()),
-      HP:Math.round(f.HP*dm*FOEHP*partyMul()*lvScale()),
-      STR:Math.round(f.STR*(1+(dm-1)*0.6)*FOESTR*lvScale()),
+      maxHP:Math.round(f.HP*dm*FOEHP*partyMul()*sc),
+      HP:Math.round(f.HP*dm*FOEHP*partyMul()*sc),
+      STR:Math.round(f.STR*(1+(dm-1)*0.6)*FOESTR*sc),
       /* DEX も深さで伸ばす。前は HP と STR だけ伸ばしていたので、
          こちらの DEX だけが青天井に育ち、スカウトは木漏れ日の森の時点で
          敵の命中閾値が全部 6 に張り付いていた（当たる率 17%）。 */
@@ -6640,10 +6663,10 @@ async function enemyAct(f){
       const dm=depthMul();
       for(let i=0;i<n;i++){
         const base=FOE[t.who];
-        const hp=Math.round(base.HP*dm*FOEHP*partyMul()*lvScale());
+        const hp=Math.round(base.HP*dm*FOEHP*partyMul()*foeScale(RUN&&RUN.boss));
         const nf={...base,id:foes.length,key:t.who,
           name:base.n+" "+"ABCDEF"[foes.filter(x=>x.key===t.who).length],
-          maxHP:hp,HP:hp,STR:Math.round(base.STR*(1+(dm-1)*0.6)*FOESTR*lvScale()),
+          maxHP:hp,HP:hp,STR:Math.round(base.STR*(1+(dm-1)*0.6)*FOESTR*foeScale(RUN&&RUN.boss)),
           DEX:Math.round(base.DEX*(1+(dm-1)*0.6)),
           block:0,buffs:[],ail:[],stun:false,isFoe:true,owner:f.id,
           tele:null,next:null,lastAid:null,turn:0,sumCd:0,sumUsed:false};
@@ -6747,10 +6770,11 @@ async function enemyAct(f){
     await wait(520);
   }else if(t.k==="hatch"){
     /* 割れて中身が出る。殻そのものは消え、同じ立ち位置を中身が引き継ぐ */
-    const dm=depthMul(), base=FOE[t.who], hp=Math.round(base.HP*dm*FOEHP*partyMul()*lvScale());
+    const dm=depthMul(), base=FOE[t.who], sc=foeScale(RUN&&RUN.boss),
+          hp=Math.round(base.HP*dm*FOEHP*partyMul()*sc);
     const nf={...base,id:foes.length,key:t.who,
       name:base.n+" "+"ABCDEF"[foes.filter(x=>x.key===t.who).length],
-      maxHP:hp,HP:hp,STR:Math.round(base.STR*(1+(dm-1)*0.6)*FOESTR*lvScale()),
+      maxHP:hp,HP:hp,STR:Math.round(base.STR*(1+(dm-1)*0.6)*FOESTR*sc),
       DEX:Math.round(base.DEX*(1+(dm-1)*0.6)),
       block:0,buffs:[],ail:[],stun:false,isFoe:true,
       tele:null,next:null,lastAid:null,turn:0,sumCd:0,sumUsed:false};
