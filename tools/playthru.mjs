@@ -93,9 +93,8 @@ for(const step of ["職業","種族","欲望"]){
 /* 幸運を振る演出が終わって 確認の札が出るのを待つ */
 try{ await pg.waitForSelector("#mkNext",{timeout:8000}); }
 catch(e){ log.push("✗ 確認の札が出ない"); }
-await tap("#mkNext","始める場所を決める");
-await pg.waitForTimeout(300);
-if(!await firstCard("始める場所"))log.push("   始める場所の札が無い");
+/* 「始める場所」の段は α1.0.012 で外した。確認の札を押すと そのまま町へ出る */
+await tap("#mkNext","この者で始める");
 await pg.waitForTimeout(600);
 log.push(`③ キャラ作成のあと → ${await scr()}`);
 /* ④ 出立の支度・仲間の学び */

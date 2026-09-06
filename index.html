@@ -1065,7 +1065,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.011";
+const VERSION="α1.0.012";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1078,6 +1078,12 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1012",tag:"fix",v:"α1.0.012",d:"2026-09-06",n:"キャラを作るときの「始める場所」を外しました。潜り先は町で選びます",b:[
+   "<b>作ってすぐ 町から始まります。</b>どこへ潜るかは 町の「潜る」で選ぶので、作るときに選ぶ必要がなくなりました",
+   "<b>選んだ場所へ行けないことがありました。</b>作成画面では 苔むした洞窟も選べましたが、町の潜り先には出ないので 実際には行けませんでした",
+   "<b>潜り先の情景を 町の窓へ移しました。</b>絵・階層・ちょうどよいレベル・その先の道すじが並びます",
+   "〔修正〕確認画面の技能が <b>前に作った者のもの</b>を出していました。作っている者の技能を出します",
+   "確認画面に <b>戦う技能のダイス数</b>が出るようになりました"]},
  {id:"v1011",tag:"up",v:"α1.0.011",d:"2026-09-06",n:"技能が育つようになりました。レベルが上がるたび 1点を 好きな技能へ注げます",b:[
    "<b>レベルが1つ上がるごとに 1点</b>もらえます。装備・状態の窓の「ステータス」で 好きな技能に注げます。<b>戻せません</b>",
    "<b>技能20ごとに ダイスが1つ増えます。</b>注ぐほど 振れるダイスが増え、必要成功の多い技に手が届きます",
@@ -7397,8 +7403,10 @@ const ENCS={
 
      tier  担当階層。敵の重さはこれで決まる。何番目に通ったかでは決まらない
      to    ボスを抜けたときに入口が見つかりうる先
-     start 出発点にできる区画。文言はその難しさの目安
-     art   潜る場所を選ぶ画面の情景（PXDUN の鍵）
+     start はじめから潜れる区画。`startArea()` と `areaKnown()` が見る。
+           文言はその難しさの目安（**いまはどこにも出していない**。
+           作成画面の「始める場所」を α1.0.012 で外したときに 出しどころが消えた）
+     art   町の「どこへ潜るか」に出す情景（PXDUN の鍵）
      wip   中身がまだ無い区画。地図には出るが降りられない
 
    つながり
@@ -7572,11 +7580,6 @@ let EXPDROP=0.34, EXPFLOOR=0;
 function expMul(lv,cap){
   const over=Math.max(0,(lv===undefined?me.lv:lv)-(cap===undefined?areaCap():cap));
   return over?Math.max(EXPFLOOR,1-over*EXPDROP):1;
-}
-/* 出発点にできる区画 */
-function startAreas(){
-  const o={};Object.keys(AREAS).forEach(k=>{if(AREAS[k].start)o[k]=AREAS[k];});
-  return o;
 }
 /* その区画から辿れる道筋を一本ぶん並べる（作成画面の下書きに使う） */
 function routeFrom(k,seen){
@@ -10617,11 +10620,13 @@ const PXDUN={
   [3,12,2,1,"#6fa8cf"],[9,12,3,1,"#6fa8cf"],[17,12,2,1,"#6fa8cf"],
   [7,6,1,1,"#9dc0d6"],[16,7,1,1,"#9dc0d6"],[13,9,1,1,"#9dc0d6"]],
 };
+/* 潜り先の情景。作成画面に在ったころは 72px だったが、
+   町の「どこへ潜るか」は 何枚も並ぶので 低くしてある。 */
 function dunArt(k){
   const parts=PXDUN[k];if(!parts)return "";
   const r=parts.map(p=>
     `<rect x="${p[0]}" y="${p[1]}" width="${p[2]}" height="${p[3]}" fill="${p[4]}"/>`).join("");
-  return `<svg viewBox="0 0 24 14" width="100%" height="72" preserveAspectRatio="none"
+  return `<svg viewBox="0 0 24 14" width="100%" height="48" preserveAspectRatio="none"
     shape-rendering="crispEdges" aria-hidden="true">${r}</svg>`;
 }
 
@@ -10631,8 +10636,9 @@ const MKSTEPS=[
   {k:"race",ttl:"種 族", data:()=>RACE, sub:"どんな体か"},
   {k:"orig",ttl:"欲 望", data:()=>ORIG, sub:"何を求めるか"},
   {k:"__ok",ttl:"確 認", sub:""},
-  /* α1 では「潜るたびに選ぶ」のは町の仕事。ここで選ぶのは **拠点の場所** */
-  {k:"area", ttl:"始 め る 場 所", data:()=>startAreas(), sub:"どこを拠点にするか"},
+  /* 「始める場所」の段はここに在った。α1 では 作ったあと **町から始まる**ので、
+     どこへ潜るかは町の窓（diveModal）が受け持つ。作成で選ばせても
+     `diveTargets()` は はじめの区画しか出さないので、選んだ先へは行けなかった。 */
 ];
 let mkStep=0;
 function mkFig(){
@@ -10647,47 +10653,19 @@ function drawMake(){
   $("#mkTtl").textContent=S.k==="__ok"?"こ の 者 で 良 い か":"キ ャ ラ を 作 る";
   if(S.k==="__ok")return drawMakeConfirm();
   const D=S.data();
-  let h=`<div class="mkq">${S.ttl}　<span>${S.sub}</span></div>`;
-  if(S.k==="area"){
-    h+=`<div class="wmwrap mkmap">${
-      worldMap("make",Object.keys(D).map(k=>({key:k,a:D[k]})))}</div>
-      <div class="wmnote">光っている場所を押しても選べる<br>
-        <span class="s">最後まで抜けた場所だけ名前がわかる</span></div>`;
-  }
-  h+=`<div class="acts">`;
+  let h=`<div class="mkq">${S.ttl}　<span>${S.sub}</span></div><div class="acts">`;
   Object.keys(D).forEach(k=>{
     const o=D[k], on=(sel[S.k]===k);
-    const ic=tagFig(k,15);const nm=o.n;
-    if(S.k==="area"){
-      h+=`<button class="duncard${on?" mkon":""}" data-k="${k}">
-        <div class="dcart">${dunArt(o.art||"plains")}</div>
-        <div class="dcbody">
-          <div class="dcn">${o.n}</div>
-          <div class="dcm">第 ${o.tier} 階層　${o.start}</div>
-          <div class="dcd">${o.d||""}</div>
-          <div class="dcacts">${routeFrom(k).join("　→　")}${
-            (AREAS[k].to||[]).length>1?"　…ほか":""}</div>
-        </div></button>`;
-      return;
-    }
     h+=`<button class="act rew${on?" mkon":""}" data-k="${k}">
-      <span class="an">${ic} ${nm||o.n}</span>
+      <span class="an">${tagFig(k,15)} ${o.n}</span>
       <span class="ad">${o.d||""}</span></button>`;
   });
   h+=`</div>`;
   if(mkStep>0)h+=`<button class="mclose" id="mkPrev">ひとつ もどる</button>`;
   $("#mkBody").innerHTML=h;
-  const pickIt=k=>{
-    sel[S.k]=k;
-    /* ここで一味ができて 町へ出る。startRun は α1 で newGame になった
-       （消した名前を呼んだままだと、まっさらから始めたときだけ落ちる） */
-    if(S.k==="area"){SFX.pick();return newGame();}
-    SFX.open();mkStep++;drawMake();window.scrollTo(0,0);
-  };
   $("#mkBody").querySelectorAll("[data-k]").forEach(b=>{
-    b.onclick=()=>pickIt(b.dataset.k);});
-  $("#mkBody").querySelectorAll("[data-w]").forEach(g=>{
-    g.onclick=()=>pickIt(g.dataset.w);});
+    b.onclick=()=>{ sel[S.k]=b.dataset.k;
+      SFX.open();mkStep++;drawMake();window.scrollTo(0,0); };});
   const pv=$("#mkPrev");
   if(pv)pv.onclick=()=>{mkStep--;drawMake();window.scrollTo(0,0);};
 }
@@ -10749,7 +10727,15 @@ function drawMakeConfirm(){
         <span style="color:#c9a227">幸運 <b style="color:#c9a227">${m.LUK}</b></span>
       </div>
       <div class="mkstat" style="margin-top:6px">${
-        Object.keys(SK).map(k=>`<span>${SK[k].n} <b>${skillOf(k)}</b></span>`).join("")}</div>
+        /* **作る者（m）を見る。**u を渡さないと skillOf は me を見るので、
+           町でキャラを作り直したとき 前の者の技能が出ていた。 */
+        WARSK.map(k=>`<span>${SK[k].n} <b>${skillOf(k,m)}</b><span class="s">
+          ダイス ${skillDice(k,m)}</span></span>`).join("")}</div>
+      <div class="mkstat" style="margin-top:4px">${
+        Object.keys(SK).filter(k=>!SK[k].war).map(k=>
+          `<span>${SK[k].n} <b>${skillOf(k,m)}</b></span>`).join("")}</div>
+      <div class="qzd" style="color:var(--ink)">戦う技能は
+        <b>20 ごとに ダイスが 1つ</b>。レベルが上がるたび 1点を 好きな技能に注げる。</div>
       <div class="qzd" style="color:var(--ink)">${m.wep.n}　を手に始まる</div>
       <div class="qzd" style="color:var(--ink)">幸運は生まれつき。<b>2d6×2 ＋${LUKBASE}</b> で
         [${(sel.lukD||[]).join("][")}] → <b style="color:#c9a227">${sel.luk}</b>。
@@ -10758,12 +10744,16 @@ function drawMakeConfirm(){
         style="color:${LUKRANK[3].c}">超あたり</span> の段階が出る。
         空振りを拾い直し、宝箱の中身を良くする。装備でしか動かない。</div>
     </div>
+    <div class="qzd" style="color:var(--ink)">この者は <b>町</b>から始まる。
+      どこへ潜るかは 町で選ぶ。</div>
     <div class="ndbtn">
       <button class="no2" id="mkRe">選び直す</button>
-      <button class="go2" id="mkNext">始める場所を 決める</button>
+      <button class="go2" id="mkNext">こ の 者 で 始 め る</button>
     </div>`;
   $("#mkRe").onclick=()=>{mkStep=0;drawMake();window.scrollTo(0,0);};
-  $("#mkNext").onclick=()=>{mkStep++;drawMake();window.scrollTo(0,0);};
+  /* ここで一味ができて 町へ出る。sel.area は「いま見ている区画」でしかないので、
+     はじめの区画を入れておく（潜るたびに dive() が書き換える）。 */
+  $("#mkNext").onclick=()=>{sel.area=startArea();SFX.pick();newGame();};
 }
 
 /* ---------- ホーム ---------- */
@@ -11097,13 +11087,22 @@ $("#hHire").onclick=()=>{SFX.click();hireModal();};
 function diveModal(){
   const list=diveTargets();
   const pick=list.map(k=>({key:k}));
+  /* 情景の札。作成画面の「始める場所」に在ったものを ここへ移した
+     （α1.0.012）。町から始まるので、場所を選ぶのは この窓だけになった。 */
   const line=k=>{
     const A=AREAS[k], fit=TIERLV[A.tier-1]||1, cap=tierCap(A.tier), m=expMul(me.lv,cap);
-    return `<div class="dvrow" data-d="${k}">
-      <span class="dvn">${areaCleared(k)?"":"<em>未踏</em> "}${A.n}</span>
-      <span class="dvm">ちょうどよい Lv <b>${fit}</b>　経験は Lv ${cap} まで満ちる`+
-      (m<1?`　<span style="color:#a0714f">いまは ${Math.round(m*100)}%</span>`
-          :`　<span style="color:#8fa261">100%</span>`)+`</span></div>`;
+    return `<button class="duncard" data-d="${k}">
+      <div class="dcart">${dunArt(A.art||"plains")}</div>
+      <div class="dcbody">
+        <div class="dcn">${areaCleared(k)?"":"<em>未踏</em> "}${A.n}</div>
+        <div class="dcm">第 ${A.tier} 階層　ちょうどよい Lv <b>${fit}</b>　`+
+        (m<1?`<span style="color:#a0714f">いまの経験 ${Math.round(m*100)}%</span>`
+            :`<span style="color:#8fa261">経験 100%</span>`)+
+        `<span class="s">（Lv ${cap} まで満ちる）</span></div>
+        <div class="dcd">${A.d||""}</div>
+        <div class="dcacts">${routeFrom(k).join("　→　")}${
+          (A.to||[]).length>1?"　…ほか":""}</div>
+      </div></button>`;
   };
   let h=`<div class="mtitle">ど こ へ 潜 る か</div>
     <div class="wmwrap">${worldMap("gate",pick)}</div>
