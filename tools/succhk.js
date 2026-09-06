@@ -35,11 +35,17 @@ function mulOf(a) {
 function atks(list) { return (list || []).filter(a => a.kind === "atk"); }
 
 const NS = [2, 3, 4, 5, 6];
+/* 技が自分でダイスを足すなら（二段突き・全力）そのぶん寄せて出す。
+   全体技は 1体ぶんの値なので ×3 の印を付ける（3体に当たる）。 */
 function row(a, thr) {
-  const s = sucOf(a), m = mulOf(a);
-  const cells = NS.map(n => (n < s ? "  −  " : expMul(n, thr, s, m).toFixed(2).padStart(5)));
+  const s = sucOf(a), m = mulOf(a), add = a.dice || 0;
+  const cells = NS.map(n => {
+    const d = n + add;
+    return d < s ? "  −  " : expMul(d, thr, s, m).toFixed(2).padStart(5);
+  });
+  const tag = (add ? `+${add}個 ` : "") + (a.all || a.allFoes ? "×3体 " : "");
   return `  ${a.n.replace(/\s/g, "").padEnd(9, "　")} 必要${s} ×${m.toFixed(2).padStart(4)} mp${String(a.mp).padStart(2)} cd${a.cd}` +
-         ` │${cells.join(" ")}`;
+         ` │${cells.join(" ")}${tag ? "  " + tag : ""}`;
 }
 
 const mode = process.argv[2] || "";
@@ -64,11 +70,19 @@ if (mode === "--foe") {
 
 if (mode === "--ladder") {
   /* 必要成功ごとの 素の倍率の帯。上の帯の最大（×1.5）が
-     下の帯の最小を 追い越していないか。 */
-  const band = {};
+     下の帯の最小を 追い越していないか。
+
+     帯の外に置くもの（比べても意味が無い）
+       ・全体技 …… 倍率は **1体ぶん**。3体に当たるので合計は3倍
+       ・変動倍率 …… 火事場の力・妬心・逆境・復讐。書いてあるのは
+                     **いちばん良いときの値**で、ふだんはずっと下 */
+  const band = {}, out = [];
   for (const g in REW.act) for (const a of atks(REW.act[g])) {
     const s = sucOf(a), m = mulOf(a);
-    (band[s] = band[s] || []).push({n: a.n.replace(/\s/g, ""), m, g});
+    const row = {n: a.n.replace(/\s/g, ""), m, g};
+    if (a.all || a.allFoes) { out.push({...row, why: "全体"}); continue; }
+    if (a.powMul == null && Object.keys(VARY).some(k => a[k])) { out.push({...row, why: "変動"}); continue; }
+    (band[s] = band[s] || []).push(row);
   }
   for (const s of Object.keys(band).sort()) {
     const l = band[s].sort((x, y) => x.m - y.m);
@@ -76,19 +90,35 @@ if (mode === "--ladder") {
       `　（超過込みの最大 ×${(l[l.length - 1].m * 1.5).toFixed(2)}）`);
     console.log("   " + l.map(x => `${x.n}(${x.m})`).join(" "));
   }
+  if (out.length) {
+    console.log(`■ 帯の外 ${out.length}個`);
+    console.log("   " + out.map(x => `${x.n}(${x.m}・${x.why})`).join(" "));
+  }
   console.log("");
+  /* ユーザーの決めごと ── 「成功数1の攻撃力が 成功数2のものを超えないように」。
+     比べるのは **同じ成功の数のとき**。必要N は 超過が (k−N) なので、
+     同じ k でも 下の段のほうが 超過を多く受け取る。そこが逆転しないか。 */
   const ks = Object.keys(band).map(Number).sort();
   for (let i = 0; i + 1 < ks.length; i++) {
-    const lo = band[ks[i]], hi = band[ks[i + 1]];
-    const loMax = Math.max(...lo.map(x => x.m)) * 1.5;
-    const hiMin = Math.min(...hi.map(x => x.m));
-    const ok = loMax <= hiMin;
-    console.log(`必要${ks[i]}の最大 ×${loMax.toFixed(2)}　vs　必要${ks[i + 1]}の最小 ×${hiMin.toFixed(2)}　${ok ? "○ 追い越さない" : "✗ 追い越す"}`);
+    const lo = ks[i], hi = ks[i + 1];
+    const loMax = Math.max(...band[lo].map(x => x.m));
+    const hiMin = Math.min(...band[hi].map(x => x.m));
+    const cells = [];
+    let ok = true;
+    for (let k = hi; k <= hi + 4; k++) {
+      const a = loMax * (1 + XGAIN * Math.min(XCAP, k - lo));
+      const b = hiMin * (1 + XGAIN * Math.min(XCAP, k - hi));
+      if (a > b) ok = false;
+      cells.push(`${k}個 ${a.toFixed(2)}${a > b ? "＞" : "＜"}${b.toFixed(2)}`);
+    }
+    console.log(`必要${lo}の最強 ×${loMax} vs 必要${hi}の最弱 ×${hiMin}　${ok ? "○ 追い越さない" : "✗ 追い越す"}`);
+    console.log("   同じ成功の数で比べる　" + cells.join("　"));
   }
   process.exit(0);
 }
 
-console.log(`ダイス ${NS.join("/")}個・しきい値4以上での 期待威力倍率\n`);
+console.log(`技能のダイス ${NS.join("/")}個・しきい値4以上での 期待威力倍率`);
+console.log(`（+N個 は技が足すぶん・×3体 は1体ぶんの値）\n`);
 for (const g in REW.act) {
   const l = atks(REW.act[g]);
   if (!l.length) continue;

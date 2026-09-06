@@ -52,7 +52,7 @@ const EXPORTS = [
   "SK", "SKJOB", "SKRACE", "SKORIG", "SKMAXV", "SKROLLMAX", "WARSK",
   "LUKRANK", "CHESTGAIN",
   /* 計算 */
-  "elemMul", "perHit", "hitDmg", "dieRate", "statMul", "codexLv",
+  "elemMul", "perHit", "countSuc", "sucOk", "statMul", "codexLv",
   "skillOf", "skillBorn", "wepSkill", "skillDice", "skillHit",
   "SKPTLV", "skPtsOf", "skSpent", "skRoom", "skCanUp", "skUp", "mateSkAuto",
 ];

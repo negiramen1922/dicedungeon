@@ -8,7 +8,11 @@
   tools/balance.js は「職業×種族の差」を見る物差しで、式を写して持っている。
   写した式は本体と離れていき、これまで2度まちがえた（前列の被害減・回避）。
   こちらは **ゲーム本体の関数をそのまま呼ぶ**。ブラウザで index.html を開き、
-  makeMe / genAct / makeFoes / powOf / threshold / perHit / hitDmg を使う。
+  makeMe / genAct / makeFoes / powOf / threshold / perHit を使う。
+
+  ⚠ この道具は **α1（必要成功数）より前の模型**のまま。
+     出目ごとに威力が変わる前提で書いてあるが、いまはひと振りで1つ。
+     手応えを測るのは `tools/audit4.mjs`（本物の関数を呼ぶ）を使うこと。
 
   測っているもの
     倒すまで   遭遇まるごとの HP ÷ こちらの1ターンの見込みダメージ
@@ -106,7 +110,7 @@ function bout(){
   const t=foes[0];
   const thr=threshold(me,t,{});
   const per=perHit(powOf(me,{}),defOf(t));
-  let e=0; for(let v=1;v<=6;v++) if(v>=thr) e+=hitDmg(per,v,thr);
+  let e=0; for(let v=1;v<=6;v++) if(v>=thr) e+=per;   /* 旧模型 */
   const my=e/6*me.wep.hands;
   /* 敵の集団の1ラウンド。攻撃の手を重みで平均する */
   let take=0;
@@ -120,7 +124,7 @@ function bout(){
     ALL.filter(a=>a.k==="atk").forEach(a=>{
       const p=perHit(powOf(f,{pow:a.pow||0}),defOf(me));
       const th=threshold(f,me,{});
-      let s=0; for(let v=1;v<=6;v++) if(v>=th) s+=hitDmg(p,v,th);
+      let s=0; for(let v=1;v<=6;v++) if(v>=th) s+=p;   /* 旧模型 */
       take+=(a.w||1)/wsum * s/6 * (a.dice||1);
     });
   });

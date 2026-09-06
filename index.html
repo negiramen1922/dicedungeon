@@ -1065,7 +1065,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.012";
+const VERSION="α1.0.013";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1078,6 +1078,18 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1013",tag:"up",v:"α1.0.013",d:"2026-09-06",n:"技と敵の攻撃に「必要な成功の数」を振り分けました。ここから階段が働きます",b:[
+   "<b>これまでは ほとんど全部が「必要 1」でした。</b>仕組みだけ入れて 中身を振っていなかったので、手触りが前と同じでした。ここで振り分けました",
+   "<b>敵の重い一撃は 必要 2、決め技は 必要 3 になりました。</b>予告に出た大技が <b>不発に終わる</b>ことがあります。期待ダメージは ほぼ据え置きで、当たるかどうかの振れ幅だけ大きくしています",
+   "<b>味方の技も 3つの段に分かれました。</b>必要1（威力 ×1.25 まで）・必要2（×1.75〜2.3）・必要3（×3.2）",
+   "必要2 …… 渾身・急所突き・徹甲矢・ロックスパイク・血の契・見下す・王の一撃・薙ぎ払い・アローレイン・インフェルノ・アースクエイク",
+   "必要3 …… 首刈り・二段突き・全力。<b>二段突きと全力は ダイスを +2 する</b>ので、覚えたその日から撃てます",
+   "<b>ダイスの刻みを 20 ごとから 25 ごと＋1個に変えました。</b>これまでは職と種族の組み合わせで <b>出だしが1〜2個</b>になり（ビーストのウィザードは魔術1個）、必要成功2 が 25%、必要成功3 は そもそも振れませんでした。いまはどの職も 得意は3個から始まります。上限は これまでどおり 技能100 で 5個です",
+   "<b>成功数1のものが 成功数2のものを超えないこと</b>は 同じ成功の数で比べて確かめてあります",
+   "〔修正〕<b>ダイスの窓が まだ古い決めごとを説明していました。</b>出目ごとに「+5%」と出して「この目ごとに威力が変わる」と書いていましたが、いまは <b>成功 N ／ 必要 M</b> と 超過の倍率を出します",
+   "〔修正〕<b>敵の予告も 古いままでした。</b>「1ヒット X ・ 最大 X×N」ではなく、<b>必要成功数と ダメージの幅</b>を出します",
+   "〔修正〕<b>乱れ撃ちが 何もしていませんでした。</b>「偶数の目がすべて命中」と書いてあるのに 中身が繋がっておらず、ただ威力85%の弱い技でした。いまは本当に <b>偶数の目が成功</b>になります（しきい値を見ないので 速い相手に強い）",
+   "〔修正〕<b>激昂も 効かなくなっていました。</b>「6 の目のダメージ上昇」は もう無い決めごとだったので、<b>6 の目は 成功2つぶん</b>に数える、に変えました"]},
  {id:"v1012",tag:"fix",v:"α1.0.012",d:"2026-09-06",n:"キャラを作るときの「始める場所」を外しました。潜り先は町で選びます",b:[
    "<b>作ってすぐ 町から始まります。</b>どこへ潜るかは 町の「潜る」で選ぶので、作るときに選ぶ必要がなくなりました",
    "<b>選んだ場所へ行けないことがありました。</b>作成画面では 苔むした洞窟も選べましたが、町の潜り先には出ないので 実際には行けませんでした",
@@ -3547,10 +3559,24 @@ function wepSkill(u,act){
   if(w.snd==="magic")return "magic";
   return w.type==="ranged"?"shoot":"fight";
 }
-/* 技能から振れるダイスの数。**20ごとに1個。**素の上限は5個（技能100）で、
-   限界突破で 100 を越えたら 6個。段3 で命中の主役になる。 */
+/* 技能から振れるダイスの数。**25ごとに1個、＋下駄1個。**
+
+     技能   0〜24  25〜49  50〜74  75〜99  100
+     ダイス   1      2       3       4      5
+
+   〔なぜ「20ごと」から変えたか（α1.0.013）〕
+   20ごとだと **職と種族の組み合わせしだいで 出だしが2個**になった
+   （スカウトの近接50・ウィザードの魔術50・エルフのナイト50）。
+   ビーストのウィザードに至っては 魔術37 で **1個**しかなく、
+   どの術も半分は空振りだった。必要成功2の技は 2個では 25%、
+   必要成功3は **そもそも振れない**。**階段が下の段から働かない。**
+   25ごと＋下駄にすると、どの職も 得意は3個から始まり、上限は 100 で
+   5個のまま変わらない。 */
+const SKDIESTEP=25;
 const SKDIEMAX=6;   /* 限界突破ぶんを含む上限 */
-function skillDice(k,u){ return Math.max(1,Math.min(SKDIEMAX,Math.floor(skillOf(k,u)/20))); }
+function skillDice(k,u){
+  return Math.max(1,Math.min(SKDIEMAX,1+Math.floor(skillOf(k,u)/SKDIESTEP)));
+}
 
 const RACE={
  hume:{n:"ヒューム",d:"癖がない。何にでも伸びる。",st:{STR:5,DEX:5,INT:5,VIT:2,HP:32,MP:3},scout:1},
@@ -3645,37 +3671,37 @@ const REW={
     d:"威力 ×1.15　相手の VIT −10（3ターン）"},
    {id:"ak6",n:"威 圧",kind:"atk",mp:3,cd:3,powMul:0.5,ail:[{k:"weak",v:12,t:2}],
     d:"相手の威力 −12（3ターン）"},
-   {id:"ak7",n:"薙ぎ払い",kind:"atk",mp:5,cd:3,all:true,powMul:0.7,front:true,
-    d:"手前の3体を巻き込む（威力 7割）"},
+   {id:"ak7",n:"薙ぎ払い",kind:"atk",mp:5,cd:3,all:true,suc:2,powMul:1.15,front:true,
+    d:"手前の3体を巻き込む（1体につき 威力 ×1.15）"},
   ],
   archer:[
-   {id:"aa1",n:"徹甲矢",kind:"atk",mp:6,cd:4,powMul:1.1,pen:1,
-    d:"相手の VIT を 完全に 無視する　威力 ×1.1"},
+   {id:"aa1",n:"徹甲矢",kind:"atk",mp:6,cd:4,suc:2,powMul:1.75,pen:1,
+    d:"相手の VIT を 完全に 無視する　威力 ×1.75"},
    {id:"aa2",n:"貫通矢",kind:"atk",mp:5,cd:3,column:true,
     d:"狙った相手と その1つ奥を 貫く"},
    {id:"aa3",n:"集 中",kind:"focus",mp:3,cd:3,thr:2,dur:1,
     d:"命中閾値 −2（2ターンのあいだ）"},
    {id:"aa4",n:"狙 撃",kind:"atk",mp:5,cd:3,powMul:1.12,backOnly:true,
     d:"先頭以外を狙う。手前を飛び越して撃つ　威力 ×1.12"},
-   {id:"aa5",n:"乱れ撃ち",kind:"atk",mp:5,cd:3,even:true,powMul:0.85,
-    d:"偶数の目がすべて命中になる（威力 85%）"},
+   {id:"aa5",n:"乱れ撃ち",kind:"atk",mp:5,cd:3,even:true,powMul:1.0,
+    d:"しきい値を見ない。<b>偶数の目が成功</b>　速い相手にも 数が落ちない"},
    /* もとは「退き撃ち」（撃って後衛へ下がる）。一列にして 隊列が戦闘中に
       動かなくなったので、その技は行き場を失った。同じ枠を 足止めに置き換えた。
       アーチャーに 弱体の手が1つも無かったのを ここで埋めている。 */
    {id:"aa6",n:"足止めの矢",kind:"atk",mp:5,cd:3,ail:[{k:"slow",v:12,t:2}],
     d:"足を射る　鈍足（DEX −12　3ターン）"},
-   {id:"aa7",n:"アローレイン",kind:"atk",mp:6,cd:3,all:true,powMul:0.75,
-    d:"手前の3体を射る（威力 75%）"},
+   {id:"aa7",n:"アローレイン",kind:"atk",mp:6,cd:3,all:true,suc:2,powMul:1.15,
+    d:"手前の3体を射る（1体につき 威力 ×1.15）"},
   ],
   scout:[
-   {id:"as1",n:"二段突き",kind:"atk",mp:5,cd:3,dice:2,
-    d:"攻撃ダイス +2"},
+   {id:"as1",n:"二段突き",kind:"atk",mp:5,cd:3,dice:2,suc:3,powMul:3.2,
+    d:"攻撃ダイス +2　重ねて突く（威力 ×3.2）"},
    {id:"as2",n:"連 撃",kind:"atk",mp:4,cd:3,chain:true,
     d:"最初に振った 6 の数だけ ダイスを追加する（追加ぶんの 6 は数えない）"},
-   {id:"as3",n:"急所突き",kind:"atk",mp:3,cd:2,suc:2,powMul:1.6,
-    d:"細い隙を突く（威力 ×1.6）"},
-   {id:"as4",n:"首 刈 り",kind:"atk",mp:5,cd:3,suc:3,powMul:2.7,
-    d:"狙いが定まれば 一撃で断つ（威力 ×2.7）"},
+   {id:"as3",n:"急所突き",kind:"atk",mp:3,cd:2,suc:2,powMul:1.9,
+    d:"細い隙を突く（威力 ×1.9）"},
+   {id:"as4",n:"首 刈 り",kind:"atk",mp:5,cd:3,suc:3,powMul:3.2,
+    d:"狙いが定まれば 一撃で断つ（威力 ×3.2）"},
    {id:"as5",n:"疾 走",kind:"focus",mp:3,cd:3,dex:12,dur:99,
     d:"この戦闘のあいだ DEX +12"},
    {id:"as6",n:"追い討ち",kind:"atk",mp:6,cd:5,again:true,once:true,
@@ -3698,18 +3724,18 @@ const REW={
    {id:"am5",n:"アクアランス",kind:"atk",mp:4,cd:2,powMul:1.2,el:"water",
     ail:[{k:"break",v:10,t:2}],
     d:"水　威力 ×1.2　弱化（VIT −10　3ターン）"},
-   {id:"am6",n:"インフェルノ",kind:"atk",mp:7,cd:4,all:true,powMul:0.75,el:"fire",
+   {id:"am6",n:"インフェルノ",kind:"atk",mp:7,cd:4,all:true,suc:2,powMul:1.15,el:"fire",
     ail:[{k:"burn",v:8,t:2}],
-    d:"火　手前の3体（威力 75%）　火傷（残HPの 8%　3ターン）"},
-   {id:"am7",n:"アースクエイク",kind:"atk",mp:7,cd:4,all:true,powMul:0.75,el:"earth",
+    d:"火　手前の3体（1体につき 威力 ×1.15）　火傷（残HPの 8%　3ターン）"},
+   {id:"am7",n:"アースクエイク",kind:"atk",mp:7,cd:4,all:true,suc:2,powMul:1.15,el:"earth",
     ail:[{k:"slow",v:8,t:2}],
-    d:"土　手前の3体（威力 75%）　鈍足（DEX −8　3ターン）"},
+    d:"土　手前の3体（1体につき 威力 ×1.15）　鈍足（DEX −8　3ターン）"},
   ],
   dwarf:[
-   {id:"akd1",n:"岩砕き",kind:"atk",mp:5,cd:3,powMul:1.35,el:"blunt",
-    d:"叩 属性　威力 ×1.35"},
-   {id:"akd2",n:"ロックスパイク",kind:"atk",mp:6,cd:4,suc:2,powMul:1.8,el:"earth",
-    d:"土 属性　足元から岩を突き上げる（威力 ×1.8）"},
+   {id:"akd1",n:"岩砕き",kind:"atk",mp:5,cd:3,powMul:1.25,el:"blunt",
+    d:"叩 属性　威力 ×1.25"},
+   {id:"akd2",n:"ロックスパイク",kind:"atk",mp:6,cd:4,suc:2,powMul:1.9,el:"earth",
+    d:"土 属性　足元から岩を突き上げる（威力 ×1.9）"},
   ],
   elf:[
    {id:"ake1",n:"精霊の矢",kind:"atk",mp:4,cd:2,powMul:1.22,el:"light",
@@ -3727,8 +3753,8 @@ const REW={
   hume:[
    {id:"akh1",n:"火事場の力",kind:"atk",mp:4,cd:3,lostPow:true,
     d:"失った HP のぶん 威力が上がる（最大 ×1.45）"},
-   {id:"akh2",n:"全 力",kind:"atk",mp:4,cd:3,dice:2,selfDef:-8,
-    d:"攻撃ダイス +2　このターン 自分の VIT −8"},
+   {id:"akh2",n:"全 力",kind:"atk",mp:4,cd:3,dice:2,suc:3,powMul:3.2,selfDef:-8,
+    d:"攻撃ダイス +2　身を捨てて打つ（威力 ×3.2）　このターン 自分の VIT −8"},
   ],
   envy:[
    {id:"aen1",n:"呪 詛",kind:"atk",mp:6,cd:3,powMul:0.5,
@@ -3749,9 +3775,9 @@ const REW={
     d:"与えたダメージの 10% を 金貨に換える"},
   ],
   wrath:[
-   {id:"awr1",n:"血の契",kind:"atk",mp:0,cd:3,suc:2,powMul:1.7,
+   {id:"awr1",n:"血の契",kind:"atk",mp:0,cd:3,suc:2,powMul:1.9,
     selfBuff:{pow:10,t:1},
-    d:"血を捧げて打つ（威力 ×1.7）　自分の威力 +10%（2ターン）"},
+    d:"血を捧げて打つ（威力 ×1.9）　自分の威力 +10%（2ターン）"},
    {id:"awr2",n:"逆 境",kind:"atk",mp:6,cd:4,rage:true,
     d:"この戦闘で受けた ダメージが多いほど 威力が上がる（最大 ×1.6）"},
    {id:"awr3",n:"復 讐",kind:"atk",mp:4,cd:3,lostDice:true,
@@ -3776,10 +3802,10 @@ const REW={
   pride:[
    {id:"apr1",n:"宣 言",kind:"declare",mp:0,cd:3,mpGain:2,powMul:2,
     d:"次に討つ相手を告げる　MP +2　次のターンは その相手しか狙えないが 威力 ×2"},
-   {id:"apr2",n:"見 下 す",kind:"atk",mp:4,cd:3,powMul:1.6,slower:true,
-    d:"自分より DEX が低い相手にのみ　威力 ×1.6"},
-   {id:"apr3",n:"王の一撃",kind:"atk",mp:6,cd:4,powMul:1.8,earlyOnly:3,
-    d:"第 1〜3 ラウンドのみ使える　威力 ×1.8"},
+   {id:"apr2",n:"見 下 す",kind:"atk",mp:4,cd:3,suc:2,powMul:2.2,slower:true,
+    d:"自分より DEX が低い相手にのみ　威力 ×2.2"},
+   {id:"apr3",n:"王の一撃",kind:"atk",mp:6,cd:4,suc:2,powMul:2.3,earlyOnly:3,
+    d:"第 1〜3 ラウンドのみ使える　威力 ×2.3"},
   ],
   lust:[
    {id:"alu1",n:"魅 了",kind:"atk",mp:5,cd:5,powMul:0.3,charm:2,
@@ -3853,7 +3879,7 @@ const REW={
           d:"そのラウンド まだ傷を受けていなければ VIT +10"}],
   wrath:[{id:"pwr1",n:"戦場慣れ",ef:{k:"vet",v:1,w:"always"},d:"3ターン目以降 → 攻撃ダイス +1"},
          {id:"pwr2",n:"背水の陣",ef:{k:"powp",v:20,w:"hp50"},d:"HP50%以下 → 威力 +20%"},
-         {id:"pwr3",n:"激 昂",ef:{k:"rush",v:5,w:"always"},d:"6 の目のダメージ上昇が 10% → 15% になる"}],
+         {id:"pwr3",n:"激 昂",ef:{k:"rush",v:1,w:"always"},d:"常時 → <b>6 の目は 成功 2つぶん</b>に数える"}],
   envy:[{id:"pen1",n:"執 着",ef:{k:"fixate",v:10,w:"always"},
          d:"同じ相手を続けて狙うたび その相手への ダメージ +10%（最大 +30%）"},
         {id:"pen2",n:"観 察",ef:{k:"scout",v:1,w:"always"},d:"常時 → 索敵ダイス +1"},
@@ -3997,9 +4023,9 @@ const FOE={
          {n:"芽を飛ばす",k:"atk",dice:3,w:2}]},
  wslime:{n:"水スライム",d:"水を体に取り込んで透き通ったスライム。回廊の水路に湧き、冷たく、見た目よりずっと重い。動きはひどく鈍いが、そのぶん叩いても崩れない。押し流されると鎧の隙間から入り込んでくる。",mat:"gel",weak:"bolt",resist:"blunt",elem:"water",art:"wslime",snd:"blunt",
    HP:175,STR:36,VIT:22,DEX:5,rank:"front",scout:1,
-   acts:[{n:"押し流す",k:"atk",dice:2,pct:20,w:5},
+   acts:[{n:"押し流す",k:"atk",suc:2,dice:3,pct:90,w:5},
          {n:"水を含む",k:"guard",block:16,w:3},
-         {n:"飲み込む",k:"atk",dice:1,pct:55,w:2}]},
+         {n:"飲み込む",k:"atk",suc:3,dice:4,pct:220,w:2}]},
  rat:{n:"ラット",d:"暗い場所を好む大鼠。一匹では取るに足らないが、一匹を潰すと暗がりから次が湧いてくる。牙は細く鋭く、数だけはある。",mat:"tooth",weak:"slash",art:"rat",snd:"slash",HP:48,STR:23,VIT:4,DEX:36,rank:"front",scout:5,
    acts:[{n:"噛みつく",k:"atk",dice:3,w:6},
          {n:"跳ね回る",k:"guard",block:12,w:2},
@@ -4018,7 +4044,7 @@ const FOE={
  shaman:{n:"ゴブリンキャスター",d:"見よう見まねで術を覚えたゴブリン。誰に習ったわけでもないので詠唱は出鱈目で、ときどき自分の足元で暴発する。それでも当たれば効く。",mat:"ear",weak:"pierce",elem:"dark",art:"shaman",snd:"magic",HP:95,STR:27,VIT:5,DEX:23,rank:"back",scout:5,
    acts:[{n:"仲間を鼓舞する",k:"cheer",pctUp:20,dur:1,seq:1},
          {n:"力を奪う",k:"hex",weak:1,dur:2,seq:2},
-         {n:"ファイヤーボール",k:"atk",dice:2,pct:30,w:4,solo:true},
+         {n:"ファイヤーボール",k:"atk",suc:2,dice:3,pct:90,w:4,solo:true},
          {n:"守りの霧",k:"veil",block:8,w:3,needFront:true}]},
 
  /* ===== 2 階層　石造りの回廊 ===== */
@@ -4041,7 +4067,7 @@ const FOE={
          {n:"逆さに下がる",k:"guard",block:14,w:2}]},
  cspider:{n:"ケイヴスパイダー",d:"掘削跡の梁に糸を張る大蜘蛛。獲物が触れると まず足を縛り、動けなくしてから ゆっくり降りてくる。糸は細いのに、指では切れない。",mat:"silk",weak:"slash",art:"cspider",snd:"slash",
    HP:88,STR:26,VIT:6,DEX:30,rank:"back",scout:5,
-   acts:[{n:"牙を立てる",k:"atk",dice:2,pct:25,w:5},
+   acts:[{n:"牙を立てる",k:"atk",suc:2,dice:3,pct:90,w:5},
          {n:"糸を吐く",k:"hex",slow:10,dur:2,w:4},
          {n:"天井へ退く",k:"guard",block:16,w:2}]},
  qspider:{n:"クイーンスパイダー",d:"掘削跡の最奥に巣を構える母蜘蛛。人の背丈ほどの腹には数えきれない子が詰まっていて、傷を負うほど多く産み落とす。ここがゴブリンより先に住んでいた。",mat:"silk",weak:"slash",resist:"blunt",art:"qspider",snd:"slash",
@@ -4098,15 +4124,15 @@ const FOE={
          {n:"水 の 加 護",k:"veil",block:12,w:2,needFront:true}]},
  abyssfish:{n:"深 淵 の 魚",d:"灯りに寄ってくる大魚。都市が沈むより前から深みにいたもので、開いた口は人の背丈ほどある。硬くはないが、噛まれれば骨まで届く。",mat:"scale",weak:"bolt",resist:"water",elem:"water",art:"abyssfish",snd:"blunt",
    HP:260,STR:58,VIT:12,DEX:20,rank:"front",scout:2,
-   acts:[{n:"喰 ら い つ く",k:"atk",dice:2,pct:30,w:5},
+   acts:[{n:"喰 ら い つ く",k:"atk",suc:2,dice:3,pct:90,w:5},
          {n:"潜 る",k:"guard",block:14,w:2}]},
  bonefish:{n:"ボーンフィッシュ",d:"肉の落ちた魚が、骨だけで泳ぎ続けている。一匹では大したことはないが、都市の水路にはいくらでもいる。",mat:"bone",weak:"blunt",resist:"pierce",elem:"dark",art:"bonefish",snd:"slash",
    HP:130,STR:36,VIT:8,DEX:38,rank:"front",scout:3,
    acts:[{n:"骨 の 牙",k:"atk",dice:3,w:5},
          {n:"群 れ る",k:"cheer",pctUp:20,dur:2,w:2,needFront:true}]},
  wraith:{n:"レ イ ス",d:"沈んだ日の恨みだけが形を保っているもの。触れられたところから体温が失われ、しばらく指先が戻らない。残滓は冷たいままで、決して温まらない。",mat:"residue",weak:"light",resist:"slash",elem:"dark",art:"wraith",snd:"magic",HP:165,STR:44,VIT:10,DEX:30,rank:"back",scout:6,
-   acts:[{n:"呪いを注ぐ",k:"atk",dice:2,pct:20,w:5},
-         {n:"弱りに食らいつく",k:"atk",dice:2,pct:20,vsAil:40,w:3},
+   acts:[{n:"呪いを注ぐ",k:"atk",suc:2,dice:3,pct:90,w:5},
+         {n:"弱りに食らいつく",k:"atk",suc:2,dice:3,pct:90,vsAil:40,w:3},
          {n:"仲間を蝕む",k:"cheer",pctUp:20,w:3},
          {n:"呪 縛",k:"hex",curse:7,dur:2,w:3},
          {n:"霧に紛れる",k:"veil",block:10,w:2}]},
@@ -4120,11 +4146,11 @@ const FOE={
  wolf:{n:"ウ ル フ",d:"灰色の毛並みを持つ草原の狩人。一頭が正面から吠えているあいだに、残りが横へ回り込んでいる。一頭見えたなら、見えていないのが数頭いる。",mat:"pelt",weak:"fire",resist:"slash",art:"wolf",snd:"slash",
    HP:62,STR:26,VIT:4,DEX:32,rank:"front",scout:6,
    acts:[{n:"噛みつく",k:"atk",dice:3,w:5},
-         {n:"喉を狙う",k:"atk",dice:2,pct:30,w:3},
+         {n:"喉を狙う",k:"atk",suc:2,dice:3,pct:90,w:3},
          {n:"低く唸る",k:"buff",pctUp:30,dur:1,w:2}]},
  boar:{n:"ワイルドボア",d:"太く曲がった一対の牙を持つ大猪。向きを変えるのが苦手で、狙いを定めるといちど大きく地を掻いてから真っ直ぐに走る。その一直線は若木なら薙ぎ倒す。",mat:"tusk",weak:"pierce",resist:"blunt",art:"boar",snd:"blunt",
    HP:130,STR:34,VIT:6,DEX:16,rank:"front",scout:2,
-   acts:[{n:"突進する",k:"atk",dice:2,pct:30,w:5},
+   acts:[{n:"突進する",k:"atk",suc:2,dice:3,pct:90,w:5},
          {n:"地を掻く",k:"buff",pctUp:30,dur:1,w:3},
          {n:"牙を振る",k:"atk",dice:3,w:2}]},
  killerbee:{n:"キラービー",d:"草原に巣を張る大蜂。羽音のするほうを見上げたときには、もう囲まれている。腹の先の針は抜けたあとも刺さり続け、傷口から毒がまわる。",mat:"sting",weak:"blunt",art:"killerbee",snd:"slash",
@@ -4138,20 +4164,20 @@ const FOE={
       半分を切ったときに一度だけ分裂する（phases の forceAct）。 */
    acts:[{n:"のしかかる",k:"atk",dice:3,pct:-10,w:5},
          {n:"粘液を吐く",k:"atk",dice:2,pct:-50,ail:{curse:8,t:2},w:2},
-         {n:"まとわりつく",k:"atk",dice:3,pct:20,w:1},
+         {n:"まとわりつく",k:"atk",suc:2,dice:3,pct:90,w:1},
          {n:"分裂する",k:"summon",who:"slime",num:3,cd:99,hidden:true,w:0}],
    phases:[{at:.5,n:"割 れ る",d:"体がひとりでに裂け、中から次が出てきた",
      forceAct:"分裂する",
      acts:[{n:"のしかかる",k:"atk",dice:3,pct:-10,w:5},
            {n:"粘液を吐く",k:"atk",dice:2,pct:-50,ail:{curse:8,t:2},w:2},
-           {n:"まとわりつく",k:"atk",dice:3,pct:20,w:1},
+           {n:"まとわりつく",k:"atk",suc:2,dice:3,pct:90,w:1},
            {n:"分裂する",k:"summon",who:"slime",num:3,cd:99,hidden:true,w:0}]}]},
 
  /* ===== 原始の草原　2 階層：森 ===== */
  maneater:{n:"マンイーター",d:"獲物を待って動かない食人蔓。地に根を張っているあいだは微動だにせず、間合いに入ったものだけを一息に絡め取る。切っても、切った先から伸びようとする。",mat:"vine",elem:"earth",weak:"fire",resist:"pierce",art:"maneater",snd:"slash",
    HP:100,STR:22,VIT:5,DEX:14,rank:"front",flex:true,scout:0,
    acts:[{n:"噛みつく",k:"atk",dice:3,pos:"front",w:6},
-         {n:"種を打つ",k:"atk",dice:2,pct:20,pos:"back",w:6},
+         {n:"種を打つ",k:"atk",suc:2,dice:3,pct:90,pos:"back",w:6},
          {n:"根を張る",k:"guard",block:16,w:3}]},
  orc:{n:"オ ー ク",d:"森に住む大柄な亜人。人の言葉を少し解し、こちらの言うことも分かっているらしい。棍棒しか使わないが、その筋肉の塊の体では それで足りる。",mat:"orcfang",weak:"slash",art:"orc",snd:"blunt",
    HP:120,STR:33,VIT:8,DEX:20,rank:"front",scout:3,
@@ -4160,18 +4186,18 @@ const FOE={
          {n:"盾を構える",k:"guard",block:22,w:2}]},
  bear:{n:"ワイルドベア",d:"森の頂点に立つ獣。立ち上がると人の背を余裕で超え、厚い毛皮は並の刃を通さない。爪は重く硬いため、武具の芯として高く買われる。",mat:"claw2",weak:"pierce",resist:"blunt",art:"bear",snd:"slash",
    HP:175,STR:40,VIT:9,DEX:18,rank:"front",scout:3,
-   acts:[{n:"薙ぎ払う",k:"atk",dice:3,pct:20,w:5},
-         {n:"抱き潰す",k:"atk",dice:2,pct:40,w:3},
+   acts:[{n:"薙ぎ払う",k:"atk",suc:2,dice:3,pct:90,w:5},
+         {n:"抱き潰す",k:"atk",suc:2,dice:3,pct:90,w:3},
          {n:"立ち上がる",k:"buff",pctUp:30,dur:1,w:2},
          {n:"毛皮で受ける",k:"guard",block:24,w:2}]},
  mandragora:{n:"マンドラゴラ",d:"引き抜くと叫ぶ根。その声は空気そのものを裂き、聞いた者は耳から先に壊れていく。土に潜られると、次に顔を出すまで手が出せない。",mat:"root",elem:"earth",weak:"fire",resist:"dark",art:"mandragora",snd:"magic",
    HP:80,STR:28,VIT:5,DEX:26,rank:"back",scout:4,
-   acts:[{n:"叫 声",k:"atk",dice:2,pct:20,w:5},
+   acts:[{n:"叫 声",k:"atk",suc:2,dice:3,pct:90,w:5},
          {n:"耳を裂く声",k:"hex",weak:1,dur:2,w:3},
          {n:"土に潜る",k:"guard",defUp:10,dur:2,w:2}]},
  treant:{n:"トレント",d:"歩く古木。世界樹のマナを長く浴びた木が、あるとき根を抜いて動き出したものだと言われる。日を浴びているあいだは傷が塞がるが、火にだけはひどく弱い。",mat:"bark",weak:"fire",resist:"slash",elem:"earth",art:"treant",snd:"blunt",
    HP:210,STR:32,VIT:22,DEX:6,rank:"front",scout:1,
-   acts:[{n:"枝を振り下ろす",k:"atk",dice:2,pct:20,w:4},
+   acts:[{n:"枝を振り下ろす",k:"atk",suc:2,dice:3,pct:90,w:4},
          {n:"樹皮を固める",k:"guard",block:30,w:3},
          {n:"根で薙ぐ",k:"atk",dice:3,pct:-25,w:3},
          {n:"陽を浴びる",k:"regen",heal:20,w:2}]},
@@ -4189,9 +4215,9 @@ const FOE={
  spriggan:{n:"スプリガン",d:"森の境を守る妖精。普段は岩と見分けがつかないほど小さいが、侵入者を見つけると膨れ上がって道を塞ぐ。膨れる前に仕留めれば、ただの小石でしかない。",mat:"fdust",weak:"blunt",resist:"pierce",elem:"earth",art:"spriggan",snd:"blunt",
    HP:100,STR:38,VIT:28,DEX:10,rank:"front",scout:1,
    acts:[{n:"膨れ上がる",k:"grow",hp:110,seq:1},
-         {n:"石の拳",k:"atk",dice:2,pct:20,w:6},
+         {n:"石の拳",k:"atk",suc:2,dice:3,pct:90,w:6},
          {n:"背を固める",k:"guard",defUp:10,dur:2,w:2},
-         {n:"岩を振り下ろす",k:"atk",dice:1,pct:55,w:2}]},
+         {n:"岩を振り下ろす",k:"atk",suc:3,dice:4,pct:220,w:2}]},
  redcap:{n:"レッドキャップ",d:"血に染めた帽子をかぶった小妖精。帽子の色が褪せると死ぬと信じており、そのために刃物を手放さない。足が速く、走りながら斬りつけてくる。",mat:"fdust",weak:"light",resist:"dark",elem:"dark",art:"redcap",snd:"slash",
    HP:130,STR:40,VIT:10,DEX:38,rank:"front",scout:4,
    acts:[{n:"駆け抜ける",k:"atk",dice:3,w:5},
@@ -4206,7 +4232,7 @@ const FOE={
    HP:175,STR:47,VIT:16,DEX:30,rank:"back",scout:5,
    acts:[{n:"矢を射る",k:"atk",dice:3,w:5},
          {n:"引き絞る",k:"buff",pctUp:30,dur:1,w:3},
-         {n:"貫きの一矢",k:"atk",dice:1,pct:55,w:2}]},
+         {n:"貫きの一矢",k:"atk",suc:3,dice:4,pct:220,w:2}]},
  harpy:{n:"ハーピー",d:"人の顔と鳥の体を持つ。高い梢に巣を作り、上から獲物に襲いかかる。甲高い声で仲間を呼ぶので、一羽を追うと数が増える。",mat:"quill",weak:"pierce",resist:"earth",art:"harpy",snd:"slash",
    HP:145,STR:42,VIT:8,DEX:40,rank:"front",flex:true,scout:6,
    acts:[{n:"鉤爪で裂く",k:"atk",dice:3,w:7},
@@ -4214,12 +4240,12 @@ const FOE={
          {n:"羽ばたく",k:"buff",dex:10,dur:2,w:2}]},
  sprout:{n:"世界樹の苗",d:"世界樹から落ちた種のうち、根を下ろす前に自ら歩き出したもの。全身からマナが漏れており、周りの草木が異様に育つ。森の奥ほど多い。",mat:"mana",weak:"fire",resist:"bolt",elem:"earth",art:"sprout",snd:"blunt",
    HP:230,STR:44,VIT:22,DEX:14,rank:"front",scout:2,
-   acts:[{n:"根で薙ぐ",k:"atk",dice:2,pct:25,w:6},
+   acts:[{n:"根で薙ぐ",k:"atk",suc:2,dice:3,pct:90,w:6},
          {n:"マナを吸う",k:"regen",heal:40,w:2},
          {n:"芽吹かせる",k:"cheer",pctUp:20,dur:2,w:2}]},
  gant:{n:"ジャイアントアント",d:"腐葉土の下に巣を広げる大蟻。硬い外殻は生半可な刃を弾き、大顎は木の枝ほどなら音もなく断つ。巣穴の入口を踏み抜くと、一度に何匹も這い出てくる。",mat:"jaw",weak:"blunt",resist:"slash",art:"gant",snd:"blunt",
    HP:135,STR:30,VIT:20,DEX:14,rank:"front",scout:2,
-   acts:[{n:"大顎で挟む",k:"atk",dice:2,pct:20,w:5},
+   acts:[{n:"大顎で挟む",k:"atk",suc:2,dice:3,pct:90,w:5},
          {n:"酸を吐く",k:"hex",curse:6,dur:2,w:2},
          {n:"外殻を閉じる",k:"guard",block:22,w:2}]},
  cyclops:{n:"サイクロプス",d:"一つ目の巨人。森の奥深くに一体で生息している。掴んだ岩をそのまま投げてくるが、投げる前に必ず大きく振りかぶる。",mat:"eye",weak:"pierce",resist:"blunt",elem:"earth",art:"cyclops",snd:"blunt",
@@ -4230,7 +4256,7 @@ const FOE={
          {n:"睨みつける",k:"hex",fear:1,dur:2,w:2},
          {n:"身を守る",k:"guard",defUp:8,dur:2,w:2},
          {n:"岩を掴む",k:"buff",pctUp:35,dur:1,forceNext:"岩を投げる",w:2},
-         {n:"岩を投げる",k:"atk",dice:3,pct:50,hidden:true,open:{t:2},w:0},
+         {n:"岩を投げる",k:"atk",suc:3,dice:4,pct:220,hidden:true,open:{t:2},w:0},
          {n:"大 咆 哮",k:"cheer",pctUp:30,dur:3,hidden:true,w:0}],
    phases:[{at:.5,n:"隻 眼 が 据 わ る",d:"傷が深い。天を仰いで吼えた",
      forceAct:"大 咆 哮",
@@ -4238,7 +4264,7 @@ const FOE={
            {n:"睨みつける",k:"hex",fear:1,dur:2,w:2},
            {n:"身を守る",k:"guard",defUp:8,dur:2,w:2},
            {n:"岩を掴む",k:"buff",pctUp:35,dur:1,forceNext:"岩を投げる",w:2},
-           {n:"岩を投げる",k:"atk",dice:3,pct:50,hidden:true,open:{t:2},w:0},
+           {n:"岩を投げる",k:"atk",suc:3,dice:4,pct:220,hidden:true,open:{t:2},w:0},
            {n:"大 咆 哮",k:"cheer",pctUp:30,dur:3,hidden:true,w:0}]}]},
 
  /* ===== ボス ===== */
@@ -4269,7 +4295,7 @@ const FOE={
          {n:"花 が ひ ら く",k:"heal",pct:.1,seq:2,w:0}]},
  gate:{n:"ゲートガーディアン",d:"回廊の最奥の門を守る守護者。胸に守護核を抱いている。門の向こうにはもう誰もいないが、閉ざす役目だけを ひとりで続けている。両の拳は本体とは別に動き、狙われた本体の前に必ず割って入る。",mat:"core",weak:"blunt",resist:"slash",elem:"earth",art:"gate",snd:"blunt",
    HP:330,STR:58,VIT:31,DEX:14,rank:"front",scout:1,guardKey:"ghand",
-   acts:[{n:"拳を振り下ろす",k:"atk",dice:2,pct:90,w:5},
+   acts:[{n:"拳を振り下ろす",k:"atk",suc:3,dice:4,pct:220,w:5},
          {n:"突 進",k:"atk",dice:3,w:4},
          {n:"ハンドガード",k:"guard",block:20,w:4},
          {n:"連 撃",k:"atk",dice:6,pct:-60,seq:3}],
@@ -4281,13 +4307,13 @@ const FOE={
    HP:200,STR:1,VIT:20,DEX:1,rank:"front",scout:1,noAct:true,partOf:"gate",nm:["右","左"],
    acts:[{n:"動 か な い",k:"idle",d:"ただ そこに在る",w:1}]},
  deepone:{n:"ディープワン",d:"深みから現れ、魚人たちの王を名乗ったもの。魚人よりひと回り大きく、鱗の下に別の何かが透けて見える。守護核を持つが、それをどこで得たのかは誰も知らない。",mat:"core",weak:"bolt",resist:"water",elem:"water",art:"deepone",snd:"blunt",HP:820,STR:78,VIT:30,DEX:24,rank:"front",scout:6,
-   acts:[{n:"トライデント",k:"atk",dice:3,pct:20,w:5},
+   acts:[{n:"トライデント",k:"atk",suc:2,dice:3,pct:90,w:5},
          {n:"水 の 奔 流",k:"atk",dice:5,pct:-50,ail:{curse:15,t:2},w:3},
          {n:"水 の 膜",k:"guard",block:20,w:3},
          {n:"大 海",k:"atk",dice:4,pct:-30,ail:{slow:10,curse:8,t:2},w:1}],
    phases:[{at:.5,n:"深 き 者 の 呼 び 声",d:"鱗が青黒く染まり、禍々しくなる",
      str:18,def:10,dex:10,
-     acts:[{n:"トライデント",k:"atk",dice:3,pct:20,w:5},
+     acts:[{n:"トライデント",k:"atk",suc:2,dice:3,pct:90,w:5},
            {n:"水 の 奔 流",k:"atk",dice:5,pct:-50,ail:{curse:15,t:2},w:3},
            {n:"水 の 膜",k:"guard",block:20,w:3},
            {n:"大 海",k:"atk",dice:4,pct:-30,ail:{slow:10,curse:8,t:2},w:1},
@@ -4783,17 +4809,21 @@ function telePreview(f,tt){
     const sd=f.scoutDice||0;
     const nd=t.dice+sd;
     const thr=threshold(f,tg,{act:t});
-    /* 予告の数字も 本番と同じ順で出す（出目 → 見切り → シールド → VIT） */
+    /* 予告の数字も 本番と同じ順で出す（威力×超過 → 見切り → シールド → VIT）。
+       **ひと振りで1つ**（α2・段3）なので「1ヒット×ダイス数」ではない。
+       出すのは「必要成功に届いたとき」から「超過いっぱい」までの幅。 */
+    const need=Math.max(1,t.suc||1);
     const sh=shieldOf(tg), mdef=defOf(tg);
-    /* シールドは 減っていく器なので 1ヒットあたりの数には織り込まない。別に出す。 */
-    const one=v=>{
-      let d=Math.round(hitDmg(fpow,v,thr)*orgMul("inMul",tg));
+    /* シールドは 減っていく器なので この数には織り込まない。別に出す。 */
+    const one=x=>{
+      let d=Math.round(fpow*x*orgMul("inMul",tg));
       if(tg.half)d=Math.round(d/2);
       return perHit(d,mdef);
     };
-    const per=one(thr), hiOne=one(6);
+    const lo=one(1), hi=one(1+XGAIN*XCAP);
     return {txt:"⚔ "+t.n,
-      sub:`${nd}d6 ・ 1ヒット ${per}${mdef?`<span style="color:#8fd0ff">（VIT −${mdef}）</span>`:""} ・ 最大 ${hiOne*nd}`+
+      sub:`${nd}d6・<b>${thr}以上</b>・必要 <b>${need}</b>・${lo}〜${hi}${
+        mdef?`<span style="color:#8fd0ff">（VIT −${mdef}）</span>`:""}`+
         (sh?`　／　<span style="color:#8fd0ff">シールド ${sh} を先に削る</span>`:"")+
         (sd?`　／　<span style="color:#b1544a">先に気づいていた ダイス +${sd}</span>`:"")+
         (t.drain?`　／　与えた分の ${Math.round(t.drain*100)}% を吸う`:"")+
@@ -5066,20 +5096,27 @@ function bindTargets(){
 }
 
 /* ---------- 判定 ---------- */
-/* 出目ごとに、そのダイス分の威力が変わる
-   ちょうど閾値 = ±0 ／ 1つ上 = +5% ／ 2つ上 = +10% … 上限 +25%
-   閾値4なら 4→±0・5→+5%・6→+10% */
-function dieRate(v,thr){
-  let r=Math.min(0.25,Math.max(0,(v-thr)*0.05));
-  /* 激昂：6 の目だけ 上昇率が大きくなる */
-  if(v===6&&typeof me!=="undefined"&&me&&passOn("rush")>0)
-    r=Math.min(0.35,r+passOn("rush")/100);
-  return r;
-}
-function hitDmg(per,v,thr){return Math.max(1,Math.round(per*(1+dieRate(v,thr))));}
-/* 1発が HP に届くまでの順番（α0.0044 でこの形にした）
+/* 成功をいくつ数えるか。**出目そのものはもう威力に効かない**（α2・段3）。
+   〔`dieRate` / `hitDmg`（出目ごとに威力が変わる）は α1.0.013 で落とした。
+     ダイスの窓が この2つを使って **古い決めごとを説明し続けていた。**〕
 
-     ① 威力に 出目のボーナスを掛ける
+     ふつう … しきい値以上が 1つの成功
+     even  … **偶数の目**が成功（乱れ撃ち）。しきい値を見ないので
+             速い相手にも数が落ちない
+     six2  … **6 の目は 成功2つぶん**（激昂）                       */
+function countSuc(rolls,thr,opt){
+  opt=opt||{};
+  let n=0;
+  for(const v of rolls){
+    if(opt.even?(v%2!==0):(v<thr))continue;
+    n+=(opt.six2&&v===6)?2:1;
+  }
+  return n;
+}
+function sucOk(v,thr,opt){ return (opt&&opt.even)?(v%2===0):(v>=thr); }
+/* ひと振りが HP に届くまでの順番（α0.0044 でこの形にした）
+
+     ① 威力に **超過の倍率**を掛ける（α2・段3。前は出目のボーナスだった）
      ② 見切りなら 半分
      ③ シールドを引く（VIT は効かない。素の数から そのまま引く）
      ④ 残ったぶんから VIT を引いて HP へ
@@ -5090,7 +5127,6 @@ function hitDmg(per,v,thr){return Math.max(1,Math.round(per*(1+dieRate(v,thr))))
    シールドが丸ごと受け止めた回（残り 0）は 0 のまま。下限は湧かない。 */
 const VITFLOOR=0.20;
 function perHit(rest,def){return Math.max(Math.ceil(rest*VITFLOOR),rest-def);}
-function pctText(r){return "+"+Math.round(r*100)+"%";}
 /* 武器ごとの威力倍率。手数の多い武器ほど低い */
 function statMul(w){return w.mul||1;}
 /* 来歴の倍率。欲望は主人公ひとりのものなので、仲間は必ず等倍になる */
@@ -5713,8 +5749,10 @@ async function lukOv(pct,r){
   await wait(ok?640:420);
   if(!ok)ovHide();          /* 振れなかったときは ここで畳む（続きの演出が無い） */
 }
-async function rollDice(rolls,thr,label,top,noBonus){
-  const row=ovShow(label||`判 定　<em>${thr} 以上で命中</em>`,top);
+/* opt … {need, even, six2}。need を渡すと 「成功N／必要M」まで出す */
+async function rollDice(rolls,thr,label,top,opt){
+  opt=opt||{};
+  const row=ovShow(label||`判 定　<em>${opt.even?"偶数の目":thr+" 以上"}が成功</em>`,top);
   const els=rolls.map((_,i)=>{const s=document.createElement("span");
     s.className="dv enter";
     s.style.animationDelay=(i*0.06)+"s";
@@ -5726,34 +5764,40 @@ async function rollDice(rolls,thr,label,top,noBonus){
   await wait(760);
   for(let i=0;i<els.length;i++){
     els[i].classList.remove("roll");els[i].classList.add("land");els[i].textContent=rolls[i];
-    if(rolls[i]>=6){els[i].classList.add("six");SFX.crit();}
-    else{if(rolls[i]>=thr)els[i].classList.add("hit");
-      else els[i].classList.add("weak");
-      SFX.tick();}
+    const ok=sucOk(rolls[i],thr,opt);
+    if(ok&&rolls[i]>=6){els[i].classList.add("six");SFX.crit();}
+    else{els[i].classList.add(ok?"hit":"weak");SFX.tick();}
     await wait(105);
   }
   clearInterval(spin);
-  const hits=rolls.filter(v=>v>=thr).length;
-  rolls.forEach((v,i)=>{
-    if(noBonus||v<thr||!els[i])return;
-    const r=dieRate(v,thr);
+  const hits=countSuc(rolls,thr,opt);
+  /* 6 が 2つぶんに数えられる者だけ、その印を出す */
+  if(opt.six2)rolls.forEach((v,i)=>{
+    if(v!==6||!els[i])return;
     const b=document.createElement("i");
-    b.className="dvup"+(r>0?" on":"");
-    b.textContent=r>0?("+"+Math.round(r*100)+"%"):"±0";
+    b.className="dvup on";b.textContent="×2";
     els[i].appendChild(b);
   });
-  $("#dvRes").innerHTML=`<div class="dvRes">${hits} ${noBonus?"成功":"ヒット"}`+
-    (noBonus?"":`<span class="dvnote">この目ごとに威力が変わる</span>`)+`</div>`;
+  const need=Math.max(1,opt.need||1);
+  const over=Math.max(0,hits-need);
+  $("#dvRes").innerHTML=`<div class="dvRes">成功 ${hits}`+
+    (opt.need?` <span class="dvnote">／ 必要 ${need}</span>`:"")+
+    (opt.need?(hits<need
+      ? `<span class="dvnote">届かなかった</span>`
+      : (over?`<span class="dvnote">超過 ${Math.min(XCAP,over)}（威力 ×${
+            (1+XGAIN*Math.min(XCAP,over)).toFixed(2)}）</span>`:""))
+      :"")+`</div>`;
   await wait(430);
   return hits;
 }
-async function addDice(extra,thr){
+async function addDice(extra,thr,opt){
   const row=$("#dvRow");const out=[];
   for(const v of extra){
     const s=document.createElement("span");s.className="dv roll";s.textContent=r6();
     row.appendChild(s);SFX.diceOne();await wait(230);
     s.classList.remove("roll");s.textContent=v;
-    if(v>=6){s.classList.add("six");SFX.crit();}else if(v>=thr)s.classList.add("hit");
+    const ok=sucOk(v,thr,opt);
+    if(ok&&v>=6){s.classList.add("six");SFX.crit();}else if(ok)s.classList.add("hit");
     out.push(v);await wait(110);
   }
   return out;
@@ -5836,8 +5880,13 @@ async function playerAttack(targets,opt){
     scoutBonus=0;
   }
   const thr=threshold(A,targets[0],{...opt,thr:(opt.thr||0)+passOn("thr")});
+  /* 成功の数え方。**乱れ撃ち（even）は偶数の目、激昂（rush）は6が2つぶん。**
+     ここを opt にまとめて、ダイスの窓にも同じものを渡す ── でないと
+     窓に出る数と 実際に数える数が食い違う。 */
+  const cnt={even:!!opt.even,six2:passOn("rush",A)>0,need:needOf(opt)};
   let rolls=[];for(let i=0;i<n;i++)rolls.push(r6());
-  await rollDice(rolls,thr,`${A.name} → ${targets.map(t=>t.name).join("・")}　<em>${n}d6 ・ ${thr}以上</em>`);
+  await rollDice(rolls,thr,`${A.name} → ${targets.map(t=>t.name).join("・")}　<em>${n}d6 ・ ${
+    cnt.even?"偶数の目":thr+"以上"}</em>`,null,cnt);
   if(opt.chain||passOn("chain")){
     /* 追加ぶんの 6 からは さらに増えない。
        前は追加ダイスの 6 も数え直していたので雪だるまになり、
@@ -5847,10 +5896,10 @@ async function playerAttack(targets,opt){
     const add=[];for(let i=0;i<q;i++)add.push(r6());
     if(add.length){
       log(`<span class="a">連撃</span> 最初の 6 の数だけ <span class="m">+${add.length}</span> ダイス`);
-      rolls=rolls.concat(await addDice(add,thr));
+      rolls=rolls.concat(await addDice(add,thr,cnt));
     }
   }
-  let hits=rolls.filter(v=>v>=thr).length;
+  let hits=countSuc(rolls,thr,cnt);
   let sixes=rolls.filter(v=>v>=6).length;
   ovHide();
   /* 一つも当たらなかったとき、もう一度だけ振る。
@@ -5869,10 +5918,10 @@ async function playerAttack(targets,opt){
       rerolled=true;
       const extra=[];for(let i=0;i<luck;i++)extra.push(r6());
       log(`<span class="c">${lnames.join("・")}</span> 空振り → もう <span class="m">${luck}</span> つ振る　[${extra.join("][")}]`);
-      await rollDice(extra,thr,`${A.name}　<em>振り直し ${luck}d6</em>`,"再 挑 戦");
+      await rollDice(extra,thr,`${A.name}　<em>振り直し ${luck}d6</em>`,"再 挑 戦",cnt);
       ovHide();
       rolls=rolls.concat(extra);
-      hits=rolls.filter(v=>v>=thr).length;
+      hits=countSuc(rolls,thr,cnt);
       sixes=rolls.filter(v=>v>=6).length;
     }
   }
@@ -5936,7 +5985,7 @@ async function playerAttack(targets,opt){
     /* ===== ダメージは **ひと振りで1つ**（α2） =====
        前は 当たった出目1つずつに威力を掛けて足していた（出目が高いほど
        1発が重い）。必要成功数では **超過の数**がその役目を引き継ぐので、
-       出目そのものはもう見ない。`hitDmg` / `dieRate` は敵の側にだけ残る。
+       出目そのものはもう見ない。`hitDmg` / `dieRate` は α1.0.013 で落とした。
 
        ①威力 ×超過 → ②来歴と属性 → ③シールド → ④VIT の順。 */
     const raw=Math.round(pow*xMul*orgMul("outMul",A)*em);
@@ -6398,8 +6447,9 @@ async function enemyAct(f){
     const nd=t.dice+sd;
     const rolls=[];for(let i=0;i<nd;i++)rolls.push(r6());
     const thr=threshold(f,tg,{act:t});
-    await rollDice(rolls,thr,`${f.name} → ${tg.name}　<em>${nd}d6 ・ ${thr}以上</em>`);
-    const hits=rolls.filter(v=>v>=thr).length;
+    await rollDice(rolls,thr,`${f.name} → ${tg.name}　<em>${nd}d6 ・ ${thr}以上</em>`,
+      null,{need:Math.max(1,t.suc||1)});
+    const hits=countSuc(rolls,thr,{});
     ovHide();
     /* ===== 敵も同じ仕組み（α2） =====
        技ごとに要る成功の数。届かなければ ダメージなし。
