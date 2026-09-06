@@ -20,3 +20,4 @@ node_modules/
 
 # Artifact 用の書き出し（tools/labpub.js が作る中間ファイル）
 lab/.*.artifact.html
+lab/_artpreview.html          # 書き出したものを 本物と同じ殻で包んで見るための下書き

@@ -43,6 +43,7 @@ tools/passchk.mjs                   特性が その者のものとして働く�
 tools/tune4.mjs                     区画ごとの手応えを 目標の形に寄せる倍率
 tools/scoutchk.mjs                  索敵の振り合い（一味でいちばん・気配のダイス）
 tools/innchk.mjs                    宿（代金・全快・足りないとき・控え）
+tools/pubgame.js                    本体を Artifact に載せる形へ書き出す
 tools/succhk.js                     必要成功数の階段を測る（--ladder / --foe）
 tools/growchk.mjs                   技能の育ち（点の配り・上限・控え・仲間）
 tools/thrchk2.mjs                   threshold() と thrWhy() が同じ数を出すか
@@ -3420,6 +3421,27 @@ node tools/tune.mjs old.html
 **全文字の間に挿入される**という事故が起きた。置換前に範囲の妥当性を確認すること。
 
 行番号で切るより、`/* ===== 区切り ===== */` のコメント帯を目印にしたほうが安全。
+
+### 遊んでもらう URL を出す（Artifact）
+
+```
+node tools/pubgame.js        →  lab/.game.artifact.html
+```
+
+本体（index.html）から Artifact に載せられる形を書き出す。
+**Artifact は `<!doctype>/<html>/<head>/<body>` を publish のときに被せる**ので、
+中身だけを渡す。あわせて あちらで動かないものを外す。
+
+| 外すもの | わけ |
+|---|---|
+| **BGM** | `audio/bgm` が 26MB あり Artifact の上限 16MB を超える。外の音は CSP でも止まる。`BGM` の表を空にして黙らせる（404 を出し続けないため） |
+| **効果音** | 外から読むのは `jajan.mp3`（100KB）ひとつだけ。data URI にして埋め込む |
+| **クラウド保存** | Firebase の SDK は `www.gstatic.com` から取るので CSP で止まる。`apiKey` を空にすると `configured()` が false になり、端末内の控えだけで動く |
+
+遊ぶぶんには何も欠けない。**同じ URL に publish し直せば更新できる**
+（同じファイル名で publish するだけ）。
+
+出したもの … https://claude.ai/code/artifact/99d01d9a-9bc3-4774-a1c8-a3316cc0386c
 
 ### 通しテストは 通ったことを **言い切らせる**
 
