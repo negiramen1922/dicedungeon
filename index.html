@@ -106,6 +106,21 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .gap{position:relative}
 .gap::before{content:"";position:absolute;left:50%;top:2px;bottom:2px;width:1px;
   background:#2f3429}
+/* ===== しきい値の帯（試作台から移した見た目・α1.0.022） =====
+   大きな真鍮の数字と「なぜその数か」を 盤面の下に出しっぱなしにする。
+   これまでは thrPanel を「詳細」の窓で開かないと読めず、
+   遊ぶ人が **何を上げれば当たるようになるのか** を見る手がかりが
+   画面の外にあった。 */
+.thrline{display:flex;align-items:center;gap:10px;background:var(--panel2);
+  border:1px solid var(--line);border-top:none;padding:7px 11px}
+.thrn{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:23px;
+  color:var(--brass);line-height:1;font-variant-numeric:tabular-nums;flex:none}
+.thrt{font-size:10.5px;color:var(--dim);line-height:1.5}
+.thrt b{color:var(--bone)}
+.thrx{margin-left:auto;text-align:right;font-size:9.5px;color:var(--ink);line-height:1.55}
+.thrx b{color:var(--blood)} .thrx .free{color:var(--moss)}
+.thrx .cap{color:var(--brass)}
+
 .cell{min-height:104px;padding:2px 1px;display:flex;flex-direction:column;
   align-items:center;justify-content:flex-start;position:relative}
 .cell.dead{opacity:.24;filter:grayscale(1)}
@@ -190,10 +205,15 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .ovNote .k{color:var(--brass);letter-spacing:.1em}
 .dvLbl{font-size:11px;letter-spacing:.18em;color:var(--brass);text-align:center;padding:0 8px}
 .dvLbl em{font-style:normal;color:var(--bone)}
+/* 必要な成功の数。振る前から見えていること（α1.0.022） */
+.dvneed{display:block;font-size:11.5px;letter-spacing:.04em;color:var(--dim);margin-top:4px}
+.dvneed b{color:var(--bone);font-weight:600}
 .dvRow{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;max-width:94%}
-.dv{width:34px;height:34px;border:1px solid var(--line);background:#14160f;display:grid;
-  place-items:center;font-family:"DotGothic16",ui-monospace,monospace;font-weight:700;font-size:18px;color:#585e50;
-  border-radius:5px;will-change:transform}
+/* 出目の札。試作台の見た目に揃えた（α1.0.022）── 38px・明朝・角のまま。
+   大きいのは 覆いの真ん中で **何が起きたか** を読ませるため */
+.dv{width:38px;height:38px;border:1px solid var(--line);background:#171a14;display:grid;
+  place-items:center;font-family:"Hiragino Mincho ProN","Yu Mincho",serif;
+  font-size:21px;color:#5d6356;font-variant-numeric:tabular-nums;will-change:transform}
 .dv.roll{animation:tumble .44s infinite cubic-bezier(.45,.05,.55,.95)}
 @keyframes tumble{
   0%{transform:translateY(0) rotate(0deg) scale(1)}
@@ -221,8 +241,19 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
   0%{transform:translateY(-9px) rotate(22deg) scale(1.16)}
   55%{transform:translateY(2px) rotate(-4deg) scale(.93)}
   100%{transform:translateY(0) rotate(0deg) scale(1)}}
-.dv.hit{border-color:var(--moss);color:var(--bone);background:#252d1c}
+/* ===== 出目の色（試作台と同じ意味・α1.0.022） =====
+     緑 … 成功
+     金 … **数える超過**。上限で切られたぶんは 緑のまま
+     鈍 … 届かなかった目
+   前は「6の目」を金にしていた。出目そのものが威力に効いていた
+   古い決めごとの名残で、必要成功数では **6であることに意味がない**。
+   金が指すものが違うと、覆いが仕組みを間違って教えてしまう。 */
+.dv.hit{border-color:var(--moss);color:var(--moss);background:#1e2419;
+  box-shadow:0 0 10px -2px rgba(143,162,97,.55)}
 .dv.weak{border-color:#4a3a38;color:#7d6b68}
+.dv.over{border-color:var(--brass);color:var(--brass);background:#2a2513;
+  box-shadow:0 0 10px -2px rgba(201,162,39,.55)}
+/* 6 を金にするのは 「6は成功2つぶん」を持つ者（激昂）のときだけ */
 .dv.six{border-color:var(--brass);color:var(--brass);background:#332b12;font-weight:700;
   box-shadow:0 0 10px rgba(201,162,39,.45)}
 .ad b.thr{color:var(--brass);font-weight:600}
@@ -244,8 +275,10 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .scGain{font-size:12px;color:var(--moss);letter-spacing:.08em;margin-top:3px}
 .scGain.lose{color:#7d6b68}
 .scGain b{color:var(--brass);font-size:14px}
-.dvRes{font-size:15px;letter-spacing:.1em;color:var(--bone);
-  border:1px solid var(--brass);padding:3px 14px;animation:pop2 .25s ease-out}
+.dvRes{font-size:14px;letter-spacing:.06em;color:var(--bone);text-align:center;
+  border:1px solid var(--brass);padding:4px 14px;animation:pop2 .25s ease-out;line-height:1.6}
+.dvRes .ok{color:var(--moss)} .dvRes .ng{color:var(--blood)} .dvRes .xs{color:var(--brass)}
+.dvRes small{display:block;font-size:10.5px;color:var(--dim);letter-spacing:0;margin-top:2px}
 @keyframes pop2{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
 /* 攻撃・被弾・溜めの演出 */
 .fx{position:absolute;inset:0;pointer-events:none;z-index:9;overflow:visible}
@@ -1067,6 +1100,13 @@ body.attitle #brand{display:none}
     <div class="board" id="board"></div>
     <div class="diceOv" id="diceOv"></div>
   </div>
+  <!-- しきい値の帯（試作台から）。いくつ以上で成功か、なぜそうなのかを
+       画面に出しっぱなしにする。前は「詳細」の窓を開かないと読めなかった -->
+  <div class="thrline">
+    <div class="thrn" id="thrN">4</div>
+    <div class="thrt">以上が<b>成功</b><br><span id="thrP"></span></div>
+    <div class="thrx" id="thrX"></div>
+  </div>
   <div class="cmdwrap"><div class="prompt" id="prompt"></div>
   <div class="acts" id="acts"></div></div>
   <div class="log" id="log"></div>
@@ -1080,7 +1120,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.021";
+const VERSION="α1.0.022";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1093,6 +1133,13 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1022",tag:"up",v:"α1.0.022",d:"2026-09-06",n:"戦闘の見た目を 試作台のものに揃えました",b:[
+   "<b>しきい値の帯が 盤面の下に出っぱなしになりました。</b>「<b>6</b> 以上が成功　ダイス1個につき 17%」と、その下に <b>なぜその数か</b>（遠さ +2、速さの差 −1 …）。これまでは「詳細」の窓を開かないと読めませんでした",
+   "<b>狙う相手に合わせて 帯が描き替わります。</b>遠さと速さの差は 相手ごとに違うので、<b>選ぶ前に</b>見えていないと意味がありません",
+   "<b>ダイスの覆いを 大きくしました。</b>出目の札は 38px の明朝。振る前に <b>「必要な成功 2」</b> が出ます",
+   "<b>金の目は「数える超過」になりました。</b>これまでは <b>6の目</b>を金にしていましたが、必要成功数では 6であることに意味がありません（出目が威力に効いていた頃の名残です）。緑が成功、金が <b>威力の上乗せになったぶん</b>。上限で切られたぶんは 緑のままです",
+   "<b>結果の一行が 言い切るようになりました。</b>「成功 3 ／ 必要 1　<b>通った</b>」／「超過 2 → 威力 ×1.50」。届かなければ「届かなかった」と出ます",
+   "手応えは変えていません。<b>できることも 何ひとつ減っていません</b>（道具・特性・隊列・敵の予告・属性の弱点耐性は そのままです）"]},
  {id:"v1021",tag:"fix",v:"α1.0.021",d:"2026-09-06",n:"ひと振りで 2回3回 殴っているように見えていました",b:[
    "<b>ひと振りは 一撃です。</b>超過が出たぶん <b>踏み込みと打撃音を くり返して</b>いました。ダメージは1回ぶんなのに、必要1の通常攻撃で 2つ成功すると <b>2回攻撃したように見えて</b>いました",
    "<b>同じ数字が 2つ浮いていました。</b>ダメージの数字を 2か所から出していたので、1回の攻撃で 「−52」が二度出ていました。1つにしています",
@@ -5263,6 +5310,17 @@ function bindCells(){
 }
 function bindTargets(){
   document.querySelectorAll(".cell.sel").forEach(el=>{
+    /* 狙いを合わせたら しきい値の帯を その相手のものに描き替える（α1.0.022）。
+       遠さと速さの差は 相手ごとに違うので、選ぶ前に見えていないと意味がない */
+    const f0=foes.find(x=>x.id===+el.dataset.id);
+    if(f0){
+      const A=actor(), pr=A&&A.prep;
+      el.onmouseenter=()=>drawThr(A,f0,{thr:(pr&&pr.thr)||0});
+      el.onmouseleave=()=>{
+        const pv=alive().filter(x=>x!==A)[0]||null;
+        drawThr(A,pv,{thr:(pr&&pr.thr)||0});
+      };
+    }
     el.onclick=()=>{const id=+el.dataset.id;const f=foes.find(x=>x.id===id);
       const p=pending;pending=null;$("#prompt").textContent="";
       if(p&&p.item)return doItem(p.item,f);
@@ -5551,6 +5609,27 @@ function thrWhy(tgt,opt,u){
   const raw=T.reduce((a,x)=>a+x.v,0);
   return {parts:T,raw,thr:Math.max(2,Math.min(6,raw))};
 }
+/* ===== しきい値の帯（α1.0.022） =====
+   試作台では これが盤面の下に**出しっぱなし**で、
+   「4以上が成功」「遠さ +1」「速さの差 −1」が いつも読めた。
+   本編では thrPanel が「詳細」の窓の中にしか無く、
+   遊ぶ人は **何が当たりやすさを動かしているのか** を見られなかった。
+   仮の相手（いちばん手前）で出す。狙いを決めると その相手で描き直る。 */
+function drawThr(u,tgt,opt){
+  const N=$("#thrN"), P=$("#thrP"), X=$("#thrX");
+  if(!N||!P||!X)return;
+  if(!tgt){ N.textContent="—";P.innerHTML="";X.innerHTML="";return; }
+  const w=thrWhy(tgt,opt||{},u);
+  N.textContent=w.thr;
+  P.innerHTML=`ダイス1個につき <b>${Math.round((7-w.thr)/6*100)}%</b>　対 ${tgt.name}`;
+  /* 基本の4は 言わなくても分かるので 動かしたものだけ並べる */
+  const mv=w.parts.filter(x=>x.n!=="基 本"&&x.v!==0);
+  X.innerHTML=(mv.length
+    ? mv.map(x=>`${x.n} <b class="${x.v>0?"":"free"}">${x.v>0?"+":""}${x.v}</b>`).join("　")
+    : `<span class="free">素の 4 のまま</span>`)
+    +(w.raw!==w.thr?`<br><span class="cap">2〜6 に収めて ${w.thr}</span>`:"");
+}
+
 /* 相手ごとの命中閾値を、内訳つきで大きく出す */
 function thrPanel(){
   if(typeof foes==="undefined"||!foes||!foes.length)return "";
@@ -5712,6 +5791,7 @@ function drawActs(){
   const prep=A.prep||null;
   const thrNow=pvT?threshold(A,pvT,{thr:(prep&&prep.thr)||0}):4;
   const nWith=nAtk+((prep&&prep.dice)||0);
+  drawThr(A,pvT,{thr:(prep&&prep.thr)||0});
   ladderOf(A).forEach((r,i)=>{
     const noDice=r.need>nWith, noMp=r.mp>A.MP;
     const ok=atLeast(nWith,r.need,thrNow);
@@ -5950,7 +6030,10 @@ async function lukOv(pct,r){
 /* opt … {need, even, six2}。need を渡すと 「成功N／必要M」まで出す */
 async function rollDice(rolls,thr,label,top,opt){
   opt=opt||{};
-  const row=ovShow(label||`判 定　<em>${opt.even?"偶数の目":thr+" 以上"}が成功</em>`,top);
+  /* 必要な成功の数を **振る前に** 出す（α1.0.022・試作台と同じ）。
+     何個要るのか知らないまま出目が止まると、通ったのかどうか読めない */
+  const row=ovShow((label||`判 定　<em>${opt.even?"偶数の目":thr+" 以上"}が成功</em>`)
+    +(opt.need?`<span class="dvneed">必要な成功 <b>${Math.max(1,opt.need)}</b></span>`:""),top);
   const els=rolls.map((_,i)=>{const s=document.createElement("span");
     s.className="dv enter";
     s.style.animationDelay=(i*0.06)+"s";
@@ -5960,11 +6043,23 @@ async function rollDice(rolls,thr,label,top,opt){
   SFX.shake();
   const spin=setInterval(()=>els.forEach(e=>{if(e.classList.contains("roll"))e.textContent=r6();}),70);
   await wait(760);
+  /* ===== 出目の色は 試作台と同じ意味（α1.0.022） =====
+     緑＝成功、金＝**数える超過**。上限で切られたぶんは 緑のまま。
+     6 を金にしていたのは 出目が威力に効いていた頃の名残で、
+     必要成功数では 6であることに意味がない。
+     ただし「6は成功2つぶん」を持つ者（激昂）のときだけは 6が本当に重い。 */
+  const needN=Math.max(1,opt.need||1);
+  let run=0;                     /* ここまでに数えた成功 */
   for(let i=0;i<els.length;i++){
     els[i].classList.remove("roll");els[i].classList.add("land");els[i].textContent=rolls[i];
     const ok=sucOk(rolls[i],thr,opt);
-    if(ok&&rolls[i]>=6){els[i].classList.add("six");SFX.crit();}
-    else{els[i].classList.add(ok?"hit":"weak");SFX.tick();}
+    if(!ok){els[i].classList.add("weak");SFX.tick();}
+    else{
+      run+=(opt.six2&&rolls[i]===6)?2:1;
+      if(opt.six2&&rolls[i]===6){els[i].classList.add("six");SFX.crit();}
+      else if(opt.need&&run>needN&&run<=needN+XCAP){els[i].classList.add("over");SFX.crit();}
+      else{els[i].classList.add("hit");SFX.tick();}
+    }
     await wait(105);
   }
   clearInterval(spin);
@@ -5976,16 +6071,21 @@ async function rollDice(rolls,thr,label,top,opt){
     b.className="dvup on";b.textContent="×2";
     els[i].appendChild(b);
   });
-  const need=Math.max(1,opt.need||1);
+  /* 結果の一行も 試作台の形に（α1.0.022）。
+     「通った／届かなかった」を言い切って、超過は その下に小さく添える */
+  const need=needN;
   const over=Math.max(0,hits-need);
-  $("#dvRes").innerHTML=`<div class="dvRes">成功 ${hits}`+
-    (opt.need?` <span class="dvnote">／ 必要 ${need}</span>`:"")+
-    (opt.need?(hits<need
-      ? `<span class="dvnote">届かなかった</span>`
-      : (over?`<span class="dvnote">超過 ${Math.min(XCAP,over)}（威力 ×${
-            (1+XGAIN*Math.min(XCAP,over)).toFixed(2)}）</span>`:""))
-      :"")+`</div>`;
-  await wait(430);
+  const cut=Math.min(XCAP,over);
+  $("#dvRes").innerHTML=`<div class="dvRes">`+(!opt.need
+    ? `成功 ${hits}`
+    : (hits>=need
+      ? `<span class="ok">成功 ${hits} ／ 必要 ${need}　通った</span>`+
+        (over>0
+          ? `<small><span class="xs">超過 ${over}${cut<over?`（${XCAP}つまで数える）`:""}`+
+            ` → 威力 ×${(1+XGAIN*cut).toFixed(2)}</span></small>`
+          : `<small>ちょうど</small>`)
+      : `<span class="ng">成功 ${hits} ／ 必要 ${need}　届かなかった</span>`))+`</div>`;
+  await wait(opt.need&&hits>=need&&over>0?680:430);
   return hits;
 }
 async function addDice(extra,thr,opt){
@@ -5995,7 +6095,11 @@ async function addDice(extra,thr,opt){
     row.appendChild(s);SFX.diceOne();await wait(230);
     s.classList.remove("roll");s.textContent=v;
     const ok=sucOk(v,thr,opt);
-    if(ok&&v>=6){s.classList.add("six");SFX.crit();}else if(ok)s.classList.add("hit");
+    /* 振り直しぶんも 同じ意味の色で（α1.0.022）。
+       6 が金になるのは 「6は成功2つぶん」を持つ者のときだけ */
+    if(ok&&opt&&opt.six2&&v===6){s.classList.add("six");SFX.crit();}
+    else if(ok){s.classList.add("hit");SFX.tick();}
+    else s.classList.add("weak");
     out.push(v);await wait(110);
   }
   return out;
