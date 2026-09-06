@@ -71,6 +71,7 @@ button{font-family:inherit}
   pointer-events:none;animation:pop 1s ease-out forwards;text-shadow:0 0 8px #1b1d18;z-index:5}
 .pop.miss{color:var(--dim);font-size:13px}
 .pop.big{color:var(--brass)}
+.pop.heal{color:var(--moss)}
 @keyframes pop{0%{opacity:0;transform:translate(-50%,6px) scale(.8)}
   22%{opacity:1;transform:translate(-50%,-4px) scale(1.1)}
   70%{opacity:1;transform:translate(-50%,-10px) scale(1)}
@@ -136,6 +137,9 @@ button{font-family:inherit}
   background:var(--brass);flex:none}
 .pip.off{background:transparent;border-color:#4d5346}
 .nogo{font-size:9.5px;color:var(--blood);letter-spacing:.04em}
+.skt{font-size:8.5px;color:var(--ink);border:1px solid #2f3429;padding:0 4px;letter-spacing:.04em}
+.fart{font-size:8.5px;color:var(--blue);border:1px solid #33454f;padding:0 4px}
+.act.heal{border-left:3px solid var(--moss)}
 
 /* ---- ログ ---- */
 .log{background:var(--panel);border:1px solid var(--line);margin-top:12px;
@@ -154,7 +158,7 @@ button{font-family:inherit}
 .ttl{font-size:9.5px;letter-spacing:.22em;color:var(--ink);margin:0 0 8px}
 .ttl.mid{margin-top:14px;border-top:1px solid #2e332a;padding-top:12px}
 .trow{display:flex;align-items:center;gap:8px;margin:7px 0;flex-wrap:wrap}
-.trow>.k{font-size:11px;color:var(--dim);letter-spacing:.06em;width:96px;flex:none}
+.trow>.k{font-size:11px;color:var(--dim);letter-spacing:.06em;width:96px;flex:none;line-height:1.35}
 .tval{font-family:ui-monospace,monospace;font-size:13px;color:var(--brass);
   min-width:22px;text-align:center;font-variant-numeric:tabular-nums}
 .tbtn{background:var(--panel2);border:1px solid var(--line);color:var(--bone);
@@ -177,7 +181,8 @@ button{font-family:inherit}
 <b>両方が横一列。</b>奥にいるほど <b>しきい値が +1／+2</b> ── ただし
 <b style="color:#6f92ab">弓と杖は奥ゆきを払いません</b>。<br>
 だからナイトが前に立つと、奥のウィザードは守られたまま撃てます。<br>
-<b>ダイスは技能で決まり、素の上限は5個</b>（技能100）。
+<b>ダイスは技能ごと</b>で、素の上限は5個（技能100）。技能は <b>近接・射撃・魔術・治療</b>。<br>
+<b style="color:#8fa261">治療だけは 届かなくても目減りして出ます</b>（足りない1つにつき ×0.3、0成功なら0）。
 <b style="color:#c9a227">仕込みの技</b>で ダイスを増やす／しきい値を下げると、
 そこを一時的に越えられます ── <b>必要4の大技はそのための技</b>です。
 </p>
@@ -269,27 +274,33 @@ let DMODE="thr2", XMODE="x25c2";
 
 /* ---------- 顔ぶれ。数字は本編の JOB＋RACE(ヒューム) から借りている ----------
    技の名前は 通常攻撃・斬撃・強撃 がご提案のもの。それ以外は（仮）。
-   技能は **近接・遠距離・魔法** の3つ（本体の SK に「魔法」を足す前提）。
-   杖は snd:"magic" なので 魔法で測る。いまの本体は type:"ranged" だけを見て
-   射撃を返すので、ウィザードが射撃35＝ダイス1個になってしまう。 */
+   本体の SK には「魔術」も「治療」も無い。足す前提。 */
+/* 技能は 近接・射撃・魔術・治療 の4つ（暮らしの技能は戦闘に出ない）。
+   **ダイスは技能ごとに持つ。**技は自分がどの技能で振るかを持っている。
+   **遠隔かどうかも技ごと** ── 魔術には近距離のものもあるので、得物では決められない。 */
+const SKN={melee:"近 接", shoot:"射 撃", magic:"魔 術", heal:"治 療"};
 const JOBS={
-  knight:{n:"ナイト",  fig:"knight", sk:"近 接", far:false, stat:"STR", pref:0,
-    STR:35, INT:20, DEX:23, HP:207, MP:19, dice:2,
-    acts:[{n:"通常攻撃",  cls:"atk",need:1,mul:100,mp:0},
-          {n:"斬 撃",    cls:"sk", need:2,mul:200,mp:3},
-          {n:"強 撃",    cls:"sk", need:3,mul:360,mp:6},
-          {n:"大技（仮）", cls:"sk", need:4,mul:560,mp:10}]},
-  archer:{n:"アーチャー",fig:"archer", sk:"遠距離", far:true,  stat:"STR", pref:2,
-    STR:29, INT:23, DEX:39, HP:167, MP:21, dice:2,
-    acts:[{n:"射 る",     cls:"atk",need:1,mul:100,mp:0},
-          {n:"二本射ち（仮）",cls:"sk", need:2,mul:195,mp:3},
-          {n:"貫き撃ち（仮）",cls:"sk", need:3,mul:350,mp:6}]},
-  mage:  {n:"ウィザード",fig:"mage",   sk:"魔 法", far:true,  stat:"INT", pref:3,
-    STR:23, INT:43, DEX:28, HP:147, MP:32, dice:2,
-    acts:[{n:"魔 弾",     cls:"atk",need:1,mul:100,mp:0},
-          {n:"連 弾（仮）", cls:"sk", need:2,mul:200,mp:4},
-          {n:"大魔弾（仮）",cls:"sk", need:3,mul:365,mp:8},
-          {n:"大呪文（仮）",cls:"sk", need:4,mul:570,mp:13}]},
+  knight:{n:"ナイト", fig:"knight", pref:0, STR:35, INT:20, DEX:23, HP:207, MP:19,
+    dice:{melee:2, shoot:1, magic:1, heal:1},
+    acts:[{n:"通常攻撃",  cls:"atk",sk:"melee",need:1,mul:100,mp:0, stat:"STR"},
+          {n:"斬 撃",    cls:"sk", sk:"melee",need:2,mul:200,mp:3, stat:"STR"},
+          {n:"強 撃",    cls:"sk", sk:"melee",need:3,mul:360,mp:6, stat:"STR"},
+          {n:"大技（仮）", cls:"sk", sk:"melee",need:4,mul:560,mp:10,stat:"STR"}]},
+  archer:{n:"アーチャー",fig:"archer", pref:2, STR:29, INT:23, DEX:39, HP:167, MP:21,
+    dice:{melee:1, shoot:2, magic:1, heal:1},
+    acts:[{n:"射 る",     cls:"atk",sk:"shoot",need:1,mul:100,mp:0, stat:"STR",far:true},
+          {n:"二本射ち（仮）",cls:"sk", sk:"shoot",need:2,mul:195,mp:3, stat:"STR",far:true},
+          {n:"貫き撃ち（仮）",cls:"sk", sk:"shoot",need:3,mul:350,mp:6, stat:"STR",far:true}]},
+  mage:  {n:"ウィザード",fig:"mage",  pref:3, STR:23, INT:43, DEX:28, HP:147, MP:32,
+    dice:{melee:1, shoot:1, magic:2, heal:2},
+    acts:[{n:"魔 弾",     cls:"atk",sk:"magic",need:1,mul:100,mp:0, stat:"INT",far:true},
+          /* 近距離魔法。**奥ゆきを払う** ── 遠隔かどうかは技ごと */
+          {n:"炎 掌（仮）", cls:"sk", sk:"magic",need:2,mul:230,mp:4, stat:"INT"},
+          {n:"大魔弾（仮）",cls:"sk", sk:"magic",need:3,mul:365,mp:8, stat:"INT",far:true},
+          /* 治療。届かなくても **足りない1つにつき ×0.3** で目減りして出る。
+             0成功だけは 本当にゼロ。攻撃（空振り＝ゼロ）との違いはここだけ。 */
+          {n:"癒 し（仮）", cls:"heal",sk:"heal", need:2,mul:150,mp:5, stat:"INT",heal:true},
+          {n:"大癒し（仮）",cls:"heal",sk:"heal", need:3,mul:280,mp:9, stat:"INT",heal:true}]},
 };
 /* 仕込みの技。**素のダイス上限は5**なので、必要4の大技は
    仕込んでからでないと通らない（素 18.8% → 仕込んで 50%前後）。
@@ -350,26 +361,47 @@ const aimFoe=()=>foes[aim]&&foes[aim].hp>0 ? foes[aim] : alive(foes)[0];
 
 /* 攻める者 u が 守る者 t を狙うときの しきい値・ダイス数・威力の掛け率。
    **遠隔（far）は 相手の奥ゆきを払わない。**本編の reachOf と同じ考え方。 */
+/* その者が その技を振るときのダイス数。**技能ごとに持っている。** */
+function diceOf(u,act){
+  if(typeof u.dice==="number")return u.dice;              /* 敵は1つだけ持つ */
+  return (u.dice[(act&&act.sk)||"melee"])||1;
+}
 function ctxOf(u,t,act){
-  /* 得物が遠隔なら払わない。技そのものが投げ物（act.far）でも払わない。
-     本編の isRanged が act.pos==="back" を遠隔として扱うのと同じ。 */
+  /* **遠隔かどうかは技ごと。**弓も 遠隔の魔術も 敵の投げ物も同じ扱い。
+     近距離魔法のように、同じ杖でも払う技と払わない技がある。 */
   const far=!!(u.far||(act&&act.far));
   const R=DRULE[DMODE], d=far?0:depthOf(t);
   const B=u.prep||{dice:0,thr:0};      /* 仕込みの効き目 */
   return {d, far, raw:depthOf(t), prep:(B.dice||B.thr)?B:null,
     thr:Math.max(2,Math.min(6,baseThr(u.DEX,t.DEX)+R.thr(d)-(B.thr||0))),
-    n:Math.max(1,u.dice+R.dice(d)+(B.dice||0)),
+    n:Math.max(1,diceOf(u,act)+R.dice(d)+(B.dice||0)),
     pow:R.pow(d)};
 }
+/* 治療だけの決めごと ── **足りない1つにつき ×0.3**。0成功なら本当にゼロ。
+   攻撃は空振りでゼロだが、治療で外して仲間が死ぬのは痛すぎる。
+   弱いうちほど助かり（ダイス2・必要2 で 25%→40%）、
+   強くなるほど差が縮む（ダイス6・必要3 で +8pt）。底上げであって上振れではない。 */
+const HEALSHORT=0.3;
+function healRate(k,need){
+  if(k<=0)return 0;
+  return k>=need ? 1 : Math.pow(HEALSHORT,need-k);
+}
 const comb=(n,k)=>{let r=1;for(let i=0;i<k;i++)r=r*(n-i)/(i+1);return r;};
+const binom=(n,k,p)=>comb(n,k)*Math.pow(p,k)*Math.pow(1-p,n-k);
+/* 治療の的。いちばん傷んでいる味方（割合で見る）。みな満身なら null */
+function hurtAlly(){
+  const l=alive(party).filter(u=>u.hp<u.HP);
+  return l.length?l.sort((a,b)=>a.hp/a.HP-b.hp/b.HP)[0]:null;
+}
 function atLeast(n,k,p){ if(k>n)return 0; let s=0;
   for(let i=k;i<=n;i++)s+=comb(n,i)*Math.pow(p,i)*Math.pow(1-p,n-i); return s; }
-const powOf=(u,a)=>u[u.stat||"STR"]*a.mul/100;
+const powOf=(u,a)=>u[a.stat||u.stat||"STR"]*a.mul/100;
 
 function reset(keep){
-  const keepDice=keep&&party.length?party.map(u=>u.dice):null;
+  const keepDice=keep&&party.length?party.map(u=>({...u.dice})):null;
   party=["knight","archer","mage"].map((k,i)=>({...JOBS[k], key:k, foe:false,
-    hp:JOBS[k].HP, mp:JOBS[k].MP, dice:keepDice?keepDice[i]:2}))
+    hp:JOBS[k].HP, mp:JOBS[k].MP,
+    dice:keepDice?{...keepDice[i]}:{...JOBS[k].dice}}))
     .sort((a,b)=>a.pref-b.pref);          /* 本編の LINEPREF と同じ並び */
   foes=GROUPS[groupKey].list.map(k=>({...FOE[k], key:k, foe:true, stat:"STR",
     hp:FOE[k].HP, mp:0, acts:FOE[k].acts}));
@@ -431,12 +463,16 @@ function unitCell(el,u,i,side){
      <div class="bar ${side==="me"?"me":""}"><i style="width:${Math.max(0,u.hp/u.HP*100)}%"></i></div>`+
     (side==="me"?`<div class="chp" style="color:var(--blue)">MP ${u.mp}</div>
      <div class="bar mpb"><i style="width:${u.mp/u.MP*100}%"></i></div>`:"")+
-    `<div class="cst">${side==="me"?u.sk:"STR "+u.STR}<br>ダイス <b>${u.dice}</b>個</div>`+
-    (u.far?`<div class="far">奥ゆきを払わない</div>`
-      :(u.acts||[]).some(a=>a.far)?`<div class="far">投げ物あり</div>`:"")+
+    `<div class="cst">${side==="me"
+        ? usedSks(u).map(k=>`${SKN[k]} <b>${u.dice[k]}</b>`).join("<br>")
+        : "STR "+u.STR+"<br>ダイス <b>"+u.dice+"</b>個"}</div>`+
+    ((u.acts||[]).some(a=>a.far)?`<div class="far">${
+      (u.acts||[]).every(a=>a.far)?"奥ゆきを払わない":"払わない技あり"}</div>`:"")+
     (u.prep?`<div class="prep">${u.prep.dice?`ダイス +${u.prep.dice}`:`しきい値 −${u.prep.thr}`}</div>`:"")+
     `<div class="dep d${dead?0:d}">${mark}${pen?" "+pen:""}</div>`;
 }
+/* その者が実際に使う技能だけを並べる */
+const usedSks=u=>[...new Set((u.acts||[]).map(a=>a.sk))];
 function drawBoard(){
   for(let i=0;i<3;i++)unitCell($("#cA"+i),party[i],i,"me");
   for(let i=0;i<3;i++)unitCell($("#cF"+i),foes[i],i,"foe");
@@ -470,20 +506,29 @@ function drawActs(){
   if(over||!u||u.foe||busy){ $("#acts").innerHTML=""; $("#prompt").innerHTML=over?"":
     `<em>${u&&u.foe?u.n+" の番":""}</em>`; return; }
   const f=aimFoe(); if(!f)return;
-  const c=ctxOf(u,f,u.acts[0]), p=(7-c.thr)/6;
+  const c=ctxOf(u,f,u.acts[0]);
   $("#prompt").innerHTML=`${u.n} は ど う す る<em>ねらい ${f.n}（${
-    c.raw===0?"先頭":(c.raw+1)+"番目"}${c.raw&&c.far?"・払わない":""}）　${c.n}d6・${c.thr}以上</em>`;
+    c.raw===0?"先頭":(c.raw+1)+"番目"}）　治療は いちばん傷んだ味方へ</em>`;
   $("#acts").innerHTML=u.acts.map((a,i)=>{
-    const ca=ctxOf(u,f,a), pa=(7-ca.thr)/6;
+    /* 治療は味方が的なので、しきい値も味方に対して出す */
+    const tgt=a.heal?(hurtAlly()||u):f;
+    const ca=ctxOf(u,tgt,a), pa=(7-ca.thr)/6;
     const noDice=a.need>ca.n, noMp=a.mp>u.mp, off=noDice||noMp;
     const ok=atLeast(ca.n,a.need,pa), cls=ok>=.6?"":ok>=.3?"mid":"bad";
-    const pw=Math.round(powOf(u,a)*ca.pow);
+    const pw=Math.round(powOf(u,a)*(a.heal?1:ca.pow));
+    /* 治療は届かなくても目減りして出るので、ならした量も添える */
+    let exp=0; if(a.heal)for(let k=0;k<=ca.n;k++)
+      exp+=binom(ca.n,k,pa)*powOf(u,a)*healRate(k,a.need)*XRULE[XMODE].f(Math.max(0,k-a.need));
     return `<button class="act ${a.cls}" data-a="${i}"${off?" disabled":""}>
-      <span class="an">${a.n} ${pips(a.need,c.n)}</span>
+      <span class="an">${a.n} ${pips(a.need,ca.n)}<span class="skt">${SKN[a.sk]}</span>${
+        a.far?'<span class="fart">遠</span>':""}</span>
       <span class="ad">${
         noDice?`<span class="nogo">ダイスが ${a.need}個 要る（いま ${ca.n}個）</span>`
         :noMp ?`<span class="nogo">MP が足りない</span>`
-        :`成功 <em class="${cls}">${Math.round(ok*100)}%</em>　威力 ${pw}${a.mp?`　MP ${a.mp}`:""}`}</span>
+        :a.heal
+          ?`満額 <em class="${cls}">${Math.round(ok*100)}%</em>　回復 ${pw}　`+
+           `<span style="color:var(--moss)">ならし ${Math.round(exp)}</span>　MP ${a.mp}`
+          :`成功 <em class="${cls}">${Math.round(ok*100)}%</em>　威力 ${pw}${a.mp?`　MP ${a.mp}`:""}`}</span>
     </button>`;}).join("")+
     PREP.map(p=>{
       const off=p.mp>u.mp||!!u.prep;
@@ -514,29 +559,34 @@ function wantTarget(f){
 function drawTrain(){
   $("#godBtn").className="tbtn w"+(god?" on":"");
   /* 一人ずつ ダイスを増やせる。技能ごとに違うのが この仕組みの肝 */
-  $("#diceRows").innerHTML=party.map((u,i)=>
-    `<div class="trow"><span class="k">${u.n}</span>
-      <button class="tbtn" data-dm="${i}"${u.dice<=1||busy?" disabled":""}>−</button>
-      <span class="tval">${u.dice}</span>
-      <button class="tbtn" data-dp="${i}"${u.dice>=6||busy?" disabled":""}>＋</button>
-      <span class="tnote" style="margin:0">${u.sk}　${
-        u.far?'<span style="color:var(--blue)">奥ゆきを払わない</span>':"奥ゆきを払う"}　${
-        (()=>{const nx=u.acts.find(a=>a.need===u.dice+1);
-              return nx?`＋1 で <b>${nx.n}</b>`:u.dice>=6?'<b style="color:var(--brass)">限界突破</b>':"<b>ぜんぶ選べる</b>";})()}${
-        u.dice>=5?`　<span style="color:var(--brass)">技能 ${u.dice*20}</span>`:`　技能 ${u.dice*20}〜${u.dice*20+19}`}</span>
-    </div>`).join("");
+  /* **技能ごとに1行。**ダイスは技能に付くので、同じ者でも技能ごとに違う */
+  $("#diceRows").innerHTML=party.map((u,i)=>usedSks(u).map(sk=>{
+    const d=u.dice[sk], nx=u.acts.filter(a=>a.sk===sk).find(a=>a.need===d+1);
+    return `<div class="trow"><span class="k">${u.n}<br><span style="color:var(--ink)">${SKN[sk]}</span></span>
+      <button class="tbtn" data-dm="${i}" data-sk="${sk}"${d<=1||busy?" disabled":""}>−</button>
+      <span class="tval">${d}</span>
+      <button class="tbtn" data-dp="${i}" data-sk="${sk}"${d>=6||busy?" disabled":""}>＋</button>
+      <span class="tnote" style="margin:0">${
+        nx?`＋1 で <b>${nx.n}</b>`:d>=6?'<b style="color:var(--brass)">限界突破</b>':"<b>ぜんぶ選べる</b>"}${
+        d>=5?`　<span style="color:var(--brass)">技能 ${d*20}${d>5?"＋":""}</span>`
+            :`　技能 ${d*20}〜${d*20+19}`}</span>
+    </div>`;}).join("")).join("");
   $("#diceRows").querySelectorAll("[data-dm]").forEach(b=>{
-    b.onclick=()=>{ const u=party[+b.dataset.dm]; if(u.dice>1){u.dice--;drawAll();} };});
+    b.onclick=()=>{ const u=party[+b.dataset.dm], k=b.dataset.sk;
+      if(u.dice[k]>1){u.dice[k]--;drawAll();} };});
   $("#diceRows").querySelectorAll("[data-dp]").forEach(b=>{
-    b.onclick=()=>{ const u=party[+b.dataset.dp]; if(u.dice<6){u.dice++;drawAll();} };});
+    b.onclick=()=>{ const u=party[+b.dataset.dp], k=b.dataset.sk;
+      if(u.dice[k]<6){u.dice[k]++;drawAll();} };});
 
   const seg=(box,tbl,cur,attr)=>{ $(box).innerHTML=Object.keys(tbl).map(k=>
     `<button class="tbtn w${k===cur?" on":""}" ${attr}="${k}"${busy?" disabled":""}>${tbl[k].n}</button>`).join(""); };
   seg("#dPick",DRULE,DMODE,"data-d"); seg("#xPick",XRULE,XMODE,"data-x");
   $("#dNote2").innerHTML=DRULE[DMODE].d;
   {const X=XRULE[XMODE], u=party[0], rows=[];
-   for(let i=0;i<u.acts.length-1;i++){
-     const a=u.acts[i], b=u.acts[i+1];
+   /* **同じ技能どうしで比べる。**治療と攻撃、近接と魔術を混ぜても意味がない */
+   const line=u.acts.filter(a=>a.sk===usedSks(u)[0]).sort((x,y)=>x.need-y.need);
+   for(let i=0;i<line.length-1;i++){
+     const a=line[i], b=line[i+1];
      rows.push({a,b,top:powOf(u,a)*X.f(Math.min(X.cap,8-a.need)),base:powOf(u,b)});
    }
    const ng=rows.filter(r=>r.top>=r.base);
@@ -621,14 +671,38 @@ async function doAct(id){
     log(`<span class="a">${u.n}</span> は身を固めた　<span class="m">MP +4</span>`);
     drawBoard(); await wait(360);
   }else{
-    const a=u.acts[+id], f=aimFoe(), c=ctxOf(u,f,a);
+    const a=u.acts[+id];
+    const f=a.heal?(hurtAlly()||u):aimFoe();
+    const c=ctxOf(u,f,a);
     u.mp-=a.mp;
-    const usedPrep=u.prep; u.prep=null;      /* 効き目は 攻撃ひとつぶん */
+    const usedPrep=u.prep; u.prep=null;      /* 効き目は ひと振りぶん */
     const sub=c.raw
       ? (c.far?`<span class="free">${c.raw+1}番目だが 遠隔なので払わない</span>`
              :`<span class="pen">${c.raw+1}番目を狙う ── ${DRULE[DMODE].n}</span>`)
       :"";
-    const k=await rollDice("こ ち ら の 番",c.n,c.thr,a.need,`${u.n} の ${a.n} → ${f.n}`,sub);
+    const k=await rollDice(a.heal?"癒 や す 番":"こ ち ら の 番",
+      c.n,c.thr,a.need,`${u.n} の ${a.n} → ${f.n}`,sub);
+    if(a.heal){
+      /* 治療 ── 届かなくても 足りない1つにつき ×0.3。0成功だけがゼロ */
+      const rate=healRate(k,a.need), o=Math.max(0,k-a.need);
+      const mul=XRULE[XMODE].f(o);
+      const hp=Math.round(powOf(u,a)*rate*mul);
+      f.hp=Math.min(f.HP,f.hp+hp);
+      if(hp>0){
+        popNum(cellOf(f),"＋"+hp,"heal");
+        log(`<span class="a">${u.n}</span> の ${a.n} → <span class="a">${f.n}</span>　`+
+          `<span class="m">成功 ${k}/${a.need}</span>`+
+          (rate<1?`　<span class="c">${Math.round(rate*100)}%だけ効いた</span>`
+                 :o>0?`　<span class="x">超過 ${Math.min(XRULE[XMODE].cap,o)}（×${mul.toFixed(2)}）</span>`:"")+
+          ` → <span class="a">${hp}</span> 回復`);
+      }else{
+        popNum(cellOf(f),"効かず","miss");
+        log(`<span class="a">${u.n}</span> の ${a.n} → ${f.n}　`+
+          `<span class="m">成功 0/${a.need}</span> → 何も起きなかった　<span class="m">MP −${a.mp}</span>`);
+      }
+      drawBoard(); await wait(340);
+      nextTurn(); return;
+    }
     if(k>=a.need){
       const o=k-a.need, mul=XRULE[XMODE].f(o);
       const dmg=Math.round(powOf(u,a)*c.pow*mul);
