@@ -1066,7 +1066,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.018";
+const VERSION="α1.0.019";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1079,6 +1079,12 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1019",tag:"fix",v:"α1.0.019",d:"2026-09-06",n:"遊びはじめの数戦に「必要な成功の数」が一度も出ていませんでした",b:[
+   "<b>職ごとに はじめの技を持って始まります。</b>ナイトは渾身、アーチャーは徹甲矢、スカウトは急所突き、ウィザードはインフェルノ ── どれも <b>必要成功2</b> の技です",
+   "これまで Lv1 は <b>技をひとつも持っていなかった</b>ので、押せるのは通常攻撃（必要1）だけ。仕組みの真ん中にあるはずの「必要な成功の数」が 数戦のあいだ 画面に出ていませんでした",
+   "<b>草原の敵にも 重い一撃が入りました。</b>スライムの「のびる」、草スライムの「芽を飛ばす」、キラービーの「刺し続ける」などが <b>必要成功2</b> になります。予告に出ても <b>不発に終わる</b>ことがあります",
+   "攻撃を2つ以上持つ敵は <b>全員が 必要2 の一撃を持つ</b>ようになりました（22体）。これまでは 9体が すべて必要1でした",
+   "手応えは変えていません。重くしたぶん 当たりにくくしてあります"]},
  {id:"v1018",tag:"up",v:"α1.0.018",d:"2026-09-06",n:"町に宿ができました。金貨を払えば 一味が全快します",b:[
    "<b>町の札に「宿 に 泊 ま る」が増えました。</b>一味の HP と MP が全快します",
    "<b>代金は 傷のぶんだけ。</b>戻る HP 1 につき 0.08 金貨、MP 1 につき 0.7 金貨。札に そのときの代金が出ます",
@@ -3683,6 +3689,29 @@ const JOB={
     sk:[]},
 };
 
+/* ===== 職ごとの はじめの技（α1.0.019） =====
+   これまで Lv1 は **技を持っていなかった**ので、押せるのは通常攻撃（必要1）だけ。
+   「必要な成功の数」が仕組みの真ん中なのに、遊びはじめて数戦のあいだ
+   **画面に「必要 1」しか出なかった。**職の顔つきも 得物の違いだけになっていた。
+
+   そこで職ごとに **必要成功2以上の技を1つ**持たせる。
+   はじめの一手から「安く確実な通常攻撃か、当たれば重い技か」を選べる。
+
+   〔値は仮〕どれも既にある技から選んだだけで、新しくは作っていない。
+   ウィザードだけ 必要2 が全体技（インフェルノ／アースクエイク）しかないので、
+   単体の重い術ができたら そちらへ移す。 */
+const JOBSTART={
+  knight:"ak4",   /* 渾 身　　　　必要2 ×1.9　mp6 cd4 */
+  archer:"aa1",   /* 徹 甲 矢　　必要2 ×1.75　mp6 cd4　VIT を無視する */
+  scout: "as3",   /* 急 所 突 き　必要2 ×1.9　mp3 cd2　いちばん安い */
+  mage:  "am6",   /* インフェルノ　必要2 ×1.15／体　mp7 cd4　手前の3体 */
+};
+function startSkill(job){
+  const id=JOBSTART[job];if(!id)return null;
+  const r=(REW.act[job]||[]).find(x=>x.id===id);
+  return r?{...r,cdLeft:0}:null;
+}
+
 /* ---------- 報酬プール ----------
    cat は3種類。抽選では必ず1枚ずつ出る
    stat = 能力（恒久的な数値）
@@ -4059,12 +4088,12 @@ const FOE={
    acts:[{n:"体当たり",k:"atk",dice:2,w:5},
          {n:"粘液を吐く",k:"atk",dice:2,pct:-50,ail:{curse:5,t:2},w:2},
          {n:"殻を閉じる",k:"guard",block:20,w:3},
-         {n:"のびる",k:"atk",dice:3,w:2}]},
+         {n:"のびる",k:"atk",suc:2,dice:3,pct:90,w:2}]},
  gslime:{n:"草スライム",d:"草ばかりを食んで緑に染まったスライム。草原の色に紛れているので、踏むまで気づかない。粘体にしては跳ねるように速く、逃げても先回りされる。乾いた草を溜め込んだ体は、火がつくとよく燃える。",mat:"gel",weak:"fire",resist:"blunt",art:"gslime",snd:"blunt",
    HP:80,STR:23,VIT:5,DEX:26,rank:"front",scout:0,
    acts:[{n:"跳ねかかる",k:"atk",dice:2,w:5},
          {n:"草に紛れる",k:"guard",block:10,w:3},
-         {n:"芽を飛ばす",k:"atk",dice:3,w:2}]},
+         {n:"芽を飛ばす",k:"atk",suc:2,dice:3,pct:90,w:2}]},
  wslime:{n:"水スライム",d:"水を体に取り込んで透き通ったスライム。回廊の水路に湧き、冷たく、見た目よりずっと重い。動きはひどく鈍いが、そのぶん叩いても崩れない。押し流されると鎧の隙間から入り込んでくる。",mat:"gel",weak:"bolt",resist:"blunt",elem:"water",art:"wslime",snd:"blunt",
    HP:175,STR:36,VIT:22,DEX:5,rank:"front",scout:1,
    acts:[{n:"押し流す",k:"atk",suc:2,dice:3,pct:90,w:5},
@@ -4093,16 +4122,16 @@ const FOE={
 
  /* ===== 2 階層　石造りの回廊 ===== */
  livingstone:{n:"リビングストーン",d:"洞窟に生息する、岩に擬態する虫。放置された採石場などによく住み着く。動かずにいられると、踏むまで岩と見分けがつかない。",mat:"frag",weak:"blunt",resist:"slash",elem:"earth",art:"livingstone",snd:"blunt",HP:165,STR:35,VIT:22,DEX:8,rank:"front",scout:0,
-   acts:[{n:"のしかかる",k:"atk",dice:2,w:5},
+   acts:[{n:"のしかかる",k:"atk",suc:2,dice:3,pct:90,w:5},
          {n:"殻を閉じる",k:"guard",block:16,w:3},
          {n:"礫を撒く",k:"atk",dice:3,w:2}]},
  golem:{n:"ゴーレム",d:"回廊を守るために作られたもの。誰が何のために作ったのかは、もう分からない。命じた者が絶えた今も、決められた道筋を歩き続けている。",mat:"frag",weak:"blunt",resist:"slash",elem:"earth",art:"golem",snd:"blunt",HP:220,STR:43,VIT:28,DEX:10,rank:"front",scout:0,
    acts:[{n:"石 拳",k:"atk",dice:2,pct:15,w:4},
          {n:"身を固める",k:"guard",block:20,w:3},
-         {n:"地を割る",k:"atk",dice:3,w:3}]},
+         {n:"地を割る",k:"atk",suc:2,dice:3,pct:90,w:3}]},
  troll:{n:"トロル",d:"岩陰に潜む大喰らい。腕を落とされてもすぐ生え変わるので、削り合いでは決して勝てない。焼いた傷だけは戻せない。",mat:"claw",weak:"fire",resist:"blunt",art:"troll",snd:"blunt",HP:205,STR:47,VIT:16,DEX:12,rank:"front",scout:1,
    acts:[{n:"叩きつける",k:"atk",dice:2,pct:15,w:5},
-         {n:"薙ぎ払う",k:"atk",dice:3,w:3},
+         {n:"薙ぎ払う",k:"atk",suc:2,dice:3,pct:90,w:3},
          {n:"再生する",k:"regen",heal:26,w:2}]},
  dropbat:{n:"シズクコウモリ",d:"掘削跡の天井に、水の滴る音に紛れて下がる小さな蝙蝠。灯りを向けると一斉に散り、また同じ場所へ戻ってくる。羽は乾いてもなお水を弾く。",mat:"wetwing",weak:"light",resist:"pierce",elem:"dark",art:"dropbat",snd:"slash",
    HP:70,STR:28,VIT:5,DEX:38,rank:"front",scout:6,
@@ -4157,7 +4186,7 @@ const FOE={
    acts:[{n:"骨の矢",k:"atk",dice:2,pct:15,w:6},
          {n:"狙いすます",k:"buff",pctUp:30,w:2}]},
  sahagin:{n:"サハギン",d:"水没したあとに移り住んだ魚人。三叉槍を巧みに使い、群れで押し包む。この都市を自分たちのものだと思っており、事実いまはそうである。",mat:"scale",weak:"bolt",resist:"water",elem:"water",art:"sahagin",snd:"slash",HP:215,STR:50,VIT:18,DEX:28,rank:"front",flex:true,scout:4,
-   acts:[{n:"三叉槍",k:"atk",dice:3,pct:10,pos:"front",w:5},
+   acts:[{n:"三叉槍",k:"atk",suc:2,dice:3,pct:90,pos:"front",w:5},
          {n:"槍を投げる",k:"atk",dice:3,pos:"back",w:5},
          {n:"水を纏う",k:"guard",block:14,w:2},
          {n:"海の歌",k:"cheer",pctUp:20,dur:1,w:2,needFront:true}]},
@@ -4201,7 +4230,7 @@ const FOE={
    HP:32,STR:24,VIT:3,DEX:34,rank:"back",scout:4,
    acts:[{n:"飛びかかる",k:"atk",dice:2,w:5},
          {n:"毒針を刺す",k:"hex",poison:5,dur:2,w:3},
-         {n:"刺し続ける",k:"atk",dice:3,pct:-20,w:2}]},
+         {n:"刺し続ける",k:"atk",suc:2,dice:3,pct:90,w:2}]},
  kingslime:{n:"キングスライム",d:"無数のスライムが寄り集まり、ひとつの意思を持つに至ったもの。潰しても中から次が出てくるので、核となる一体を見つけない限り終わらない。透き通った粘液は、まだ動いている。",mat:"kgel",weak:"bolt",resist:"blunt",elem:"water",art:"kingslime",snd:"blunt",
    HP:340,STR:34,VIT:18,DEX:10,rank:"front",scout:1,
    /* 最初のボス。仕掛けは持たせず、3つの攻撃だけで組む。
@@ -4264,7 +4293,7 @@ const FOE={
          {n:"岩を振り下ろす",k:"atk",suc:3,dice:4,pct:220,w:2}]},
  redcap:{n:"レッドキャップ",d:"血に染めた帽子をかぶった小妖精。帽子の色が褪せると死ぬと信じており、そのために刃物を手放さない。足が速く、走りながら斬りつけてくる。",mat:"fdust",weak:"light",resist:"dark",elem:"dark",art:"redcap",snd:"slash",
    HP:130,STR:40,VIT:10,DEX:38,rank:"front",scout:4,
-   acts:[{n:"駆け抜ける",k:"atk",dice:3,w:5},
+   acts:[{n:"駆け抜ける",k:"atk",suc:2,dice:3,pct:90,w:5},
          {n:"帽子を絞る",k:"regen",heal:26,w:2},
          {n:"疾 走 槍",k:"atk",dice:5,pct:-35,w:2}]},
  alraune:{n:"アルラウネ",d:"大輪の花の中央に人の上半身を持つ植物。根を張ったまま動かない。花粉には強い痺れがあり、近づいた獣がそのまま養分になる。",mat:"petal",weak:"fire",resist:"water",elem:"earth",art:"alraune",snd:"magic",
@@ -4324,7 +4353,7 @@ const FOE={
    HP:520,STR:58,VIT:30,DEX:12,rank:"front",scout:3,
    acts:[{n:"大枝を振り下ろす",k:"atk",dice:3,pct:10,w:5},
          {n:"樹皮を固める",k:"guard",block:20,w:3},
-         {n:"森を薙ぐ",k:"atk",dice:4,open:{t:1},w:3},
+         {n:"森を薙ぐ",k:"atk",suc:2,dice:4,pct:90,open:{t:1},w:3},
          {n:"根 を 貼 る",k:"buff",pctUp:20,dur:2,w:2}],
    phases:[{at:.5,n:"森 が 花 を つ け る",d:"根もとの土が盛り上がり、蕾が首をもたげた",
      acts:[{n:"大枝を振り下ろす",k:"atk",dice:3,pct:10,w:5},
@@ -8066,6 +8095,10 @@ function newGame(){
      buildParty（決め打ちの3人）は 仮の形だったので もう呼ばない。 */
   setParty([me]);
   markSeen("w_"+me.baseWep);
+  /* 職の はじめの技。押せるのが通常攻撃だけだと
+     「必要な成功の数」が数戦のあいだ画面に出てこない（α1.0.019） */
+  const st=startSkill(sel.job);
+  if(st){ me.sk=[st]; markSeen(st.id); }
   me.gold=(ORIG[sel.orig]&&ORIG[sel.orig].startGold)||30;
   RUN=null; owned=[]; bench=[]; hireOffer=null;
   META.runs++;touchMeta();
