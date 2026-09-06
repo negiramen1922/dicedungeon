@@ -1065,7 +1065,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.013";
+const VERSION="α1.0.014";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1078,6 +1078,15 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1014",tag:"up",v:"α1.0.014",d:"2026-09-06",n:"レベルの上限が 100 になりました。技能に注げる点も 99 になります",b:[
+   "<b>上限が Lv25 → Lv100 になりました。</b>技能に注げる点は レベル1つにつき1点なので、<b>一周で 99点</b>配れます。得意技能を 100 まで極めると 残りは44点 ── 何に注ぐかが 一味の役割になります",
+   "<b>一周の長さは変えていません。</b>必要な経験の合計はほぼ同じで、刻みを4倍に細かくしただけです。どの区画も <b>3回ほど潜れば次へ行けます</b>（都市だけ5回）",
+   "<b>覚えるのは 4レベルごと</b>になりました（Lv100 までに 25 回）。毎レベルだと 99回 窓が出てしまうためです。技の枠は 6・特性は 10 のままです",
+   "<b>レベルはまとめて上がります。</b>1段が軽くなったので 一度に2〜3上がることがあります",
+   "<b>上限で止まるようになりました。</b>これまでは上限を見ておらず、Lv25 より上へ行けてしまっていました",
+   "<b>敵の数値を 新しい目盛りに合わせました。</b>同じ場所での一味が 段ごとに 1.7〜3.0 倍強くなったぶん、敵にも返しています。手応えは これまでとほぼ同じです",
+   "〔調整〕<b>アーチャーとスカウトの DEX の伸びを 3 → 0.6 にしました。</b>DEX の上限は 100 なので、3 のままだと <b>Lv21 で天井に張り付き</b>、そこから先の 80 段が丸ごと無駄になっていました",
+   "〔修正〕レベルアップの窓で <b>MP が「undefined」</b>と出ていました。HP も 最大HP と いまのHP を比べていました"]},
  {id:"v1013",tag:"up",v:"α1.0.013",d:"2026-09-06",n:"技と敵の攻撃に「必要な成功の数」を振り分けました。ここから階段が働きます",b:[
    "<b>これまでは ほとんど全部が「必要 1」でした。</b>仕組みだけ入れて 中身を振っていなかったので、手触りが前と同じでした。ここで振り分けました",
    "<b>敵の重い一撃は 必要 2、決め技は 必要 3 になりました。</b>予告に出た大技が <b>不発に終わる</b>ことがあります。期待ダメージは ほぼ据え置きで、当たるかどうかの振れ幅だけ大きくしています",
@@ -3609,14 +3618,19 @@ const ORIG={
    hpMul:0.85, actFull:true},
 };
 /* 毎戦闘ごとの成長（自動） */
+/* 1レベルごとの伸び。**DEX だけ 上限（STATMAX.DEX=100）がある。**
+   3/Lv のままだと Lv21 で天井に張り付き、上限を Lv100 にしたぶんの
+   80段が丸ごと無駄になるので 0.6 に引き直した（α1.0.014）。
+   Lv100 でちょうど 100 に届く。旧 Lv17 の 87 と 新 Lv68 の 79 で、
+   道中の値はほとんど変わらない。装備のぶんは その上に乗る。 */
 const GROW={
   /* ナイトは耐久が突出していた（Lv10 で平均の1.3倍）。VIT を1下げて詰めた。
      成長点は 8 になり、ウィザードと同じ。 */
   knight:{STR:4,VIT:1,HP:16,MP:1},
-  archer:{STR:3,DEX:3,INT:1,VIT:0.5,HP:8,MP:1},
+  archer:{STR:3,DEX:0.6,INT:1,VIT:0.5,HP:8,MP:1},
   /* スカウトは DEX を伸ばしていたが、短剣系は STR 依存なので威力が伸びなかった。
      武器を DEX 依存にするのは却下されている（IDEAS.md）ので、成長の側で寄せる。 */
-  scout:{STR:4,DEX:3,VIT:0.5,HP:8,MP:1},
+  scout:{STR:4,DEX:0.6,VIT:0.5,HP:8,MP:1},
   /* ウィザードが全階層で最上位だったので、耐久を 1 削る */
   mage:{INT:5,VIT:0.3,HP:8,MP:2},
 };
@@ -4493,6 +4507,18 @@ function wantParty(){
 let PARTYHP={1:0.22,2:0.55,3:1};
 function partyMul(){ return PARTYHP[wantParty()]||1; }
 function depthAt(tier){ return 1+((tier||1)-1)*0.34; }
+/* ===== 上限を Lv100 にしたぶんの 返し（α1.0.014） =====
+   刻みを4倍に細かくしても **1レベルの伸び（GROW）は そのまま**にしたので、
+   同じ場所に立ったときの一味が 段ごとに 2〜5倍 強くなった。そのぶんを敵に返す。
+
+     段1 ×1.66　段2 ×2.22　段3 ×2.78　段4 ×3.04
+
+   **最大HP と 与ダメの両方**に掛ける。余裕 ＝ 耐えるT ÷ 倒すT なので、
+   両方を k 倍すると 余裕は 1/k² になる。
+   `tools/tune.mjs <古い版.html>` が この数を出す。**GROW か EXPNEED か
+   TIERLV を触ったら 測り直すこと。** */
+const LVSCALE=[1.66,2.22,2.78,3.04];
+function lvScale(t){ t=(t||areaTier()||1); return LVSCALE[t-1]||LVSCALE[LVSCALE.length-1]; }
 function depthMul(){
   const r=(RUN&&RUN.cur)?RUN.cur.r:0;
   const d=depthAt(areaTier());
@@ -4511,8 +4537,9 @@ function makeFoes(){
     const nth=list.slice(0,i).filter(x=>x===k).length;
     return {...f,id:i,key:k,
       name:f.n+(same>1?" "+((f.nm&&f.nm[nth])||"ABC"[nth]):""),
-      maxHP:Math.round(f.HP*dm*FOEHP*partyMul()),HP:Math.round(f.HP*dm*FOEHP*partyMul()),
-      STR:Math.round(f.STR*(1+(dm-1)*0.6)*FOESTR),
+      maxHP:Math.round(f.HP*dm*FOEHP*partyMul()*lvScale()),
+      HP:Math.round(f.HP*dm*FOEHP*partyMul()*lvScale()),
+      STR:Math.round(f.STR*(1+(dm-1)*0.6)*FOESTR*lvScale()),
       /* DEX も深さで伸ばす。前は HP と STR だけ伸ばしていたので、
          こちらの DEX だけが青天井に育ち、スカウトは木漏れ日の森の時点で
          敵の命中閾値が全部 6 に張り付いていた（当たる率 17%）。 */
@@ -6598,10 +6625,10 @@ async function enemyAct(f){
       const dm=depthMul();
       for(let i=0;i<n;i++){
         const base=FOE[t.who];
-        const hp=Math.round(base.HP*dm*FOEHP*partyMul());
+        const hp=Math.round(base.HP*dm*FOEHP*partyMul()*lvScale());
         const nf={...base,id:foes.length,key:t.who,
           name:base.n+" "+"ABCDEF"[foes.filter(x=>x.key===t.who).length],
-          maxHP:hp,HP:hp,STR:Math.round(base.STR*(1+(dm-1)*0.6)*FOESTR),
+          maxHP:hp,HP:hp,STR:Math.round(base.STR*(1+(dm-1)*0.6)*FOESTR*lvScale()),
           DEX:Math.round(base.DEX*(1+(dm-1)*0.6)),
           block:0,buffs:[],ail:[],stun:false,isFoe:true,owner:f.id,
           tele:null,next:null,lastAid:null,turn:0,sumCd:0,sumUsed:false};
@@ -6705,10 +6732,10 @@ async function enemyAct(f){
     await wait(520);
   }else if(t.k==="hatch"){
     /* 割れて中身が出る。殻そのものは消え、同じ立ち位置を中身が引き継ぐ */
-    const dm=depthMul(), base=FOE[t.who], hp=Math.round(base.HP*dm*FOEHP*partyMul());
+    const dm=depthMul(), base=FOE[t.who], hp=Math.round(base.HP*dm*FOEHP*partyMul()*lvScale());
     const nf={...base,id:foes.length,key:t.who,
       name:base.n+" "+"ABCDEF"[foes.filter(x=>x.key===t.who).length],
-      maxHP:hp,HP:hp,STR:Math.round(base.STR*(1+(dm-1)*0.6)*FOESTR),
+      maxHP:hp,HP:hp,STR:Math.round(base.STR*(1+(dm-1)*0.6)*FOESTR*lvScale()),
       DEX:Math.round(base.DEX*(1+(dm-1)*0.6)),
       block:0,buffs:[],ail:[],stun:false,isFoe:true,
       tele:null,next:null,lastAid:null,turn:0,sumCd:0,sumUsed:false};
@@ -6777,7 +6804,8 @@ async function finish(win){
     ?`<br><span style="font-size:11px;color:#a0714f">${areaOf().n} は もう格下　`+
      (mul>0?`経験 ${Math.round(mul*100)}%`:`経験は もう入らない`)+`</span>`:"";
   ovMsg(`<span class="k">討 伐</span><br>経験 <span class="win">+${xp}</span>`+dull+
-    (expToNext()<=0?`<br><span style="color:#c9a227">L E V E L　U P</span>`
+    (atLvMax()?`<br><span style="font-size:11px;color:#c9a227">上限 Lv ${lvMax()}</span>`
+      :expToNext()<=0?`<br><span style="color:#c9a227">L E V E L　U P</span>`
       :`<br><span style="font-size:11px;color:#6f7a63">次まで ${expToNext()}</span>`));
   log(`<span class="a">討伐</span> 経験 <span class="m">+${xp}</span>`+
     (mul<1?`　<span class="c">格下（${raw} の ${Math.round(mul*100)}%）</span>`:""));
@@ -7615,8 +7643,12 @@ function worldStep(){ return Math.max(0,(areaTier()||1)-1); }
 
    **上限は「次の段のちょうどよいレベル」。**そこまでは普通に経験が入り、
    超えると減っていく。こうすると 次の区画へ行けるだけは育つが、
-   同じ区画を回り続けても それ以上は伸びない。 */
-const TIERLV=[4,8,13,17];
+   同じ区画を回り続けても それ以上は伸びない。
+
+   〔α1.0.014〕上限を Lv100 にしたので **同じ累積経験になるレベル**へ引き直した。
+   旧 4/8/13/17（上限25）→ 新 12/28/50/68（上限100）。
+   何回潜れば次の階層かは 変わっていない。 */
+const TIERLV=[12,28,50,68];
 /* EXPNEED はここより下で作られるので、呼ばれたときに読む */
 function lvMax(){ return EXPNEED.length-1; }
 function tierCap(tier){ return TIERLV[tier]||lvMax(); }  /* 次の段の値。最後は上限 */
@@ -9485,7 +9517,8 @@ function chBodySt(U){
   ${thrPanel()}
   <div class="msec">ス テ ー タ ス</div>
   <div class="mstat">
-    ${U===me?`<span>経験 <b>${U.exp}</b>/${expCap()}</span>`
+    ${U===me?`<span>経験 ${atLvMax()?`<b style="color:#c9a227">上限</b>`
+              :`<b>${U.exp}</b>/${expCap()}`}</span>`
             :`<span style="color:var(--ink)">レベルは主人公に追う</span>`}
     <span>STR <b>${U.STR}</b></span>
     <span${cap?' style="color:#c9a227"':""}>DEX <b${cap?' style="color:#c9a227"':""}>${
@@ -9717,13 +9750,29 @@ const ACCMAX=4;
    ここへ一度受けてから自分で着け替える形にした。 */
 const STASHMAX=2;
 const SKMAX=6;
-/* 次のレベルまでに要る経験。α1 で 2.5 倍にした。
-   α0 は「1周で Lv25 まで駆け上がる」表だったので、町から何度も潜る形には
-   速すぎた（1回潜れば次の区画へ行けてしまう）。いまは **1区画につき3回** ほど。
-   ここを触ったら 育ちの速さが変わる。tools の pace で測り直すこと。 */
-const EXPNEED=[0,45,70,95,120,145,170,195,220,245,270,295,320,345,370,395,420,445,470,495,520,545,570,595,620,645];
+/* ===== 次のレベルまでに要る経験（α1.0.014・上限 Lv100） =====
+
+     f(n) = 11 + 1.4n　（Lv n → n+1）
+     Lv1→2 が 12、Lv50→51 が 81、Lv99→100 が 150
+
+   **一周の長さは変えていない。**Lv1 から Lv100 までの合計は 8019 で、
+   上限が Lv25 だった頃の合計 7980 とほぼ同じ。**刻みだけ 4倍に細かくした。**
+   節目もそのまま揃う（旧 Lv4 と同じ累積が 新 Lv13、旧8→新29、
+   旧13→新50、旧17→新67、旧25→新100）。
+
+   なぜ細かくするか ── **技能に注げる点が レベル1つにつき1点**だから。
+   上限25 では 24点しか配れず、得意技能は 60 → 84 までしか伸びない。
+   Lv100 なら 99点で、「得意を100まで極めるか、二つ目を持つか」の
+   予算の綱引きが生まれる（`IDEAS.md` §17）。
+
+   ここを触ったら 育ちの速さが変わる。`tools/pace.mjs` で測り直すこと。 */
+const LVMAX=100;
+const EXPNEED=(()=>{ const a=[0]; for(let n=1;n<=LVMAX;n++)a[n]=Math.round(11+1.4*n); return a; })();
 function expCap(){return EXPNEED[Math.min(EXPNEED.length-1,me.lv)];}
-function expToNext(){return expCap()-me.exp;}
+/* **上限に届いたら もう上がらない。**これまでは上限を見ておらず、
+   EXPNEED の最後の値を払い続けて Lv25 より上へ行けてしまっていた。 */
+function atLvMax(){ return me.lv>=lvMax(); }
+function expToNext(){ return atLvMax()?1:expCap()-me.exp; }
 function expFor(kind){
   const base={battle:24,elite:55,boss:110}[kind]||24;
   return Math.round(base*(1+worldStep()*0.55));
@@ -9897,7 +9946,9 @@ function growUp(u){
    **仲間も 主人公と同じように 自分で選ぶ。**このレベルに届くたびに
    スキルとパッシブの候補が3つ出て、そこから1つ覚える。
    雇用（次の段）では「雇ったときのレベルまで」をまとめて選ぶことになる。 */
-const MATELV=[1,3,6,9,12,15,18];   /* このレベルで ひとつ覚えられる */
+/* このレベルで ひとつ覚えられる。枠は 技3・特4 の 7つ。
+   α1.0.014 で 上限 Lv100 に合わせて引き直した（旧 1/3/6/9/12/15/18） */
+const MATELV=[1,12,24,36,48,60,72];
 const MATESKMAX=3;                 /* 仲間が持てるスキルの数 */
 const MATEPASSMAX=4;               /* 仲間が持てるパッシブの数 */
 /* 仲間の職。主人公の職を除き、この順で2人。前で受ける者と 遠くから撃つ者が
@@ -10012,7 +10063,8 @@ function lootModal(list,after){
   const CLS={gold:"cgold",mat:"cmat",food:"cheal",item:"cheal",recipe:"crec",gear:"cgear"};
   const LBL={gold:"金 貨",mat:"素 材",food:"食 材",item:"道 具",recipe:"レシピ",gear:"装 備"};
   let h=`<div class="mtitle">戦 利 品</div>
-    <div class="mgrow">Lv <b>${me.lv}</b>　経験 <b>${me.exp}</b> / ${expCap()}　
+    <div class="mgrow">Lv <b>${me.lv}</b>　経験 ${atLvMax()?`<b style="color:#c9a227">上限</b>`
+      :`<b>${me.exp}</b> / ${expCap()}`}　
       金貨 <b style="color:#c9a227">${me.gold}</b></div>
     <div class="mgrow s">技　${me.sk.map(x=>x.n).join("・")||"なし"}　<span class="s">（${me.sk.length}/${SKMAX}）</span></div>
     <div class="mgrow s">特　${me.pass.map(x=>x.n).join("・")||"なし"}　<span class="s">（${me.pass.length}/${PASSMAX}）</span></div>
@@ -10069,42 +10121,76 @@ function lootModal(list,after){
     };
   });
 }
-/* レベルが上がると スキル／パッシブ を計3つ提示して1つ選ぶ */
+/* ===== レベルアップ（α1.0.014・上限 Lv100） =====
+   上限が Lv100 になり、1段が 4分の1 の軽さになった。**毎段で技を選ばせると
+   窓が 99 回出る**（枠は 技6・特10 しかない）ので、覚えるのは節目だけ。
+
+     毎レベル …… 技能に注げる点 +1（合計 99点）
+     LEARNEVERY ごと …… 技 か 特 を ひとつ 覚える（Lv100 まで 25 回）
+
+   **上がったぶんはまとめて見せる。**軽くなったので一度に2〜3段上がることが
+   あり、そのたびに窓を出すと読めない。 */
+const LEARNEVERY=4;
 function levelUpModal(after){
-  me.exp-=expCap();
-  me.lv++;
-  const before={HP:me.maxHP,STR:me.STR,DEX:me.DEX,INT:me.INT,VIT:me.VIT,VIT:me.VIT};
-  const g=growUp();
+  const from=me.lv;
+  /* 伸びる項は GROW が決める。**HP と MP は「最大」を見る**
+     （前は before.HP に maxHP を入れておきながら 比べる先が いまの HP で、
+       MP は before に入れておらず「undefined → 21」と出ていた） */
+  const cur=u=>({...u,HP:u.maxHP,MP:u.maxMP});
+  const before=cur(me);
+  let learn=0, g=null;
+  /* 払えるだけ まとめて上げる。上限に届いたら止まる */
+  while(!atLvMax()&&me.exp>=expCap()){
+    me.exp-=expCap();
+    me.lv++;
+    g=growUp();
+    if(me.lv%LEARNEVERY===0)learn++;
+  }
+  if(me.lv===from)return (after||function(){})();   /* 上がらなかった（上限） */
+  if(atLvMax())me.exp=0;                            /* 上限では余りを持たない */
   syncMates();                   /* 仲間も同じレベルまで追いつく */
-  /* まず「上がった」ことを見せる */
-  const rows=Object.keys(g).map(k=>
-    `<span class="lvrow">${k}　<b>${before[k]}</b> → <b class="up">${me[k]}</b></span>`).join("");
+  const up=me.lv-from;
+  const now=cur(me);
+  const rows=Object.keys(g||{}).filter(k=>k!=="HP").map(k=>
+    `<span class="lvrow">${k}　<b>${Math.round(before[k])}</b> → <b class="up">${
+      Math.round(now[k])}</b></span>`).join("");
+  const nextLearn=LEARNEVERY-(me.lv%LEARNEVERY||LEARNEVERY);
   const h=`<div class="lvban">L E V E L　U P</div>
-    <div class="lvnum">${me.lv-1} <span>→</span> <b>${me.lv}</b></div>
+    <div class="lvnum">${from} <span>→</span> <b>${me.lv}</b></div>
     <div class="lvstat">${rows}
       <span class="lvrow">最大HP　<b>${before.HP}</b> → <b class="up">${me.maxHP}</b></span></div>
     <div class="msub" style="text-align:center;margin-top:12px">
-      技能に注げる点が <b style="color:var(--brass)">1</b> つ 増えた
+      技能に注げる点が <b style="color:var(--brass)">${up}</b> つ 増えた
       <span class="s">（持ち越し ${me.skp}　装備の窓の「ステータス」で注ぐ）</span><br>
-      新しい スキル か パッシブ を ひとつ 覚えられる</div>
-    <div class="ndbtn"><button class="go2" id="lvGo">覚えるものを選ぶ</button></div>`;
+      ${learn
+        ? `新しい スキル か パッシブ を <b>${learn}</b> つ 覚えられる`
+        : `<span class="s">覚えるのは ${LEARNEVERY} レベルごと。次は Lv ${me.lv+nextLearn}</span>`}
+      ${atLvMax()?`<br><span style="color:var(--brass)">ここが 行き止まり（Lv ${lvMax()}）</span>`:""}</div>
+    <div class="ndbtn"><button class="go2" id="lvGo">${
+      learn?"覚えるものを選ぶ":"つづける"}</button></div>`;
   openModal(h);
   SFX.lvup();
   $("#lvGo").onclick=()=>{
     closeModal();
-    const skN=Math.random()<0.5?2:1;
-    const list=[];
-    const ap=catPool("act"), pp=catPool("pass");
-    for(let i=0;i<skN&&ap.length;i++)
-      list.push({cat:"act",r:ap.splice(Math.floor(Math.random()*ap.length),1)[0]});
-    for(let i=0;i<3-skN&&pp.length;i++)
-      list.push({cat:"pass",r:pp.splice(Math.floor(Math.random()*pp.length),1)[0]});
-    const done=()=>{ if(expToNext()<=0)return levelUpModal(after);
-                     mateLearnQueue(after); };
-    choiceModal(`レベル ${me.lv} で 覚 え る`,
-      `<span class="win">レベルが上がった</span>　いまの Lv ${me.lv}`,
-      list,done,"覚えない",done);
+    learnPick(learn,after);
   };
+}
+/* 節目のぶんだけ 覚える窓をつなぐ。0 なら仲間へ回す */
+function learnPick(left,after){
+  const done=()=>{ if(expToNext()<=0)return levelUpModal(after);
+                   mateLearnQueue(after); };
+  if(left<=0)return done();
+  const skN=Math.random()<0.5?2:1;
+  const list=[];
+  const ap=catPool("act"), pp=catPool("pass");
+  for(let i=0;i<skN&&ap.length;i++)
+    list.push({cat:"act",r:ap.splice(Math.floor(Math.random()*ap.length),1)[0]});
+  for(let i=0;i<3-skN&&pp.length;i++)
+    list.push({cat:"pass",r:pp.splice(Math.floor(Math.random()*pp.length),1)[0]});
+  const next=()=>learnPick(left-1,after);
+  choiceModal(`レベル ${me.lv} で 覚 え る${left>1?`　<span class="s">あと ${left}</span>`:""}`,
+    `<span class="win">レベルが上がった</span>　いまの Lv ${me.lv}`,
+    list,next,"覚えない",next);
 }
 /* 仲間が覚える窓。覚えられる者が居なくなるまで つないで出す。
    枠が満杯の種類は候補に出さない（スキル3・パッシブ4まで）。 */

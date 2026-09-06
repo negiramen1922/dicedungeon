@@ -37,10 +37,13 @@ const out=await pg.evaluate(()=>{
     return rows.reduce((a,b)=>a+b,0)/rows.length;};
   L.push("場所ごとの前提と、実際の人数での手応え（余裕・1.0で拮抗）");
   L.push("場所            前提  人数  普通    重い    精鋭    ボス");
+  /* 測るレベルは **その版の TIERLV** から引く。決め打ちにすると
+     上限が違う版どうしを比べられない（α1.0.014）。 */
+  const T=k=>TIERLV[(AREAS[k].tier||1)-1]||1;
   const rows=[
-    ["plain",4,3,"草原 前半(段3)"],["plain",4,3,"草原 前半(段3)"],["plain",4,3,"草原 前半(段3)"],
-    ["plain",4,15,"草原 後半(段15)"],["plain",4,15,"草原 後半(段15)"],["plain",4,15,"草原 後半(段15)"],
-    ["seed",8,3,"木漏れ日の森"],["seed",8,3,"木漏れ日の森"],["seed",8,3,"木漏れ日の森"],
+    ["plain",T("plain"),3,"草原 前半(段3)"],["plain",T("plain"),3,"草原 前半(段3)"],["plain",T("plain"),3,"草原 前半(段3)"],
+    ["plain",T("plain"),15,"草原 後半(段15)"],["plain",T("plain"),15,"草原 後半(段15)"],["plain",T("plain"),15,"草原 後半(段15)"],
+    ["seed",T("seed"),3,"木漏れ日の森"],["seed",T("seed"),3,"木漏れ日の森"],["seed",T("seed"),3,"木漏れ日の森"],
   ];
   rows.forEach(([ak,lv,row,nm],i)=>{
     const size=(i%3)+1;

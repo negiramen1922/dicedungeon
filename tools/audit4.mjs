@@ -15,7 +15,10 @@ const raw=process.argv.includes("raw");   // 倍率をかけない（昔の敵�
 const grow=process.argv.includes("grow"); // 技能の点を全部 得物の技能へ
 const out=await pg.evaluate(({solo,raw,grow})=>{
   if(raw){FOEHP=1;FOESTR=1;}
-  const LV={plain:4,seed:8,wtree:13,cave:8,hall:13,city:17};
+  /* 測るレベルは **その版の TIERLV** から引く。版によって上限が違うので
+     ここを決め打ちにすると 比べ物にならない（α1.0.014）。 */
+  const T=k=>TIERLV[(AREAS[k].tier||1)-1]||1;
+  const LV={};Object.keys(AREAS).forEach(k=>{LV[k]=T(k);});
   const R=[];
   Object.entries(AREAS).forEach(([ak,A])=>{
     if(A.wip)return;

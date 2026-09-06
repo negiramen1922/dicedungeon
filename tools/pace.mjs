@@ -3,7 +3,8 @@
 import {chromium} from '/opt/node22/lib/node_modules/playwright/index.mjs';
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
 const pg=await b.newPage();const errs=[];pg.on('pageerror',e=>errs.push(e.message));
-await pg.goto('http://localhost:8765/index.html');await pg.waitForTimeout(800);
+const FILE=(process.argv.find(a=>a.endsWith('.html'))||'index.html');
+await pg.goto('http://localhost:8765/'+FILE);await pg.waitForTimeout(800);
 const out=await pg.evaluate(()=>{
   const L=[];
   /* ゲームと同じ式（finish の中と揃える）。目減りが 0 なら 本当に 0 */
@@ -42,7 +43,10 @@ const out=await pg.evaluate(()=>{
   /* 1区画を 何回潜れば 上限に届くか */
   L.push("");
   L.push("上限レベルまで 何回潜るか（1潜行 ＝ 8戦＋ボス1、手練れ1）");
-  [["plain",1,1],["seed",2,8],["cave",2,8],["wtree",3,13],["hall",3,13],["city",4,17]].forEach(([ak,tier,from])=>{
+  /* 始めるレベルは **その版の TIERLV**（前の段の上限＝この段のちょうどよい値）。
+     決め打ちにすると 上限が違う版どうしを比べられない（α1.0.014）。 */
+  [["plain",1],["seed",2],["cave",2],["wtree",3],["hall",3],["city",4]].forEach(([ak,tier])=>{
+    const from=tier===1?1:(TIERLV[tier-1]||1);
     dive(ak);
     const cap=tierCap(tier);
     let lv=from, exp=0, dives=0, guard=0;
