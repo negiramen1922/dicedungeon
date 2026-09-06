@@ -39,6 +39,7 @@ tools/audit4.mjs                    手応えを測る（solo / raw / grow / 版
 tools/expect.mjs                    期待ダメージの模型。**式の写しはここだけ**
 tools/tune.mjs                      敵に返すべき倍率を 段ごとに出す
 tools/lvchk.mjs                     上限 Lv100 まわり（まとめ上げ・節目・上限・99点）
+tools/passchk.mjs                   特性が その者のものとして働くか
 tools/succhk.js                     必要成功数の階段を測る（--ladder / --foe）
 tools/growchk.mjs                   技能の育ち（点の配り・上限・控え・仲間）
 tools/thrchk2.mjs                   threshold() と thrWhy() が同じ数を出すか
@@ -824,23 +825,41 @@ function mateSkAuto(u){ ... }       /* 仲間は 得物の技能から順に自�
 **`opt` に入れて渡している値が 受け側で読まれているか**も見ること。
 `grep -n 'opt\.<名前>' index.html` で 1件しか出なければ 死んでいる。
 
-#### 〔未修正〕`playerAttack` の `passOn` が 主人公しか見ていない
+#### 〔修正済 α1.0.015〕特性の持ち主 ── `passOn` が主人公しか見ていなかった
 
-**`skillHit` と同じ食い違いが まだ 14 か所ある。**
+**`skillHit`（α1.0.008）と同じ食い違いが 14 か所あった。**
 
 ```javascript
 passOn("dice")      // ← u を渡していない ＝ 必ず me を見る
-passOn("thr") passOn("chain") passOn("luck") passOn("pow")
-passOn("fixate") passOn("powp") passOn("allround") passOn("fang")
-passOn("blood") passOn("pen") passOn("pin") passNames("dice") passNames("luck")
 ```
 
-手番が仲間のとき `A` は仲間なのに、**特性だけ主人公のものを読む**。
+手番が仲間のとき `A` は仲間なのに、**特性だけ主人公のものを読んでいた**。
 仲間が覚えた特性は働かず、主人公の特性が仲間の攻撃に漏れる
 （仲間は特性を4つまで持てる ── `MATEPASSMAX`）。
 
-直すのは `,A` を足すだけだが、**釣り合いが動く**（仲間の火力が変わる）ので
-単独の版でやって `audit4` で測ること。`passOn(k,u)` は u を取れる。
+直した場所。`playerAttack` の dice / thr / chain / luck / pow / fixate /
+powp / allround / fang / blood / pen / pin、`resolvePlayer` の quick / medit、
+戦闘の札の dice、そして **受ける側**の `ailAdd`（dull・stout）と
+`ailDot`（lung）── ここは `u===me` で主人公だけに絞っていた。
+
+**`tools/passchk.mjs` が見張る。**大事なのは
+**`passOn` を直に呼ばず 本物の攻撃を通して数えること。**
+最初 `passOn("dice",u)` を直に呼ぶ形で書いたら、
+**呼び出し側の食い違いを素通りして 直す前でも通ってしまった。**
+
+町・探索・買い物の `passOn`（gold / haggle / pick / gourmet / scout /
+charmStart）は **一味ぜんたいのもの**なので `me` のままでよい。
+
+#### 〔未決〕索敵は 主人公の探索しか見ていない
+
+```javascript
+const mine=Math.max(5,Math.min(SKROLLMAX,skillOf("search")+passOn("scout")*5-pen));
+```
+
+`skillOf("search")` に u を渡していないので **必ず主人公**。
+スカウトの仲間（探索55）を連れていても 先制の判定には何も足さない。
+「一味でいちばん勘のいい者が気づく」ほうが筋に見えるが、
+**これは仕様の決めごと**なので 遊ぶ人に諮ってから直すこと。
 
 #### 〔修正〕仲間が 主人公の技能で当てていた（α1.0.008）
 
@@ -3217,9 +3236,8 @@ Lv10 のエルフスカウトは 27% → **64%**、ドワーフナイトは 139%
    ダイスの刻みも 20ごと → **25ごと＋1個**に変えた（下の入り口が
    1〜2個しか無く、階段が下の段から働かなかったため）
 3. **〔済 α1.0.014〕レベル上限 100。**技能に注げる点が 99 になった
-4. **`playerAttack` の `passOn` が主人公しか見ていない**（下に節がある）。
-   仲間の特性が働かず、主人公の特性が仲間の攻撃に漏れている
-5. **段4 ── 手応えそのものを直す。**いま `audit4` 全体 ×0.74 で、
+4. **〔済 α1.0.015〕特性の持ち主。**`passOn` に手番の主を渡すようにした
+5. **段4 ── 手応えそのものを直す。**いま `audit4` 全体 ×0.75 で、
    区画ごとの散らばりが大きい（草原 ×4.5／都市 ×0.18）。
    ここで `skillHit` を外すかも決める（`IDEAS.md` §17「まだ決めていないこと」）
 6. **仕込みの技**（構える／狙う）を本体に入れる。必要4 の技が置けるようになる

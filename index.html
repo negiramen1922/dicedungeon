@@ -1065,7 +1065,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.014";
+const VERSION="α1.0.015";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1078,6 +1078,12 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1015",tag:"fix",v:"α1.0.015",d:"2026-09-06",n:"仲間が覚えた特性が 働いていませんでした",b:[
+   "<b>仲間の手番でも 特性だけ主人公のものを見ていました。</b>得物も技能も仲間のものを使うのに、特性だけ主人公 ── という食い違いが 14 か所ありました",
+   "<b>仲間が覚えた特性は 何も効いていませんでした。</b>仲間は特性を4つまで持てます",
+   "<b>主人公の特性が 仲間の攻撃に漏れていました。</b>攻撃ダイス・命中閾値・威力・貫通・連撃・幸運の振り直し・影縫い・詠唱短縮・瞑想 が対象です",
+   "<b>鈍感・頑迷・肺活量も 主人公だけのものでした。</b>受ける者の特性を見るようにしました（仲間が頑迷を覚えれば 鈍足と麻痺を弾きます）",
+   "手応えの平均は 変わりません（×0.75）。仲間が自分の特性で戦い、主人公の特性は主人公のものになった、という筋の話です"]},
  {id:"v1014",tag:"up",v:"α1.0.014",d:"2026-09-06",n:"レベルの上限が 100 になりました。技能に注げる点も 99 になります",b:[
    "<b>上限が Lv25 → Lv100 になりました。</b>技能に注げる点は レベル1つにつき1点なので、<b>一周で 99点</b>配れます。得意技能を 100 まで極めると 残りは44点 ── 何に注ぐかが 一味の役割になります",
    "<b>一周の長さは変えていません。</b>必要な経験の合計はほぼ同じで、刻みを4倍に細かくしただけです。どの区画も <b>3回ほど潜れば次へ行けます</b>（都市だけ5回）",
@@ -3041,8 +3047,10 @@ const AIL={
  shrink:{n:"萎縮",c:"#9c8a7f",d:"攻撃ダイスが減る"},
 };
 function ailAdd(u,k,v,t){
-  if(u===me&&passOn("dull")>0)t=Math.max(0,(t||0)-passOn("dull"));
-  if(u===me&&passOn("stout")>0&&(k==="slow"||k==="palsy")){
+  /* **受ける者（u）の特性**を見る。前は `u===me` で主人公だけに絞っていたので、
+     仲間が覚えた 鈍感・頑迷 が働かなかった（α1.0.015） */
+  if(!u.isFoe&&passOn("dull",u)>0)t=Math.max(0,(t||0)-passOn("dull",u));
+  if(!u.isFoe&&passOn("stout",u)>0&&(k==="slow"||k==="palsy")){
     log(`<span class="c">頑 迷</span> ${AIL[k].n} を受け付けない`);
     return;
   }
@@ -3140,7 +3148,7 @@ function ailList(u){
 /* 手番のはじめに継続ダメージを与える。倒れたら true */
 async function ailDot(u){
   let d=0;
-  const cut=(u===me&&passOn("lung")>0)?0.5:1;
+  const cut=(!u.isFoe&&passOn("lung",u)>0)?0.5:1;
   const ps=ailSum(u,"poison");
   if(ps)d+=ps*cut;
   const bn=ailSum(u,"burn");
@@ -5556,7 +5564,7 @@ function drawActs(){
      ここが古いままで、札に出る数と 実際に振る数が食い違っていた。 */
   const skA=wepSkill(A);
   const baseN=skillDice(skA,A);
-  const nAtk=Math.max(1,baseN+scoutBonus+passOn("dice")-ailSum(A,"shrink"));
+  const nAtk=Math.max(1,baseN+scoutBonus+passOn("dice",A)-ailSum(A,"shrink"));
   add("atk",A.wep.n+"で攻撃",
     anyTarget?`${SK[skA].n.replace(/ /g,"")} <b>${nAtk}d6</b>${
       nAtk!==baseN?`<span class="m">（${baseN}${nAtk>baseN?"＋":"−"}${Math.abs(nAtk-baseN)}）</span>`:""
@@ -5594,7 +5602,7 @@ function drawActs(){
        技能を伸ばせば届く ── そこが「何に注ぐか」の選びどころになる。 */
     const sNeed=Math.max(1,s.suc||1);
     const sDice=(s.kind==="atk")
-      ?Math.max(1,skillDice(wepSkill(A,s),A)+(s.dice||0)+passOn("dice")
+      ?Math.max(1,skillDice(wepSkill(A,s),A)+(s.dice||0)+passOn("dice",A)
         +scoutBonus-ailSum(A,"shrink"))
       :0;
     const noDice=(s.kind==="atk")&&sDice<sNeed;
@@ -5898,15 +5906,22 @@ async function playerAttack(targets,opt){
   }
   const restD=(A.rest&&A.rest.r===round&&A.rest.dice)||0;
   if(restD)log(`<span class="c">明日やる</span> 休んだぶん 攻撃ダイス <span class="m">+${restD}</span>`);
-  let n=Math.max(1,baseDice+(opt.dice||0)+lostD+restD+scoutBonus+passOn("dice")
+  /* ===== 特性は **手番の主（A）のもの**（α1.0.015） =====
+     ここは長らく `passOn("dice")` のように u を渡しておらず、
+     中で必ず `me`（主人公）を見ていた。仲間の手番でも
+     **得物と技能は仲間、特性だけ主人公**という食い違いになり、
+     仲間が覚えた特性は働かず、主人公の特性が仲間の攻撃に漏れていた。
+     （`skillHit` で α1.0.008 に直したのと同じ食い違い。仲間は特性を
+       4つまで持てる ── `MATEPASSMAX`） */
+  let n=Math.max(1,baseDice+(opt.dice||0)+lostD+restD+scoutBonus+passOn("dice",A)
     -ailSum(A,"shrink"));
-  const pn=passNames("dice");
-  if(pn.length)log(`<span class="c">${pn.join("・")}</span> 攻撃ダイス <span class="m">+${passOn("dice")}</span>`);
+  const pn=passNames("dice",A);
+  if(pn.length)log(`<span class="c">${pn.join("・")}</span> 攻撃ダイス <span class="m">+${passOn("dice",A)}</span>`);
   if(scoutBonus){
     log(`<span class="a">先制</span> 探索で先を取った　攻撃ダイス <span class="m">+${scoutBonus}</span>`);
     scoutBonus=0;
   }
-  const thr=threshold(A,targets[0],{...opt,thr:(opt.thr||0)+passOn("thr")});
+  const thr=threshold(A,targets[0],{...opt,thr:(opt.thr||0)+passOn("thr",A)});
   /* 成功の数え方。**乱れ撃ち（even）は偶数の目、激昂（rush）は6が2つぶん。**
      ここを opt にまとめて、ダイスの窓にも同じものを渡す ── でないと
      窓に出る数と 実際に数える数が食い違う。 */
@@ -5914,7 +5929,7 @@ async function playerAttack(targets,opt){
   let rolls=[];for(let i=0;i<n;i++)rolls.push(r6());
   await rollDice(rolls,thr,`${A.name} → ${targets.map(t=>t.name).join("・")}　<em>${n}d6 ・ ${
     cnt.even?"偶数の目":thr+"以上"}</em>`,null,cnt);
-  if(opt.chain||passOn("chain")){
+  if(opt.chain||passOn("chain",A)){
     /* 追加ぶんの 6 からは さらに増えない。
        前は追加ダイスの 6 も数え直していたので雪だるまになり、
        スカウトの連撃だけ 平均の5.1倍（最大766）まで伸びていた。
@@ -5936,8 +5951,8 @@ async function playerAttack(targets,opt){
        ふつうの攻撃では一度も届いていなかった） */
   let rerolled=false;
   if(!hits){
-    let luck=passOn("luck");
-    let lnames=passNames("luck");
+    let luck=passOn("luck",A);
+    let lnames=passNames("luck",A);
     const lr=lukRoll(lukOf());       /* 段階のぶんだけ増える。はずれなら 0 */
     if(lukOf()>0)await lukOv(lukOf(),lr);
     if(lr.k>0){luck+=lr.k;lnames=lnames.concat([`幸運 ${lr.s}　<em>1d100 ${lr.v}／${lr.p}</em>`]);}
@@ -5967,15 +5982,15 @@ async function playerAttack(targets,opt){
   }
   for(const t of targets){
     if(t.HP<=0)continue;
-    let pow=powOf(A,opt)+passOn("pow")+(A.tmpPow||0);
-    if(passOn("fixate")>0){
+    let pow=powOf(A,opt)+passOn("pow",A)+(A.tmpPow||0);
+    if(passOn("fixate",A)>0){
       if(A.fixId===t.id)A.fixN=Math.min(3,(A.fixN||0)+1);
       else {A.fixId=t.id;A.fixN=0;}
     }
-    let pmul=1+(passOn("powp")+passOn("allround")*6+passOn("fang")*8
+    let pmul=1+(passOn("powp",A)+passOn("allround",A)*6+passOn("fang",A)*8
       +(A.beast?A.beast.pow:0)+(me.goldPow?me.goldPow.v:0)
       +(A.selfPow?A.selfPow.v:0)+((A.rest&&A.rest.r===round&&A.rest.pow)||0))/100;
-    if(passOn("blood")>0&&t.HP<=t.maxHP*0.5)pmul+=passOn("blood")/100;
+    if(passOn("blood",A)>0&&t.HP<=t.maxHP*0.5)pmul+=passOn("blood",A)/100;
     let skm=1;
     if(A.vow&&A.vow.id===t.id&&A.vow.mul&&round>=A.vow.r){
       skm*=A.vow.mul;
@@ -6004,7 +6019,7 @@ async function playerAttack(targets,opt){
        足し算（+30まで）の **二重取り**になっていた。技の説明は
        「失った HP のぶん 威力が上がる（最大 ×1.45）」なので、掛け算のほうが本来の形。
        古い実装の消し忘れと思われる。 */
-    const pen=Math.min(1,(opt.pen||0)+(passOn("pen")+(A.gearPen||0))/100);
+    const pen=Math.min(1,(opt.pen||0)+(passOn("pen",A)+(A.gearPen||0))/100);
     const tdef=Math.round(defOf(t)*(1-pen));
     const sh=shieldOf(t);
     const atkEl=opt.el||(A.coat&&A.coat.el)||A.wep.el||"none";
@@ -6036,7 +6051,7 @@ async function playerAttack(targets,opt){
     popOn(t,"−"+dmg,"each"+(em>1?" weakhit":em<1?" resisthit":""));
     t.HP=endHP;
     await checkPhase(t);       /* しきい値を切ったらボスが段階を上げる */
-    const pin=passOn("pin");
+    const pin=passOn("pin",A);
     if(pin>0&&hits>=pin&&t.HP>0){
       ailAdd(t,"slow",8,2);
       popOn(t,"鈍 足","blk");
@@ -6101,7 +6116,7 @@ async function playerAttack(targets,opt){
         log(`　<span class="c">魔力を吸い取った</span>　MP <span class="m">+${g}</span>`);}
     }
     if(opt.loot&&dmg>0){
-      const g=Math.max(1,Math.round(dmg*opt.loot*(1+passOn("gold")/100)));
+      const g=Math.max(1,Math.round(dmg*opt.loot*(1+passOn("gold",A)/100)));
       me.gold+=g;popOn(t,"金"+g,"blk");
       log(`　<span class="c">略奪</span>　金貨 <span class="m">+${g}</span>`);
     }
@@ -6112,13 +6127,13 @@ async function playerAttack(targets,opt){
         if(h>0){A.HP+=h;popSelf("+"+h,"heal");
           log(`　<span class="c">暴飲暴食</span>　HP <span class="m">+${h}</span>`);}
       }
-      const dh=passOn("devourHeal");
+      const dh=passOn("devourHeal",A);
       if(dh>0&&A.HP<A.maxHP){
         const h=Math.min(Math.round(t.maxHP*dh/100),A.maxHP-A.HP);
         if(h>0){A.HP+=h;popSelf("+"+h,"heal");
           log(`　<span class="c">悪 食</span>　HP <span class="m">+${h}</span>`);}
       }
-      const fd=passOn("feed");
+      const fd=passOn("feed",A);
       if(fd>0&&A.HP<A.maxHP){
         const h=Math.min(Math.round(A.maxHP*fd/100),A.maxHP-A.HP);
         A.HP+=h;popSelf("+"+h,"heal");
@@ -6271,8 +6286,8 @@ async function resolvePlayer(a,target){
         A.selfPow={v:s.selfBuff.pow,t:s.selfBuff.t||1};
         log(`<span class="a">${A.name}</span> の血が滾る（威力 +${s.selfBuff.pow}%　${(s.selfBuff.t||1)+1}ターン）`);
       }
-      if(passOn("quick")>0&&sawSix&&s.cdLeft>0){
-        s.cdLeft=Math.max(0,s.cdLeft-passOn("quick"));
+      if(passOn("quick",A)>0&&sawSix&&s.cdLeft>0){
+        s.cdLeft=Math.max(0,s.cdLeft-passOn("quick",A));
         log(`<span class="c">詠唱短縮</span>　<span class="a">${s.n}</span> の再使用待ちが 1 減った`);
       }
       if(s.again&&!s.usedAgain&&killedThisAttack&&alive().length){
@@ -6285,7 +6300,7 @@ async function resolvePlayer(a,target){
   }else if(a.kind==="guard"){
     A.block+=a.block;
     A.idle=true;
-    const gm=Math.min(GUARD_MP+passOn("medit"),A.maxMP-A.MP);
+    const gm=Math.min(GUARD_MP+passOn("medit",A),A.maxMP-A.MP);
     A.MP+=gm;
     A.sk.forEach(k=>{if(k.cdLeft>0)k.cdLeft--;});
     const gh=(ORIG[A.orig]&&ORIG[A.orig].guardHeal)||0;
