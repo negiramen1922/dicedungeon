@@ -105,6 +105,45 @@ for(let i=0;i<10;i++){
 await pg.waitForTimeout(300);
 log.push(`④ 支度と学びのあと → ${await scr()}`);
 log.push(`   一味 ${await pg.evaluate(()=>party.length?party.map(u=>`${u.short}Lv${u.lv}技${u.sk.length}特${u.pass.length}`).join(" / "):"まだ居ない")}`);
+/* ===== 決着まで押し切る =====
+   前は `for(let t=0;t<80;t++)` の中で **busy 待ちも1回として数えて**いた。
+   攻撃ひとつの演出が 2秒ほどあるので、待つだけで 30回ぶん食う。
+   つまり「80回」は実際には **2〜3手**しか押せておらず、
+   相手が4体いる回は決着に届かないことがあった。
+   ── 揺らぎで赤が出て、そのたびに中身を疑うことになる。
+   数えるのは **押した回数**にして、行き詰まりは 実時間で見切る。 */
+const fightOut=async(maxActs,maxMs)=>{
+  const t0=Date.now();
+  let acts=0;
+  while(acts<maxActs&&Date.now()-t0<maxMs){
+    if(await pg.evaluate(()=>over))return true;
+    if(await pg.evaluate(()=>busy)){await pg.waitForTimeout(80);continue;}
+    const cells=await pg.$$('#board .cell.sel');
+    if(cells.length){await cells[0].click({force:true});await pg.waitForTimeout(90);continue;}
+    const atk=await pg.$('#acts .act.atk:not([disabled])');
+    if(atk){await atk.click({force:true});acts++;await pg.waitForTimeout(130);continue;}
+    const def=await pg.$('#acts .act.def:not([disabled])');
+    if(def){await def.click({force:true});acts++;await pg.waitForTimeout(120);continue;}
+    await pg.waitForTimeout(120);
+  }
+  if(await pg.evaluate(()=>over))return true;
+  /* 決着しなかったら **なぜ**かを残す。「✗ 町に戻れていない」だけでは
+     こちらの不具合なのか 押し方が足りないのか 分からない */
+  const st=await pg.evaluate(()=>({
+    r:typeof round==="undefined"?"-":round, busy, over,
+    me:party.map(u=>`${u.name} ${Math.max(0,u.HP)}/${u.maxHP}`).join("・"),
+    foe:foes.filter(f=>f.HP>0).map(f=>`${f.name} ${f.HP}/${f.maxHP}`).join("・"),
+    acts:[...document.querySelectorAll('#acts .act')].map(b=>
+      b.querySelector('.an').innerText.replace(/\s+/g,'')+(b.disabled?'[×]':'')).join(" "),
+  }));
+  log.push(`   決着せず　押した ${acts} 手・${Math.round((Date.now()-t0)/1000)}秒`+
+    `　ラウンド ${st.r}　busy=${st.busy}`);
+  log.push(`   一味 ${st.me}`);
+  log.push(`   敵 ${st.foe||"（居ない）"}`);
+  log.push(`   札 ${st.acts||"（無い）"}`);
+  return false;
+};
+
 /* ⑤ 潜る */
 await tap("#hGo","潜る");
 log.push(`⑤ 潜る窓 → ${await scr()}`);
@@ -123,17 +162,7 @@ for(let step=0;step<60;step++){          /* 部屋が増えたので 40 → 60 *
     if(!wasFight)battles++;
     wasFight=true;
     /* 攻撃を押し続けて 決着まで */
-    for(let t=0;t<80;t++){
-      if(await pg.evaluate(()=>over))break;
-      if(await pg.evaluate(()=>busy)){await pg.waitForTimeout(60);continue;}
-      const cells=await pg.$$('#board .cell.sel');
-      if(cells.length){await cells[0].click({force:true});await pg.waitForTimeout(90);continue;}
-      const atk=await pg.$('#acts .act.atk');
-      if(atk&&await atk.isEnabled()){await atk.click({force:true});await pg.waitForTimeout(130);continue;}
-      const def=await pg.$('#acts .act.def');
-      if(def)await def.click({force:true});
-      await pg.waitForTimeout(120);
-    }
+    await fightOut(60,70000);
     await pg.waitForTimeout(400);
     for(let i=0;i<8;i++){ if(!await pg.evaluate(()=>modalOpen()))break; if(!await firstCard("戦利品"))break; }
     await pg.waitForTimeout(300);
@@ -164,17 +193,7 @@ for(let i=0;i<8;i++){ if(!await pg.evaluate(()=>modalOpen())&&!await chestOn())b
    出るのに 何も確かめていない、という嘘の緑になる（α1.0.018 で踏んだ）。 */
 if((await scr()).startsWith("fight")){
   log.push("   戦いの最中で歩数が尽きた → 決着まで押す");
-  for(let t=0;t<120;t++){
-    if(await pg.evaluate(()=>over))break;
-    if(await pg.evaluate(()=>busy)){await pg.waitForTimeout(60);continue;}
-    const cells=await pg.$$('#board .cell.sel');
-    if(cells.length){await cells[0].click({force:true});await pg.waitForTimeout(90);continue;}
-    const atk=await pg.$('#acts .act.atk');
-    if(atk&&await atk.isEnabled()){await atk.click({force:true});await pg.waitForTimeout(130);continue;}
-    const def=await pg.$('#acts .act.def');
-    if(def)await def.click({force:true});
-    await pg.waitForTimeout(120);
-  }
+  await fightOut(90,110000);
   await pg.waitForTimeout(400);
   for(let i=0;i<10;i++){ if(!await pg.evaluate(()=>modalOpen())&&!await chestOn())break; if(!await once())break; }
 }
