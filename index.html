@@ -990,6 +990,7 @@ body.attitle #brand{display:none}
   <div class="townparty" id="townParty"></div>
   <div class="homemenu">
     <button class="go" id="hGo">潜 る</button>
+    <button class="topbtn hide" id="hInn">宿 に 泊 ま る</button>
     <button class="topbtn hide" id="hHire">仲 間 を 雇 う</button>
     <button class="topbtn hide" id="hChar">一 味 を 見 る</button>
     <button class="topbtn" id="hWorld">世 界 地 図</button>
@@ -1065,7 +1066,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.017";
+const VERSION="α1.0.018";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1078,6 +1079,13 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1018",tag:"up",v:"α1.0.018",d:"2026-09-06",n:"町に宿ができました。金貨を払えば 一味が全快します",b:[
+   "<b>町の札に「宿 に 泊 ま る」が増えました。</b>一味の HP と MP が全快します",
+   "<b>代金は 傷のぶんだけ。</b>戻る HP 1 につき 0.08 金貨、MP 1 につき 0.7 金貨。札に そのときの代金が出ます",
+   "<b>持ち歩けないぶん 道具より ずっと安いです。</b>フルポーション（ひとり全快）が 88金貨なのに対し、宿は 3人ぶん全快でも 100金貨ほど。傷が無ければ 押せません",
+   "<b>控えの仲間は 町に帰れば ただで癒えます。</b>潜っていないので。宿代がかかるのは 連れて行った者のぶんだけです",
+   "<b>傲慢は 宿代も半分</b>です（店の値段が半分）。強欲の「休息の効きは半分」は 焚き火の話なので 宿には効きません",
+   "〔修正〕町へ帰る窓に「倒れている仲間は 町の宿で起こす」と出ていましたが、実際は <b>町へ帰った時点で起き上がっています</b>（HP・MP とも 30%）。そう書き直しました"]},
  {id:"v1017",tag:"up",v:"α1.0.017",d:"2026-09-06",n:"技能はダイスだけを買うようにしました。索敵も d6 の振り合いになります",b:[
    "<b>技能が 命中閾値まで下げていたのをやめました。</b>これまでは 技能が「ダイスの数」と「当てやすさ」の両方を買っていて、技能100 では しきい値2＝ほぼ全部成功。<b>必要成功3 が 96.5%・必要成功4 が 80.4%</b> で、せっかくの階段が消えていました。いまは <b>50.0% と 18.8%</b> です",
    "<b>しきい値を動かすのは 3つだけになりました。</b>技のバフ・デバフ／遠さ（隊列）／<b>DEX の差</b>",
@@ -8095,6 +8103,11 @@ function goTown(why){
     u.MP=Math.round(u.maxMP*REVIVEPCT);
   });
   party.forEach(u=>{u.ail=[];u.block=0;u.buffs=[];u.dbuffs=[];});
+  /* 控えは潜っていないので、町に戻ったところで **ただで癒えている**。
+     宿代を払うのは 連れて行った者のぶんだけ（α1.0.018）。
+     ここで癒やさないと、傷ついた者を控えに回して 別の者を入れる、という
+     ふつうの動きが「控えの傷が永久に残る」罠になる。 */
+  bench.forEach(u=>{u.HP=u.maxHP;u.MP=u.maxMP;u.ail=[];u.block=0;u.buffs=[];u.dbuffs=[];});
   if(woke.length)RUN_woke=woke.map(u=>u.short);
   runSave();
   townScreen(why,before);
@@ -11055,6 +11068,14 @@ function drawHome(){
     b.onclick=()=>{SFX.click();charModal(null,party[+b.dataset.tp]);};});
   $("#hChar").classList.toggle("hide",!started);
   $("#hHire").classList.toggle("hide",!started);
+  $("#hInn").classList.toggle("hide",!started);
+  if(started){
+    const c=innCost();
+    $("#hInn").textContent=c.hp+c.mp<=0
+      ? "宿 に 泊 ま る（傷は無い）"
+      : `宿 に 泊 ま る（${c.gold} 金貨）`;
+    $("#hInn").disabled=(c.hp+c.mp<=0);
+  }
   if(started)$("#hHire").textContent=
     hireCost()?`仲 間 を 雇 う（${hireCost()} 金貨）`:"仲 間 を 雇 う（は じ め は た だ）";
   $("#hGo").textContent=started?"潜 る":"は じ め る";
@@ -11291,6 +11312,7 @@ $("#hGo").onclick=()=>{
 };
 $("#hChar").onclick=()=>{SFX.click();charModal();};
 $("#hHire").onclick=()=>{SFX.click();hireModal();};
+$("#hInn").onclick=()=>{SFX.click();innModal();};
 /* どこへ潜るかを 世界地図で選ぶ。**光っている場所だけ押せる。**
    開くのは 抜けた区画と その先（diveTargets）。最初は 原始の草原だけ。 */
 function diveModal(){
@@ -11324,6 +11346,68 @@ function diveModal(){
   $("#mbox").querySelectorAll("[data-w]").forEach(g=>{g.onclick=()=>go(g.dataset.w);});
   $("#mbox").querySelectorAll("[data-d]").forEach(g=>{g.onclick=()=>go(g.dataset.d);});
   $("#dvX").onclick=closeModal;
+}
+/* ===== 宿（α1.0.018） =====
+   町で 一味の HP と MP を全快させる場所。**傷のぶんだけ払う。**
+
+   値づけの目安は 道具から取った。フルポーション（ひとり全快）は 88金貨で、
+   段1のナイトの最大HP 383 に対して **1 HP あたり 0.23 金貨**。
+   宿は持ち歩けない（町でしか使えない）ぶん **その3分の1**にしてある。
+   MP も同じ考えで マナポーション（12 MP／30金貨 ＝ 2.5）の3分の1。
+
+   1潜行の実入りは 段1で 300金貨ほど。ひとりの全快が 50金貨前後、
+   3人の一味を段4で全快させて 450金貨ほど ── **痛いが払える**あたり。
+
+   〔決めごと〕強欲の `restHalf`（休息の効きは半分）は **宿には効かない。**
+   あれは野で火にあたる話で、宿は金を払って買う手当て。
+   傲慢の `shopHalf`（店の値段が半分）は **効く。**宿も店のうち。 */
+const INNHP=0.08, INNMP=0.70;
+function innCost(){
+  let hp=0,mp=0;
+  (party||[]).forEach(u=>{ hp+=Math.max(0,u.maxHP-Math.max(0,u.HP));
+                           mp+=Math.max(0,u.maxMP-Math.max(0,u.MP)); });
+  const half=(ORIG[sel.orig]&&ORIG[sel.orig].shopHalf)?0.5:1;
+  return {hp,mp,gold:Math.ceil((hp*INNHP+mp*INNMP)*half)};
+}
+function innModal(){
+  const c=innCost();
+  if(c.hp+c.mp<=0){
+    resultModal("宿",[ "一味に 傷は無い",
+      `<span class="s">泊まる用はない。金貨は取っておこう</span>`],[{n:"閉じる"}]);
+    return;
+  }
+  const short=Math.max(0,c.gold-me.gold);
+  const rows=party.map(u=>{
+    const dh=u.maxHP-Math.max(0,u.HP), dm=u.maxMP-Math.max(0,u.MP);
+    return `<div class="mitem eqrow">
+      <span class="eqk" style="white-space:nowrap">${meFig(20,u)} ${rosterName(u)}</span>
+      <span class="eqv">HP <b>${Math.max(0,u.HP)}</b>/${u.maxHP}${
+        dh?`　<span style="color:#8fa261">→ ${u.maxHP}（+${dh}）</span>`:`　<span class="s">満ちている</span>`}
+        <br>MP <b>${u.MP}</b>/${u.maxMP}${
+        dm?`　<span style="color:#8fd0ff">→ ${u.maxMP}（+${dm}）</span>`:`　<span class="s">満ちている</span>`}</span></div>`;
+  }).join("");
+  const h=`<div class="mtitle">宿 に 泊 ま る</div>
+    <div class="mgrow">代金 <b style="color:#c9a227">${c.gold}</b> 金貨　
+      <span class="s">所持 ${me.gold}${short?`　<span style="color:var(--blood)">あと ${short} 足りない</span>`:""}</span></div>
+    <div class="msub">傷のぶんだけ払う。HP ${c.hp} と MP ${c.mp} が戻る${
+      (ORIG[sel.orig]&&ORIG[sel.orig].shopHalf)?"　<span class=\"s\">（傲慢：宿代も半分）</span>":""}</div>
+    ${rows}
+    <div class="ndbtn" style="margin-top:10px">
+      <button class="no2" id="innX">やめる</button>
+      <button class="go2" id="innGo"${short?" disabled":""}>${short?"金貨が足りない":"泊 ま る"}</button>
+    </div>`;
+  openModal(h,true);
+  $("#innX").onclick=closeModal;
+  if(!short)$("#innGo").onclick=()=>{
+    me.gold-=c.gold;
+    party.forEach(u=>{u.HP=u.maxHP;u.MP=u.maxMP;});
+    SFX.found();runSave();closeModal();
+    resultModal("ひ と 晩 が 明 け た",
+      [`<span class="gain">一味は すっかり癒えた</span>`,
+       `<span class="s">代金 ${c.gold} 金貨　残り ${me.gold}</span>`],
+      [{n:"確 認",cb:()=>drawHome()}]);
+    drawHome();
+  };
 }
 /* 仲間を雇う窓 */
 function hireModal(){
@@ -11426,7 +11510,7 @@ $("#leaveBtn").onclick=()=>{
   resultModal("町 へ 帰 る",
     [`ここまでで引き返す`,
      `<span class="gain">拾ったものは すべて持ち帰れる</span>`,
-     down?`<span class="loss">倒れている仲間 ${down}人 は 町の宿で起こす</span>`:"",
+     down?`<span class="loss">倒れている仲間 ${down}人 は 町へ帰れば起き上がる</span>（HP・MP とも ${Math.round(REVIVEPCT*100)}%）`:"",
      `<span class="s">地図はここで閉じる。次に潜るときは 新しい道になる</span>`]
       .filter(Boolean),
     [{n:"まだ潜る"},{n:"引き返す",cb:()=>goTown("leave")}]);
