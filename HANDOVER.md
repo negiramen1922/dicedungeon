@@ -3493,6 +3493,21 @@ node tools/pubgame.js        →  lab/.game.artifact.html
 
 出したもの … https://claude.ai/code/artifact/99d01d9a-9bc3-4774-a1c8-a3316cc0386c
 
+### 期待値を 直書きしない ── その版から引く
+
+`growchk` と `scoutchk` が **開始値と刻みを直書き**していて、
+技能表を触った α1.0.020 で **2件とも嘘の失敗**を出した。
+
+```javascript
+o.push(["そのダイス", skillDice("search",me), 1+Math.floor(skill/25)]);  // ✗ 直書き
+o.push(["そのダイス", skillDice("search",me),
+        Math.max(1,Math.floor(skill/SKDIESTEP))]);                      // ○ 版から引く
+```
+
+**数字を確かめるテストは、確かめたい「決めごと」のほうから期待値を作ること。**
+`SKDIESTEP` / `skillBorn` / `TIERLV` / `LVSCALE` はどれも probe から取れる。
+直書きしてよいのは「99点」「上限100」のような **仕様そのものの数**だけ。
+
 ### 通しテストは 通ったことを **言い切らせる**
 
 `playthru.mjs` の ⑧ は長らく

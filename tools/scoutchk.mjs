@@ -16,7 +16,10 @@ const r=await pg.evaluate(async()=>{
   sel.job="knight";sel.race="hume";sel.orig="wrath";sel.area="plain";
   newGame();closeModal();slot=0;
   o.push(["ナイトひとりの探索",skillOf("search",me),skillBorn("search",me)]);
-  o.push(["そのダイス",skillDice("search",me),1+Math.floor(skillOf("search",me)/25)]);
+  /* 刻みは **その版から引く**（SKDIESTEP）。直書きすると 刻みを触るたびに
+     嘘の失敗が出る（α1.0.020 で踏んだ） */
+  o.push(["そのダイス",skillDice("search",me),
+    Math.max(1,Math.floor(skillOf("search",me)/SKDIESTEP))]);
   /* スカウトの仲間を入れると 一味の目が上がる */
   const sc=makeMate("scout","elf",me.lv);
   setParty([me,sc]);

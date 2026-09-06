@@ -53,7 +53,8 @@ const EXPORTS = [
   "LUKRANK", "CHESTGAIN",
   /* 計算 */
   "elemMul", "perHit", "countSuc", "sucOk", "statMul", "codexLv",
-  "skillOf", "skillBorn", "wepSkill", "skillDice", "dexStep", "DEXCUT",
+  "skillOf", "skillBorn", "wepSkill", "skillDice", "dexStep", "DEXCUT", "SKDIESTEP",
+  "LADDER", "PREP", "PLAYABLE", "atLeast",
   "SKPTLV", "skPtsOf", "skSpent", "skRoom", "skCanUp", "skUp", "mateSkAuto",
 ];
 
