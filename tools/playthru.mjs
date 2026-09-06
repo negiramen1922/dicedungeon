@@ -32,7 +32,7 @@ const tapText=async(txt,name)=>{
 };
 /* 窓を1つ進める。選ぶ札（先頭）→ 進める札（末尾）→ 閉じる札 の順で試す。
    窓は非同期でつながるので、次が描かれるまで何度か待つ。 */
-const ttlSeen={};
+const ttlSeen={last:null,run:0};
 const once=async()=>{
   /* 窓が開いているあいだは 窓の中だけを見る。後ろの画面の札を掴むと
      キャラ作成をやり直してしまう（実際に踏んだ） */
@@ -49,8 +49,17 @@ const once=async()=>{
   /* 行商の窓は「買う→確かめ→行商」と回り続ける。同じ窓が続いたら 閉じる */
   const ttl=inModal?await pg.evaluate(()=>{
     const t=document.querySelector("#mbox .mtitle");return t?t.textContent.trim():"";}):"";
-  if(ttl)ttlSeen[ttl]=(ttlSeen[ttl]||0)+1;
-  const stuck=ttl&&ttlSeen[ttl]>=3;   /* 同じ窓に3度戻ったら 堂々巡り */
+  /* ===== 数えるのは **続けて**戻った回数 =====
+     前は一周を通した通算で数えていた。戦利品の窓は戦闘ごとに出るので
+     **4戦目には必ず「堂々巡り」扱い**になり、`.mclose`（選ばずに閉じる）が
+     先に押される。すると lootModal のコールバックが走らず nextStage() に
+     届かないので、勝ったのに fight のまま止まっていた。
+     ── 製品は何も壊れていないのに 3回に1回ほど赤が出ていた原因。 */
+  if(ttl){
+    if(ttl===ttlSeen.last)ttlSeen.run=(ttlSeen.run||0)+1;
+    else {ttlSeen.last=ttl;ttlSeen.run=1;}
+  }else{ ttlSeen.last=null;ttlSeen.run=0; }
+  const stuck=ttl&&ttlSeen.run>=4;   /* 同じ窓に続けて4度戻ったら 堂々巡り */
   const list=inModal
     ?(stuck
       ?[['#mbox .mclose',0],['#mbox .ndbtn button',1],['#mbox button',1]]
