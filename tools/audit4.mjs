@@ -8,7 +8,8 @@
 import {chromium} from '/opt/node22/lib/node_modules/playwright/index.mjs';
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
 const pg=await b.newPage();const errs=[];pg.on('pageerror',e=>errs.push(e.message));
-await pg.goto('http://localhost:8765/index.html');await pg.waitForTimeout(800);
+const FILE=(process.argv.find(a=>a.endsWith('.html'))||'index.html');
+await pg.goto('http://localhost:8765/'+FILE);await pg.waitForTimeout(800);
 const solo=process.argv.includes("solo");
 const raw=process.argv.includes("raw");   // 倍率をかけない（昔の敵）
 const grow=process.argv.includes("grow"); // 技能の点を全部 得物の技能へ

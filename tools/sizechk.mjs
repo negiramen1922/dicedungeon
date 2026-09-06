@@ -1,7 +1,12 @@
+/* 場所ごとの「何人で挑む前提か」と、実際の人数での手応え。
+   期待ダメージは tools/expect.mjs（写しは1か所だけ）から借りる。 */
 import {chromium} from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import {EXPECT_SRC} from './expect.mjs';
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
 const pg=await b.newPage();const errs=[];pg.on('pageerror',e=>errs.push(e.message));
-await pg.goto('http://localhost:8765/index.html');await pg.waitForTimeout(800);
+const FILE=(process.argv.find(a=>a.endsWith('.html'))||'index.html');
+await pg.goto('http://localhost:8765/'+FILE);await pg.waitForTimeout(800);
+await pg.evaluate(EXPECT_SRC);
 const out=await pg.evaluate(()=>{
   const L=[];
   slot=0;sel.job="knight";sel.race="hume";sel.orig="greed";
@@ -22,12 +27,10 @@ const out=await pg.evaluate(()=>{
     foes.forEach(f=>{hp+=f.maxHP;
       const tgt=foeTarget(f),tot=f.acts.reduce((x,a)=>x+(a.w||1),0);
       f.acts.forEach(a=>{ if(a.k==="atk"){
-          const per=perHit(powOf(f,{pct:a.pct||0,pow:a.pow||0}),defOf(tgt));
-          dmg+=(a.w||1)/tot*(a.dice||a.diceRand||1)*per*0.55;}
+          dmg+=(a.w||1)/tot*expFoeAct(f,a,tgt);}
         else if(a.k==="hex"&&a.poison)dmg+=(a.w||1)/tot*a.poison*1.5;});});
     party.forEach(u=>{const t=foeLine()[0];if(!t)return;
-      const thr=threshold(u,t,{}),n=Math.max(1,u.wep.hands);
-      our+=n*((7-thr)/6)*perHit(Math.round(powOf(u,{})*orgMul("outMul",u)),defOf(t));});
+      our+=expMineAtk(u,t);});
     return (ourHP/dmg)/(hp/our);
   };
   const g=(ak,k,row)=>{const rows=(AREAS[ak][k]||[]).map(e=>meas(ak,e,false,row));

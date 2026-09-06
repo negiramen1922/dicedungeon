@@ -35,7 +35,8 @@ tools/playthru.mjs                  本物のクリックだけで 起動から�
 tools/hire.mjs                      雇用と 一味／控えの入れ替えを通す
 tools/sizechk.mjs                   場所ごとの前提の人数と 実際の人数での手応え
 tools/skillsweep.mjs                全スキルを「使って → 殴られる」まで通す
-tools/audit4.mjs                    手応えを測る（solo / raw / grow を渡せる）
+tools/audit4.mjs                    手応えを測る（solo / raw / grow / 版のファイル名）
+tools/expect.mjs                    期待ダメージの模型。**式の写しはここだけ**
 tools/succhk.js                     必要成功数の階段を測る（--ladder / --foe）
 tools/growchk.mjs                   技能の育ち（点の配り・上限・控え・仲間）
 tools/thrchk2.mjs                   threshold() と thrWhy() が同じ数を出すか
@@ -661,6 +662,32 @@ const HEALSHORT=0.3;               /* 治療だけ 足りない1つにつき ×0
 **必要成功2〜3の重い技に置き換えた**（倍率は仮の値）。
 
 #### 〔重要〕釣り合いを測る道具も 同じ式に直すこと
+
+#### 期待ダメージの式は `tools/expect.mjs` に1つだけ置く（α1.0.013）
+
+**3度目にやられたので まとめた。**`audit4.mjs` と `sizechk.mjs` が
+それぞれ別に式を写していて、**両方ずれていた。**
+
+| 道具 | どうずれていたか |
+|---|---|
+| `balance.js` | （1・2度目。過去の記録） |
+| `audit4.mjs` | 段3 で直し忘れ、旧模型のまま ×0.87 と出した（本当は ×0.79） |
+| `sizechk.mjs` | 「ダイス数 × 1発 × 0.55」の旧模型のまま。味方のダイスも `wep.hands`。**必要成功の関門を通さないので**、α1.0.013 で敵の pct を上げたとき そのぶんだけ重く数え、**手応えが 20% 落ちたように見えた**（本当はほぼ据え置き） |
+
+いまは `tools/expect.mjs` の `EXPECT_SRC` を `pg.evaluate` で流し込み、
+`expDmg` / `expFoeAct` / `expMineAtk` を使う。**`XGAIN` / `XCAP` / `perHit`
+は本体のものをそのまま呼ぶ**ので、写しているのは「順番」だけ。
+
+`sizechk.mjs` と `audit4.mjs` は **版を指定して測れる**。
+
+```
+git show <古い版>:index.html > old.html
+node tools/sizechk.mjs old.html      # 直した物差しで 昔の数字を出し直す
+node tools/audit4.mjs  old.html
+```
+
+**物差しを直したら、必ず 昔の版も同じ物差しで測り直すこと。**
+そうしないと「直したせいで下がった」のか「物差しが違うだけ」なのか分からない。
 
 **`tools/audit4.mjs` は本体の式を写している。**段3 で本体を直したとき audit4 を
 直し忘れ、**古い模型のまま ×0.87 と表示していた**（本当は ×0.79）。
