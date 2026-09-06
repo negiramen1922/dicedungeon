@@ -44,7 +44,10 @@ const out=await pg.evaluate(async()=>{
   setParty([me]);
   const s={...REW.act.common.find(x=>x.kind==="heal"),cdLeft:0};
   me.sk=[s];
-  const N=400;let sum=0,zero=0;
+  /* 敵の手番を止めてから回す。止めないと 1回ごとに相手の演出まで
+     通ることになり、400回で 10分を超えた（実際に待たされた） */
+  const EA=window.enemyAct; window.enemyAct=async()=>{};
+  const N=200;let sum=0,zero=0;
   const L=window.log;window.log=()=>{};
   for(let i=0;i<N;i++){
     me.HP=1;me.MP=99;me.sk[0].cdLeft=0;
@@ -54,9 +57,9 @@ const out=await pg.evaluate(async()=>{
     const got=me.HP-before;sum+=got;if(got<=0)zero++;
     foes.forEach(f=>{f.HP=f.maxHP;});
   }
-  window.log=L;
+  window.log=L;window.enemyAct=EA;
   const full=Math.round(me.maxHP*s.heal);
-  R.push(`400回まわして　満額 ${full}　ならすと ${Math.round(sum/N)}　空振り ${zero}回（${Math.round(zero/N*100)}%）`);
+  R.push(`${N}回まわして　満額 ${full}　ならすと ${Math.round(sum/N)}　空振り ${zero}回（${Math.round(zero/N*100)}%）`);
   /* 空振りの割合は 「必要成功に1つも届かない確率」に近いはず */
   const n=healDice(me),p=(7-healThr(me,{}))/6;
   const wantZero=Math.pow(1-p,n);
