@@ -174,6 +174,8 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .pop.heal{color:#7fe08a}
 .pop.weakhit{color:#ffd23f}
 .pop.resisthit{color:#8fd8ff}
+/* 空振り。数字ではないので 小さく くすませる（試作台の .pop.miss と同じ） */
+.pop.miss{font-size:15px;color:var(--dim);letter-spacing:.14em}
 /* 超過が出た一撃（α1.0.021）。踏み込みを重ねるのをやめたので、
    **重さは この数字だけ**が背負う。大きく・金色に寄せて 目で分かるようにする */
 .pop.big{font-size:30px;color:#ffb454;top:-30px}
@@ -244,7 +246,7 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 /* ===== 出目の色（試作台と同じ意味・α1.0.022） =====
      緑 … 成功
      金 … **数える超過**。上限で切られたぶんは 緑のまま
-     鈍 … 届かなかった目
+     鈍 … 成功しなかった目
    前は「6の目」を金にしていた。出目そのものが威力に効いていた
    古い決めごとの名残で、必要成功数では **6であることに意味がない**。
    金が指すものが違うと、覆いが仕組みを間違って教えてしまう。 */
@@ -1120,7 +1122,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.022";
+const VERSION="α1.0.023";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1133,6 +1135,10 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1023",tag:"fix",v:"α1.0.023",d:"2026-09-06",n:"「届かなかった」を「空振り／MISS」に改めました",b:[
+   "<b>ダイスの覆い</b>　「成功 1 ／ 必要 2　<b>空 振 り</b>」＋その下に <b>MISS</b>",
+   "<b>盤面の札</b>　これまで敵の攻撃だけ「届かず」と出ていました。<b>MISS</b> に改め、<b>味方が空振りしたときにも出る</b>ようにしました（これまでは何も出ませんでした）",
+   "<b>ログ</b>　「成功 1／必要 2　<b>空振り</b>」"]},
  {id:"v1022",tag:"up",v:"α1.0.022",d:"2026-09-06",n:"戦闘の見た目を 試作台のものに揃えました",b:[
    "<b>しきい値の帯が 盤面の下に出っぱなしになりました。</b>「<b>6</b> 以上が成功　ダイス1個につき 17%」と、その下に <b>なぜその数か</b>（遠さ +2、速さの差 −1 …）。これまでは「詳細」の窓を開かないと読めませんでした",
    "<b>狙う相手に合わせて 帯が描き替わります。</b>遠さと速さの差は 相手ごとに違うので、<b>選ぶ前に</b>見えていないと意味がありません",
@@ -6084,7 +6090,7 @@ async function rollDice(rolls,thr,label,top,opt){
           ? `<small><span class="xs">超過 ${over}${cut<over?`（${XCAP}つまで数える）`:""}`+
             ` → 威力 ×${(1+XGAIN*cut).toFixed(2)}</span></small>`
           : `<small>ちょうど</small>`)
-      : `<span class="ng">成功 ${hits} ／ 必要 ${need}　届かなかった</span>`))+`</div>`;
+      : `<span class="ng">成功 ${hits} ／ 必要 ${need}　空 振 り</span><small>MISS</small>`))+`</div>`;
   await wait(opt.need&&hits>=need&&over>0?680:430);
   return hits;
 }
@@ -6252,7 +6258,9 @@ async function playerAttack(targets,opt){
   if(hits<need){
     SFX.miss();
     log(`<span class="a">${A.name}</span> ${n}d6・${thr}以上 → `+
-      `<span class="m">成功 ${hits}</span>／必要 <span class="m">${need}</span>　届かなかった`);
+      `<span class="m">成功 ${hits}</span>／必要 <span class="m">${need}</span>　`+
+      `<span class="b">空振り</span>`);
+    targets.forEach(t=>{ if(t.HP>0)popOn(t,"MISS","miss"); });
     await wait(450);return;
   }
   for(const t of targets){
@@ -6797,8 +6805,9 @@ async function enemyAct(f){
     const fxMul=1+XGAIN*Math.min(XCAP,fover);
     if(hits<fneed){
       log(`<span class="b">${f.name}</span> の ${t.n}　${nd}d6・${thr}以上 → `+
-        `<span class="m">成功 ${hits}</span>／必要 <span class="m">${fneed}</span>　届かなかった`);
-      popOn(tg,"届かず","blk");
+        `<span class="m">成功 ${hits}</span>／必要 <span class="m">${fneed}</span>　`+
+        `<span class="a">空振り</span>`);
+      popOn(tg,"MISS","miss");
       SFX.miss();
       await wait(420);
       return;      /* この者の手番はここまで（麻痺のときと同じ抜け方） */
