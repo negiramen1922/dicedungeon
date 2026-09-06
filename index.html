@@ -399,6 +399,10 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .act.on{border-color:var(--brass);background:var(--panel2);
   box-shadow:inset 0 0 0 1px var(--brass)}
 .act.on .an{color:var(--brass)}
+/* 狙いを取らない手の「これで使う」（α1.0.027） */
+.act.go2{border-left:3px solid var(--brass);border-color:var(--brass);
+  background:#2f3327;justify-content:center;min-height:0;padding:10px 9px}
+.act.go2 .an{color:var(--brass);letter-spacing:.2em}
 /* 報酬カード：種類ごとに色を分ける */
 .act.rew{grid-column:1 / -1;min-height:0;padding:9px 11px;gap:4px;position:relative;
   display:flex;flex-direction:column;align-items:stretch}
@@ -1151,7 +1155,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.026";
+const VERSION="α1.0.027";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1164,6 +1168,11 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1027",tag:"up",v:"α1.0.027",d:"2026-09-06",n:"相手を選ばない手にも ひと呼吸 置くようにしました",b:[
+   "<b>守り・仕込み・自分にかける技・全体技・逃げる</b>は 相手を選ばないので、これまで <b>押した瞬間に使われて</b>いました。指が当たっただけで ターンが飛びます",
+   "<b>一度目は 選ぶだけ。</b>金の枠が付いて、帯に効き目が出ます。<b>二度目 ── 同じ札か「これで使う」── で 実際に使います</b>",
+   "別の手を押せば そのまま乗り換わります",
+   "<b>防御の説明を短くしました。</b>「シールド 20 ── 受けたぶんを肩代わりして減る　MP +4 回復」"]},
  {id:"v1026",tag:"up",v:"α1.0.026",d:"2026-09-06",n:"狙いを決めている間も 手は並んだままになりました",b:[
    "これまでは 手を押すと <b>コマンド欄が「やめる」だけ</b>になっていました。手を選び直すのに いちいち「やめる」を押す必要がありました",
    "<b>手は並んだままです。</b>いま選んでいる手には 金の枠が付きます",
@@ -5157,7 +5166,8 @@ function unitCell(u,isMine,fig){
   fig=fig||40;
   const st=isMine?null:shownTele(u);
   const p=isMine?null:telePreview(u,st.t);
-  const target=!isMine&&pending&&canTarget(u);
+  /* pending.self は「狙いを取らない手を 決める前」。相手は選ばせない（α1.0.027） */
+  const target=!isMine&&pending&&!pending.self&&canTarget(u);
   const col=isMine?"#8fa261":"#b1544a";
   const acting=isMine&&u===cur&&!busy&&!over;
   return `<div class="cell ${u.HP<=0?"dead":""} ${target?"sel":""} ${acting?"acting":""}"
@@ -5917,10 +5927,11 @@ function drawActs(){
       prep?`<span class="nogo">仕込み済み</span>`
       :pz.mp>A.MP?`<span class="nogo">MP ${pz.mp} 足りない</span>`
       :`MP ${pz.mp}`,
-      !!prep||pz.mp>A.MP,()=>doAct({kind:"prep",id:pz.id}),
+      !!prep||pz.mp>A.MP,()=>askSelf({kind:"prep",id:pz.id},"prep"+pz.id),
       infoHtml({name:pz.n, mp:pz.mp,
         d:prep?`<span class="nogo">もう仕込んである（${prep.n}）。重ねがけはできない</span>`
-          :`${pz.d}　<span class="k">次の攻撃 ひとつぶん</span>`}));
+          :`${pz.d}　<span class="k">次の攻撃 ひとつぶん</span>`}),
+      pending&&pending.selfKey==="prep"+pz.id);
   });
   if(bagCount()){
     add("bag","道 具 を 使 う",`${bagCount()} 個`,false,()=>bagPanel(),
@@ -5928,23 +5939,24 @@ function drawActs(){
   }
   if(vowGone())$("#prompt").textContent="▸ 討つと告げた相手は もういない";
   add("def","防 御 す る",`シールド ${blockValue()}`,false,
-    ()=>doAct({kind:"guard",block:blockValue()}),
+    ()=>askSelf({kind:"guard",block:blockValue()},"guard"),
     infoHtml({name:"防 御 す る",
-      d:`シールド <b>${blockValue()}</b> ── 受けたぶんを肩代わりして減る。`
-        +`<span style="color:#8fd0ff">使い切るまで残る</span>　`
-        +`<span class="k">MP +${GUARD_MP}　再使用待ち −1</span>`}));
+      d:`シールド <b>${blockValue()}</b> ── 受けたぶんを肩代わりして減る　`
+        +`<span class="k">MP +${GUARD_MP} 回復</span>`}),
+    pending&&pending.selfKey==="guard");
   /* 「前へ出る／後ろへ下がる」は 一列にしたときに外した（α0.0048）。
      戦闘に入ったら 隊列は動かない。組み替えは戦闘の外でする。 */
   {
     const od=fleeOdds();
     add("flee","逃 げ る",
       fleeUsed?`<span class="nogo">使い切った</span>`:`${od.mine} 対 ${od.theirs}`,
-      fleeUsed,()=>doAct({kind:"flee"}),
+      fleeUsed,()=>askSelf({kind:"flee"},"flee"),
       infoHtml({name:"逃 げ る",
         d:fleeUsed?`<span class="nogo">もう一度は試せない</span>`
           :`1ターン使う ・ <b>${od.mine}</b> 対 <b>${od.theirs}</b> の 素早さ比べ`+
            (od.down?`　<span style="color:#8fa261">倒した ${od.down} 体ぶん 追っ手 −${od.down*FLEEDOWN}</span>`:"")+
-           `　<span class="k">戦闘に1回だけ</span>`}));
+           `　<span class="k">戦闘に1回だけ</span>`}),
+        pending&&pending.selfKey==="flee");
   }
   A.sk.forEach((s,i)=>{
     const noMp=A.MP<s.mp,onCd=s.cdLeft>0;
@@ -6000,7 +6012,7 @@ function drawActs(){
       Math.round(pvDef*(1-Math.min(1,(s.pen||0)/100))));
     add("sk",s.n,sub,blocked,
       ()=>{ if(s.kind==="atk"||s.kind==="declare")askTarget({kind:"skill",i});
-            else doAct({kind:"skill",i}); },
+            else askSelf({kind:"skill",i},"sk"+i); },
       infoHtml({
         name:s.kind==="atk"?`${s.n} ${pips(sNeed,sDice)}`:s.n, d:s.d,
         need:s.kind==="atk"?sNeed:0, dice:s.kind==="atk"?sDice:0,
@@ -6015,6 +6027,15 @@ function drawActs(){
      並べたままにして、いま選んでいる手に印を付ける。
      ほかの手を押せば そのまま乗り換わる。 */
   if(pending){
+    /* 狙いを取らない手は 相手を選べないので、代わりに「これで使う」を出す。
+       同じ札をもう一度押しても同じことが起きる（α1.0.027） */
+    if(pending.self){
+      const go=document.createElement("button");
+      go.className="act go2 wide";
+      go.innerHTML=`<span class="an">こ れ で 使 う</span>`;
+      go.onclick=()=>fireSelf();
+      host.appendChild(go);
+    }
     const back=document.createElement("button");
     back.className="act cancel wide";
     back.innerHTML=`<span class="an">やめる</span>`;
@@ -6022,6 +6043,8 @@ function drawActs(){
     host.appendChild(back);
     $("#prompt").textContent=pending.item
       ? `▸ ${ITEMS[pending.item].n} を投げる相手を選ぶ`
+      : pending.self
+      ? "▸ これでよければ もう一度押す　（別の手を押せば 選び直せる）"
       : "▸ 狙う相手を選ぶ　（別の手を押せば 選び直せる）";
   }
   /* まだ何も触っていないときは いちばん上の手（通常攻撃）を出しておく。
@@ -6131,10 +6154,27 @@ function columnMate(t){
 function askTarget(a){
   const A=actor();   /* 手番の主。仲間が動いているときは その者 */
   const s=a.kind==="skill"?A.sk[a.i]:null;
-  if(s&&s.all){ doAct(a,null); return; }
+  if(s&&s.all){ return askSelf(a,"sk"+a.i); }   /* 全体技も 相手を選ばない */
   pending=s?{...a,backOnly:s.backOnly,slower:s.slower}:a;
   /* 手は消さない。drawActs が 印と「やめる」まで面倒を見る（α1.0.026） */
   draw();drawActs();
+}
+/* ===== 狙いを取らない手にも ひと呼吸（α1.0.027） =====
+   守り・仕込み・自分にかける技・全体技・逃げる は 相手を選ばないので、
+   **押した瞬間に使われていた**。指が当たっただけで ターンが飛ぶ。
+   一度目で選び（金の枠が付き、帯に効き目が出る）、
+   二度目 ── 同じ札か「これで使う」── で 実際に使う。 */
+function askSelf(a,key){
+  if(pending&&pending.self&&pending.selfKey===key)return fireSelf();
+  pending={...a,self:true,selfKey:key};
+  draw();drawActs();
+}
+function fireSelf(){
+  if(!pending||!pending.self)return;
+  const p={...pending};
+  delete p.self;delete p.selfKey;
+  pending=null;
+  resolvePlayer(p,null);
 }
 /* 狙いを取らない手を押したら、前に選んでいた狙いは捨てる */
 function doAct(a,t){pending=null;resolvePlayer(a,t);}
