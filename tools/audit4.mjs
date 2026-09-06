@@ -27,23 +27,38 @@ const out=await pg.evaluate(({solo,raw})=>{
       foes=makeFoes();                    /* 本物の組み立てを通す */
       RUN.boss=false;
       let hp=0,dmg=0,our=0;
+      /* ===== 必要成功数（α2）に合わせた見積り =====
+         **本体の式を写している。**ここがずれると 測る意味が無くなるので、
+         決めごとを変えたら 必ず両方直すこと（`XGAIN` / `XCAP` / `needOf`）。
+         ひと振りで出る量 ＝ Σ_k P(k成功) × [k≧必要] × 威力×(1+0.25·min(2,k−必要)) */
+      const comb=(n,k)=>{let r=1;for(let i=0;i<k;i++)r=r*(n-i)/(i+1);return r;};
+      const binom=(n,k,p)=>comb(n,k)*Math.pow(p,k)*Math.pow(1-p,n-k);
+      const expect=(n,thr,need,pow,def)=>{
+        const p=(7-thr)/6; let out=0;
+        for(let k=need;k<=n;k++)
+          out+=binom(n,k,p)*perHit(Math.round(pow*(1+XGAIN*Math.min(XCAP,k-need))),def);
+        return out;
+      };
       foes.forEach(f=>{
         hp+=f.maxHP;
         const tgt=foeTarget(f);
         const tot=f.acts.reduce((x,a)=>x+(a.w||1),0);
         f.acts.forEach(a=>{
           if(a.k==="atk"){
-            const per=perHit(powOf(f,{pct:a.pct||0,pow:a.pow||0}),defOf(tgt));
-            dmg+=(a.w||1)/tot*(a.dice||a.diceRand||1)*per*0.55;
+            const nd=Math.max(1,a.dice||a.diceRand||1);
+            const thr=threshold(f,tgt,{act:a});
+            const pow=powOf(f,{pct:a.pct||0,pow:a.pow||0});
+            dmg+=(a.w||1)/tot*expect(nd,thr,Math.max(1,a.suc||1),pow,defOf(tgt));
           }else if(a.k==="hex"&&a.poison)dmg+=(a.w||1)/tot*a.poison*1.5;
         });
       });
       party.forEach(u=>{
         const t=foeLine()[0]; if(!t)return;
         const thr=threshold(u,t,{});
-        const n=Math.max(1,u.wep.hands);
-        const per=perHit(Math.round(powOf(u,{})*orgMul("outMul",u)),defOf(t));
-        our+=n*((7-thr)/6)*per;
+        /* ダイスは **技能**から。得物の hands はもう見ない */
+        const n=skillDice(wepSkill(u),u);
+        const pow=Math.round(powOf(u,{})*orgMul("outMul",u));
+        our+=expect(n,thr,1,pow,defOf(t));
       });
       return {hold:ourHP/dmg,kill:hp/our,ease:(ourHP/dmg)/(hp/our),n:foes.length};
     };

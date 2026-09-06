@@ -1065,7 +1065,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.009";
+const VERSION="α1.0.010";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1078,6 +1078,14 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1010",tag:"up",v:"α1.0.010",d:"2026-09-06",n:"戦闘が「必要成功数」になりました。技ごとに 要る成功の数が決まります",b:[
+   "<b>技には 必要な成功の数があります。</b>届かなければ ダメージは出ません（MP は消えます）",
+   "<b>超えたぶんは 威力の上乗せ</b>になります。+25%／個で、<b>2つまで</b>数えます",
+   "<b>振れるダイスは 技能で決まります。</b>技能20ごとに1個で、素の上限は5個（技能100）。武器のダイス数はもう見ません",
+   "<b>出目そのものは もう見ません。</b>これまでは「出目が高いほど1発が重い」でしたが、その役目は 超過が引き継ぎました",
+   "<b>敵も同じ仕組みで振ります。</b>敵の技にも 必要成功数があります",
+   "<b>ダイスを絞る技・6の目で増える技は 別の技になりました。</b>渾身・ロックスパイク・血の契・急所突き・首刈り の5つです（数字は仮です）",
+   "<b>手応えは これから調え直します。</b>いまは全体に 少し重くなっています"]},
  {id:"v1009",tag:"fix",v:"α1.0.009",d:"2026-09-06",n:"火事場の力が 二重に効いていたのを直しました",b:[
    "<b>火事場の力</b>が 倍率（×1.45まで）と 上乗せ（+30まで）の <b>二重取り</b>になっていました。説明どおり 倍率だけにしました",
    "<b>妬心</b>と<b>逆境</b>のログが 2回ずつ出ていました。効き目は1回ぶんだけだったので、強さは変わりません"]},
@@ -3588,8 +3596,8 @@ const REW={
     d:"シールド 最大HPの 20%。守りに徹する"},
    {id:"ak3",n:"カウンター",kind:"guard",mp:4,cd:3,blockPct:10,counter:0.4,
     d:"シールド 最大HPの 10%　受けたダメージの 40% を返す"},
-   {id:"ak4",n:"渾 身",kind:"atk",mp:6,cd:4,fixDice:2,powMul:1.5,
-    d:"攻撃ダイスを 2 に絞る（1 ヒットは そのぶん重くなる）　さらに 威力 ×1.5"},
+   {id:"ak4",n:"渾 身",kind:"atk",mp:6,cd:4,suc:2,powMul:1.9,
+    d:"必要成功 2　当てにくいが 通れば重い（威力 ×1.9）"},
    {id:"ak5",n:"兜割り",kind:"atk",mp:4,cd:3,powMul:1.15,ail:[{k:"break",v:10,t:2}],
     d:"威力 ×1.15　相手の VIT −10（3ターン）"},
    {id:"ak6",n:"威 圧",kind:"atk",mp:3,cd:3,powMul:0.5,ail:[{k:"weak",v:12,t:2}],
@@ -3621,10 +3629,10 @@ const REW={
     d:"攻撃ダイス +2"},
    {id:"as2",n:"連 撃",kind:"atk",mp:4,cd:3,chain:true,
     d:"最初に振った 6 の数だけ ダイスを追加する（追加ぶんの 6 は数えない）"},
-   {id:"as3",n:"急所突き",kind:"atk",mp:3,cd:2,six:15,
-    d:"6 の目 1 個につき ダメージ +15"},
-   {id:"as4",n:"首 刈 り",kind:"atk",mp:5,cd:3,six:25,fixDice:3,powMul:0.85,
-    d:"武器を問わず 3d6 に絞る（1 ヒットは そのぶん重くなる）　威力 ×0.85　6 の目 1 個につき ダメージ +25"},
+   {id:"as3",n:"急所突き",kind:"atk",mp:3,cd:2,suc:2,powMul:1.6,
+    d:"必要成功 2　細い隙を突く（威力 ×1.6）"},
+   {id:"as4",n:"首 刈 り",kind:"atk",mp:5,cd:3,suc:3,powMul:2.7,
+    d:"必要成功 3　狙いが定まれば 一撃で断つ（威力 ×2.7）"},
    {id:"as5",n:"疾 走",kind:"focus",mp:3,cd:3,dex:12,dur:99,
     d:"この戦闘のあいだ DEX +12"},
    {id:"as6",n:"追い討ち",kind:"atk",mp:6,cd:5,again:true,once:true,
@@ -3657,8 +3665,8 @@ const REW={
   dwarf:[
    {id:"akd1",n:"岩砕き",kind:"atk",mp:5,cd:3,powMul:1.35,el:"blunt",
     d:"叩 属性　威力 ×1.35"},
-   {id:"akd2",n:"ロックスパイク",kind:"atk",mp:6,cd:4,fixDice:2,powMul:1.5,el:"earth",
-    d:"土 属性　足元から岩を突き上げる　ダイスを 2 に絞る（1 ヒットは そのぶん重くなる）　さらに 威力 ×1.5"},
+   {id:"akd2",n:"ロックスパイク",kind:"atk",mp:6,cd:4,suc:2,powMul:1.8,el:"earth",
+    d:"土 属性　必要成功 2　足元から岩を突き上げる（威力 ×1.8）"},
   ],
   elf:[
    {id:"ake1",n:"精霊の矢",kind:"atk",mp:4,cd:2,powMul:1.22,el:"light",
@@ -3698,9 +3706,9 @@ const REW={
     d:"与えたダメージの 10% を 金貨に換える"},
   ],
   wrath:[
-   {id:"awr1",n:"血の契",kind:"atk",mp:0,cd:3,fixDice:2,powMul:1.5,
+   {id:"awr1",n:"血の契",kind:"atk",mp:0,cd:3,suc:2,powMul:1.7,
     selfBuff:{pow:10,t:1},
-    d:"ダイスを 2 に絞る（1 ヒットは そのぶん重くなる）　さらに 威力 ×1.5　自分の威力 +10%（2ターン）"},
+    d:"必要成功 2　血を捧げて打つ（威力 ×1.7）　自分の威力 +10%（2ターン）"},
    {id:"awr2",n:"逆 境",kind:"atk",mp:6,cd:4,rage:true,
     d:"この戦闘で受けた ダメージが多いほど 威力が上がる（最大 ×1.6）"},
    {id:"awr3",n:"復 讐",kind:"atk",mp:4,cd:3,lostDice:true,
@@ -5182,6 +5190,22 @@ function dragEase(){ return Math.min(DRAGCAP,Math.floor((Math.max(1,round||1)-1)
    前は「武器のダイスが1つでも当たれば付く」だったので、
    手数の多い武器ほどデバフが得意という、腕とも術とも関係ない差が出ていた
    （ナイト 88% 対 ウィザード 42%。デバフ技を6つ持つのはウィザードのほう）。 */
+/* ===== 必要成功数（α2） =====
+   技ごとに「要る成功の数」がある。届かなければ ダメージなし（MP は消える）。
+   超えたぶんは 威力の上乗せ。**+25%／個・上限2個。**
+   上限があるのは「必要成功1の技が 必要成功2の技を超えない」ため
+   ── 上限が無いと 通常攻撃が8個成功したとき 素の2.75倍になり、
+   一段上の技の素の威力を追い越してしまう。
+   **倍率（mul）を触ったら この条件を測り直すこと。** */
+const XGAIN=0.25, XCAP=2;
+function needOf(opt){ return Math.max(1,(opt&&opt.suc)||1); }
+/* 治療だけの決めごと ── **足りない1つにつき ×0.3**。0成功なら本当にゼロ。
+   攻撃は空振りでゼロだが、治療で外して仲間が死ぬのは痛すぎる。 */
+const HEALSHORT=0.3;
+function healRate(hits,need){
+  if(hits<=0)return 0;
+  return hits>=need?1:Math.pow(HEALSHORT,need-hits);
+}
 const AILTHR=1;
 function ailThr(u,tgt,opt){ return Math.max(2,threshold(u,tgt,opt||{})-AILTHR); }
 function ailRoll(u,tgt,opt){
@@ -5724,13 +5748,10 @@ async function playerAttack(targets,opt){
   targets=coverList(targets);
   if(!targets.length)return;
   killedThisAttack=false;sawSix=false;A.attackedLast=true;
-  /* 振るダイスの数。技が fixDice を持つときは 武器のダイス数ではなく
-     そちらを使い、減った（増えた）ぶんは 1 ヒットの重さに寄せる。
-     ここでならしておかないと、2d6 の重い武器で「ダイスを 4 に絞る」技を
-     使うだけで まるまる倍の威力になってしまう。
-     ならした強さは武器を問わず同じで、上振れの形だけ 技のほうで決まる。 */
-  let fixMul=1, baseDice=A.wep.hands;
-  if(opt.fixDice){ baseDice=opt.fixDice; fixMul=A.wep.hands/opt.fixDice; }
+  /* 振るダイスの数は **技能**で決まる（α2）。得物の hands はもう見ない。
+     「ダイスを絞る」技（fixDice）は 必要成功数の仕組みでは ただの弱体化に
+     なってしまうので落とした。あれを使っていた技は 別の技に置き換える。 */
+  let baseDice=skillDice(wepSkill(A,opt),A);
   let lostD=0;
   if(opt.lostDice){
     lostD=Math.min(3,Math.floor((1-A.HP/A.maxHP)/0.25));
@@ -5740,10 +5761,6 @@ async function playerAttack(targets,opt){
   if(restD)log(`<span class="c">明日やる</span> 休んだぶん 攻撃ダイス <span class="m">+${restD}</span>`);
   let n=Math.max(1,baseDice+(opt.dice||0)+lostD+restD+scoutBonus+passOn("dice")
     -ailSum(A,"shrink"));
-  if(fixMul!==1){
-    opt={...opt,powMul:(opt.powMul||1)*fixMul};
-    log(`<span class="c">絞る</span> 攻撃ダイスを <span class="m">${opt.fixDice}</span> に絞る　1 ヒット <span class="m">×${fixMul.toFixed(2)}</span>`);
-  }
   const pn=passNames("dice");
   if(pn.length)log(`<span class="c">${pn.join("・")}</span> 攻撃ダイス <span class="m">+${passOn("dice")}</span>`);
   if(scoutBonus){
@@ -5791,7 +5808,19 @@ async function playerAttack(targets,opt){
       sixes=rolls.filter(v=>v>=6).length;
     }
   }
-  if(!hits){SFX.miss();log(`<span class="a">${A.name}</span> ${n}d6・${thr}以上 → 空振り`);await wait(450);return;}
+  /* ===== 必要成功数（α2） =====
+     技ごとに要る成功の数。**届かなければ ダメージなし。**MP は消える。
+     超えたぶん（超過）は 威力の上乗せ ── **+25%／個・上限2個**。
+     上限があるのは「必要成功1の技が 必要成功2の技を超えない」ため。 */
+  const need=needOf(opt);
+  const over=Math.max(0,hits-need);
+  const xMul=1+XGAIN*Math.min(XCAP,over);
+  if(hits<need){
+    SFX.miss();
+    log(`<span class="a">${A.name}</span> ${n}d6・${thr}以上 → `+
+      `<span class="m">成功 ${hits}</span>／必要 <span class="m">${need}</span>　届かなかった`);
+    await wait(450);return;
+  }
   for(const t of targets){
     if(t.HP<=0)continue;
     let pow=powOf(A,opt)+passOn("pow")+(A.tmpPow||0);
@@ -5833,59 +5862,38 @@ async function playerAttack(targets,opt){
        古い実装の消し忘れと思われる。 */
     const pen=Math.min(1,(opt.pen||0)+(passOn("pen")+(A.gearPen||0))/100);
     const tdef=Math.round(defOf(t)*(1-pen));
-    let vals=(opt.even?rolls.filter(v=>v%2===0):rolls.filter(v=>v>=thr)).sort((a,b)=>a-b);
-    /* 一つも当たらなかったとき、もう一度だけ振る */
-    /* 「偶数の目だけ当たる」技は、当たりはあっても偶数が無いことがある。
-       そのときだけ、まだ振り直していなければもう一度だけ振る。 */
-    let luck=opt.even&&!rerolled?passOn("luck"):0;
-    let lnames=passNames("luck");
-    if(opt.even&&!rerolled&&!vals.length){
-      const lr2=lukRoll(lukOf());
-      if(lukOf()>0)await lukOv(lukOf(),lr2);
-      if(lr2.k>0){luck+=lr2.k;lnames=lnames.concat([`幸運 ${lr2.s}`]);}
-    }
-    if(luck>0&&!vals.length){
-      rerolled=true;
-      const extra=[];for(let i=0;i<luck;i++)extra.push(r6());
-      log(`<span class="c">${lnames.join("・")}</span> 空振り → もう <span class="m">${luck}</span> つ振る　[${extra.join("][")}]`);
-      await rollDice(extra,thr,`${A.name}　<em>振り直し ${luck}d6</em>`,"再 挑 戦");
-      ovHide();
-      rolls.push(...extra);
-      vals=(opt.even?extra.filter(v=>v%2===0):extra.filter(v=>v>=thr)).sort((a,b)=>a-b);
-    }
     const sh=shieldOf(t);
     const atkEl=opt.el||(A.coat&&A.coat.el)||A.wep.el||"none";
     const em=elemMul(atkEl,t);
-    /* ①出目 → ③シールド → ④VIT。来歴と属性の倍率は 出目と同じ段で掛ける。
-       ログに出すために、引く前（rawEach）と 通ったぶん（each）を 両方とっておく。 */
-    const rawEach=vals.map(v=>Math.round(hitDmg(pow,v,opt.even?2:thr)*orgMul("outMul",A)*em));
-    /* シールドは 減っていく器。1発目が食い破れば 2発目からは もう無い。 */
-    let shLeft=sh;
-    const each=rawEach.map(raw=>{
-      const use=Math.min(shLeft,raw); shLeft-=use;
-      return perHit(raw-use,tdef);
-    });
-    const shUsed=sh-shLeft;
+    /* ===== ダメージは **ひと振りで1つ**（α2） =====
+       前は 当たった出目1つずつに威力を掛けて足していた（出目が高いほど
+       1発が重い）。必要成功数では **超過の数**がその役目を引き継ぐので、
+       出目そのものはもう見ない。`hitDmg` / `dieRate` は敵の側にだけ残る。
+
+       ①威力 ×超過 → ②来歴と属性 → ③シールド → ④VIT の順。 */
+    const raw=Math.round(pow*xMul*orgMul("outMul",A)*em);
+    const shUsed=Math.min(sh,raw);
+    const shLeft=sh-shUsed;
     t.block=shLeft;
-    const base=perHit(Math.round(pow*orgMul("outMul",A)*em),tdef)*hits;
-    let dmg=each.reduce((a,b)=>a+b,0)
-      +Math.round(sixes*((opt.six||0)+passOn("six",A))*orgMul("outMul",A)*em);
+    const dmg=perHit(raw-shUsed,tdef);
+    const base=perHit(Math.round(pow*orgMul("outMul",A)*em),tdef);
     const rate=base?dmg/base-1:0;
     const startHP=t.HP, endHP=Math.max(0,t.HP-dmg);
-    const shown=Math.min(hits,5);
+    /* ひと振りで1つになったので 演出も1回。
+       超過があったときだけ 踏み込みを重ねて「大きく入った」ことを見せる。 */
+    const shown=1+Math.min(XCAP,over);
     for(let i=0;i<shown;i++){
       await lungeUnit(A);
       SFX.atk(A.wep.snd);
       fxOn(t,A.wep.snd);
-      const v=(i===shown-1)?each.slice(i).reduce((a,b)=>a+b,0):each[i];
-      popOn(t,"−"+v,"each"+(em>1?" weakhit":em<1?" resisthit":""));
       setHPBar(t,startHP-(startHP-endHP)*(i+1)/shown);
-      await wait(170);
+      await wait(i===shown-1?170:110);
     }
+    popOn(t,"−"+dmg,"each"+(em>1?" weakhit":em<1?" resisthit":""));
     t.HP=endHP;
     await checkPhase(t);       /* しきい値を切ったらボスが段階を上げる */
     const pin=passOn("pin");
-    if(pin>0&&vals.length>=pin&&t.HP>0){
+    if(pin>0&&hits>=pin&&t.HP>0){
       ailAdd(t,"slow",8,2);
       popOn(t,"鈍 足","blk");
       log(`　<span class="c">影縫い</span>　<span class="b">${t.name}</span> が 鈍足になった`);
@@ -5912,13 +5920,11 @@ async function playerAttack(targets,opt){
     if(opt.stun)t.stun=true;
     draw();popOn(t,"−"+dmg,(em>1?"weakhit":em<1?"resisthit":""));SFX.dmg();
     log(`<span class="a">${A.name}</span> → <span class="b">${t.name}</span>　`+
-      `${n}d6・${thr}以上 <span class="m">${hits}ヒット</span>　`+
-      `威力 ${pow}　${vals.map((v,i)=>
-        `${v}の目 ${rawEach[i]}${rawEach[i]!==each[i]?`<span class="c">→${each[i]}</span>`:""}`
-        ).join("　")}`+
+      `${n}d6・${thr}以上 <span class="m">成功 ${hits}</span>／必要 ${need}　`+
+      (over?`<span class="c">超過 ${Math.min(XCAP,over)}（×${xMul.toFixed(2)}）</span>　`:"")+
+      `威力 ${pow}${xMul!==1?`<span class="c">→${Math.round(pow*xMul)}</span>`:""}`+
       (shUsed?`　<span class="c">シールド −${shUsed}</span>${shLeft?`<span class="s">（残り ${shLeft}）</span>`:""}`:"")+
-      (tdef?`　<span class="s">（VIT −${tdef}　1ヒットごと）</span>`:"")+
-      (sixes&&opt.six?`　6の目 ${sixes}×${opt.six}`:"")+
+      (tdef?`　<span class="s">（VIT −${tdef}）</span>`:"")+
       (em>1?`　<span class="m">${ELEM[atkEl].n} が弱点　×${em.toFixed(2)}</span>`
         :em<1?`　<span class="c">${ELEM[atkEl].n} に耐性　×${em.toFixed(2)}</span>`:"")+
       `　→ <span class="m">${dmg}</span>`+(t.HP<=0?`　<span class="b">撃破</span>`:""));
@@ -6109,8 +6115,9 @@ async function resolvePlayer(a,target){
         if(mate)log(`<span class="a">縦に貫く</span> ${ts.map(x=>x.name).join("・")}`);
       }
       await playerAttack(ts,{pow:s.pow||0,thr:s.thr||0,dice:s.dice||0,
-        chain:s.chain,six:s.six,powMul:s.powMul,stun:s.stun,
-        el:s.el,ail:s.ail,fixDice:s.fixDice,pen:s.pen,even:s.even,column:s.column,
+        suc:s.suc||1,                       /* 必要成功数。名乗らなければ 1 */
+        chain:s.chain,powMul:s.powMul,stun:s.stun,
+        el:s.el,ail:s.ail,pen:s.pen,even:s.even,column:s.column,
         lostPow:s.lostPow,mpDrain:s.mpDrain,loot:s.loot,allFoes:s.allFoes,
         rage:s.rage,lostDice:s.lostDice,lifeSteal:s.lifeSteal,devour:s.devour,feast:s.feast,
         steal:s.steal,jealous:s.jealous,charm:s.charm,
@@ -6326,26 +6333,33 @@ async function enemyAct(f){
     await rollDice(rolls,thr,`${f.name} → ${tg.name}　<em>${nd}d6 ・ ${thr}以上</em>`);
     const hits=rolls.filter(v=>v>=thr).length;
     ovHide();
-    const ev=rolls.filter(v=>v>=thr).sort((a,b)=>a-b);
-    /* ①出目（＋来歴の倍率）→ ②見切り → ③シールド → ④VIT */
-    let evs=ev.map(v=>Math.round(hitDmg(fpow,v,thr)*orgMul("inMul",tg)));
+    /* ===== 敵も同じ仕組み（α2） =====
+       技ごとに要る成功の数。届かなければ ダメージなし。
+       超えたぶんは 威力の上乗せ（+25%／個・上限2）。 */
+    const fneed=Math.max(1,t.suc||1);
+    const fover=Math.max(0,hits-fneed);
+    const fxMul=1+XGAIN*Math.min(XCAP,fover);
+    if(hits<fneed){
+      log(`<span class="b">${f.name}</span> の ${t.n}　${nd}d6・${thr}以上 → `+
+        `<span class="m">成功 ${hits}</span>／必要 <span class="m">${fneed}</span>　届かなかった`);
+      popOn(tg,"届かず","blk");
+      SFX.miss();
+      await wait(420);
+      return;      /* この者の手番はここまで（麻痺のときと同じ抜け方） */
+    }
+    /* ①威力 ×超過（＋来歴の倍率）→ ②見切り → ③シールド → ④VIT */
+    let inc=Math.round(fpow*fxMul*orgMul("inMul",tg));
     const halved=tg.half;
-    if(tg.half){evs=evs.map(v=>Math.round(v/2));tg.half=false;}
+    if(tg.half){inc=Math.round(inc/2);tg.half=false;}
     /* 来た量。シールドで消したぶんも VIT で削ったぶんも含む。
-       反撃（カウンター）が返す量の元になる。
-       **ここが無いまま `raw` を読んでいたので、反撃の構えを取って殴られると
-       必ず落ちていた**（〔修正済〕α0.0054。仕事C で守りをシールドに直した
-       ときから、一度も働いたことがない）。 */
-    const raw=evs.reduce((a,b)=>a+b,0);
+       反撃（カウンター）が返す量の元になる。 */
+    const raw=inc;
     const sh=shieldOf(tg);
-    /* シールドは 減っていく器。1発目が食い破れば 2発目からは もう無い。 */
-    let shLeft=sh;
-    const afterSh=evs.map(v=>{const use=Math.min(shLeft,v);shLeft-=use;return v-use;});
-    const soaked=sh-shLeft;
+    const soaked=Math.min(sh,inc);
+    const shLeft=sh-soaked;
     tg.block=shLeft;
     const mdef=defOf(tg);
-    const evShown=afterSh.map(v=>perHit(v,mdef));
-    let dmg=evShown.reduce((a,b)=>a+b,0);
+    let dmg=perHit(inc-soaked,mdef);
     let endHP0=tg.HP-dmg;
     if(endHP0<=0&&passOn("endure",tg)>0&&!tg.endured){
       tg.endured=true;endHP0=1;
@@ -6358,18 +6372,18 @@ async function enemyAct(f){
     }
     /* シールドは 殴られたら役目を終える。丸ごと受け止めた回も使ったことにする */
     if(soaked>0){popSelf("シールド −"+soaked,"blk");}
-    if(hits){
-      const shown=Math.min(hits,5);
+    {
+      /* ひと振りで1つ。超過があったときだけ 踏み込みを重ねる */
+      const shown=1+Math.min(XCAP,fover);
       for(let i=0;i<shown;i++){
         await lungeUnit(f);
         SFX.atk(f.snd);
         fxOn(tg,f.snd);
-        const v=(i===shown-1)?evShown.slice(i).reduce((a,b)=>a+b,0):evShown[i];
-        popSelf("−"+v,"each");
         setHPBar(tg,startHP-(startHP-endHP)*(i+1)/shown);
-        await wait(160);
+        await wait(i===shown-1?160:110);
       }
-    }else SFX.miss();
+      popSelf("−"+dmg,"each");
+    }
     tg.HP=endHP;
     if(t.drain&&dmg>0){
       const hl=Math.min(Math.round(dmg*t.drain),f.maxHP-f.HP);
@@ -6406,13 +6420,12 @@ async function enemyAct(f){
       if(f.HP<=0)draw();
     }
     log(`<span class="b">${f.name}</span> → <span class="a">${tg.name}</span>　`+
-      `${nd}d6 <span class="m">${hits}ヒット</span>　`+
-      `威力 ${fpow}　${ev.map((v,i)=>
-        `${v}の目 ${evs[i]}${evs[i]!==evShown[i]?`<span class="c">→${evShown[i]}</span>`:""}`
-        ).join("　")}`+
+      `${nd}d6・${thr}以上 <span class="m">成功 ${hits}</span>／必要 ${fneed}　`+
+      (fover?`<span class="c">超過 ${Math.min(XCAP,fover)}（×${fxMul.toFixed(2)}）</span>　`:"")+
+      `威力 ${fpow}${fxMul!==1?`<span class="c">→${Math.round(fpow*fxMul)}</span>`:""}`+
       (halved?`　<span class="s">（見切りで半分）</span>`:"")+
       (soaked?`　<span class="c">シールド −${soaked}</span>${shLeft?`<span class="s">（残り ${shLeft}）</span>`:""}`:"")+
-      (mdef?`　<span class="s">（VIT −${mdef}　1ヒットごと）</span>`:"")+
+      (mdef?`　<span class="s">（VIT −${mdef}）</span>`:"")+
       `　→ <span class="m">${dmg}</span>`);
     await wait(430);
   }else if(t.k==="guard"){
