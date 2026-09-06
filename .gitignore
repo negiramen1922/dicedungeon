@@ -21,3 +21,7 @@ node_modules/
 # Artifact 用の書き出し（tools/labpub.js が作る中間ファイル）
 lab/.*.artifact.html
 lab/_artpreview.html          # 書き出したものを 本物と同じ殻で包んで見るための下書き
+
+# 前の版と突き合わせるための 一時的な書き出し
+# （git show <rev>:index.html > .pt_old.html のように使う）
+.*_old.html

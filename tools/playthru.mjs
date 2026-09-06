@@ -7,7 +7,7 @@ const pg=await b.newPage({viewport:{width:430,height:930}});
 const errs=[];
 pg.on('pageerror',e=>errs.push('PAGEERROR '+e.message));
 pg.on('console',m=>{if(m.type()==='error'&&!/Failed to load resource|net::/.test(m.text()))errs.push('CONSOLE '+m.text());});
-await pg.goto('http://localhost:8765/index.html');
+await pg.goto('http://localhost:8765/'+(process.argv[2]||'index.html'));   /* 版を指定して 前の版と突き合わせられる */
 await pg.evaluate(()=>{try{localStorage.clear()}catch(e){}});
 await pg.reload();await pg.waitForTimeout(900);
 /* 演出だけ速くする（押す道すじは本物のまま） */
