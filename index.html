@@ -393,6 +393,7 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .act.def{border-left:3px solid var(--blue)}
 .act.mv{border-left:3px solid var(--ink)}
 .act.sk{border-left:3px solid var(--brass)}
+.act.sk.heal{border-left-color:var(--moss)}
 .act.cancel{border-left:3px solid var(--dim)}
 /* いま選んでいる手（狙いを決めている間・α1.0.026）。
    手を並べたままにしたので、どれを選んだのかが分かる必要がある */
@@ -1155,7 +1156,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.027";
+const VERSION="α1.0.028";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1168,6 +1169,13 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1028",tag:"up",v:"α1.0.028",d:"2026-09-06",n:"治癒もダイスで決まるようになりました",b:[
+   "これまで回復技は <b>振らずに 無条件で</b>効いていました。攻撃だけが必要成功数で、癒しだけが素通りしていました",
+   "<b>振るダイスは 治療の技能で決まります。</b>技能 40 で 2個、60 で 3個、100 で 5個",
+   "<b>しきい値は 素の 4。</b>自分にかけるので 遠さも 素早さの差もありません。盲目・恐怖・長引き・仕込みだけが動かします",
+   "<b>治療だけの決めごと。</b>攻撃は届かなければゼロですが、<b>治療は 足りない1つにつき ×0.3 で目減りして出ます</b>（0成功だけが本当のゼロ）。癒しを外して仲間が倒れるのは 痛すぎるので",
+   "<b>超過は 攻撃と同じ</b>ように上乗せされます（+25%／個・上限2個）",
+   "帯に「通れば +101〜151 ／ ならすと +82」と出ます。治療は目減りして出るので <b>ならした量が本当の目安</b>です"]},
  {id:"v1027",tag:"up",v:"α1.0.027",d:"2026-09-06",n:"相手を選ばない手にも ひと呼吸 置くようにしました",b:[
    "<b>守り・仕込み・自分にかける技・全体技・逃げる</b>は 相手を選ばないので、これまで <b>押した瞬間に使われて</b>いました。指が当たっただけで ターンが飛びます",
    "<b>一度目は 選ぶだけ。</b>金の枠が付いて、帯に効き目が出ます。<b>二度目 ── 同じ札か「これで使う」── で 実際に使います</b>",
@@ -3895,7 +3903,9 @@ const PREP=[
 const REW={
  act:{
   common:[
-   {id:"a1",n:"応急手当",kind:"heal",mp:2,cd:3,heal:0.30,
+   /* suc は 仮。1 なら「振って外せばゼロ」、2 にすると
+      目減り（×0.3）が働いて **治療の技能を伸ばす意味**が出る */
+   {id:"a1",n:"応急手当",kind:"heal",mp:2,cd:3,heal:0.30,suc:1,
     d:"最大HPの 30% を回復する"},
    {id:"a2",n:"見切り",kind:"buff",mp:3,cd:3,half:true,
     d:"次に受けるダメージを 半分にする"},
@@ -5589,6 +5599,16 @@ function healRate(hits,need){
   if(hits<=0)return 0;
   return hits>=need?1:Math.pow(HEALSHORT,need-hits);
 }
+/* ===== 治療も ダイスで決まる（α1.0.028） =====
+   これまで回復技は `maxHP*heal` を **無条件に**足していた。
+   攻撃だけが必要成功数で、癒しだけが素通りしていた。
+
+   振るダイスは **治療の技能**（近接や射撃と同じ刻み）。
+   しきい値は 自分にかけるので 遠さも素早さの差も無い ── 素の4から
+   盲目・恐怖・長引き・仕込みだけが動かす。
+   超過は 攻撃と同じ +25%／個・上限2個。 */
+function healDice(u){ return Math.max(1,skillDice("heal",u)+passOn("dice",u)-ailSum(u,"shrink")); }
+function healThr(u,opt){ return threshold(u,u,{...(opt||{}),noReach:true}); }
 const AILTHR=1;
 function ailThr(u,tgt,opt){ return Math.max(2,threshold(u,tgt,opt||{})-AILTHR); }
 function ailRoll(u,tgt,opt){
@@ -5603,7 +5623,9 @@ function threshold(u,tgt,opt){
   t+=ailSum(u,"fear");                   /* 恐怖：竦んで手元が狂う */
   /* 遠さ。狙う相手が その列の何番目にいるかで決まる。敵味方どちらも同じ。
      遠隔（弓・術）は払わない。opt.act は敵の技（pos:"back" なら投げ物） */
-  t+=reachOf(u,tgt,opt.act);
+  /* 治療のように **自分（味方）にかける**ものは 遠さを払わない。
+     払わせると 後ろに立つ癒し手が 自分を癒すのに罰を受けることになる */
+  t+=opt.noReach?0:reachOf(u,tgt,opt.act);
   if(!u.isFoe&&tgt.key){
     const c=codexLv(tgt.key);
     if(c>=2)t-=1;      /* 3戦 */
@@ -5651,7 +5673,7 @@ function thrWhy(tgt,opt,u){
     if(c>=2)T.push({n:"図鑑 3戦",v:-1});
     if(c>=3)T.push({n:"図鑑 6戦",v:-1});
   }
-  if(tgt){
+  if(tgt&&!opt.noReach){
     const dd=reachOf(u,tgt);
     if(dd)T.push({n:`遠 さ（${depthOf(tgt)+1}番目）`,v:dd});
   }
@@ -5832,6 +5854,10 @@ function infoHtml(o){
     if(pct!=null)L.push(`<span class="k">成功</span><b class="pct${cls}">${pct}%</b>`);
   }
   if(o.dmg)L.push(`<span class="k">通れば</span><b>${o.dmg[0]}〜${o.dmg[1]}</b>`);
+  /* 治療は 超過で伸びるので幅を出し、届かなくても目減りして出るぶんを
+     「ならすと」で添える。攻撃と違って **平均が本当の目安**になる */
+  if(o.heal)L.push(`<span class="k">通れば</span><b>+${o.heal[0]}〜${o.heal[1]}</b>`+
+    `<span class="sep">/</span><span class="k">ならすと</span><b>+${o.heal[2]}</b>`);
   /* MP と再使用は 札の添え書きに出ている。ここに重ねると行が折り返す */
   return `<div class="ain">${o.name}</div>`+
     (L.length?`<div class="airow">${L.join(`<span class="sep">/</span>`)}</div>`:"")+
@@ -6000,9 +6026,24 @@ function drawActs(){
       :`MP ${s.mp}${s.cd?`・再使用 ${s.cd}`:""}`;
     /* 成功率は 当てる技だけ。閾値は その技の補正込みで、
        仮の相手（いちばん手前）で見積もる ── 札に出していたときと同じ見方 */
-    const sThr=(s.kind==="atk"&&pvT)?threshold(A,pvT,{thr:s.thr||0,even:s.even}):null;
-    const sOk=(s.kind==="atk"&&sThr!==null&&!noDice)
-      ?atLeast(sDice,sNeed,s.even?4:sThr):null;
+    const isHeal=s.kind==="heal";
+    const sThr=isHeal?healThr(A,{thr:s.thr||0})
+      :(s.kind==="atk"&&pvT)?threshold(A,pvT,{thr:s.thr||0,even:s.even}):null;
+    const hN=isHeal?Math.max(1,healDice(A)+(s.dice||0)):0;
+    const sOk=isHeal?atLeast(hN,sNeed,sThr)
+      :(s.kind==="atk"&&sThr!==null&&!noDice)?atLeast(sDice,sNeed,s.even?4:sThr):null;
+    /* 治療は 届かなくても目減りして出る。ならした量を見せないと
+       「50%で外れる技」に見えてしまう ── 実際は 平均で これだけ戻る */
+    const hAvg=isHeal?(()=>{
+      const p=Math.max(0,Math.min(1,(7-sThr)/6));
+      const C=(a,b)=>{let r=1;for(let i=0;i<b;i++)r=r*(a-i)/(i+1);return r;};
+      let e=0;
+      for(let k=0;k<=hN;k++){
+        const pk=C(hN,k)*Math.pow(p,k)*Math.pow(1-p,hN-k);
+        e+=pk*healRate(k,sNeed)*(1+XGAIN*Math.min(XCAP,Math.max(0,k-sNeed)));
+      }
+      return Math.round(A.maxHP*s.heal*e);
+    })():0;
     /* 威力は powMul（倍率）と pow（足し算）の2つ。
        〔`s.pow` を百分率と読み違えて 見込みダメージが出ていなかった〕 */
     const sMul=s.powMul||1;
@@ -6010,13 +6051,19 @@ function drawActs(){
     const pSk=x=>perHit(Math.max(0,
       Math.round((pv+sAdd)*x*orgMul("outMul",A))-pvSh),
       Math.round(pvDef*(1-Math.min(1,(s.pen||0)/100))));
-    add("sk",s.n,sub,blocked,
+    add("sk"+(isHeal?" heal":""),s.n,sub,blocked,
       ()=>{ if(s.kind==="atk"||s.kind==="declare")askTarget({kind:"skill",i});
             else askSelf({kind:"skill",i},"sk"+i); },
       infoHtml({
-        name:s.kind==="atk"?`${s.n} ${pips(sNeed,sDice)}`:s.n, d:s.d,
-        need:s.kind==="atk"?sNeed:0, dice:s.kind==="atk"?sDice:0,
+        name:(s.kind==="atk"||isHeal)?`${s.n} ${pips(sNeed,isHeal?hN:sDice)}`:s.n,
+        d:isHeal
+          ? `${s.d}　<span class="k">届かなくても 足りない1つにつき ×${HEALSHORT} で出る（0成功だけ ゼロ）</span>`
+          : s.d,
+        need:(s.kind==="atk"||isHeal)?sNeed:0,
+        dice:isHeal?hN:(s.kind==="atk"?sDice:0),
         thr:s.even?"偶数":sThr, ok:sOk,
+        heal:isHeal?[Math.round(A.maxHP*s.heal),
+          Math.round(A.maxHP*s.heal*(1+XGAIN*XCAP)),hAvg]:null,
         dmg:(s.kind==="atk"&&!blocked)?[pSk(sMul),pSk(sMul*(1+XGAIN*XCAP))]:null,
       }),
       pending&&pending.kind==="skill"&&pending.i===i);
@@ -6731,9 +6778,37 @@ async function resolvePlayer(a,target){
       await wait(650);
     }
     else if(s.kind==="heal"){
-      const h=Math.min(Math.round(A.maxHP*s.heal),A.maxHP-A.HP);
-      A.HP+=h;draw();fxOn(A,"charge");popSelf("+"+h,"heal");SFX.found();
-      log(`<span class="a">${A.name}</span> は傷を手当てした　HP <span class="m">+${h}</span>`);
+      /* ===== 治療も ダイスで決まる（α1.0.028） =====
+         攻撃と違うのは **届かなくても目減りして出る**こと
+         （足りない1つにつき ×0.3）。0成功だけが 本当のゼロ。
+         癒しを外して仲間が死ぬのは 痛すぎるので。 */
+      const hNeed=Math.max(1,s.suc||1);
+      const hThr=healThr(A,{thr:s.thr||0});
+      const hN=Math.max(1,healDice(A)+(s.dice||0));
+      const rolls=[];for(let i=0;i<hN;i++)rolls.push(r6());
+      await rollDice(rolls,hThr,
+        `${A.name} の <em>${s.n}</em>　<em>${hN}d6 ・ ${hThr}以上</em>`,
+        "癒 や す",{need:hNeed});
+      const hits=countSuc(rolls,hThr,{});
+      ovHide();
+      const rate=healRate(hits,hNeed);
+      const hOver=Math.max(0,hits-hNeed);
+      const hMul=1+XGAIN*Math.min(XCAP,hOver);
+      const full=Math.round(A.maxHP*s.heal);
+      const h=Math.min(Math.round(full*rate*hMul),A.maxHP-A.HP);
+      if(h>0){
+        A.HP+=h;draw();fxOn(A,"charge");popSelf("+"+h,"heal");SFX.found();
+        log(`<span class="a">${A.name}</span> の <span class="c">${s.n}</span>　`+
+          `${hN}d6・${hThr}以上 <span class="m">成功 ${hits}</span>／必要 ${hNeed}　`+
+          (rate<1?`<span class="c">${Math.round(rate*100)}% だけ効いた</span>　`
+            :hOver?`<span class="c">超過 ${Math.min(XCAP,hOver)}（×${hMul.toFixed(2)}）</span>　`:"")+
+          `HP <span class="m">+${h}</span>`);
+      }else{
+        draw();popSelf(hits<=0?"効かず":"満 身","miss");SFX.miss();
+        log(`<span class="a">${A.name}</span> の <span class="c">${s.n}</span>　`+
+          `${hN}d6・${hThr}以上 <span class="m">成功 ${hits}</span>／必要 ${hNeed}　`+
+          (hits<=0?`<span class="b">空振り</span>　何も起きなかった`:`もう傷が無い`));
+      }
       await wait(650);
     }
     else if(s.kind==="breath"){
