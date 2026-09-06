@@ -120,6 +120,25 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .thrx{margin-left:auto;text-align:right;font-size:9.5px;color:var(--ink);line-height:1.55}
 .thrx b{color:var(--blood)} .thrx .free{color:var(--moss)}
 .thrx .cap{color:var(--brass)}
+.thrwrap{margin-bottom:2px}
+.thrwrap .thrline{border-bottom:none}
+/* ===== 選んでいる手の見立て（α1.0.025） =====
+   札は 名前と ごく短い添え書きだけにして、
+   **必要な成功・成功率・通ったときのダメージ・効果**は ここにまとめて出す。
+   札に全部書くと 2行に折り返して読めなくなっていた。 */
+.actinfo{background:var(--panel);border:1px solid var(--line);padding:7px 11px;
+  min-height:56px}
+.ain{font-size:12.5px;letter-spacing:.06em;color:var(--bone);
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ain .pips{margin-left:2px}
+.airow{font-size:11px;color:var(--dim);margin-top:3px;letter-spacing:.02em;
+  font-variant-numeric:tabular-nums}
+.airow b{color:var(--bone);font-weight:600}
+.airow .k{color:var(--ink);letter-spacing:.1em;margin-right:2px}
+.airow .sep{color:#3a3f34;margin:0 6px}
+.aid{font-size:10.5px;color:var(--ink);line-height:1.55;margin-top:3px}
+.aid .nogo{color:var(--blood)}
+.aihint{font-size:10.5px;color:var(--ink);letter-spacing:.06em}
 
 .cell{min-height:104px;padding:2px 1px;display:flex;flex-direction:column;
   align-items:center;justify-content:flex-start;position:relative}
@@ -1104,10 +1123,15 @@ body.attitle #brand{display:none}
   </div>
   <!-- しきい値の帯（試作台から）。いくつ以上で成功か、なぜそうなのかを
        画面に出しっぱなしにする。前は「詳細」の窓を開かないと読めなかった -->
-  <div class="thrline">
-    <div class="thrn" id="thrN">4</div>
-    <div class="thrt">以上が<b>成功</b><br><span id="thrP"></span></div>
-    <div class="thrx" id="thrX"></div>
+  <div class="thrwrap">
+    <div class="thrline">
+      <div class="thrn" id="thrN">4</div>
+      <div class="thrt">以上が<b>成功</b><br><span id="thrP"></span></div>
+      <div class="thrx" id="thrX"></div>
+    </div>
+    <!-- 選んでいる手の見立て。札には名前しか出さないので、
+         必要な成功・成功率・通ったときのダメージ・効果は ここが受け持つ -->
+    <div class="actinfo" id="actInfo"></div>
   </div>
   <div class="cmdwrap"><div class="prompt" id="prompt"></div>
   <div class="acts" id="acts"></div></div>
@@ -1122,7 +1146,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.024";
+const VERSION="α1.0.025";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1135,6 +1159,12 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1025",tag:"up",v:"α1.0.025",d:"2026-09-06",n:"札は名前だけにして、数字は 盤面の下にまとめました",b:[
+   "<b>札に書くのは 名前と ごく短い添え書きだけ</b>になりました。通常攻撃は <b>得物の名</b>、技は <b>MP・再使用</b>。押せないときは その訳（「ダイス 3個 要る（いま 2）」）",
+   "これまでは「近接 2d6・4以上　成功 75%　威力 36〜57」を札に詰め込んでいて、<b>2行に折り返して読めませんでした</b>",
+   "<b>しきい値の帯の下に「選んでいる手の見立て」を足しました。</b>必要な成功 ／ 振るダイスとしきい値 ／ <b>成功率</b> ／ <b>通ったときのダメージ</b> ／ 効き目 が並びます",
+   "<b>触れた札・押し込んだ札</b>のものに書き替わります。指を離す前に読めるので、<b>押してから「しまった」がありません</b>",
+   "狙う相手を選んでいる間も、選んだ手の見立てはそのまま残ります"]},
  {id:"v1023",tag:"fix",v:"α1.0.024",d:"2026-09-06",n:"判定の言い方を「ヒット／空振り」に改めました",b:[
    "<b>ダイスの覆い</b>　「成功 3 ／ 必要 1　<b>ヒ ッ ト</b>」＋その下に <b>HIT</b>、「成功 1 ／ 必要 2　<b>空 振 り</b>」＋その下に <b>MISS</b>",
    "これまでは「通った」「届かなかった」でした",
@@ -5757,14 +5787,62 @@ function thrText(opt,filter){
   const v=[...new Set(list.map(f=>threshold(A,f,opt||{})))].sort((a,b)=>a-b);
   return v.length===1?`${v[0]}以上`:`${v[0]}〜${v[v.length-1]}以上`;
 }
+/* ===== 選んでいる手の見立て（α1.0.025） =====
+   札に全部書くと 2行に折り返して読めなかった（「近接 2d6・4以上　成功 75%
+   威力 36〜57」が札の幅を越えていた）。札は名前と短い添え書きだけにして、
+   **必要な成功・成功率・通ったときのダメージ・効き目**は 盤面の下の帯に集める。
+
+   触る画面には hover が無い。pointerdown は click より先に来るので、
+   押し込んだ時点で帯が書き替わる ── 指を離す前に読める。 */
+let actInfoNow="";
+function setActInfo(html){
+  actInfoNow=html;
+  const el=$("#actInfo");
+  if(el)el.innerHTML=html;
+}
+/* o … {name, need, dice, thr, ok, dmg:[lo,hi], mp, cd, d} */
+function infoHtml(o){
+  const L=[];
+  if(o.need){
+    const pct=o.ok==null?null:Math.round(o.ok*100);
+    const cls=o.ok==null?"":o.ok>=.6?"":o.ok>=.3?" mid":" bad";
+    L.push(`<span class="k">必要</span><b>${o.need}</b>`);
+    if(o.dice)L.push(`<b>${o.dice}d6</b>・${
+      typeof o.thr==="number"?`<b>${o.thr}以上</b>`:`<b>${o.thr||"—"}</b>`}`);
+    if(pct!=null)L.push(`<span class="k">成功</span><b class="pct${cls}">${pct}%</b>`);
+  }
+  if(o.dmg)L.push(`<span class="k">通れば</span><b>${o.dmg[0]}〜${o.dmg[1]}</b>`);
+  /* MP と再使用は 札の添え書きに出ている。ここに重ねると行が折り返す */
+  return `<div class="ain">${o.name}</div>`+
+    (L.length?`<div class="airow">${L.join(`<span class="sep">/</span>`)}</div>`:"")+
+    (o.d?`<div class="aid">${o.d}</div>`:"");
+}
+/* 得物の名。通常攻撃の札の添え書きに使う */
+function wepName(u){ return ((u&&u.wep&&u.wep.n)||"素手").replace(/\s+/g,""); }
+
 function drawActs(){
   const A=actor();   /* 手番の主。仲間が動いているときは その者 */
   const host=$("#acts");host.innerHTML="";
   $("#prompt").textContent="";
-  const add=(cls,name,desc,dis,fn)=>{
+  /* ===== 札は 名前だけ（α1.0.025） =====
+     `sub` は ごく短い添え書き（得物の名・MP・再使用）。
+     必要な成功・成功率・通ったときのダメージ・効果は
+     盤面の下の帯（#actInfo）が受け持つ。
+     触る画面には hover が無いので、**押し込んだ時点**でも帯を書き替える
+     （pointerdown は click より先に来る）。指を離す前に読める。 */
+  let firstInfo=null;
+  const add=(cls,name,sub,dis,fn,info)=>{
     const b=document.createElement("button");
     b.className="act "+cls;b.disabled=!!dis;
-    b.innerHTML=`<span class="an">${name}</span><span class="ad">${desc}</span>`;
+    b.innerHTML=`<span class="an">${name}</span>`+
+      (sub?`<span class="ad">${sub}</span>`:"");
+    if(info){
+      if(!firstInfo)firstInfo=info;
+      const show=()=>setActInfo(info);
+      b.addEventListener("pointerenter",show);
+      b.addEventListener("pointerdown",show);
+      b.addEventListener("focus",show);
+    }
     if(!dis)b.onclick=fn;host.appendChild(b);
   };
   /* 誰の手番かを いちばん上に出す。一味が3人になったので、
@@ -5804,40 +5882,58 @@ function drawActs(){
     const ok=atLeast(nWith,r.need,thrNow);
     const cls=ok>=.6?"":ok>=.3?" mid":" bad";
     const lo=pOne(r.mul), hi=pOne(r.mul*(1+XGAIN*XCAP));
-    add("atk",`${r.n} ${pips(r.need,nWith)}`,
-      !anyTarget?"届く相手がいない"
-      :noDice?`<span class="nogo">ダイスが ${r.need}個 要る（いま ${nWith}個）</span>`
-      :noMp  ?`<span class="nogo">MP が足りない（${r.mp}）</span>`
-      :`${SK[skA].n.replace(/ /g,"")} <b>${nWith}d6</b>・<b class="thr">${thrNow}以上</b>`+
-       `　成功 <b class="pct${cls}">${Math.round(ok*100)}%</b>　威力 ${lo}〜${hi}${
-         r.mp?`　MP ${r.mp}`:""}`,
-      !anyTarget||noDice||noMp,()=>askTarget({kind:"rung",i}));
+    /* 札の添え書きは ごく短く。通常攻撃は **得物の名**、上の段は MP。
+       届かない段だけは「あと何個 要るか」を札に残す ── そこが
+       技能を伸ばす先だから、帯を見なくても目に入ってほしい */
+    const sub=noDice?`<span class="nogo">ダイス ${r.need}個 要る（いま ${nWith}）</span>`
+      :noMp?`<span class="nogo">MP ${r.mp} 足りない</span>`
+      :r.mp?`MP ${r.mp}`:wepName(A);
+    add("atk",`${r.n} ${pips(r.need,nWith)}`,sub,
+      !anyTarget||noDice||noMp,()=>askTarget({kind:"rung",i}),
+      infoHtml({
+        name:`${r.n} ${pips(r.need,nWith)}`,
+        need:r.need, dice:nWith, thr:thrNow, ok, mp:r.mp,
+        dmg:(!anyTarget||noDice)?null:[lo,hi],
+        d:!anyTarget?`<span class="nogo">届く相手がいない</span>`
+          :noDice?`<span class="nogo">${SK[skA].n.replace(/ /g,"")}の技能を伸ばすと 振れるダイスが増える</span>`
+          :`${wepName(A)} で ${SK[skA].n.replace(/ /g,"")}${
+             r.mul!==1?`　<b>威力 ×${r.mul.toFixed(1)}</b>`:"　素の一撃"}`,
+      }));
   });
   /* 仕込み。次の攻撃ひとつぶん。重ねがけはできない */
   PREP.forEach(pz=>{
     add("prep",pz.n,
-      prep?`<span class="nogo">もう仕込んである（${prep.n}）</span>`
-      :pz.mp>A.MP?`<span class="nogo">MP が足りない（${pz.mp}）</span>`
-      :`${pz.d}　MP ${pz.mp}`,
-      !!prep||pz.mp>A.MP,()=>doAct({kind:"prep",id:pz.id}));
+      prep?`<span class="nogo">仕込み済み</span>`
+      :pz.mp>A.MP?`<span class="nogo">MP ${pz.mp} 足りない</span>`
+      :`MP ${pz.mp}`,
+      !!prep||pz.mp>A.MP,()=>doAct({kind:"prep",id:pz.id}),
+      infoHtml({name:pz.n, mp:pz.mp,
+        d:prep?`<span class="nogo">もう仕込んである（${prep.n}）。重ねがけはできない</span>`
+          :`${pz.d}　<span class="k">次の攻撃 ひとつぶん</span>`}));
   });
   if(bagCount()){
-    add("bag","道 具 を 使 う",`持ち物 ${bagLabel()}`,false,()=>bagPanel());
+    add("bag","道 具 を 使 う",`${bagCount()} 個`,false,()=>bagPanel(),
+      infoHtml({name:"道 具 を 使 う", d:`持ち物 ${bagLabel()}`}));
   }
   if(vowGone())$("#prompt").textContent="▸ 討つと告げた相手は もういない";
-  add("def","防 御 す る",`シールド ${blockValue()}（受けたぶんを肩代わり）　MP +${GUARD_MP}　再使用待ち −1`
-    +`　<span style="color:#8fd0ff">使い切るまで残る</span>`,false,
-    ()=>doAct({kind:"guard",block:blockValue()}));
+  add("def","防 御 す る",`シールド ${blockValue()}`,false,
+    ()=>doAct({kind:"guard",block:blockValue()}),
+    infoHtml({name:"防 御 す る",
+      d:`シールド <b>${blockValue()}</b> ── 受けたぶんを肩代わりして減る。`
+        +`<span style="color:#8fd0ff">使い切るまで残る</span>　`
+        +`<span class="k">MP +${GUARD_MP}　再使用待ち −1</span>`}));
   /* 「前へ出る／後ろへ下がる」は 一列にしたときに外した（α0.0048）。
      戦闘に入ったら 隊列は動かない。組み替えは戦闘の外でする。 */
   {
     const od=fleeOdds();
     add("flee","逃 げ る",
-      fleeUsed?"もう一度は試せない"
-      :`1ターン使う ・ <b class="thr">${od.mine}</b> 対 <b class="thr">${od.theirs}</b> の 素早さ比べ`+
-       (od.down?`　<span style="color:#8fa261">倒した ${od.down} 体ぶん 追っ手 −${od.down*FLEEDOWN}</span>`:"")+
-       `　戦闘に1回だけ`,
-      fleeUsed,()=>doAct({kind:"flee"}));
+      fleeUsed?`<span class="nogo">使い切った</span>`:`${od.mine} 対 ${od.theirs}`,
+      fleeUsed,()=>doAct({kind:"flee"}),
+      infoHtml({name:"逃 げ る",
+        d:fleeUsed?`<span class="nogo">もう一度は試せない</span>`
+          :`1ターン使う ・ <b>${od.mine}</b> 対 <b>${od.theirs}</b> の 素早さ比べ`+
+           (od.down?`　<span style="color:#8fa261">倒した ${od.down} 体ぶん 追っ手 −${od.down*FLEEDOWN}</span>`:"")+
+           `　<span class="k">戦闘に1回だけ</span>`}));
   }
   A.sk.forEach((s,i)=>{
     const noMp=A.MP<s.mp,onCd=s.cdLeft>0;
@@ -5869,11 +5965,41 @@ function drawActs(){
       tt=`　<span class="m">${sDice}d6</span>・<b class="thr">${
         s.even?"偶数の目":(t||"—")}</b>・必要 <b${noDice?' class="thr"':""}>${sNeed}</b>`;
     }
-    add("sk",s.n,`${s.d}${tt}　${tooLate?"（もう使えない）":why}`,
-      noMp||onCd||needFront||noTgt||tooLate||noDice,
+    /* 札には 名前と「MP・再使用」だけ。押せないときは その訳を短く。
+       効き目の説明・必要な成功・成功率・通ったときのダメージは 帯に出す */
+    const blocked=noMp||onCd||needFront||noTgt||tooLate||noDice;
+    const sub=tooLate?`<span class="nogo">もう使えない</span>`
+      :needFront?`<span class="nogo">先頭でのみ</span>`
+      :noTgt?`<span class="nogo">狙える相手がいない</span>`
+      :noDice?`<span class="nogo">ダイス ${sNeed}個 要る（いま ${sDice}）</span>`
+      :onCd?`<span class="nogo">あと ${s.cdLeft} ターン</span>`
+      :noMp?`<span class="nogo">MP ${s.mp} 足りない</span>`
+      :`MP ${s.mp}${s.cd?`・再使用 ${s.cd}`:""}`;
+    /* 成功率は 当てる技だけ。閾値は その技の補正込みで、
+       仮の相手（いちばん手前）で見積もる ── 札に出していたときと同じ見方 */
+    const sThr=(s.kind==="atk"&&pvT)?threshold(A,pvT,{thr:s.thr||0,even:s.even}):null;
+    const sOk=(s.kind==="atk"&&sThr!==null&&!noDice)
+      ?atLeast(sDice,sNeed,s.even?4:sThr):null;
+    /* 威力は powMul（倍率）と pow（足し算）の2つ。
+       〔`s.pow` を百分率と読み違えて 見込みダメージが出ていなかった〕 */
+    const sMul=s.powMul||1;
+    const sAdd=s.pow||0;
+    const pSk=x=>perHit(Math.max(0,
+      Math.round((pv+sAdd)*x*orgMul("outMul",A))-pvSh),
+      Math.round(pvDef*(1-Math.min(1,(s.pen||0)/100))));
+    add("sk",s.n,sub,blocked,
       ()=>{ if(s.kind==="atk"||s.kind==="declare")askTarget({kind:"skill",i});
-            else doAct({kind:"skill",i}); });
+            else doAct({kind:"skill",i}); },
+      infoHtml({
+        name:s.kind==="atk"?`${s.n} ${pips(sNeed,sDice)}`:s.n, d:s.d,
+        need:s.kind==="atk"?sNeed:0, dice:s.kind==="atk"?sDice:0,
+        thr:s.even?"偶数":sThr, ok:sOk,
+        dmg:(s.kind==="atk"&&!blocked)?[pSk(sMul),pSk(sMul*(1+XGAIN*XCAP))]:null,
+      }));
   });
+  /* まだ何も触っていないときは いちばん上の手（通常攻撃）を出しておく。
+     帯が空のままだと「何を読む場所なのか」が伝わらない */
+  if(firstInfo)setActInfo(firstInfo);
 }
 /* ---------- 逃 走 ----------
    1戦闘に1回だけ、1ターンを使って挑戦できる。
