@@ -1065,7 +1065,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.008";
+const VERSION="α1.0.009";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1078,6 +1078,9 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1009",tag:"fix",v:"α1.0.009",d:"2026-09-06",n:"火事場の力が 二重に効いていたのを直しました",b:[
+   "<b>火事場の力</b>が 倍率（×1.45まで）と 上乗せ（+30まで）の <b>二重取り</b>になっていました。説明どおり 倍率だけにしました",
+   "<b>妬心</b>と<b>逆境</b>のログが 2回ずつ出ていました。効き目は1回ぶんだけだったので、強さは変わりません"]},
  {id:"v1008",tag:"up",v:"α1.0.008",d:"2026-09-06",n:"技能を「戦う技能」と「暮らしの技能」に分け、魔術と治療を足しました",b:[
    "<b>技能が7つになりました。</b>戦う技能は <b>近接・射撃・魔術・治療</b>、暮らしの技能は 探索・鍛冶・料理です",
    "<b>格闘は「近接」に名前が変わりました。</b>中身は同じです",
@@ -5821,22 +5824,13 @@ async function playerAttack(targets,opt){
       log(`<span class="c">火事場の力</span> 威力 <span class="m">×${r.toFixed(2)}</span>`);
     }
     pow=Math.round(pow*pmul*skm);
-    if(opt.jealous&&t){
-      const r=1+Math.min(0.6,Math.max(0,(t.HP-A.HP)/Math.max(1,A.maxHP))*0.6);
-      skm*=r;
-      log(`<span class="c">妬 心</span> 相手のほうが多く持っている　威力 <span class="m">×${r.toFixed(2)}</span>`);
-    }
-    if(opt.rage){
-      const r=1+Math.min(0.6,(A.taken||0)/A.maxHP*0.8);
-      skm*=r;
-      log(`<span class="c">逆 境</span> これまでに受けた ${A.taken||0} が 威力 <span class="m">×${r.toFixed(2)}</span> になる`);
-    }
-    if(opt.lostPow){
-      const lost=1-A.HP/A.maxHP;
-      const add=Math.round(Math.min(30,lost*40));
-      pow+=add;
-      if(add)log(`<span class="c">火事場の力</span> 失った HP のぶん 威力 <span class="m">+${add}</span>`);
-    }
+    /* 〔削除〕ここに 妬心・逆境・火事場の力 が **もう一度** 書かれていた。
+       pow は上の行で確定しているので、妬心と逆境の二度目は skm を書き換えるだけで
+       どこにも効かず、**ログだけが2回出ていた**。
+       火事場の力だけは pow += で本当に効いており、掛け算（×1.45まで）と
+       足し算（+30まで）の **二重取り**になっていた。技の説明は
+       「失った HP のぶん 威力が上がる（最大 ×1.45）」なので、掛け算のほうが本来の形。
+       古い実装の消し忘れと思われる。 */
     const pen=Math.min(1,(opt.pen||0)+(passOn("pen")+(A.gearPen||0))/100);
     const tdef=Math.round(defOf(t)*(1-pen));
     let vals=(opt.even?rolls.filter(v=>v%2===0):rolls.filter(v=>v>=thr)).sort((a,b)=>a-b);
