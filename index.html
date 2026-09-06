@@ -1156,7 +1156,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.028";
+const VERSION="α1.0.029";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1169,6 +1169,10 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1029",tag:"fix",v:"α1.0.029",d:"2026-09-06",n:"同じ手をもう一度押すと 選択が解除されます",b:[
+   "手を選んだあと <b>同じ手をもう一度押すと やめられます</b>。「やめる」まで指を運ぶ必要がなくなりました",
+   "<b>自分にかける手（防御・構える・全体技・逃げる）を使うのは「これで使う」の札だけ</b>になりました。これまでは二度押しでも使えましたが、<b>取り消したくて押したのに走ってしまう</b>ので改めました",
+   "別の手を押せば そのまま乗り換わるのは これまでどおりです"]},
  {id:"v1028",tag:"up",v:"α1.0.028",d:"2026-09-06",n:"治癒もダイスで決まるようになりました",b:[
    "これまで回復技は <b>振らずに 無条件で</b>効いていました。攻撃だけが必要成功数で、癒しだけが素通りしていました",
    "<b>振るダイスは 治療の技能で決まります。</b>技能 40 で 2個、60 で 3個、100 で 5個",
@@ -5935,7 +5939,7 @@ function drawActs(){
       :noMp?`<span class="nogo">MP ${r.mp} 足りない</span>`
       :r.mp?`MP ${r.mp}`:wepName(A);
     add("atk",`${r.n} ${pips(r.need,nWith)}`,sub,
-      !anyTarget||noDice||noMp,()=>askTarget({kind:"rung",i}),
+      !anyTarget||noDice||noMp,()=>askTarget({kind:"rung",i},"rung"+i),
       infoHtml({
         name:`${r.n} ${pips(r.need,nWith)}`,
         need:r.need, dice:nWith, thr:thrNow, ok, mp:r.mp,
@@ -5945,7 +5949,7 @@ function drawActs(){
           :`${wepName(A)} で ${SK[skA].n.replace(/ /g,"")}${
              r.mul!==1?`　<b>威力 ×${r.mul.toFixed(1)}</b>`:"　素の一撃"}`,
       }),
-      pending&&pending.kind==="rung"&&pending.i===i);
+      pending&&pending.pickKey==="rung"+i);
   });
   /* 仕込み。次の攻撃ひとつぶん。重ねがけはできない */
   PREP.forEach(pz=>{
@@ -5957,7 +5961,7 @@ function drawActs(){
       infoHtml({name:pz.n, mp:pz.mp,
         d:prep?`<span class="nogo">もう仕込んである（${prep.n}）。重ねがけはできない</span>`
           :`${pz.d}　<span class="k">次の攻撃 ひとつぶん</span>`}),
-      pending&&pending.selfKey==="prep"+pz.id);
+      pending&&pending.pickKey==="prep"+pz.id);
   });
   if(bagCount()){
     add("bag","道 具 を 使 う",`${bagCount()} 個`,false,()=>bagPanel(),
@@ -5969,7 +5973,7 @@ function drawActs(){
     infoHtml({name:"防 御 す る",
       d:`シールド <b>${blockValue()}</b> ── 受けたぶんを肩代わりして減る　`
         +`<span class="k">MP +${GUARD_MP} 回復</span>`}),
-    pending&&pending.selfKey==="guard");
+    pending&&pending.pickKey==="guard");
   /* 「前へ出る／後ろへ下がる」は 一列にしたときに外した（α0.0048）。
      戦闘に入ったら 隊列は動かない。組み替えは戦闘の外でする。 */
   {
@@ -5982,7 +5986,7 @@ function drawActs(){
           :`1ターン使う ・ <b>${od.mine}</b> 対 <b>${od.theirs}</b> の 素早さ比べ`+
            (od.down?`　<span style="color:#8fa261">倒した ${od.down} 体ぶん 追っ手 −${od.down*FLEEDOWN}</span>`:"")+
            `　<span class="k">戦闘に1回だけ</span>`}),
-        pending&&pending.selfKey==="flee");
+        pending&&pending.pickKey==="flee");
   }
   A.sk.forEach((s,i)=>{
     const noMp=A.MP<s.mp,onCd=s.cdLeft>0;
@@ -6052,7 +6056,7 @@ function drawActs(){
       Math.round((pv+sAdd)*x*orgMul("outMul",A))-pvSh),
       Math.round(pvDef*(1-Math.min(1,(s.pen||0)/100))));
     add("sk"+(isHeal?" heal":""),s.n,sub,blocked,
-      ()=>{ if(s.kind==="atk"||s.kind==="declare")askTarget({kind:"skill",i});
+      ()=>{ if(s.kind==="atk"||s.kind==="declare")askTarget({kind:"skill",i},"sk"+i);
             else askSelf({kind:"skill",i},"sk"+i); },
       infoHtml({
         name:(s.kind==="atk"||isHeal)?`${s.n} ${pips(sNeed,isHeal?hN:sDice)}`:s.n,
@@ -6066,7 +6070,7 @@ function drawActs(){
           Math.round(A.maxHP*s.heal*(1+XGAIN*XCAP)),hAvg]:null,
         dmg:(s.kind==="atk"&&!blocked)?[pSk(sMul),pSk(sMul*(1+XGAIN*XCAP))]:null,
       }),
-      pending&&pending.kind==="skill"&&pending.i===i);
+      pending&&pending.pickKey==="sk"+i);
   });
   /* ===== 狙いを決めている間も 手は並べたまま（α1.0.026） =====
      前は `#acts` を空にして「やめる」だけにしていたので、
@@ -6091,8 +6095,8 @@ function drawActs(){
     $("#prompt").textContent=pending.item
       ? `▸ ${ITEMS[pending.item].n} を投げる相手を選ぶ`
       : pending.self
-      ? "▸ これでよければ もう一度押す　（別の手を押せば 選び直せる）"
-      : "▸ 狙う相手を選ぶ　（別の手を押せば 選び直せる）";
+      ? "▸ 「これで使う」で決める　（同じ手をもう一度押すと やめる）"
+      : "▸ 狙う相手を選ぶ　（同じ手をもう一度押すと やめる）";
   }
   /* まだ何も触っていないときは いちばん上の手（通常攻撃）を出しておく。
      帯が空のままだと「何を読む場所なのか」が伝わらない */
@@ -6198,11 +6202,15 @@ function columnMate(t){
   const L=foeLine(), i=L.indexOf(t);
   return (i<0?null:L[i+1])||null;
 }
-function askTarget(a){
+/* 選ぶのをやめる。**同じ札をもう一度押したとき**もこれ（α1.0.029） */
+function unpick(){ pending=null;draw();drawActs(); }
+function askTarget(a,key){
   const A=actor();   /* 手番の主。仲間が動いているときは その者 */
   const s=a.kind==="skill"?A.sk[a.i]:null;
-  if(s&&s.all){ return askSelf(a,"sk"+a.i); }   /* 全体技も 相手を選ばない */
-  pending=s?{...a,backOnly:s.backOnly,slower:s.slower}:a;
+  if(s&&s.all){ return askSelf(a,key); }   /* 全体技も 相手を選ばない */
+  if(pending&&pending.pickKey===key)return unpick();
+  pending=s?{...a,backOnly:s.backOnly,slower:s.slower,pickKey:key}
+           :{...a,pickKey:key};
   /* 手は消さない。drawActs が 印と「やめる」まで面倒を見る（α1.0.026） */
   draw();drawActs();
 }
@@ -6212,14 +6220,17 @@ function askTarget(a){
    一度目で選び（金の枠が付き、帯に効き目が出る）、
    二度目 ── 同じ札か「これで使う」── で 実際に使う。 */
 function askSelf(a,key){
-  if(pending&&pending.self&&pending.selfKey===key)return fireSelf();
-  pending={...a,self:true,selfKey:key};
+  /* もう一度押したら **やめる**（α1.0.029）。
+     使うと決めるのは「これで使う」の札だけ ── 二度押しで使ってしまうと、
+     取り消したくて押したのに 走ってしまう。 */
+  if(pending&&pending.pickKey===key)return unpick();
+  pending={...a,self:true,pickKey:key};
   draw();drawActs();
 }
 function fireSelf(){
   if(!pending||!pending.self)return;
   const p={...pending};
-  delete p.self;delete p.selfKey;
+  delete p.self;delete p.pickKey;
   pending=null;
   resolvePlayer(p,null);
 }
@@ -10956,7 +10967,7 @@ function bagPanel(){
 async function useItem(k){
   const it=ITEMS[k];
   if(it.target){
-    pending={item:k};
+    pending={item:k,pickKey:"item"+k};
     /* 道具も 手を並べたまま（α1.0.026）。drawActs が「やめる」を足す */
     draw();drawActs();bindTargets();
     return;

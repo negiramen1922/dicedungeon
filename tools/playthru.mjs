@@ -123,7 +123,15 @@ const fightOut=async(maxActs,maxMs)=>{
     const atk=await pg.$('#acts .act.atk:not([disabled])');
     if(atk){await atk.click({force:true});acts++;await pg.waitForTimeout(130);continue;}
     const def=await pg.$('#acts .act.def:not([disabled])');
-    if(def){await def.click({force:true});acts++;await pg.waitForTimeout(120);continue;}
+    if(def){
+      /* 守りは 相手を選ばないので「これで使う」まで押さないと使われない
+         （α1.0.029 で 二度押しは「やめる」になった）。
+         ここを直さないと 押しても押しても使われず 決着しない */
+      await def.click({force:true});await pg.waitForTimeout(120);
+      const go=await pg.$('#acts .act.go2');
+      if(go){await go.click({force:true});}
+      acts++;await pg.waitForTimeout(140);continue;
+    }
     await pg.waitForTimeout(120);
   }
   if(await pg.evaluate(()=>over))return true;
