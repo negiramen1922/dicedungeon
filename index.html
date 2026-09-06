@@ -159,6 +159,10 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .pop.heal{color:#7fe08a}
 .pop.weakhit{color:#ffd23f}
 .pop.resisthit{color:#8fd8ff}
+/* 超過が出た一撃（α1.0.021）。踏み込みを重ねるのをやめたので、
+   **重さは この数字だけ**が背負う。大きく・金色に寄せて 目で分かるようにする */
+.pop.big{font-size:30px;color:#ffb454;top:-30px}
+.pop.big.weakhit{color:#ffd23f}
 @keyframes pop{
   0%{transform:translate(-50%,14px) scale(.6);opacity:0}
   45%{transform:translate(-50%,-6px) scale(1.15);opacity:1}
@@ -1076,7 +1080,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.020";
+const VERSION="α1.0.021";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1089,6 +1093,11 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1021",tag:"fix",v:"α1.0.021",d:"2026-09-06",n:"ひと振りで 2回3回 殴っているように見えていました",b:[
+   "<b>ひと振りは 一撃です。</b>超過が出たぶん <b>踏み込みと打撃音を くり返して</b>いました。ダメージは1回ぶんなのに、必要1の通常攻撃で 2つ成功すると <b>2回攻撃したように見えて</b>いました",
+   "<b>同じ数字が 2つ浮いていました。</b>ダメージの数字を 2か所から出していたので、1回の攻撃で 「−52」が二度出ていました。1つにしています",
+   "<b>超過は 数字で見せます。</b>大きく入った回は 数字が太くなります。振りの数ではなく <b>出る数字</b>が重さです",
+   "手応えは変えていません。<b>見え方だけ</b>を直しました"]},
  {id:"v1020",tag:"up",v:"α1.0.020",d:"2026-09-06",n:"戦闘を「技の階段」にしました。届かない段も 灰色で見えています",b:[
    "<b>コマンド欄そのものが 階段になりました。</b>通常攻撃 ● ／ 斬撃 ●● ／ 強撃 ●●● ／ 大技 ●●●● が <b>はじめから全部並びます</b>。覚える技ではありません",
    "<b>玉（●●○）で 必要な成功の数が見えます。</b>成功する確率も 色つきで出ます（緑・黄・赤）",
@@ -6200,17 +6209,18 @@ async function playerAttack(targets,opt){
     const base=perHit(Math.round(pow*orgMul("outMul",A)*em),tdef);
     const rate=base?dmg/base-1:0;
     const startHP=t.HP, endHP=Math.max(0,t.HP-dmg);
-    /* ひと振りで1つになったので 演出も1回。
-       超過があったときだけ 踏み込みを重ねて「大きく入った」ことを見せる。 */
-    const shown=1+Math.min(XCAP,over);
-    for(let i=0;i<shown;i++){
-      await lungeUnit(A);
-      SFX.atk(A.wep.snd);
-      fxOn(t,A.wep.snd);
-      setHPBar(t,startHP-(startHP-endHP)*(i+1)/shown);
-      await wait(i===shown-1?170:110);
-    }
-    popOn(t,"−"+dmg,"each"+(em>1?" weakhit":em<1?" resisthit":""));
+    /* ===== ひと振りは **一撃**（α1.0.021） =====
+       段3 で「超過があったら 踏み込みを重ねて 大きく入ったことを見せる」と
+       書いて `1+超過` 回まわしていた。ダメージは1回ぶんなのに
+       **踏み込みと効果音が2〜3回鳴る**ので、遊ぶ人からは
+       「必要1で2つ成功したら 2回攻撃した」と見えていた。
+       仕組みと真逆なので落とした。**重さは 出る数字で見せる。** */
+    await lungeUnit(A);
+    SFX.atk(A.wep.snd);
+    fxOn(t,A.wep.snd);
+    setHPBar(t,endHP);
+    await wait(170);
+    popOn(t,"−"+dmg,(over>0?"big ":"")+"each"+(em>1?" weakhit":em<1?" resisthit":""));
     t.HP=endHP;
     await checkPhase(t);       /* しきい値を切ったらボスが段階を上げる */
     const pin=passOn("pin",A);
@@ -6239,7 +6249,9 @@ async function playerAttack(targets,opt){
       fxOn(t,"charge");popOn(t,"弱 点","weakhit");}
     else if(em<1&&t.key)learnElem(t.key,"resist",atkEl);
     if(opt.stun)t.stun=true;
-    draw();popOn(t,"−"+dmg,(em>1?"weakhit":em<1?"resisthit":""));SFX.dmg();
+    /* 数字は 一撃のところで もう出した（α1.0.021）。ここで出すと **同じ数字が2つ**
+       浮いて「2回殴った」ように見える。音だけ鳴らす。 */
+    draw();SFX.dmg();
     log(`<span class="a">${A.name}</span> → <span class="b">${t.name}</span>　`+
       `${n}d6・${thr}以上 <span class="m">成功 ${hits}</span>／必要 ${need}　`+
       (over?`<span class="c">超過 ${Math.min(XCAP,over)}（×${xMul.toFixed(2)}）</span>　`:"")+
@@ -6713,16 +6725,16 @@ async function enemyAct(f){
     /* シールドは 殴られたら役目を終える。丸ごと受け止めた回も使ったことにする */
     if(soaked>0){popSelf("シールド −"+soaked,"blk");}
     {
-      /* ひと振りで1つ。超過があったときだけ 踏み込みを重ねる */
-      const shown=1+Math.min(XCAP,fover);
-      for(let i=0;i<shown;i++){
-        await lungeUnit(f);
-        SFX.atk(f.snd);
-        fxOn(tg,f.snd);
-        setHPBar(tg,startHP-(startHP-endHP)*(i+1)/shown);
-        await wait(i===shown-1?160:110);
-      }
-      popSelf("−"+dmg,"each");
+      /* ===== ひと振りは **一撃**（α1.0.021） =====
+         超過があったぶん 踏み込みを重ねていたが、ダメージは1回ぶん。
+         「必要1で2つ成功したら 2回殴られた」ように見えて 仕組みと真逆だった。
+         **重さは 出る数字で見せる。** */
+      await lungeUnit(f);
+      SFX.atk(f.snd);
+      fxOn(tg,f.snd);
+      setHPBar(tg,endHP);
+      await wait(170);
+      popSelf("−"+dmg,(fover>0?"big ":"")+"each");
     }
     tg.HP=endHP;
     if(t.drain&&dmg>0){
@@ -6748,7 +6760,7 @@ async function enemyAct(f){
       }
     }
     draw();
-    if(hits){popSelf("−"+dmg);SFX.dmg();}
+    if(hits){SFX.dmg();}   /* 数字は 一撃のところで出している（α1.0.021） */
     /* 反撃は シールドで消したぶんも含めて返す。
        受け止めた一撃こそ返したいので、HP が減った量ではなく 来た量で測る。 */
     if(tg.counter&&raw>0&&f.HP>0){
