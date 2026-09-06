@@ -1065,7 +1065,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.010";
+const VERSION="α1.0.011";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1078,6 +1078,14 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1011",tag:"up",v:"α1.0.011",d:"2026-09-06",n:"技能が育つようになりました。レベルが上がるたび 1点を 好きな技能へ注げます",b:[
+   "<b>レベルが1つ上がるごとに 1点</b>もらえます。装備・状態の窓の「ステータス」で 好きな技能に注げます。<b>戻せません</b>",
+   "<b>技能20ごとに ダイスが1つ増えます。</b>注ぐほど 振れるダイスが増え、必要成功の多い技に手が届きます",
+   "技能の上限は100なので、<b>一芸を極めると 2つ目に回せる点は少なくなります。</b>何を伸ばすかが 一味の役割になります",
+   "<b>仲間は 自分で注ぎます。</b>得物で使う技能から順に埋めていきます",
+   "<b>戦闘の札に「振れるダイス」と「必要成功」が出るようになりました。</b>ダイスが必要成功に届かない技は 押せない札になります",
+   "〔修正〕通常攻撃の札が <b>まだ武器のダイス数を出していました</b>。実際に振る数と食い違っていたのを直しました",
+   "〔修正〕通常攻撃の札の見積りが <b>古い「出目ごとに1発」のまま</b>でした。いまの「素〜超過いっぱい」の幅に直しました"]},
  {id:"v1010",tag:"up",v:"α1.0.010",d:"2026-09-06",n:"戦闘が「必要成功数」になりました。技ごとに 要る成功の数が決まります",b:[
    "<b>技には 必要な成功の数があります。</b>届かなければ ダメージは出ません（MP は消えます）",
    "<b>超えたぶんは 威力の上乗せ</b>になります。+25%／個で、<b>2つまで</b>数えます",
@@ -3470,15 +3478,56 @@ const SKORIG={
   envy:    {search:10, shoot:5},
   lust:    {shoot:10},
 };
-/* 技能値。職業・種族・欲望だけで決まる。
+/* 生まれつきの技能値。職業・種族・欲望だけで決まる。
    仲間は欲望を持たない（欲望は主人公ひとりのもの）ので その項は 0 になる。 */
-function skillOf(k,u){
+function skillBorn(k,u){
   u=u||me;
   const job =u?u.job :sel.job, race=u?u.race:sel.race, orig=u?u.orig:sel.orig;
-  return Math.max(0,Math.min(SKMAXV,
+  return Math.max(0,
      ((SKJOB[job]||{})[k]||0)
     +((SKRACE[race]||{})[k]||0)
-    +((SKORIG[orig]||{})[k]||0)));
+    +((SKORIG[orig]||{})[k]||0));
+}
+/* いまの技能値 ＝ 生まれ ＋ 育ち。上限は SKMAXV。 */
+function skillOf(k,u){
+  u=u||me;
+  return Math.max(0,Math.min(SKMAXV, skillBorn(k,u)+(((u&&u.skg)||{})[k]|0)));
+}
+
+/* ---------- 技 能 の 育 ち ----------
+   レベルが1つ上がるごとに 1点。何に注ぐかは 遊ぶ人が決める。**戻せない。**
+
+   Lv100 まで行っても 総量は 99点しかない。得意を 100 まで伸ばすと 残りは
+   44点で、2つ目は 37 止まり（ダイス1個）。**予算が「一芸特化」しか買えない
+   ように出来ている**ので、技能を増やしても薄まらず、増えるのは役割のほう。
+   3人の一味で噛み合わせるための作りつけ。                              */
+const SKPTLV=1;                    /* レベル1つにつき配る点 */
+function skPtsOf(lv){ return Math.max(0,((lv|0)-1)*SKPTLV); }
+function skSpent(u){ u=u||me; let s=0; const g=u.skg||{}; for(const k in g)s+=g[k]|0; return s; }
+/* あと何点まで注げるか。100 を越えるぶんは 捨てるだけなので 注がせない */
+function skRoom(k,u){ u=u||me; return Math.max(0,SKMAXV-skillOf(k,u)); }
+function skCanUp(k,u){ u=u||me; return (u.skp|0)>0 && skRoom(k,u)>0; }
+function skUp(k,u,n){
+  u=u||me;
+  n=Math.min(n||1,u.skp|0,skRoom(k,u));
+  if(n<=0)return 0;
+  u.skg=u.skg||{};
+  u.skg[k]=(u.skg[k]|0)+n;
+  u.skp=(u.skp|0)-n;
+  return n;
+}
+/* 仲間は自分では選ばない。得物で使う技能へ注ぎ、そこが埋まったら
+   次に高い戦う技能へ移る（暮らしの技能には注がない）。 */
+function mateSkAuto(u){
+  let guard=200;
+  while((u.skp|0)>0&&guard-->0){
+    const first=wepSkill(u);
+    const order=[first,...WARSK.filter(k=>k!==first)
+      .sort((a,b)=>skillOf(b,u)-skillOf(a,u))];
+    const k=order.find(x=>skRoom(x,u)>0);
+    if(!k)break;                   /* どこも満杯。余った点は そのまま置いておく */
+    if(!skUp(k,u,1))break;
+  }
 }
 /* その技を振るときの技能。**技ごとに決まる。**
    技が自分で名乗っていれば（act.sk）それを使い、名乗らなければ得物から決める。
@@ -3496,18 +3545,6 @@ function wepSkill(u,act){
    限界突破で 100 を越えたら 6個。段3 で命中の主役になる。 */
 const SKDIEMAX=6;   /* 限界突破ぶんを含む上限 */
 function skillDice(k,u){ return Math.max(1,Math.min(SKDIEMAX,Math.floor(skillOf(k,u)/20))); }
-/* 技能値の一覧。いま持っている武器で使う技能に印を付ける */
-function skillLine(sep,u,only){
-  u=u||me;
-  const use=wepSkill(u);
-  const keys=Object.keys(SK).filter(k=>
-    only==="war"?SK[k].war : only==="life"?!SK[k].war : true);
-  return keys.map(k=>{
-    const on=(k===use);
-    return `<span${on?' style="color:var(--brass)"':""}>${SK[k].n} <b${
-      on?' style="color:var(--brass)"':""}>${skillOf(k,u)}</b></span>`;
-  }).join(sep||"　");
-}
 
 const RACE={
  hume:{n:"ヒューム",d:"癖がない。何にでも伸びる。",st:{STR:5,DEX:5,INT:5,VIT:2,HP:32,MP:3},scout:1},
@@ -3597,7 +3634,7 @@ const REW={
    {id:"ak3",n:"カウンター",kind:"guard",mp:4,cd:3,blockPct:10,counter:0.4,
     d:"シールド 最大HPの 10%　受けたダメージの 40% を返す"},
    {id:"ak4",n:"渾 身",kind:"atk",mp:6,cd:4,suc:2,powMul:1.9,
-    d:"必要成功 2　当てにくいが 通れば重い（威力 ×1.9）"},
+    d:"当てにくいが 通れば重い（威力 ×1.9）"},
    {id:"ak5",n:"兜割り",kind:"atk",mp:4,cd:3,powMul:1.15,ail:[{k:"break",v:10,t:2}],
     d:"威力 ×1.15　相手の VIT −10（3ターン）"},
    {id:"ak6",n:"威 圧",kind:"atk",mp:3,cd:3,powMul:0.5,ail:[{k:"weak",v:12,t:2}],
@@ -3630,9 +3667,9 @@ const REW={
    {id:"as2",n:"連 撃",kind:"atk",mp:4,cd:3,chain:true,
     d:"最初に振った 6 の数だけ ダイスを追加する（追加ぶんの 6 は数えない）"},
    {id:"as3",n:"急所突き",kind:"atk",mp:3,cd:2,suc:2,powMul:1.6,
-    d:"必要成功 2　細い隙を突く（威力 ×1.6）"},
+    d:"細い隙を突く（威力 ×1.6）"},
    {id:"as4",n:"首 刈 り",kind:"atk",mp:5,cd:3,suc:3,powMul:2.7,
-    d:"必要成功 3　狙いが定まれば 一撃で断つ（威力 ×2.7）"},
+    d:"狙いが定まれば 一撃で断つ（威力 ×2.7）"},
    {id:"as5",n:"疾 走",kind:"focus",mp:3,cd:3,dex:12,dur:99,
     d:"この戦闘のあいだ DEX +12"},
    {id:"as6",n:"追い討ち",kind:"atk",mp:6,cd:5,again:true,once:true,
@@ -3666,7 +3703,7 @@ const REW={
    {id:"akd1",n:"岩砕き",kind:"atk",mp:5,cd:3,powMul:1.35,el:"blunt",
     d:"叩 属性　威力 ×1.35"},
    {id:"akd2",n:"ロックスパイク",kind:"atk",mp:6,cd:4,suc:2,powMul:1.8,el:"earth",
-    d:"土 属性　必要成功 2　足元から岩を突き上げる（威力 ×1.8）"},
+    d:"土 属性　足元から岩を突き上げる（威力 ×1.8）"},
   ],
   elf:[
    {id:"ake1",n:"精霊の矢",kind:"atk",mp:4,cd:2,powMul:1.22,el:"light",
@@ -3708,7 +3745,7 @@ const REW={
   wrath:[
    {id:"awr1",n:"血の契",kind:"atk",mp:0,cd:3,suc:2,powMul:1.7,
     selfBuff:{pow:10,t:1},
-    d:"必要成功 2　血を捧げて打つ（威力 ×1.7）　自分の威力 +10%（2ターン）"},
+    d:"血を捧げて打つ（威力 ×1.7）　自分の威力 +10%（2ターン）"},
    {id:"awr2",n:"逆 境",kind:"atk",mp:6,cd:4,rage:true,
     d:"この戦闘で受けた ダメージが多いほど 威力が上がる（最大 ×1.6）"},
    {id:"awr3",n:"復 讐",kind:"atk",mp:4,cd:3,lostDice:true,
@@ -4281,6 +4318,11 @@ function fixUnit(u){
   if(!("orig" in u))u.orig=(u===me)?sel.orig:null;      /* 仲間は欲望を持たない */
   if(!u.short)u.short=(JOB[u.job]||{}).n||"";
   if(!u.art)u.art=(JOB[u.job]||{}).art||u.job;
+  /* 技能の育ち。古い控えは持っていないので、レベルぶんを ここで配り直す。
+     すでに注いだぶんは引く（控えを読むたびに増えないように）。 */
+  if(!u.skg||typeof u.skg!=="object")u.skg={};
+  if(typeof u.skp!=="number")u.skp=Math.max(0,skPtsOf(u.lv)-skSpent(u));
+  if(u.mate)mateSkAuto(u);          /* 仲間のぶんは その場で注ぐ */
   return u;
 }
 let fleeUsed=false, foeStart=0;   /* 逃走は1戦闘に1回。倒した数だけ逃げやすくなる */
@@ -4336,6 +4378,7 @@ function makeMe(){
     base:base,grow:{STR:0,DEX:0,INT:0,VIT:0,HP:0,MP:0},
     eq:{wep:null,armor:null,acc:[]},stash:[],
     gold:0,bag:{},mats:{},recipes:[],lv:1,exp:0,
+    skg:{},skp:0,                       /* 技能の育ち：注いだぶん／まだ注いでいない点 */
     sk:[],pass:[],block:0,half:false};
   recalcMe(m,true);
   return m;
@@ -5435,13 +5478,20 @@ function drawActs(){
   const pv=powOf(A,{});
   const pvT=alive().filter(f=>f!==A)[0]||null;
   const pvSh=pvT?shieldOf(pvT):0, pvDef=pvT?defOf(pvT):0;
-  const pOne=v=>perHit(Math.max(0,Math.round(hitDmg(pv,v,4)*orgMul("outMul",A))-pvSh),pvDef);
-  const per=pOne(4);
-  /* 先制のダイスと パッシブのダイスも 見えるところに出す（振る数と食い違っていた） */
-  const nAtk=Math.max(1,A.wep.hands+scoutBonus+passOn("dice")-ailSum(A,"shrink"));
-  const RR={hi:pOne(6)};
+  /* ひと振りで ひとつのダメージ（α2・段3）。超過のぶんだけ上乗せされるので
+     見積りは「素 〜 超過いっぱい」の幅で出す。順は 本番と同じ
+     （威力 → 超過 → シールド → VIT）。的はまだ決まっていないので
+     いちばん手前の相手を仮の相手にする。 */
+  const pOne=x=>perHit(Math.max(0,Math.round(pv*x*orgMul("outMul",A))-pvSh),pvDef);
+  /* 振るダイスの数は **技能**で決まる。得物の hands はもう見ない（α2・段3）。
+     ここが古いままで、札に出る数と 実際に振る数が食い違っていた。 */
+  const skA=wepSkill(A);
+  const baseN=skillDice(skA,A);
+  const nAtk=Math.max(1,baseN+scoutBonus+passOn("dice")-ailSum(A,"shrink"));
   add("atk",A.wep.n+"で攻撃",
-    anyTarget?`${nAtk}d6${nAtk!==A.wep.hands?`<span class="m">（${A.wep.hands}＋${nAtk-A.wep.hands}）</span>`:""} ・ <b class="thr">${thrText()}</b> で当たり ・ 1ヒット ${per} ・ 最大 ${RR.hi*nAtk}`:
+    anyTarget?`${SK[skA].n.replace(/ /g,"")} <b>${nAtk}d6</b>${
+      nAtk!==baseN?`<span class="m">（${baseN}${nAtk>baseN?"＋":"−"}${Math.abs(nAtk-baseN)}）</span>`:""
+      }・<b class="thr">${thrText()}</b>・必要 <b>1</b>・${pOne(1)}〜${pOne(1+XGAIN*XCAP)}`:
       "届く相手がいない",
     !anyTarget,()=>askTarget({kind:"atk"}));
   if(bagCount()){
@@ -5470,18 +5520,30 @@ function drawActs(){
       ? !alive().some(f=>depthOf(f)>0)
       : (s.slower? !alive().some(f=>f.DEX<dexOf()) : !foes.some(canTarget)))
       ||(s.kind==="atk"&&vowGone());
+    /* 必要成功数（α2）。振れるダイスが 必要成功に届いていなければ
+       その技は **どう振っても通らない**ので、押せない札にして そう書く。
+       技能を伸ばせば届く ── そこが「何に注ぐか」の選びどころになる。 */
+    const sNeed=Math.max(1,s.suc||1);
+    const sDice=(s.kind==="atk")
+      ?Math.max(1,skillDice(wepSkill(A,s),A)+(s.dice||0)+passOn("dice")
+        +scoutBonus-ailSum(A,"shrink"))
+      :0;
+    const noDice=(s.kind==="atk")&&sDice<sNeed;
     const why=needFront?"先頭でのみ":noTgt?"狙える相手がいない":
+      noDice?`ダイスが足りない（必要 ${sNeed}・振れる ${sDice}）`:
       (onCd?`あと ${s.cdLeft} ターン`:`MP ${s.mp}・再使用 ${s.cd}`);
-    /* 当てる技だけ、その技の補正込みの閾値を出す */
+    /* 当てる技だけ、その技の補正込みの閾値と 必要成功数を出す */
     let tt="";
     if(s.kind==="atk"&&!noTgt&&!needFront&&!tooLate){
       const f=s.backOnly?(x=>depthOf(x)>0&&x.HP>0)
              :s.slower ?(x=>x.DEX<dexOf()&&x.HP>0)
              :null;
       const t=thrText({thr:s.thr||0,even:s.even},f);
-      if(t)tt=`　<b class="thr">${s.even?"偶数の目":t+" で当たり"}</b>`;
+      tt=`　<span class="m">${sDice}d6</span>・<b class="thr">${
+        s.even?"偶数の目":(t||"—")}</b>・必要 <b${noDice?' class="thr"':""}>${sNeed}</b>`;
     }
-    add("sk",s.n,`${s.d}${tt}　${tooLate?"（もう使えない）":why}`,noMp||onCd||needFront||noTgt||tooLate,
+    add("sk",s.n,`${s.d}${tt}　${tooLate?"（もう使えない）":why}`,
+      noMp||onCd||needFront||noTgt||tooLate||noDice,
       ()=>{ if(s.kind==="atk"||s.kind==="declare")askTarget({kind:"skill",i});
             else doAct({kind:"skill",i}); });
   });
@@ -9262,7 +9324,7 @@ let chNow=CHTABS[0].k;
 function chCount(k,U){
   U=U||me;
   if(k==="eq") return `装飾 ${(U.eq.acc||[]).length}/${ACCMAX}`;
-  if(k==="st") return `Lv ${U.lv}`;
+  if(k==="st") return (U===me&&(U.skp|0))?`Lv ${U.lv}　技能 +${U.skp}`:`Lv ${U.lv}`;
   if(k==="bag")return `道具 ${bagLabel()}`;
   return `技${U.sk.length} 癖${U.pass.length}`;
 }
@@ -9315,6 +9377,52 @@ function chBodyEq(){
     :`<div class="mitem" style="color:#4d5346">なし　<span class="s">宝箱や戦利品で枠が埋まっているものは、いったんここに入る</span></div>`;
   return h;
 }
+/* ---------- 技 能 の 欄 ----------
+   技能ごとに「生まれ ＋ 育ち」と、そこから振れるダイスの数を出す。
+   まだ注いでいない点があれば ＋の札が出る。**戻せない**ので、
+   押したその場で確かめの札に変わる作りにはしていない ── 1点ずつしか動かない。 */
+function skDots(n){ return "●".repeat(n)+"○".repeat(Math.max(0,SKDIEMAX-n)); }
+function skRow(k,U,canEdit){
+  const born=skillBorn(k,U), got=((U.skg||{})[k]|0), now=skillOf(k,U);
+  const war=!!SK[k].war, use=war&&(k===wepSkill(U));
+  const col=use?' style="color:var(--brass)"':"";
+  const room=skRoom(k,U);
+  const btn=canEdit
+    ? `<button class="minib" data-skup="${k}"${(U.skp|0)>0&&room>0?"":" disabled"}>＋1</button>`
+    : "";
+  return `<div class="mitem eqrow">
+    <span class="eqk"${col}>${SK[k].n}</span>
+    <span class="eqv"><b${col}>${now}</b>${
+      got?`<span class="s">（生まれ ${born} ＋ 育ち ${got}）</span>`
+        :`<span class="s">（生まれ ${born}）</span>`}${
+      war?`　<span class="s">ダイス</span> <b${col}>${skillDice(k,U)}</b>
+           <span class="s">${skDots(skillDice(k,U))}</span>`
+         :`　<span class="s">1d100 が ${Math.min(now,SKROLLMAX)} 以下で成功</span>`}${
+      room?"":`　<span class="s">上限</span>`}
+      ${btn}</span></div>`;
+}
+function skGrowPanel(U){
+  U=U||me;
+  const canEdit=(U===me)&&!inBattle();
+  const pts=U.skp|0;
+  let h=`<div class="msec">戦 う 技 能　<span style="color:var(--dim);letter-spacing:0">${
+    SK[wepSkill(U)].n.replace(/ /g,"")} で当てる</span></div>`;
+  if(U===me)
+    h+=`<div class="mitem" style="color:${pts?"var(--brass)":"#4d5346"}">${
+      pts?`注げる点が <b style="color:var(--brass)">${pts}</b> つ ある`
+         :`注げる点は ない`}<span class="s">　レベルが1つ上がるごとに 1点。<b>戻せない</b>${
+      inBattle()?"　戦いのあいだは 注げない":""}</span></div>`;
+  else
+    h+=`<div class="mitem" style="color:#4d5346">仲間は 得物で使う技能から順に 自分で注ぐ</div>`;
+  h+=WARSK.map(k=>skRow(k,U,canEdit)).join("");
+  h+=`<div class="mitem"><span class="s">技能 20 ごとに ダイスが 1つ増える。
+    振ったダイスのうち <b>4以上</b>が成功。技には それぞれ 必要な成功の数がある</span></div>`;
+  h+=`<div class="msec">暮 ら し の 技 能　<span style="color:var(--dim);letter-spacing:0">1d100 で振る</span></div>`;
+  h+=Object.keys(SK).filter(k=>!SK[k].war).map(k=>skRow(k,U,canEdit)).join("");
+  h+=`<div class="mitem"><span class="s">探索は戦いのはじめの先制、鍛冶と料理はこしらえるときに振る。
+    振る技能は ${SKROLLMAX} より上には効かない</span></div>`;
+  return h;
+}
 function chBodySt(U){
   U=U||me;
   const c=lukCuts(U.LUK);
@@ -9332,14 +9440,7 @@ function chBodySt(U){
     <span>INT <b>${U.INT}</b></span><span>VIT <b>${U.VIT}</b></span>
     <span>シールド <b>${blockValue()}</b><span class="s">（最大HPの${guardPct()}%）</span></span>
     <span style="color:#c9a227">幸運 <b style="color:#c9a227">${U.LUK}</b></span></div>
-  <div class="msec">戦 う 技 能　<span style="color:var(--dim);letter-spacing:0">${
-    SK[wepSkill(U)].n.replace(/ /g,"")} で当てる</span></div>
-  <div class="mitem">${skillLine("　",U,"war")}
-    <br><span class="s">${SK[wepSkill(U)].n.replace(/ /g,"")} は いま持っている ${
-      U.wep?U.wep.n:"得物"} の命中に効く。治療は 傷を塞ぐ技に効く</span></div>
-  <div class="msec">暮 ら し の 技 能　<span style="color:var(--dim);letter-spacing:0">1d100 で振る</span></div>
-  <div class="mitem">${skillLine("　",U,"life")}
-    <br><span class="s">探索は戦いのはじめの先制、鍛冶と料理はこしらえるときに振る</span></div>
+  ${skGrowPanel(U)}
   <div class="msec">幸 運</div>
   <div class="mitem" style="color:var(--ink)">幸運 ${U.LUK}　＝　生まれ ${
     U.base.LUK||0}${(U.LUK-(U.base.LUK||0))?`　＋ 装備 ${U.LUK-(U.base.LUK||0)}`:""}
@@ -9509,6 +9610,13 @@ function charModal(back,U){
     };});
   $("#mbox").querySelectorAll("[data-ch]").forEach(b=>{
     b.onclick=()=>{chNow=b.dataset.ch;SFX.click();charModal(back);};});
+  /* 技能に1点注ぐ。主人公だけ・戦いの外だけ。注いだら控えを取り直す */
+  $("#mbox").querySelectorAll("[data-skup]").forEach(b=>{
+    b.onclick=()=>{
+      if(U!==me||inBattle())return;
+      if(!skUp(b.dataset.skup,me,1))return;
+      SFX.pick();runSave();charModal(back);
+    };});
   $("#mbox").querySelectorAll("[data-eq]").forEach(b=>{
     b.onclick=()=>{const i=+b.dataset.eq;
       const g=me.stash[i];
@@ -9720,6 +9828,8 @@ function growUp(u){
   u=u||me;
   const g=GROW[u.job]||GROW[sel.job];
   for(const k in g)u.grow[k]+=g[k];
+  u.skp=(u.skp|0)+SKPTLV;           /* 技能に注げる点が 1つ増える */
+  if(u.mate)mateSkAuto(u);          /* 仲間は自分で選ばない */
   recalcMe(u,false);
   return g;
 }
@@ -9755,6 +9865,7 @@ function makeMate(job,race,lv){
     base,grow:{STR:0,DEX:0,INT:0,VIT:0,HP:0,MP:0},
     eq:{wep:null,armor:null,acc:[]},stash:[],
     gold:0,bag:{},mats:{},recipes:[],lv:1,exp:0,
+    skg:{},skp:0,                       /* 技能の育ち：注いだぶん／まだ注いでいない点 */
     sk:[],pass:[],block:0,half:false};
   m.picks=0;
   recalcMe(m,true);
@@ -9920,6 +10031,8 @@ function levelUpModal(after){
     <div class="lvstat">${rows}
       <span class="lvrow">最大HP　<b>${before.HP}</b> → <b class="up">${me.maxHP}</b></span></div>
     <div class="msub" style="text-align:center;margin-top:12px">
+      技能に注げる点が <b style="color:var(--brass)">1</b> つ 増えた
+      <span class="s">（持ち越し ${me.skp}　装備の窓の「ステータス」で注ぐ）</span><br>
       新しい スキル か パッシブ を ひとつ 覚えられる</div>
     <div class="ndbtn"><button class="go2" id="lvGo">覚えるものを選ぶ</button></div>`;
   openModal(h);
@@ -10373,11 +10486,16 @@ function drawTut(){
   const combo=Object.keys(JOB).length*Object.keys(RACE).length*Object.keys(ORIG).length;
   $("#tutBody").innerHTML=`
     <div class="tsec">
-      <div class="th">すべては ダイスの目が 決める</div>
+      <div class="th">す べ て は ダ イ ス が 決 め る</div>
       <p>攻撃も索敵も、ダイスを振って決まります。</p>
-      <p><b>4 以上</b>が出れば命中。<b>6</b> が出れば威力が上がる。</p>
-      <p>振る回数は武器で決まり、当たるかどうかは運と腕次第。</p>
-      <p>上振れれば一撃で葬り、外し続ければ何もできずに終わる。</p>
+      <p><b>4 以上</b>が出れば ひとつ成功。素早い相手ほど 出す目が重くなります。</p>
+      <p><b>振る数は 技能で決まります。</b>技能 20 ごとに 1 個。
+         レベルが上がるたび 1 点を 好きな技能に注げます。</p>
+      <p><b>技には それぞれ 必要な成功の数があります。</b>
+         届かなければ ダメージは出ません。<br>
+         必要より多く成功したぶんは 威力の上乗せになります（2つまで）。</p>
+      <p>だから <b>何に注ぐか</b>で 使える技が変わります。
+         広く伸ばすか、ひとつを極めるか。</p>
     </div>
     <div class="tsec">
       <div class="th">三 つ の 軸 で 自 分 を 作 る</div>

@@ -53,7 +53,8 @@ const EXPORTS = [
   "LUKRANK", "CHESTGAIN",
   /* 計算 */
   "elemMul", "perHit", "hitDmg", "dieRate", "statMul", "codexLv",
-  "skillOf", "wepSkill", "skillDice", "skillHit",
+  "skillOf", "skillBorn", "wepSkill", "skillDice", "skillHit",
+  "SKPTLV", "skPtsOf", "skSpent", "skRoom", "skCanUp", "skUp", "mateSkAuto",
 ];
 
 function load(file) {

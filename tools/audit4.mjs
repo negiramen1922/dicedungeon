@@ -2,14 +2,17 @@
    耐えるT = 一味の合計HP ÷ 敵1ラウンドの与ダメ
    倒すT   = 敵の合計HP  ÷ 一味1ラウンドの与ダメ（遠さの +1/+2 込み）
    余裕    = 耐えるT ÷ 倒すT （1.0 で拮抗）
-   引数 solo … 味方1人（昔の形）で測る */
+   引数 solo … 味方1人（昔の形）で測る
+   引数 grow … 技能の点を「得物で使う技能」に全部注いだ形で測る（上振れのほう）。
+               何も注がない形（既定）との差が、技能の育ちの効き目になる */
 import {chromium} from '/opt/node22/lib/node_modules/playwright/index.mjs';
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
 const pg=await b.newPage();const errs=[];pg.on('pageerror',e=>errs.push(e.message));
 await pg.goto('http://localhost:8765/index.html');await pg.waitForTimeout(800);
 const solo=process.argv.includes("solo");
 const raw=process.argv.includes("raw");   // 倍率をかけない（昔の敵）
-const out=await pg.evaluate(({solo,raw})=>{
+const grow=process.argv.includes("grow"); // 技能の点を全部 得物の技能へ
+const out=await pg.evaluate(({solo,raw,grow})=>{
   if(raw){FOEHP=1;FOESTR=1;}
   const LV={plain:4,seed:8,wtree:13,cave:8,hall:13,city:17};
   const R=[];
@@ -19,6 +22,8 @@ const out=await pg.evaluate(({solo,raw})=>{
     newGame();dive(ak);
     if(solo)setParty([me]);
     for(let i=1;i<LV[ak];i++){me.lv++;growUp();syncMates();}
+    /* 主人公は自分で注がないので、注がない形が既定。grow なら全部 得物の技能へ */
+    if(grow)party.forEach(u=>{ if((u.skp|0)>0)skUp(wepSkill(u),u,u.skp); });
     party.forEach(u=>recalcMe(u,false));
     RUN.area=ak;RUN.cur={r:8};RUN.boss=false;
     const ourHP=party.reduce((a,u)=>a+u.maxHP,0);
@@ -71,7 +76,7 @@ const out=await pg.evaluate(({solo,raw})=>{
     R.push(area);
   });
   return R;
-},{solo,raw});
+},{solo,raw,grow});
 const GN={norm:"普通",hard:"重い",elite:"精鋭"};
 let all=[];
 console.log((solo?"味方1人":"一味3人・横一列")+(raw?"／敵は昔のまま":`／敵 HP×${2.5} STR×${1.4}`));
