@@ -1065,7 +1065,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.007";
+const VERSION="α1.0.008";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1078,6 +1078,13 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1008",tag:"up",v:"α1.0.008",d:"2026-09-06",n:"技能を「戦う技能」と「暮らしの技能」に分け、魔術と治療を足しました",b:[
+   "<b>技能が7つになりました。</b>戦う技能は <b>近接・射撃・魔術・治療</b>、暮らしの技能は 探索・鍛冶・料理です",
+   "<b>格闘は「近接」に名前が変わりました。</b>中身は同じです",
+   "<b>魔術を足しました。</b>杖とオーブは これまで射撃で測られていましたが、これからは魔術で測ります",
+   "<b>治療を足しました。</b>傷を塞ぐ技に効きます（効く技はこれから増やします）",
+   "<b>仲間が自分の技能で当てるようになりました。</b>これまでは 弓を持った仲間でも 主人公の技能で当てていました",
+   "装備・状態の窓で 技能が2つの組に分かれて並びます"]},
  {id:"v1007",tag:"up",v:"α1.0.007",d:"2026-09-05",n:"町で仲間を雇えるようになりました。場所ごとに 何人で挑む前提かが決まります",b:[
    "<b>町で仲間を雇えます。</b>3人の候補から選びます。<b>1人目はただ</b>で、2人目からは金貨がいります",
    "<b>一味に入れられるのは3人まで。</b>それ以上は 控えに回ります。雇える人数に上限はありません",
@@ -3411,25 +3418,37 @@ const GEAR={
    ■ 段階
      roll100 が返す k（0=失敗 1=成功 2=ハード 3=エクストリーム）と
      crit（出目1）/ fumble（出目100）をそのまま使う。            */
-const SKMAXV=95;                  /* 技能の上限。確実にはしない */
+/* 技能の上限は 100。ただし **d100 を振る技能**（探索・鍛冶・料理）は 95 止まり
+   ── そこは「確実にはしない」ため。戦う技能は 100 まで伸びて ダイス5個になる。 */
+const SKMAXV=100;
+const SKROLLMAX=95;
+/* 戦う技能は4つ。**ダイスは技能ごと**に決まる（`skillDice`）。
+   暮らしの技能（探索・鍛冶・料理）は d100 を振るほうで、ダイスとは関係がない。 */
 const SK={
   search:{n:"探 索",d:"物音と痕跡に気づく。索敵の先制を決める"},
-  shoot: {n:"射 撃",d:"遠くの的を射抜く。遠隔武器の命中"},
-  fight: {n:"格 闘",d:"間合いを詰めて当てる。近接武器の命中"},
+  fight: {n:"近 接",d:"間合いを詰めて当てる。剣・短剣・槍",       war:true},
+  shoot: {n:"射 撃",d:"遠くの的を射抜く。弓・クロスボウ・銃",     war:true},
+  magic: {n:"魔 術",d:"術を編む。遠くへ飛ばす術も 手元で放つ術も", war:true},
+  heal:  {n:"治 療",d:"傷を塞ぐ。治療の術も 手当ても",           war:true},
   forge: {n:"鍛 冶",d:"金属を打つ。装備をこしらえる"},
   cook:  {n:"料 理",d:"火と素材を扱う。道具をこしらえる"},
 };
+const WARSK=Object.keys(SK).filter(k=>SK[k].war);
+/* **近接・射撃の値には まだ触っていない。**いまは skillHit が生きているので、
+   触ると釣り合いが動く。開始値の引き直しは 段3（ダイスが skillHit を置き換えるとき）。
+   魔術・治療は 足すだけ。ウィザードの魔術45（＋ヒューム5＝50）は
+   いまの射撃35 と skillHit が同じ 0 になるので、**釣り合いは動かない**。 */
 const SKJOB={
-  knight:{search:20, shoot:15, fight:55, forge:30, cook:20},
-  archer:{search:40, shoot:55, fight:25, forge:20, cook:25},
-  scout: {search:55, shoot:35, fight:45, forge:15, cook:20},
-  mage:  {search:30, shoot:30, fight:20, forge:20, cook:30},
+  knight:{search:20, shoot:15, fight:55, magic: 5, heal:10, forge:30, cook:20},
+  archer:{search:40, shoot:55, fight:25, magic:10, heal:15, forge:20, cook:25},
+  scout: {search:55, shoot:35, fight:45, magic: 5, heal:10, forge:15, cook:20},
+  mage:  {search:30, shoot:30, fight:20, magic:45, heal:30, forge:20, cook:30},
 };
 const SKRACE={
-  hume: {search: 5, shoot: 5, fight: 5, forge: 5, cook: 5},
-  dwarf:{search: 0, shoot:-5, fight: 5, forge:20, cook: 0},
-  elf:  {search:10, shoot:10, fight:-5, forge: 0, cook: 5},
-  beast:{search:15, shoot: 0, fight:10, forge:-5, cook:-5},
+  hume: {search: 5, shoot: 5, fight: 5, magic: 5, heal: 5, forge: 5, cook: 5},
+  dwarf:{search: 0, shoot:-5, fight: 5, magic:-5, heal: 0, forge:20, cook: 0},
+  elf:  {search:10, shoot:10, fight:-5, magic:12, heal: 5, forge: 0, cook: 5},
+  beast:{search:15, shoot: 0, fight:10, magic:-8, heal:-5, forge:-5, cook:-5},
 };
 const SKORIG={
   greed:   {search:10},
@@ -3450,13 +3469,29 @@ function skillOf(k,u){
     +((SKRACE[race]||{})[k]||0)
     +((SKORIG[orig]||{})[k]||0)));
 }
-/* いま持っている武器で使う技能 */
-function wepSkill(u){ u=u||me; return (u&&u.wep&&u.wep.type==="ranged")?"shoot":"fight"; }
+/* その技を振るときの技能。**技ごとに決まる。**
+   技が自分で名乗っていれば（act.sk）それを使い、名乗らなければ得物から決める。
+   杖・オーブは snd:"magic" なので 魔術。弓は射撃。それ以外は近接。
+   ── 近距離魔法のように「同じ杖でも技で違う」ものがあるので、得物だけでは決められない。 */
+function wepSkill(u,act){
+  if(act&&act.sk&&SK[act.sk])return act.sk;
+  u=u||me;
+  const w=u&&u.wep;
+  if(!w)return "fight";
+  if(w.snd==="magic")return "magic";
+  return w.type==="ranged"?"shoot":"fight";
+}
+/* 技能から振れるダイスの数。**20ごとに1個。**素の上限は5個（技能100）で、
+   限界突破で 100 を越えたら 6個。段3 で命中の主役になる。 */
+const SKDIEMAX=6;   /* 限界突破ぶんを含む上限 */
+function skillDice(k,u){ return Math.max(1,Math.min(SKDIEMAX,Math.floor(skillOf(k,u)/20))); }
 /* 技能値の一覧。いま持っている武器で使う技能に印を付ける */
-function skillLine(sep,u){
+function skillLine(sep,u,only){
   u=u||me;
   const use=wepSkill(u);
-  return Object.keys(SK).map(k=>{
+  const keys=Object.keys(SK).filter(k=>
+    only==="war"?SK[k].war : only==="life"?!SK[k].war : true);
+  return keys.map(k=>{
     const on=(k===use);
     return `<span${on?' style="color:var(--brass)"':""}>${SK[k].n} <b${
       on?' style="color:var(--brass)"':""}>${skillOf(k,u)}</b></span>`;
@@ -5178,7 +5213,7 @@ function threshold(u,tgt,opt){
      こうすると DEX の仕事が「回避と行動順」だけになり、
      遠隔と近接に別々の腕前が生まれる。                        */
   if(!u.isFoe){
-    t-=skillHit(wepSkill(u));
+    t-=skillHit(wepSkill(u,opt.act),u);
     /* 相手の素早さ。速い相手ほど当てにくい。
        ここは相手の DEX そのものを見る（こちらの DEX との差では見ない）。
        差にすると自分の DEX がまた命中に効いてしまい、
@@ -5202,8 +5237,8 @@ function thrWhy(tgt,opt,u){
   const bl=ailSum(u,"blur"), fe=ailSum(u,"fear");
   if(bl)T.push({n:"盲 目",v:bl});
   if(fe)T.push({n:"恐 怖",v:fe});
-  const sk=skillHit(wepSkill(u));
-  if(sk)T.push({n:SK[wepSkill(u)].n.replace(/ /g,""),v:-sk});
+  const sk=skillHit(wepSkill(u,opt.act),u);
+  if(sk)T.push({n:SK[wepSkill(u,opt.act)].n.replace(/ /g,""),v:-sk});
   if(tgt&&tgt.key){
     const c=codexLv(tgt.key);
     if(c>=2)T.push({n:"図鑑 3戦",v:-1});
@@ -5240,7 +5275,9 @@ function thrPanel(){
 }
 /* 技能 40 を並として、25 ごとに命中閾値が 1 動く。
    技能 15 → −1（当てにくい）　40 → 0　65 → +1　90 → +2 */
-function skillHit(k){ return Math.round((skillOf(k)-40)/25); }
+/* 〔修正〕**その者の技能を見る。**u を取らなかったので skillOf(k) が
+   必ず主人公を見ており、弓を持った仲間が 主人公の射撃で当てていた。 */
+function skillHit(k,u){ return Math.round((skillOf(k,u)-40)/25); }
 
 /* 判定の段階の呼び名。技能はこれ、幸運は LUKRANK を使う */
 const SKRANK=[
@@ -8502,7 +8539,7 @@ async function doCraft(id,nd){
   /* 加工賃は先に払う。素材は判定のあと（失敗なら手元に残る） */
   me.gold-=craftCost(id);
   closeModal();
-  const pct=Math.max(5,Math.min(SKMAXV,skillOf(sk)));
+  const pct=Math.max(5,Math.min(SKROLLMAX,skillOf(sk)));
   const r=await skillOv(R.kind==="forge"?"鍛 冶":"料 理",
     `${SK[sk].n}　${R.n}`,pct,CRAFTQ);
   const q=craftQuality(r);
@@ -9288,11 +9325,14 @@ function chBodySt(U){
     <span>INT <b>${U.INT}</b></span><span>VIT <b>${U.VIT}</b></span>
     <span>シールド <b>${blockValue()}</b><span class="s">（最大HPの${guardPct()}%）</span></span>
     <span style="color:#c9a227">幸運 <b style="color:#c9a227">${U.LUK}</b></span></div>
-  <div class="msec">技 能　<span style="color:var(--dim);letter-spacing:0">1d100 で振る</span></div>
-  <div class="mitem">${skillLine("　")}
-    <br><span class="s">${SK[wepSkill()].n.replace(/ /g,"")} は いま持っている ${
-      U.wep.n} の命中に効く。
-    探索は戦いのはじめの先制、鍛冶と料理はこしらえるときに振る</span></div>
+  <div class="msec">戦 う 技 能　<span style="color:var(--dim);letter-spacing:0">${
+    SK[wepSkill(U)].n.replace(/ /g,"")} で当てる</span></div>
+  <div class="mitem">${skillLine("　",U,"war")}
+    <br><span class="s">${SK[wepSkill(U)].n.replace(/ /g,"")} は いま持っている ${
+      U.wep?U.wep.n:"得物"} の命中に効く。治療は 傷を塞ぐ技に効く</span></div>
+  <div class="msec">暮 ら し の 技 能　<span style="color:var(--dim);letter-spacing:0">1d100 で振る</span></div>
+  <div class="mitem">${skillLine("　",U,"life")}
+    <br><span class="s">探索は戦いのはじめの先制、鍛冶と料理はこしらえるときに振る</span></div>
   <div class="msec">幸 運</div>
   <div class="mitem" style="color:var(--ink)">幸運 ${U.LUK}　＝　生まれ ${
     U.base.LUK||0}${(U.LUK-(U.base.LUK||0))?`　＋ 装備 ${U.LUK-(U.base.LUK||0)}`:""}
@@ -10189,10 +10229,10 @@ async function doScout(){
   await wait(800);
 
   const pen=(ORIG[sel.orig]&&ORIG[sel.orig].scoutPenalty)?15:0;
-  const mine=Math.max(5,Math.min(SKMAXV,skillOf("search")+passOn("scout")*5-pen));
+  const mine=Math.max(5,Math.min(SKROLLMAX,skillOf("search")+passOn("scout")*5-pen));
   /* いちばん勘のいい一匹が、群れを代表して気づく */
   const lead=foes.reduce((a,f)=>scoutHide(f)>scoutHide(a)?f:a,foes[0]);
-  const theirs=Math.max(5,Math.min(SKMAXV,scoutHide(lead)));
+  const theirs=Math.max(5,Math.min(SKROLLMAX,scoutHide(lead)));
 
   const o=$("#diceOv");
   o.className="diceOv on";

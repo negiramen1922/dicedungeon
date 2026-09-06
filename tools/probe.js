@@ -49,9 +49,11 @@ const EXPORTS = [
   "REW", "FOE", "ENCS", "AREAS", "AIL", "ELEM", "ELCYCLE", "EXPNEED", "PCOND",
   "SND", "BGM", "PXFOE", "PXTAG", "PXITEM", "PXMAT", "PXAIL", "PXDUN", "PX",
   "WEIGHT", "GOLD", "ROWS", "COLS", "PATHS", "SKMAX", "PASSMAX", "BAGBASE",
-  "SK", "SKJOB", "SKRACE", "SKORIG", "SKMAXV", "LUKRANK", "CHESTGAIN",
+  "SK", "SKJOB", "SKRACE", "SKORIG", "SKMAXV", "SKROLLMAX", "WARSK",
+  "LUKRANK", "CHESTGAIN",
   /* 計算 */
   "elemMul", "perHit", "hitDmg", "dieRate", "statMul", "codexLv",
+  "skillOf", "wepSkill", "skillDice", "skillHit",
 ];
 
 function load(file) {
