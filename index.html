@@ -1065,7 +1065,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.016";
+const VERSION="α1.0.017";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1078,6 +1078,13 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1017",tag:"up",v:"α1.0.017",d:"2026-09-06",n:"技能はダイスだけを買うようにしました。索敵も d6 の振り合いになります",b:[
+   "<b>技能が 命中閾値まで下げていたのをやめました。</b>これまでは 技能が「ダイスの数」と「当てやすさ」の両方を買っていて、技能100 では しきい値2＝ほぼ全部成功。<b>必要成功3 が 96.5%・必要成功4 が 80.4%</b> で、せっかくの階段が消えていました。いまは <b>50.0% と 18.8%</b> です",
+   "<b>しきい値を動かすのは 3つだけになりました。</b>技のバフ・デバフ／遠さ（隊列）／<b>DEX の差</b>",
+   "<b>DEX の差は 両向きに効きます。</b>差 25 で1段、40 で2段。相手が速ければ当てにくく、<b>こちらが速ければ当てやすい</b>。これまでは相手の速さだけを見ていて、自分の DEX は命中に効きませんでした",
+   "<b>索敵も d6 の振り合いになりました。</b>探索技能ぶんのダイスを振り、4以上が成功。成功の数の差が そのまま最初の攻撃のダイスになります",
+   "<b>索敵は 一味でいちばん探索の高い者が振ります。</b>これまでは必ず主人公だったので、スカウトの仲間を連れても先制には何も足しませんでした",
+   "<b>手応えを測り直しました。</b>命中率が変わったぶん、区画ごとの倍率を引き直しています"]},
  {id:"v1016",tag:"bal",v:"α1.0.016",d:"2026-09-06",n:"区画ごとの手応えを揃えました。終盤のボスが 勝てない重さでした",b:[
    "<b>水没都市のボスが 相打ちにも届かない重さでした</b>（余裕 ×0.41）。ほかの区画のボスは ×1.0〜1.6 だったので、終盤だけ跳ね上がっていました。いまは <b>どの区画も ×1.2〜1.6</b> です",
    "<b>苔むした洞窟が 木漏れ日の森より 1.8倍 楽でした。</b>同じ第2階層なのに 顔ぶれの違いで軽くなっていたので 揃えました",
@@ -3485,7 +3492,9 @@ const SKROLLMAX=95;
 /* 戦う技能は4つ。**ダイスは技能ごと**に決まる（`skillDice`）。
    暮らしの技能（探索・鍛冶・料理）は d100 を振るほうで、ダイスとは関係がない。 */
 const SK={
-  search:{n:"探 索",d:"物音と痕跡に気づく。索敵の先制を決める"},
+  /* d6 …… d6 を技能ぶん振る技能（4以上が成功）。war と 探索がこれ。
+     印が無いものは 1d100 を振る（鍛冶・料理）。 */
+  search:{n:"探 索",d:"物音と痕跡に気づく。索敵の先制を決める",d6:true},
   fight: {n:"近 接",d:"間合いを詰めて当てる。剣・短剣・槍",       war:true},
   shoot: {n:"射 撃",d:"遠くの的を射抜く。弓・クロスボウ・銃",     war:true},
   magic: {n:"魔 術",d:"術を編む。遠くへ飛ばす術も 手元で放つ術も", war:true},
@@ -3494,10 +3503,9 @@ const SK={
   cook:  {n:"料 理",d:"火と素材を扱う。道具をこしらえる"},
 };
 const WARSK=Object.keys(SK).filter(k=>SK[k].war);
-/* **近接・射撃の値には まだ触っていない。**いまは skillHit が生きているので、
-   触ると釣り合いが動く。開始値の引き直しは 段3（ダイスが skillHit を置き換えるとき）。
-   魔術・治療は 足すだけ。ウィザードの魔術45（＋ヒューム5＝50）は
-   いまの射撃35 と skillHit が同じ 0 になるので、**釣り合いは動かない**。 */
+/* 職ごとの生まれつきの技能値。**技能が買うのは ダイスの数だけ**
+   （α1.0.017 で `skillHit` を外した）。25ごとに1個 ＋下駄1個なので、
+   得意は 45〜60 で 3個から始まり、育ちの99点で 100（5個）まで届く。 */
 const SKJOB={
   knight:{search:20, shoot:15, fight:55, magic: 5, heal:10, forge:30, cook:20},
   archer:{search:40, shoot:55, fight:25, magic:10, heal:15, forge:20, cook:25},
@@ -4543,8 +4551,8 @@ function lvScale(t){ t=(t||areaTier()||1); return LVSCALE[t-1]||LVSCALE[LVSCALE.
 
    1.0 が素。**最大HP と 与ダメの両方**に掛かるので、余裕は 1/k² で動く。
    `tools/audit4.mjs` で測って決める。**敵や遭遇を触ったら測り直すこと。** */
-const AREATOUGH={plain:1.01,seed:1.03,wtree:0.98,cave:1.22,hall:0.95,city:0.88};
-const BOSSTOUGH={plain:0.99,seed:0.85,wtree:0.89,cave:0.76,hall:1.02,city:0.70};
+const AREATOUGH={plain:0.98,seed:1.00,wtree:0.83,cave:1.23,hall:0.87,city:0.80};
+const BOSSTOUGH={plain:0.93,seed:0.87,wtree:0.98,cave:0.73,hall:1.07,city:0.70};
 function areaTough(){ return AREATOUGH[RUN&&RUN.area]||1; }
 function bossTough(){ return BOSSTOUGH[RUN&&RUN.area]||1; }
 /* 敵ひとりに掛かる合計の倍率 */
@@ -5314,15 +5322,23 @@ function knownElem(key,kind){
   if(r&&r[kind])return r[kind];
   return codexLv(key)>=5?(FOE[key]&&FOE[key][kind])||null:null;
 }
-/* 素早さの差が命中閾値を動かす幅。
-   25 ごとに 1 動き、上限は +2。
-   前は 15 ごとで上限が無く、DEX が伸びる職（スカウト・アーチャー）だと
-   すぐ天井（6）に張り付いて、そこから DEX が伸びても何も変わらなかった。 */
+/* ===== 素早さの差が 命中閾値を動かす幅（α1.0.017） =====
+   **差 25 で 1段、40 で 2段。**攻める側が速ければ当てやすく、
+   遅ければ当てにくい ── **両向きに動く。**
+
+   前は 25ごと・片向き（相手の DEX そのもの）だった。技能が
+   しきい値を買っていた（`skillHit`）ぶんを外したので、
+   遊ぶ人の決めごとどおり **しきい値を動かすのは
+   「技のバフ・デバフ」「遠さ」「DEX の差」の3つだけ**にした。 */
 /* 索敵で負けたとき、気づいた一匹の最初の攻撃に足すダイスの上限。
    こちらの上限は 3 だが、相手は数がいるので 2 で止める。 */
 const FOESCOUTCAP=2;
-const DEXSTEP=25, DEXCAP=2;
-function dexStep(d){ return Math.max(0,Math.min(DEXCAP,Math.floor(d/DEXSTEP))); }
+const DEXCUT=[25,40];          /* この差で 1段ずつ動く。上限は 2段 */
+function dexStep(d){
+  const a=Math.abs(d);
+  let n=0; for(const c of DEXCUT) if(a>=c) n++;
+  return (d<0?-n:n);
+}
 /* 長引くほど、双方の命中閾値が下がる。
    硬い者どうしが延々と当たらない、という膠着をほどくためのもの。
    5ラウンドごとに 1、下げるのは 2 まで。こちらにも敵にも同じだけ効く。 */
@@ -5382,18 +5398,17 @@ function threshold(u,tgt,opt){
        敵が攻めるとき   … こちらの DEX（回避）。技能は見ない
      こうすると DEX の仕事が「回避と行動順」だけになり、
      遠隔と近接に別々の腕前が生まれる。                        */
-  if(!u.isFoe){
-    t-=skillHit(wepSkill(u,opt.act),u);
-    /* 相手の素早さ。速い相手ほど当てにくい。
-       ここは相手の DEX そのものを見る（こちらの DEX との差では見ない）。
-       差にすると自分の DEX がまた命中に効いてしまい、
-       DEX から命中を剥がした意味が薄れるため。
-       鈍足をかければ相手の DEX が下がるので、そのぶん当てやすくなる。 */
-    t+=dexStep(Math.max(1,tgt.DEX-ailSum(tgt,"slow")));
-  }else{
-    const td=(!tgt.isFoe)?dexOf(tgt):Math.max(1,tgt.DEX-ailSum(tgt,"slow"));
-    t+=dexStep(td-u.DEX);                                /* こちらの回避 */
-  }
+  /* ===== 素早さの差（α1.0.017） =====
+     **攻める側と受ける側の DEX の差**を見る。速い相手ほど当てにくく、
+     自分が速ければ当てやすい。敵味方どちらの手番でも同じ式。
+     鈍足をかければ相手の DEX が下がるので そのぶん当てやすくなる。
+
+     〔外したもの〕`skillHit`（技能 40 を並として 25ごとに しきい値 −1）。
+     技能が **ダイスの数と しきい値の両方**を買っていて、技能100 では
+     しきい値2＝ほぼ全部成功になり、**必要成功数の階段が消えていた**
+     （必要3 が 96.5%、必要4 が 80.4%）。技能はダイスだけを買う。 */
+  const dxOf=x=>x.isFoe?Math.max(1,x.DEX-ailSum(x,"slow")):dexOf(x);
+  t+=dexStep(dxOf(tgt)-dxOf(u));
   return Math.max(2,Math.min(6,t));
 }
 /* 命中閾値が いくつになっているのか、何がそれを動かしているのかを並べて返す。
@@ -5407,8 +5422,6 @@ function thrWhy(tgt,opt,u){
   const bl=ailSum(u,"blur"), fe=ailSum(u,"fear");
   if(bl)T.push({n:"盲 目",v:bl});
   if(fe)T.push({n:"恐 怖",v:fe});
-  const sk=skillHit(wepSkill(u,opt.act),u);
-  if(sk)T.push({n:SK[wepSkill(u,opt.act)].n.replace(/ /g,""),v:-sk});
   if(tgt&&tgt.key){
     const c=codexLv(tgt.key);
     if(c>=2)T.push({n:"図鑑 3戦",v:-1});
@@ -5422,8 +5435,9 @@ function thrWhy(tgt,opt,u){
   if(u.focus)T.push({n:"狙 い",v:-u.focus.v});
   if(passOn("rank",u)>0&&tgt&&tgt.maxHP<u.maxHP)T.push({n:"格 下",v:-1});
   if(tgt){
-    const d=dexStep(Math.max(1,tgt.DEX-ailSum(tgt,"slow")));
-    if(d)T.push({n:"相手の速さ",v:d});
+    const dxOf=x=>x.isFoe?Math.max(1,x.DEX-ailSum(x,"slow")):dexOf(x);
+    const d=dexStep(dxOf(tgt)-dxOf(u));
+    if(d)T.push({n:"速 さ の 差",v:d});
   }
   const raw=T.reduce((a,x)=>a+x.v,0);
   return {parts:T,raw,thr:Math.max(2,Math.min(6,raw))};
@@ -5443,11 +5457,6 @@ function thrPanel(){
         w.raw!==w.thr?`　<span style="color:#c9a227">（2〜6 に収めて ${w.thr}）</span>`:""}</span>
     </div>`;}).join("");
 }
-/* 技能 40 を並として、25 ごとに命中閾値が 1 動く。
-   技能 15 → −1（当てにくい）　40 → 0　65 → +1　90 → +2 */
-/* 〔修正〕**その者の技能を見る。**u を取らなかったので skillOf(k) が
-   必ず主人公を見ており、弓を持った仲間が 主人公の射撃で当てていた。 */
-function skillHit(k,u){ return Math.round((skillOf(k,u)-40)/25); }
 
 /* 判定の段階の呼び名。技能はこれ、幸運は LUKRANK を使う */
 const SKRANK=[
@@ -9519,7 +9528,7 @@ function skRow(k,U,canEdit){
     <span class="eqv"><b${col}>${now}</b>${
       got?`<span class="s">（生まれ ${born} ＋ 育ち ${got}）</span>`
         :`<span class="s">（生まれ ${born}）</span>`}${
-      war?`　<span class="s">ダイス</span> <b${col}>${skillDice(k,U)}</b>
+      (war||SK[k].d6)?`　<span class="s">ダイス</span> <b${col}>${skillDice(k,U)}</b>
            <span class="s">${skDots(skillDice(k,U))}</span>`
          :`　<span class="s">1d100 が ${Math.min(now,SKROLLMAX)} 以下で成功</span>`}${
       room?"":`　<span class="s">上限</span>`}
@@ -9541,10 +9550,10 @@ function skGrowPanel(U){
   h+=WARSK.map(k=>skRow(k,U,canEdit)).join("");
   h+=`<div class="mitem"><span class="s">技能 20 ごとに ダイスが 1つ増える。
     振ったダイスのうち <b>4以上</b>が成功。技には それぞれ 必要な成功の数がある</span></div>`;
-  h+=`<div class="msec">暮 ら し の 技 能　<span style="color:var(--dim);letter-spacing:0">1d100 で振る</span></div>`;
+  h+=`<div class="msec">暮 ら し の 技 能</div>`;
   h+=Object.keys(SK).filter(k=>!SK[k].war).map(k=>skRow(k,U,canEdit)).join("");
-  h+=`<div class="mitem"><span class="s">探索は戦いのはじめの先制、鍛冶と料理はこしらえるときに振る。
-    振る技能は ${SKROLLMAX} より上には効かない</span></div>`;
+  h+=`<div class="mitem"><span class="s">探索は戦いのはじめの先制で <b>d6 を振る</b>（戦う技能と同じ）。
+    鍛冶と料理は こしらえるときに 1d100 を振る（${SKROLLMAX} より上には効かない）</span></div>`;
   return h;
 }
 function chBodySt(U){
@@ -10514,23 +10523,41 @@ async function doItem(k,tgt){
 }
 
 /* ---------- 索敵 ---------- */
-async function doScout(){
-  /* こちらの探索と、相手の気配の対抗判定。
-     どちらも 1d100 を振り、成功の段階が高いほうが勝つ。
-     段階の差がそのまま最初の攻撃の攻撃ダイスになる（最大 +3）。
+/* こちらの探索と、相手の気配の対抗判定。**d6 を技能ぶん振る**（α1.0.017）。
 
-     前は敵のぶんを数字にしてこちらの技能から引いていたので、
-     画面に出るのが「1d100 66／27」だけになり、
-     27 がどこから来たのか・勝ったのか負けたのかが分からなかった。 */
+   前は 1d100 の段階くらべだった。技能が d6 のダイス数になったのに
+   索敵だけ別の振り方が残っていて、**同じ「探索」という数字が
+   2通りに読まれていた。**戦いと同じ振り方に揃えた。
+
+     こちら … 一味でいちばん探索の高い者の ダイス。4以上が成功
+     相手  … いちばん勘のいい一匹の 気配（scoutHide）を ダイスに直す
+     成功の数の差が そのまま 最初の攻撃の攻撃ダイスになる（最大 +3）
+
+   **一味でいちばん勘のいい者が気づく。**敵の側も同じ決めごとで
+   「いちばん勘のいい一匹が群れを代表して気づく」ようにしてある ── 揃えた。
+   （前は必ず主人公の探索だけを見ていたので、スカウトの仲間を連れても
+     先制には何も足さなかった） */
+const SCOUTTHR=4;                    /* 索敵の成功しきい値。戦いと同じ */
+/* 気配（0〜100 前後）を ダイスの数に直す。技能と同じ刻み */
+function hideDice(v){ return Math.max(1,Math.min(SKDIEMAX,1+Math.floor(Math.max(0,v)/SKDIESTEP))); }
+/* 一味でいちばん探索の高い者 */
+function bestScout(){
+  const l=party.filter(u=>u.HP>0);
+  const ls=l.length?l:party;
+  return ls.reduce((a,u)=>skillOf("search",u)>skillOf("search",a)?u:a,ls[0]||me);
+}
+async function doScout(){
   ovMsg("索 敵 開 始",true);
   SFX.open();
   await wait(800);
 
-  const pen=(ORIG[sel.orig]&&ORIG[sel.orig].scoutPenalty)?15:0;
-  const mine=Math.max(5,Math.min(SKROLLMAX,skillOf("search")+passOn("scout")*5-pen));
+  const pen=(ORIG[sel.orig]&&ORIG[sel.orig].scoutPenalty)?1:0;
+  const eye=bestScout();
+  /* 欲望の罰は ダイスを1つ減らす（前は 1d100 の目盛りで −15 だった） */
+  const myDice=Math.max(1,skillDice("search",eye)+passOn("scout",eye)-pen);
   /* いちばん勘のいい一匹が、群れを代表して気づく */
   const lead=foes.reduce((a,f)=>scoutHide(f)>scoutHide(a)?f:a,foes[0]);
-  const theirs=Math.max(5,Math.min(SKROLLMAX,scoutHide(lead)));
+  const foeDice=hideDice(scoutHide(lead));
 
   const o=$("#diceOv");
   o.className="diceOv on";
@@ -10539,32 +10566,42 @@ async function doScout(){
     <div class="scRow" id="scFoe"></div>
     <div class="scEnd" id="scEnd"></div>`;
 
-  const side=async(id,name,pct,cls)=>{
+  const side=async(id,name,nd,cls)=>{
     const el=$("#"+id);
     el.innerHTML=`<div class="scName ${cls}">${name}</div>
-      <div class="scPct">1d100 ・ <b>${pct}</b> 以下</div>
-      <div class="d100 roll" id="${id}D">00</div>
+      <div class="scPct">${nd}d6 ・ <b>${SCOUTTHR}以上</b>が成功</div>
+      <div class="dvRow" id="${id}D"></div>
       <div class="scRes" id="${id}R">—</div>`;
-    const d=$("#"+id+"D");
+    const row=$("#"+id+"D");
+    const rolls=[];for(let i=0;i<nd;i++)rolls.push(r6());
+    const els=rolls.map(()=>{const sp=document.createElement("span");
+      sp.className="dv roll";sp.textContent=r6();row.appendChild(sp);return sp;});
     SFX.shake();
-    const spin=setInterval(()=>{d.textContent=String(r100()).padStart(2,"0");},55);
-    await wait(780);
+    const spin=setInterval(()=>els.forEach(e=>{
+      if(e.classList.contains("roll"))e.textContent=r6();}),70);
+    await wait(700);
     clearInterval(spin);
-    const r=roll100(pct);
-    d.textContent=String(r.v).padStart(2,"0");
-    d.className="d100 land";
-    const lv=scoutLevel(r);
-    const nm=r.crit?"クリティカル":r.fumble?"ファンブル":SKRANK[r.k].s;
-    const c=r.crit?"#e9c46a":(r.fumble?"#b1544a":SKRANK[r.k].c);
-    d.style.color=c;d.style.borderColor=c;
-    $("#"+id+"R").innerHTML=`<span style="color:${c}">${nm}</span>`;
-    if(r.k>=2||r.crit)SFX.crit();else SFX.tick();
-    await wait(420);
-    return lv;
+    let hits=0;
+    for(let i=0;i<els.length;i++){
+      els[i].classList.remove("roll");els[i].classList.add("land");
+      els[i].textContent=rolls[i];
+      if(rolls[i]>=SCOUTTHR){els[i].classList.add(rolls[i]>=6?"six":"hit");hits++;}
+      else els[i].classList.add("weak");
+      SFX.tick();
+      await wait(95);
+    }
+    $("#"+id+"R").innerHTML=hits
+      ? `<span style="color:#8fa261">成功 <b>${hits}</b></span>`
+      : `<span style="color:#7d6b68">気づかなかった</span>`;
+    if(hits>=2)SFX.crit();
+    await wait(380);
+    return hits;
   };
 
-  const a=await side("scMine",me.name,mine,"mine");
-  const b=await side("scFoe",lead.name+(foes.length>1?` ほか ${foes.length-1}`:""),theirs,"foe");
+  const a=await side("scMine",eye.name+(party.length>1?"（一味でいちばん勘がいい）":""),
+    myDice,"mine");
+  const b=await side("scFoe",lead.name+(foes.length>1?` ほか ${foes.length-1}`:""),
+    foeDice,"foe");
   scoutBonus=Math.max(0,Math.min(3,a-b));
   /* 負けたぶんは 相手の側に乗る。前はこちらが勝ったときだけ得があり、
      負けても「先に動かれる」だけだったので、索敵は勝てば得・負けても損なしだった。
@@ -10574,10 +10611,7 @@ async function doScout(){
   foes.forEach(f=>{f.scoutDice=0;});
   if(fb)lead.scoutDice=fb;
   /* 索敵に勝ったほうが、1ラウンド目だけ素早さを飛び越えて先に動く。
-     前は「片方だけが成功したとき」だけ入れ替えていたので、
-     両方成功して相手のほうが上（こちら成功・相手ハード成功）だと、
-     画面に「こちらが出遅れた」と出るのに順番は素早さのままだった。
-     出ている言葉と起きることが食い違うので、勝ち負けで揃えた。 */
+     出ている言葉と起きることが食い違わないよう、勝ち負けで揃えてある。 */
   scoutFirst = (a>b) ? "me" : (b>a) ? "foe" : null;
 
   const diff=a-b;
@@ -10594,8 +10628,8 @@ async function doScout(){
      :scoutFirst==="foe"?`<div class="scGain lose">1ラウンド目は <b style="color:var(--blood)">相手が先に動く</b></div>`
      :"");
   SFX.found();
-  log(`<span class="a">索敵</span> ${me.short||"自分"} <span class="m">${SCLV[a+1]}</span>`+
-      ` 対 ${lead.name} <span class="m">${SCLV[b+1]}</span>`+
+  log(`<span class="a">索敵</span> ${eye.short||eye.name} <span class="m">${myDice}d6 → 成功 ${a}</span>`+
+      ` 対 ${lead.name} <span class="m">${foeDice}d6 → 成功 ${b}</span>`+
     (scoutBonus?` → 最初の攻撃に ダイス <span class="m">+${scoutBonus}</span>`
      :fb?` → ${lead.name} の最初の攻撃に ダイス <span class="c">+${fb}</span>`:` → 先制なし`)+
     (scoutFirst==="me"?`　<span class="m">1ラウンド目は先手</span>`
