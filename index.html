@@ -1122,7 +1122,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.023";
+const VERSION="α1.0.024";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1135,8 +1135,9 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
- {id:"v1023",tag:"fix",v:"α1.0.023",d:"2026-09-06",n:"「届かなかった」を「空振り／MISS」に改めました",b:[
-   "<b>ダイスの覆い</b>　「成功 1 ／ 必要 2　<b>空 振 り</b>」＋その下に <b>MISS</b>",
+ {id:"v1023",tag:"fix",v:"α1.0.024",d:"2026-09-06",n:"判定の言い方を「ヒット／空振り」に改めました",b:[
+   "<b>ダイスの覆い</b>　「成功 3 ／ 必要 1　<b>ヒ ッ ト</b>」＋その下に <b>HIT</b>、「成功 1 ／ 必要 2　<b>空 振 り</b>」＋その下に <b>MISS</b>",
+   "これまでは「通った」「届かなかった」でした",
    "<b>盤面の札</b>　これまで敵の攻撃だけ「届かず」と出ていました。<b>MISS</b> に改め、<b>味方が空振りしたときにも出る</b>ようにしました（これまでは何も出ませんでした）",
    "<b>ログ</b>　「成功 1／必要 2　<b>空振り</b>」"]},
  {id:"v1022",tag:"up",v:"α1.0.022",d:"2026-09-06",n:"戦闘の見た目を 試作台のものに揃えました",b:[
@@ -6037,7 +6038,7 @@ async function lukOv(pct,r){
 async function rollDice(rolls,thr,label,top,opt){
   opt=opt||{};
   /* 必要な成功の数を **振る前に** 出す（α1.0.022・試作台と同じ）。
-     何個要るのか知らないまま出目が止まると、通ったのかどうか読めない */
+     何個要るのか知らないまま出目が止まると、ヒットしたのかどうか読めない */
   const row=ovShow((label||`判 定　<em>${opt.even?"偶数の目":thr+" 以上"}が成功</em>`)
     +(opt.need?`<span class="dvneed">必要な成功 <b>${Math.max(1,opt.need)}</b></span>`:""),top);
   const els=rolls.map((_,i)=>{const s=document.createElement("span");
@@ -6078,18 +6079,18 @@ async function rollDice(rolls,thr,label,top,opt){
     els[i].appendChild(b);
   });
   /* 結果の一行も 試作台の形に（α1.0.022）。
-     「通った／届かなかった」を言い切って、超過は その下に小さく添える */
+     「ヒット／空振り」を言い切って、HIT・MISS と 超過は その下に小さく添える */
   const need=needN;
   const over=Math.max(0,hits-need);
   const cut=Math.min(XCAP,over);
   $("#dvRes").innerHTML=`<div class="dvRes">`+(!opt.need
     ? `成功 ${hits}`
     : (hits>=need
-      ? `<span class="ok">成功 ${hits} ／ 必要 ${need}　通った</span>`+
+      ? `<span class="ok">成功 ${hits} ／ 必要 ${need}　ヒ ッ ト</span>`+
         (over>0
-          ? `<small><span class="xs">超過 ${over}${cut<over?`（${XCAP}つまで数える）`:""}`+
+          ? `<small>HIT　<span class="xs">超過 ${over}${cut<over?`（${XCAP}つまで数える）`:""}`+
             ` → 威力 ×${(1+XGAIN*cut).toFixed(2)}</span></small>`
-          : `<small>ちょうど</small>`)
+          : `<small>HIT　ちょうど</small>`)
       : `<span class="ng">成功 ${hits} ／ 必要 ${need}　空 振 り</span><small>MISS</small>`))+`</div>`;
   await wait(opt.need&&hits>=need&&over>0?680:430);
   return hits;
