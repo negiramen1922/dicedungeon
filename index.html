@@ -3983,10 +3983,10 @@ const REW={
     d:"手前の3体を射る（1体につき 威力 ×1.15）"},
   ],
   scout:[
-   {id:"as1",n:"二段突き",kind:"atk",mp:5,cd:3,dice:2,suc:3,powMul:3.2,
-    d:"攻撃ダイス +2　重ねて突く（威力 ×3.2）"},
-   {id:"as2",n:"連 撃",kind:"atk",mp:4,cd:3,chain:true,
-    d:"最初に振った 6 の数だけ ダイスを追加する（追加ぶんの 6 は数えない）"},
+   {id:"as1",n:"二段突き",kind:"atk",mp:5,cd:3,suc:1,hits:2,powMul:1.15,
+    d:"同じ相手を 2回 突く（1回につき 威力 ×1.15）"},
+   {id:"as2",n:"連 撃",kind:"atk",mp:4,cd:3,suc:2,hits:5,spread:true,powMul:0.75,
+    d:"生きている相手に 散らして 5回（1回につき 威力 ×0.75）"},
    {id:"as3",n:"急所突き",kind:"atk",mp:3,cd:2,suc:2,powMul:1.9,
     d:"細い隙を突く（威力 ×1.9）"},
    {id:"as4",n:"首 刈 り",kind:"atk",mp:5,cd:3,suc:3,powMul:3.2,
@@ -6571,7 +6571,24 @@ async function playerAttack(targets,opt){
     targets.forEach(t=>{ if(t.HP>0)popOn(t,"MISS","miss"); });
     await wait(450);return;
   }
-  for(const t of targets){
+  /* ===== 何回 入るか（α1.0.033） =====
+     `opt.hits` を持つ技は **ひと振りで判定して 通ったぶんを何度も入れる**。
+       二段突き … 同じ相手に 2回
+       連 撃   … 生きている相手に 散らして 5回（`opt.spread`）
+     判定は1回きり ── 振り直しではない。空振りなら 1回も入らない。 */
+  const HITS=Math.max(1,opt.hits||1);
+  const seq=[];
+  for(let h=0;h<HITS;h++){
+    if(opt.spread){
+      /* 散らす技は **盤に生きている相手ぜんぶ**から選ぶ。
+         選んだ相手だけを候補にしていたので 1体も入らなかった */
+      const pool=alive().filter(x=>x.HP>0);
+      if(!pool.length)break;
+      seq.push(pool[Math.floor(Math.random()*pool.length)]);
+    }else targets.forEach(t=>seq.push(t));
+  }
+  if(HITS>1)log(`<span class="c">${opt.spread?"散らして":"重ねて"} ${HITS} 回</span>`);
+  for(const t of seq){
     if(t.HP<=0)continue;
     let pow=powOf(A,opt)+passOn("pow",A)+(A.tmpPow||0);
     if(passOn("fixate",A)>0){
@@ -6916,7 +6933,7 @@ async function resolvePlayer(a,target){
       }
       await playerAttack(ts,{pow:s.pow||0,thr:s.thr||0,dice:s.dice||0,
         suc:s.suc||1,                       /* 必要成功数。名乗らなければ 1 */
-        chain:s.chain,powMul:s.powMul,stun:s.stun,
+        chain:s.chain,powMul:s.powMul,stun:s.stun,hits:s.hits,spread:s.spread,
         el:s.el,ail:s.ail,pen:s.pen,even:s.even,column:s.column,
         lostPow:s.lostPow,mpDrain:s.mpDrain,loot:s.loot,allFoes:s.allFoes,
         rage:s.rage,lostDice:s.lostDice,lifeSteal:s.lifeSteal,devour:s.devour,feast:s.feast,

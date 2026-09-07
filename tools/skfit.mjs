@@ -40,8 +40,8 @@ const out=await pg.evaluate(()=>{
     aa6:1,  /* 足止めの矢 … デバフ。当てたい */
     aa7:2,  /* アローレイン … 面を制圧する */
     /* スカウト ── 手数 */
-    as1:3,  /* 二段突き … ダイス+2 で上の段を狙う技 */
-    as2:1,  /* 連撃 … 6 が出ると伸びる。数を振る技 */
+    as1:1,  /* 二段突き … 同じ相手に2回。当ててこそ */
+    as2:2,  /* 連撃 … 散らして5回。狙って撃つ主力 */
     as3:2,  /* 急所突き … 職の主力 */
     as4:3,  /* 首刈り …「一撃で断つ」*/
     as6:2,  /* 追い討ち … もう一度動ける。強い */
@@ -92,9 +92,12 @@ const out=await pg.evaluate(()=>{
     属性:0.92, 吸収:0.82, 奪う:0.82, 条件で伸びる:0.80, 連鎖:0.75,
     偶数:0.85, 行動不能:0.60, 即死:0.55, もう一度:0.55, 混乱:0.55,
     "ダイス+":0.55,
+    /* 何回も入る技は 1回ぶんを下げる。回数ぶん丸ごと掛けると強すぎる */
+    "2回":0.54, "3回":0.39, "5回散らし":0.24,
     自分に代償:1.10, 狙い条件:1.12, 序盤のみ:1.12, "1回だけ":1.12,
   };
   const tag=s=>{const X=[];
+    if(s.hits>1)X.push(`${s.hits}回${s.spread?"散らし":""}`);
     if(s.dice)X.push("ダイス+");
     if(s.allFoes)X.push("全体"); else if(s.all)X.push("複数3");
     if(s.column||s.pierce)X.push("貫通");
@@ -123,7 +126,10 @@ const out=await pg.evaluate(()=>{
     let mul=BASE[need]*cutAll(X);
     /* 底を打つ ── どの技も 基本攻撃（×1.0）より弱くはしない。
        複数を巻き込む技は 1体あたりで見るので 3体ぶんで ×1.2 を割らないこと */
-    const floor=(X.includes("全体")||X.includes("複数3"))?0.45:1.0;
+    /* 何度も入る技・巻き込む技は **1体1回ぶん**で見るので 底を下げる。
+       ここを 1.0 で止めると 回数ぶん丸ごと掛かって強くなりすぎる */
+    const many=X.some(k=>k==="全体"||k==="複数3"||/^\d+回/.test(k));
+    const floor=many?0.45:1.0;
     if(mul<floor)mul=floor;
     mul=Math.round(mul*100)/100;
     rows.push({id:s.id,g,n:s.n,short:s.n.replace(/ /g,""),mp:s.mp||0,cd:s.cd||0,
@@ -131,6 +137,12 @@ const out=await pg.evaluate(()=>{
   }));
   return rows;
 });
+if(process.argv.includes("--json")){
+  fs.writeFileSync("/tmp/claude-0/-home-user-dicedungeon/293f61c7-fabe-52af-8142-293d3a99ca17/scratchpad/skrows.json",
+    JSON.stringify(out,null,0));
+  console.log("書き出した "+out.length+" 件");
+  await b.close(); process.exit(0);
+}
 console.log("■ 乙の基準　必要1 ×1.8 ／ 必要2 ×3.2 ／ 必要3 ×6.2 ／ 必要4 ×13.0　超過 一律 +30%");
 console.log("■ 必要成功数は MP から　MP≤4→必要1　MP5-6→必要2　MP≥7→必要3\n");
 const byG={};out.forEach(r=>(byG[r.g]=byG[r.g]||[]).push(r));
