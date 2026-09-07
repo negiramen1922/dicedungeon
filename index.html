@@ -1156,7 +1156,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.034";
+const VERSION="α1.0.035";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1169,6 +1169,12 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1035",tag:"fix",v:"α1.0.035",d:"2026-09-07",n:"手練れ（精鋭）が どの区画でも勝てない戦いになっていました",b:[
+   "<b>精鋭は 4体、普通は 2〜3体。</b>こちらは最大3人なので 4対3 は構造的に重く、前提の人数では <b>どこでも勝てません</b>でした（余裕 ×0.35〜0.92）",
+   "普通には区画ごとの摘み、ボスにも区画ごとの摘みがあったのに、<b>精鋭にだけありませんでした</b>。足しました",
+   "<b>敵の硬さを配り直しました。</b>技を配り直して一味の火力が 1.3〜1.5倍になったのに、敵は据え置きでした",
+   "前提の人数で挑んだとき　<b>普通 ×1.8〜2.9（快勝）／重い・精鋭 ×1.1〜1.6（用意が要る）／ボス ×1.0〜1.15（拮抗）</b>",
+   "潜る前提の人数は これまでどおり　第1階層の前半 1人・後半 2人・第2階層から 3人"]},
  {id:"v1034",tag:"up",v:"α1.0.034",d:"2026-09-07",n:"得物に個性が戻りました。技の必要成功数と威力を配り直しました",b:[
    "<b>得物の違いが「何が起きるか」で出るようになりました。</b>ダイスの数は技能で決まるので、得物ごとの手数の差は もう出せません",
    "<b>槍・ハルバード</b>　<b>縦に貫く</b>。狙った相手と その1つ奥に入ります",
@@ -4818,12 +4824,29 @@ function lvScale(t){ t=(t||areaTier()||1); return LVSCALE[t-1]||LVSCALE[LVSCALE.
 
    1.0 が素。**最大HP と 与ダメの両方**に掛かるので、余裕は 1/k² で動く。
    `tools/audit4.mjs` で測って決める。**敵や遭遇を触ったら測り直すこと。** */
-const AREATOUGH={plain:0.86,seed:0.93,wtree:0.79,cave:1.13,hall:0.85,city:0.78};
-const BOSSTOUGH={plain:0.94,seed:0.86,wtree:0.96,cave:0.73,hall:1.07,city:0.69};
+/* ===== 精鋭の摘み（α1.0.035） =====
+   〔前〕`prepareBattle` の中に `f.maxHP*1.4` / `f.STR*1.15` と直書き。
+   しかも `tools/tune4` は `makeFoes()` を直に呼んでいて この上乗せを
+   **一度も測っていなかった**ので、精鋭が全区画で 余裕 1.0 を割っている
+   （×0.35〜0.92）ことが ずっと見えていなかった。
+
+   精鋭は **4体**、普通は 2〜3体。こちらは最大3人なので 4対3 は構造的に重い。
+   顔ぶれは意図どおりなので、**区画ごとの摘み**を足す ── 普通には AREATOUGH、
+   ボスには BOSSTOUGH があるのに 精鋭にだけ無かった。
+
+   1体あたりを軽くしても 数が多いぶん 戦いは重いまま。
+   精鋭は「用意が要る戦い」であって「勝てない戦い」ではない。 */
+const ELITETOUGH={plain:0.85,seed:1.01,wtree:0.81,cave:0.65,hall:0.98,city:0.98};
+function eliteTough(){ return ELITETOUGH[RUN&&RUN.area]||1; }
+const AREATOUGH={plain:1.07,seed:1.06,wtree:0.92,cave:1.4,hall:0.93,city:0.82};
+const BOSSTOUGH={plain:0.89,seed:0.87,wtree:0.91,cave:0.68,hall:1.08,city:0.72};
 function areaTough(){ return AREATOUGH[RUN&&RUN.area]||1; }
 function bossTough(){ return BOSSTOUGH[RUN&&RUN.area]||1; }
 /* 敵ひとりに掛かる合計の倍率 */
-function foeScale(boss){ return lvScale()*areaTough()*(boss?bossTough():1); }
+function foeScale(boss){
+  const ex=boss?bossTough():((RUN&&RUN.elite)?eliteTough():1);
+  return lvScale()*areaTough()*ex;
+}
 function depthMul(){
   const r=(RUN&&RUN.cur)?RUN.cur.r:0;
   const d=depthAt(areaTier());
@@ -11314,8 +11337,8 @@ function startBattle(){
 }
 function prepareBattle(){
   foes=makeFoes();
-  if(RUN&&RUN.elite)foes.forEach(f=>{
-    f.maxHP=Math.round(f.maxHP*1.4);f.HP=f.maxHP;f.STR=Math.round(f.STR*1.15);});
+  /* 精鋭の重さは foeScale の eliteTough に一本化した（α1.0.035）。
+     ここで もう一度掛けると 二重になる */
   foes.forEach(f=>{f.ph=0;f.acts=FOE[f.key].acts;f.tele=chooseTele(f);f.next=chooseTele(f);});
   if(passOn("charmStart")>0&&foes.length){
     const v=foes[Math.floor(Math.random()*foes.length)];

@@ -11,9 +11,14 @@ import {chromium} from '/opt/node22/lib/node_modules/playwright/index.mjs';
 import {EXPECT_SRC} from './expect.mjs';
 
 /* 目標。段が進むほど じわじわ重くなる形にしてある。
-   1.0 が相打ち。普通は快勝、精鋭とボスは 用意が要る、くらい。 */
-const WANT={1:{norm:4.0,boss:1.6},2:{norm:3.5,boss:1.5},
-            3:{norm:3.0,boss:1.4},4:{norm:2.5,boss:1.3}};
+   1.0 が相打ち。普通は快勝、精鋭とボスは 用意が要る、くらい。
+
+   〔α1.0.035 で引き締めた〕技を46件配り直して 一味の火力が 1.3〜1.5倍に
+   なったのに 敵の硬さが据え置きだった。norm は 普通・重い・精鋭 を
+   ならした値なので、普通が ×7 でも精鋭が ×1.7 なら真ん中に来てしまう。
+   **前提の人数で挑んで、普通は快勝・ボスは拮抗**になる形へ寄せる。 */
+const WANT={1:{norm:2.6,elite:1.25,boss:1.15},2:{norm:2.4,elite:1.20,boss:1.10},
+            3:{norm:2.2,elite:1.15,boss:1.05},4:{norm:2.0,elite:1.10,boss:1.00}};
 
 const FILE=(process.argv.find(a=>a.endsWith('.html'))||'index.html');
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
@@ -34,8 +39,14 @@ const R=await pg.evaluate(()=>{
     setParty(l);
     party.forEach(u=>recalcMe(u,false));
     const ourHP=party.reduce((a,u)=>a+u.maxHP,0);
-    const meas=(enc,boss)=>{
-      sel.enc=enc;RUN.boss=!!boss;foes=makeFoes();RUN.boss=false;
+    /* ===== 精鋭の上乗せも 測る（α1.0.035） =====
+       makeFoes() を直に呼んでいたので、**prepareBattle の中にある
+       精鋭の ×ELITEHP / ×ELITESTR が一度も掛かっていなかった。**
+       表に出ていた「精鋭」は ただの重い顔ぶれで、実戦はこれより厳しい。
+       ── 測っていないものを「釣り合っている」と言わないこと。 */
+    const meas=(enc,boss,elite)=>{
+      sel.enc=enc;RUN.boss=!!boss;RUN.elite=!!elite;foes=makeFoes();
+      RUN.boss=false;RUN.elite=false;
       let hp=0,dmg=0,our=0;
       foes.forEach(f=>{hp+=f.maxHP;
         const tgt=foeTarget(f),tot=f.acts.reduce((x,a)=>x+(a.w||1),0);
@@ -43,12 +54,13 @@ const R=await pg.evaluate(()=>{
       party.forEach(u=>{const t=foeLine()[0];if(t)our+=expMineAtk(u,t);});
       return (ourHP/Math.max(1,dmg))/(hp/Math.max(1,our));
     };
-    const avg=k=>{const l2=(A[k]||[]).map(e=>meas(e,false));
+    const avg=(k,elite)=>{const l2=(A[k]||[]).map(e=>meas(e,false,elite));
       return l2.length?l2.reduce((a,b)=>a+b,0)/l2.length:0;};
     out[ak]={tier:A.tier,n:A.n.replace(/ /g,""),
-      norm:avg("norm"),hard:avg("hard"),elite:avg("elite"),boss:meas(A.boss,true),
+      norm:avg("norm"),hard:avg("hard"),elite:avg("elite",true),boss:meas(A.boss,true),
       tough:(typeof AREATOUGH!=="undefined"&&AREATOUGH[ak])||1,
-      btough:(typeof BOSSTOUGH!=="undefined"&&BOSSTOUGH[ak])||1};
+      btough:(typeof BOSSTOUGH!=="undefined"&&BOSSTOUGH[ak])||1,
+      etough:(typeof ELITETOUGH!=="undefined"&&ELITETOUGH[ak])||1};
   });
   return out;
 });
@@ -58,17 +70,23 @@ for(const k in R){const r=R[k];
     ["norm","hard","elite","boss"].map(x=>("×"+r[x].toFixed(2)).padStart(7)).join("")+
     ` │ 区画 ${r.tough.toFixed(2)}　ボス ${r.btough.toFixed(2)}`);}
 console.log("\n返すべき倍率（AREATOUGH / BOSSTOUGH に掛ける）");
-const A={},B={};
+const A={},B={},E={};
 for(const k in R){const r=R[k], w=WANT[r.tier]||WANT[4];
   /* 普通・重い・精鋭 の平均を 目標の形（普通:重い:精鋭 ＝ 1:0.55:0.38）に照らす */
-  const mid=(r.norm+r.hard+r.elite)/3;
-  const wantMid=w.norm*(1+0.55+0.38)/3;
+  /* 精鋭は自分の摘み（ELITETOUGH）で合わせるので、ここでは混ぜない。
+     混ぜていたせいで、いちばん低い精鋭が 普通に引きずられて潰れていた */
+  const mid=(r.norm+r.hard)/2;
+  const wantMid=w.norm*(1+0.55)/2;
   A[k]=+(r.tough*Math.sqrt(mid/wantMid)).toFixed(2);
   /* ボスは 区画の倍率が先に掛かるので、そのぶんを差し引いて出す */
   const afterArea=r.boss*Math.pow(r.tough/A[k],2);
   B[k]=+(r.btough*Math.sqrt(afterArea/w.boss)).toFixed(2);
-  console.log(`  ${r.n.padEnd(12,"　")}区画 ${A[k]}　ボス ${B[k]}`);}
+  /* 精鋭も 区画の倍率が先に掛かるので そのぶんを差し引く */
+  const eAfter=r.elite*Math.pow(r.tough/A[k],2);
+  E[k]=+(r.etough*Math.sqrt(eAfter/w.elite)).toFixed(2);
+  console.log(`  ${r.n.padEnd(12,"　")}区画 ${A[k]}　精鋭 ${E[k]}　ボス ${B[k]}`);}
 console.log("\nconst AREATOUGH="+JSON.stringify(A)+";");
+console.log("const ELITETOUGH="+JSON.stringify(E)+";");
 console.log("const BOSSTOUGH="+JSON.stringify(B)+";");
 console.log(errs.length?"⚠ "+[...new Set(errs)].join("\n"):"");
 await b.close();
