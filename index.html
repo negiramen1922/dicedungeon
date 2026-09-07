@@ -1156,7 +1156,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
-const VERSION="α1.0.039";
+const VERSION="α1.0.040";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1169,6 +1169,14 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1040",tag:"up",v:"α1.0.040",d:"2026-09-07",n:"倉庫ができました。仲間にも装備を着けられます",b:[
+   "<b>買ったもの・拾ったものは まず倉庫に入ります。</b>これまでは主人公の空き枠に勝手に着いていました。誰に着けるかは <b>「パーティを見る」→ 装備</b> で選びます",
+   "<b>倉庫はパーティ共有</b>で、どの仲間の欄からでも同じ倉庫が見えます。持てる数に上限はありません",
+   "<b>仲間の窓にも 装備の札</b>が出ます。武器・防具・装飾を それぞれに着けられ、<b>外す</b>と倉庫に戻ります",
+   "<b>得物は パーティにいる職ぶん 落ちてくるようになりました。</b>これまでは主人公の職の得物しか出ず、仲間に着けようにも着けられる得物が手に入りませんでした",
+   "<b>得物だけは 職が合わないと持てません</b>（杖は魔道士、弓はアーチャー）。防具と装飾は誰でも身につけられます",
+   "倉庫の欄には <b>その者が持ったら 1ヒットがいくつになるか</b>が出ます",
+   "入れ替えができるのは これまでどおり <b>町と焚き火のそば</b>だけです"]},
  {id:"v1039",tag:"up",v:"α1.0.039",d:"2026-09-07",n:"癒しと守りを 仲間に掛けられます。攻撃の演出を組み直しました",b:[
    "<b>癒し・蘇生・盾・見切り・集中・気を静める は 掛ける相手を選べます。</b>攻撃で相手を選ぶのと同じで、こちら側のマスが押せるようになります。蘇生は <b>倒れている仲間だけ</b>が選べます",
    "自分だけの手（獣化・力を纏う・休む・討つと告げる）と 全体に及ぶ手は これまでどおり「これで使う」です",
@@ -4731,6 +4739,12 @@ function sheet(){
     <div class="dline" style="margin-top:4px;color:var(--ink)">
       技は持たずに始まる。戦いに勝つたびに スキル／パッシブ／装備 から一つ選ぶ。</div>`;
 }
+/* 控えを通しても その者だと分かる番号（α1.0.040）。
+   隊列の pid は並べ替えで変わるので 目印にはできない。 */
+let UIDN=0;
+function nextUid(){ return "u"+(++UIDN)+"_"+Date.now().toString(36); }
+function uidOf(u){ if(u&&!u.uid)u.uid=nextUid(); return u&&u.uid; }
+function byUid(id){ return [...party,...bench].find(u=>u.uid===id)||null; }
 function makeMe(){
   const J=JOB[sel.job];
   const base={STR:0,DEX:0,INT:0,VIT:0,LUK:0,HP:0,MP:0};
@@ -4746,6 +4760,7 @@ function makeMe(){
     gold:0,bag:{},mats:{},recipes:[],lv:1,exp:0,
     skg:{},skp:0,                       /* 技能の育ち：注いだぶん／まだ注いでいない点 */
     sk:[],pass:[],block:0,half:false};
+  m.uid=nextUid();
   recalcMe(m,true);
   return m;
 }
@@ -5649,9 +5664,9 @@ function statWaste(k,add){
   return Math.max(0,add-(now-without));
 }
 /* パッシブぶんが上限で削られている量 */
-function dexPassiveWaste(){
+function dexPassiveWaste(u){
   const cap=STATMAX.DEX;
-  const p=dexPassive();
+  const p=dexPassive(u);
   return Math.max(0,p-cap);
 }
 /* 装備が持っている上乗せのうち、上限で捨てられているぶんを一言で返す */
@@ -8884,8 +8899,12 @@ function townSnap(){
   return {
     gold:me.gold,
     mats:{...me.mats}, bag:{...me.bag},
-    stash:me.stash.slice(), recipes:me.recipes.slice(),
+    stash:store().slice(), recipes:me.recipes.slice(),
     eq:{wep:me.eq.wep, armor:me.eq.armor, acc:(me.eq.acc||[]).slice()},
+    /* 仲間の装備も写す（α1.0.040）。倉庫が町の姿に戻るのに 身につけたものだけ
+       残ると、拾っていない装備が居座ることになる */
+    mateEq:[...party,...bench].filter(u=>u!==me).map(u=>({uid:uidOf(u),
+      wep:u.eq.wep, armor:u.eq.armor, acc:(u.eq.acc||[]).slice()})),
     owned:owned.slice(),
   };
 }
@@ -8895,6 +8914,12 @@ function townRestore(o){
   me.mats={...o.mats}; me.bag={...o.bag};
   me.stash=o.stash.slice(); me.recipes=o.recipes.slice();
   me.eq={wep:o.eq.wep, armor:o.eq.armor, acc:(o.eq.acc||[]).slice()};
+  (o.mateEq||[]).forEach(x=>{
+    const u=byUid(x.uid);
+    if(!u)return;
+    u.eq={wep:x.wep, armor:x.armor, acc:(x.acc||[]).slice()};
+    recalcMe(u,false);
+  });
   owned=o.owned.slice();
   recalcMe(me,false);
 }
@@ -10111,7 +10136,7 @@ async function openChest(nd,weak){
     const icon=g.slot==="wep"?wepIcon(g.key):(g.slot==="armor"?armorIcon(g):accIcon(g));
     const res=applyReward("gear",g);
     gains.push({ic:itemIcon(icon,34),sm:itemIcon(icon,20),n:`${g.n}`,
-      d:(res&&res.stashed?"予備へ　":res&&res.bagged?"控えへ　":"")
+      d:(res&&res.stashed?"倉庫へ　":res&&res.bagged?"控えへ　":"")
         +`${TIERN[g.tier===undefined?1:g.tier]}　${gearDesc(g)}`.slice(0,52)});
   }
 
@@ -10150,7 +10175,7 @@ async function openChest(nd,weak){
   return new Promise(res=>{
     $("#cGo").onclick=()=>{
       SFX.pick();chestClose();
-      /* 枠が埋まっていたぶんは 予備・控えへ回っている（α1.0.038）。
+      /* 装備は倉庫へ、技と癖は控えへ回っている（α1.0.038 / α1.0.040）。
          もう「捨てるものを選ぶ」窓は出さない */
       backToFloor(title,[
         `<span class="gain">${gains.map(g=>g.n).join("　")}</span>`,
@@ -10305,7 +10330,7 @@ const CHTABS=[
 let chNow=CHTABS[0].k;
 function chCount(k,U){
   U=U||me;
-  if(k==="eq") return `装飾 ${(U.eq.acc||[]).length}/${ACCMAX}`;
+  if(k==="eq") return `倉庫 ${(me.stash||[]).length}`;
   if(k==="st") return (U===me&&(U.skp|0))?`Lv ${U.lv}　技能 +${U.skp}`:`Lv ${U.lv}`;
   if(k==="bag")return `道具 ${bagLabel()}`;
   const b=bagOf(U,"act").length+bagOf(U,"pass").length;
@@ -10319,25 +10344,33 @@ function eqRow(icon,label,g,extra){
       ?`${tierTag(g.tier)}${madeTag(g)} <b>${g.n}</b>　${g.d||""}${wasteNote(g)}`
       :`<span style="color:#4d5346">空 き</span>`}${extra||""}</span></div>`;
 }
-function chBodyEq(){
-  const w=me.wep;
-  let h=`<div class="msec">い ま の 装 備</div>
+/* ===== 装備の欄は **誰の欄でもある**（α1.0.040） =====
+   前は必ず主人公を見ていたので、仲間には何も着けられなかった。
+   倉庫（store）はパーティ共有。着ける先は いま見ている者。 */
+function chBodyEq(U){
+  U=U||me;
+  const w=U.wep;
+  const cur=U.eq.wep;
+  let h=`<div class="msec">${U===me?"い ま の 装 備":rosterName(U)+" の 装 備"}</div>
   <div class="mitem eqrow">
-    <span class="eqk">${itemIcon(wepIcon(me.eq.wep?me.eq.wep.key:me.baseWep),16)} 武 器</span>
-    <span class="eqv">${tierTag(me.eq.wep?me.eq.wep.tier:0)}${
-      w.el&&w.el!=="none"?elemTag(w.el):""}${madeTag(me.eq.wep)} <b>${
-        me.eq.wep?me.eq.wep.n:w.n}</b>　${w.d||""}
+    <span class="eqk">${itemIcon(wepIcon(cur?cur.key:U.baseWep),16)} 武 器</span>
+    <span class="eqv">${tierTag(cur?cur.tier:0)}${
+      w.el&&w.el!=="none"?elemTag(w.el):""}${madeTag(cur)} <b>${
+        cur?cur.n:w.n}</b>　${w.d||""}
       <br><span style="color:var(--ink)">${wepTrait(w)}　威力 ${
         Math.round(statMul(w)*100)}%（${w.stat} ×${statMul(w).toFixed(2)}）　${
         w.type==="melee"?"近接・奥は 遠さのぶん当てにくい":"遠隔・奥でも 遠さを払わない"}
-        　→ 1ヒット <b>${powOf(me,{})}</b></span></span></div>`;
-  h+=eqRow(me.eq.armor?itemIcon(armorIcon(me.eq.armor),16):tagFig("armor",12),"防 具",me.eq.armor);
+        　→ 1ヒット <b>${powOf(U,{})}</b></span>${
+      cur&&canSwap()?`<br><button class="stbtn" data-off="wep">外 す</button>`:""}</span></div>`;
+  h+=eqRow(U.eq.armor?itemIcon(armorIcon(U.eq.armor),16):tagFig("armor",12),"防 具",U.eq.armor,
+    U.eq.armor&&canSwap()?`<br><button class="stbtn" data-off="armor">外 す</button>`:"");
   for(let i=0;i<ACCMAX;i++){
-    const g=(me.eq.acc||[])[i];
-    h+=eqRow(g?itemIcon(accIcon(g),16):tagFig("acc",12),`装飾 ${i+1}`,g);
+    const g=(U.eq.acc||[])[i];
+    h+=eqRow(g?itemIcon(accIcon(g),16):tagFig("acc",12),`装飾 ${i+1}`,g,
+      g&&canSwap()?`<br><button class="stbtn" data-offacc="${i}">外 す</button>`:"");
   }
   /* 上限に達して無駄になっているぶんは、装備の話なのでここに置く */
-  const gw=me.raw?Math.max(0,me.raw.DEX-STATMAX.DEX):0, pw=dexPassiveWaste();
+  const gw=U.raw?Math.max(0,U.raw.DEX-STATMAX.DEX):0, pw=dexPassiveWaste(U);
   if(gw||pw){
     const a=[];
     if(gw)a.push(`成長と装備で <b>+${gw}</b>`);
@@ -10347,19 +10380,21 @@ function chBodyEq(){
       <br><span class="s" style="color:var(--ink)">上限を越えられるのは
       スキルのバフだけ。装備とパッシブはここで止まる</span></div>`;
   }
-  const sw=canSwap();
-  h+=`<div class="msec">予 備　<span style="color:var(--dim);letter-spacing:0">${
-    (me.stash||[]).length}</span></div>`;
-  h+=(me.stash||[]).length?(me.stash||[]).map((g,i)=>
-    `<div class="mitem eqrow">
+  const sw=canSwap(), st=store();
+  h+=`<div class="msec">倉 庫　<span style="color:var(--dim);letter-spacing:0">${
+    st.length}　パーティ共有</span></div>`;
+  h+=st.length?st.map((g,i)=>{
+    const ok=canWear(U,g), why=wearWhy(U,g);
+    return `<div class="mitem eqrow">
       <span class="eqk">${itemIcon(g.slot==="wep"?wepIcon(g.key)
         :(g.slot==="armor"?armorIcon(g):accIcon(g)),16)} ${
         g.slot==="wep"?"武 器":(g.slot==="armor"?"防 具":"装 飾")}</span>
-      <span class="eqv">${tierTag(g.tier)}${madeTag(g)} <b>${g.n}</b>　${gearDesc(g)}
-      ${sw?`<br><button class="stbtn" data-eq="${i}">着 け る</button>
-      <button class="stbtn drop" data-drop="${i}">捨 て る</button>`:""}</span></div>`).join("")
-    :`<div class="mitem" style="color:#4d5346">なし　<span class="s">宝箱や戦利品で枠が埋まっているものは、いったんここに入る。<b>いくつでも持てる</b></span></div>`;
-  if(!sw&&(me.stash||[]).length)
+      <span class="eqv">${tierTag(g.tier)}${madeTag(g)} <b>${g.n}</b>　${gearDesc(g,U)}
+      ${sw?`<br><button class="stbtn" data-eq="${i}"${ok?"":" disabled"}>${
+        ok?`${U===me?"":rosterName(U)+" に "}着 け る`:why}</button>
+      <button class="stbtn drop" data-drop="${i}">捨 て る</button>`:""}</span></div>`;}).join("")
+    :`<div class="mitem" style="color:#4d5346">なし　<span class="s">買ったもの・拾ったものは まずここに入る。誰に着けるかは この欄で選ぶ。<b>いくつでも持てる</b></span></div>`;
+  if(!sw&&st.length)
     h+=`<div class="mitem" style="color:#4d5346"><span class="s">${swapWhy()}</span></div>`;
   return h;
 }
@@ -10541,9 +10576,10 @@ function charModal(back,U){
   if(U)chWho=Math.max(0,party.indexOf(U));
   if(chWho>=party.length)chWho=0;
   U=party[chWho]||me;
-  /* 装備と持ち物は パーティの共有物で、持っているのは主人公。
-     仲間の欄では その2つを出さない（付け替えは 次の段でできるようにする）。 */
-  const tabs=(U===me)?CHTABS:CHTABS.filter(t=>t.k==="st"||t.k==="sk");
+  /* 装備は **ひとりずつ**（α1.0.040）。倉庫はパーティ共有なので
+     どの者の欄からでも 同じ倉庫が見える。
+     持ち物（道具）はパーティ共有の袋なので 主人公の欄にだけ出す。 */
+  const tabs=(U===me)?CHTABS:CHTABS.filter(t=>t.k!=="bag");
   if(!tabs.some(t=>t.k===chNow))chNow=tabs[0].k;
   const low=U.HP<=U.maxHP*0.35;
   let h=`<div class="mtitle">装 備 ・ 状 態</div>`;
@@ -10601,7 +10637,7 @@ function charModal(back,U){
         h+=`<div class="ndbtn"><button class="no2" data-out="1">${rosterName(U)} を 控えへ</button></div>`;
     }
   }
-  h+= chNow==="eq" ?chBodyEq()
+  h+= chNow==="eq" ?chBodyEq(U)
     : chNow==="st" ?chBodySt(U)
     : chNow==="bag"?chBodyBag()
     :               chBodySk(U);
@@ -10649,9 +10685,16 @@ function charModal(back,U){
   $("#mbox").querySelectorAll("[data-eq]").forEach(b=>{
     b.onclick=()=>{ if(!canSwap())return;
       const i=+b.dataset.eq;
-      const g=me.stash[i];
-      if(g&&g.slot==="acc"&&(me.eq.acc||[]).length>=ACCMAX){closeModal();return accPickModal(g,i);}
-      stashEquip(i);closeModal();charModal(back);};});
+      const g=store()[i];
+      if(!g||!canWear(U,g))return;
+      if(g.slot==="acc"&&(U.eq.acc||[]).length>=ACCMAX){closeModal();return accPickModal(g,i,U);}
+      stashEquip(i,U);closeModal();charModal(back);};});
+  $("#mbox").querySelectorAll("[data-off]").forEach(b=>{
+    b.onclick=()=>{ if(!canSwap())return;
+      stashOff(U,b.dataset.off);closeModal();charModal(back);};});
+  $("#mbox").querySelectorAll("[data-offacc]").forEach(b=>{
+    b.onclick=()=>{ if(!canSwap())return;
+      stashOff(U,"acc",+b.dataset.offacc);closeModal();charModal(back);};});
   /* 覚えているものの出し入れ。**捨てる札は無い**（もう失わせない）。
      押せるのは canSwap の場所だけ。窓は隠れるだけで消えないので、
      開いたときの姿だけでなく 押した時点でも見る */
@@ -10679,7 +10722,7 @@ function charModal(back,U){
   $("#mbox").querySelectorAll("[data-drop]").forEach(b=>{
     b.onclick=()=>{
       if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent="本当に捨てる";return;}
-      me.stash.splice(+b.dataset.drop,1);SFX.click();closeModal();charModal(back);};});
+      store().splice(+b.dataset.drop,1);SFX.click();closeModal();charModal(back);};});
   $("#mClose").onclick=()=>{if(back){closeModal();back();}else closeModal();};
 }
 
@@ -10688,12 +10731,19 @@ function catPool(cat){
   if(cat==="gear"){
     const maxT=worldStep()+1+LUKGRADE;       /* 宝箱では幸運で 1 段上がる */
     const list=[];
-    (GEAR.wep[sel.job]||[]).forEach(g=>list.push({...g,slot:"wep",
+    /* ===== 得物は **パーティにいる職ぶん** 落ちる（α1.0.040） =====
+       前は主人公の職の得物しか出なかったので、仲間に着けさせようにも
+       着けられる得物が一つも手に入らなかった。 */
+    const jobs=[...new Set([...party,...bench].map(u=>u.job).concat(sel.job))];
+    jobs.forEach(J=>(GEAR.wep[J]||[]).forEach(g=>list.push({...g,slot:"wep",
       d:(()=>{const w=WEP[g.key];
-        const now=powOf(me,{});
-        const nx=Math.round(me[w.stat]*statMul(w));
-        return `${wepTrait(w)}　威力 ${Math.round(statMul(w)*100)}% = ${nx}（いま ${now}）　${
-        w.type==="melee"?"近接":"遠隔"}<br><span style="color:var(--ink)">${w.d}</span>`;})()}));
+        const U=[...party,...bench].find(u=>u.job===J)||me;
+        const now=(U.wep&&U.wep.key===g.key)?0:Math.round(U[w.stat]*statMul(WEP[U.eq.wep?U.eq.wep.key:U.baseWep]||w));
+        const nx=Math.round(U[w.stat]*statMul(w));
+        return `${wepTrait(w)}　威力 ${Math.round(statMul(w)*100)}%${
+          J===sel.job?"":`　<span class="s">${JOB[J].n}の得物</span>`}　${
+          nx?`${U.short} が持てば ${nx}${now?`（いま ${now}）`:""}　`:""}${
+          w.type==="melee"?"近接":"遠隔"}<br><span style="color:var(--ink)">${w.d}</span>`;})()})));
     GEAR.armor.forEach(g=>list.push({...g,slot:"armor"}));
     GEAR.acc.forEach(g=>list.push({...g,slot:"acc"}));
     return list.filter(r=>!owned.includes(r.id)&&!r.made&&(r.tier||1)<=maxT);
@@ -10713,10 +10763,12 @@ function drawRewards(){
 }
 const SLOTN={wep:"武器",armor:"防具",acc:"装飾"};
 const ACCMAX=4;
-/* 装備の予備。武器・防具・装飾を種類を問わずここに置いておける。
+/* 倉 庫。武器・防具・装飾を種類を問わずここに置く。**パーティ共有**で、
+   持っているのは主人公（me.stash）。
    宝箱で武器が出るたびに いまの武器が問答無用で置き換わっていたのを、
    ここへ一度受けてから自分で着け替える形にした。
-   α1.0.038 で **上限を外した**（いくつでも持てる）。 */
+   α1.0.038 で上限を外し、α1.0.040 で **買ったもの・拾ったものは
+   すべてここに入る**ようにした（誰に着けるかは装備の欄で選ぶ）。 */
 const SKMAX=6;
 /* ===== 次のレベルまでに要る経験（α1.0.014・上限 Lv100） =====
 
@@ -10755,19 +10807,11 @@ function tierTag(t){
   const c={0:"#5a6150",1:"#8b9080",2:"#6f92ab",3:"#c9a227"}[t]||"#8b9080";
   return `<span class="tierb" style="color:${c};border-color:${c}">${TIERN[t]}</span>`;
 }
+/* 買ったもの・拾ったものは まず倉庫へ（α1.0.040）。
+   枠の空きを気にする必要が無くなったので、行き先だけを一言で。 */
 function slotNote(slot){
-  const spare=`　予備 ${(me.stash||[]).length} つ`;
-  if(slot==="acc"){
-    const n=(me.eq.acc||[]).length;
-    return n<ACCMAX?`装飾の枠　${n} / ${ACCMAX}　まだ空いている`
-                   :`装飾の枠　満杯${spare}`;
-  }
-  if(slot==="wep"||slot==="armor"){
-    if(!me.eq[slot])return `${slot==="wep"?"武器":"防具"}の枠　空いている`;
-    return `いまの ${slot==="wep"?me.wep.n:me.eq.armor.n} は外さない${spare}`;
-  }
-  const cur=me.eq[slot];
-  return `${SLOTN[slot]} の枠`+(cur?`　いまの「${cur.n}」と入れ替え`:"　空いている");
+  return `${SLOTN[slot]||"装備"}　<span class="s">倉庫へ入る（いま ${store().length} つ）　`+
+    `着ける相手は「パーティを見る」→ 装備 で選ぶ</span>`;
 }
 function markSeen(id){if(id){META.seen[id]=true;touchMeta();}}
 /* ===== 覚えたものは 失わない（α1.0.038） =====
@@ -10778,6 +10822,26 @@ function markSeen(id){if(id){META.seen[id]=true;touchMeta();}}
 
    枠の数（SKMAX / PASSMAX）は変えていない。
    **戦いに持ち出せる数**と **持っている数**は別のもの。 */
+/* 倉庫。装備の置き場は パーティで ひとつ。持っているのは主人公 */
+function store(){ me.stash=me.stash||[]; return me.stash; }
+/* その者が その装備を身につけられるか。
+   得物は **職ごとの得物**なので、職が合わないと持てない。
+   防具と装飾は 誰でも身につけられる。 */
+function wepJobOf(key){
+  for(const j in GEAR.wep) if(GEAR.wep[j].some(g=>g.key===key))return j;
+  return null;
+}
+function canWear(U,g){
+  if(!U||!g)return false;
+  if(g.slot!=="wep")return true;
+  const j=wepJobOf(g.key);
+  return !j||j===U.job;
+}
+function wearWhy(U,g){
+  if(canWear(U,g))return "";
+  const j=wepJobOf(g.key);
+  return `${(JOB[j]&&JOB[j].n)||"ほか"}の得物`;
+}
 function bagOf(u,kind){
   u=u||me;
   if(kind==="act") return (u.bagSk=u.bagSk||[]);
@@ -10796,56 +10860,74 @@ function applyReward(cat,r){
     else { bagOf(me,"pass").push(r); return {bagged:true,kind:"pass"}; }
   }
   else if(cat==="gear"){
-    /* 空いている枠にはそのまま着ける。埋まっていれば 予備へ（いくつでも） */
-    me.eq.acc=me.eq.acc||[];
-    me.stash=me.stash||[];
-    if(r.slot==="acc"&&me.eq.acc.length<ACCMAX){me.eq.acc.push(r);recalcMe(me,false);return null;}
-    if(r.slot!=="acc"&&!me.eq[r.slot]){me.eq[r.slot]=r;recalcMe(me,false);return null;}
-    me.stash.push(r);
+    /* ===== 手に入れた装備は **まず倉庫へ**（α1.0.040） =====
+       前は主人公の空き枠に勝手に着いていた。誰に着けるかは
+       「パーティを見る」→ 装備 で選ぶ。倉庫はパーティ共有で 上限は無い。 */
+    store().push(r);
     return {stashed:true};
   }
   return null;
 }
 /* 装備の一行説明。武器の等級表は d を持たないので、武器の型から組み立てる */
-function gearDesc(g){
+function gearDesc(g,U){
   if(!g)return "";
   if(g.slot==="wep"&&WEP[g.key]){
     const w=WEP[g.key];
     const mul=g.mul||w.mul||1;
+    /* 誰かを見ているなら「その者が持ったら いくつになるか」まで出す */
+    const nx=(U&&canWear(U,g))?Math.round(U[w.stat]*mul):0;
     return `${wepTrait(w)}　威力 ${Math.round(mul*100)}%${
-      g.mul&&g.mul!==w.mul?`（並 ${Math.round(w.mul*100)}%）`:""}　${
+      g.mul&&g.mul!==w.mul?`（並 ${Math.round(w.mul*100)}%）`:""}${
+      nx?`　1ヒット <b>${nx}</b>（いま ${powOf(U,{})}）`:""}　${
       w.type==="melee"?"近接":"遠隔"}　${w.d||""}`;
   }
   return g.d||"";
 }
-/* 予備の1つを着ける。外れたものは予備の同じ場所に戻る */
-function stashEquip(i){
-  const g=me.stash[i]; if(!g)return;
+/* 倉庫の1つを 誰かに着ける。外れたものは倉庫の同じ場所へ戻る */
+function stashEquip(i,U){
+  U=U||me;
+  const st=store();
+  const g=st[i]; if(!g)return;
+  if(!canWear(U,g))return;
+  U.eq.acc=U.eq.acc||[];
   if(g.slot==="acc"){
-    if((me.eq.acc||[]).length<ACCMAX){me.eq.acc.push(g);me.stash.splice(i,1);}
-    else return accPickModal(g,i);
+    if(U.eq.acc.length<ACCMAX){U.eq.acc.push(g);st.splice(i,1);}
+    else return accPickModal(g,i,U);
   }else{
-    const old=me.eq[g.slot]||null;
-    me.eq[g.slot]=g;
-    if(old)me.stash[i]=old; else me.stash.splice(i,1);
+    const old=U.eq[g.slot]||null;
+    U.eq[g.slot]=g;
+    if(old)st[i]=old; else st.splice(i,1);
   }
-  recalcMe(me,false);SFX.pick();
+  recalcMe(U,false);SFX.pick();
 }
-/* 装飾の枠が満杯のとき、予備のどれと入れ替えるか */
-function accPickModal(g,i){
+/* 外して倉庫へ戻す */
+function stashOff(U,slot,idx){
+  U=U||me;
+  if(slot==="acc"){
+    const g=(U.eq.acc||[])[idx]; if(!g)return;
+    U.eq.acc.splice(idx,1); store().push(g);
+  }else{
+    const g=U.eq[slot]; if(!g)return;
+    U.eq[slot]=null; store().push(g);
+  }
+  recalcMe(U,false);SFX.click();
+}
+/* 装飾の枠が満杯のとき、どれと入れ替えるか */
+function accPickModal(g,i,U){
+  U=U||me;
   let h=`<div class="mtitle">装 飾 の 枠 が 満 杯</div>
-    <div class="mgrow"><b>${g.n}</b>　${gearDesc(g)}</div>
-    <div class="msub">外すものを選ぶ。外したものは予備に戻る</div><div class="acts">`;
-  me.eq.acc.forEach((x,j)=>{
+    <div class="mgrow">${U===me?"":rosterName(U)+"　"}<b>${g.n}</b>　${gearDesc(g,U)}</div>
+    <div class="msub">外すものを選ぶ。外したものは倉庫に戻る</div><div class="acts">`;
+  U.eq.acc.forEach((x,j)=>{
     h+=`<button class="act rew cgear" data-j="${j}">
       <span class="rcat">外す</span><span class="an">${x.n}</span>
       <span class="ad">${x.d}</span></button>`;});
   h+=`<button class="act cancel wide" data-keep="1">
-    <span class="an">やめる</span><span class="ad">予備に置いたままにする</span></button></div>`;
+    <span class="an">やめる</span><span class="ad">倉庫に置いたままにする</span></button></div>`;
   openModal(h);
   $("#mbox").querySelectorAll("[data-j]").forEach(b=>{
-    b.onclick=()=>{const j=+b.dataset.j;const old=me.eq.acc[j];
-      me.eq.acc[j]=g;me.stash[i]=old;recalcMe(me,false);
+    b.onclick=()=>{const j=+b.dataset.j;const old=U.eq.acc[j];
+      U.eq.acc[j]=g;store()[i]=old;recalcMe(U,false);
       SFX.pick();closeModal();charModal();};});
   const kb=$("#mbox").querySelector("[data-keep]");
   if(kb)kb.onclick=()=>{closeModal();charModal();};
@@ -10898,6 +10980,7 @@ function makeMate(job,race,lv){
     gold:0,bag:{},mats:{},recipes:[],lv:1,exp:0,
     skg:{},skp:0,                       /* 技能の育ち：注いだぶん／まだ注いでいない点 */
     sk:[],pass:[],block:0,half:false};
+  m.uid=nextUid();
   m.picks=0;
   recalcMe(m,true);
   while(m.lv<(lv||1)){ m.lv++; growUp(m); }
@@ -11928,7 +12011,7 @@ function drawHome(){
     ? `<span style="color:#c9a227">金貨 <b>${me.gold}</b></span>`+
       `　<span>素材 <b>${Object.values(me.mats||{}).reduce((a,b)=>a+b,0)}</b></span>`+
       `　<span>道具 <b>${Object.values(me.bag||{}).reduce((a,b)=>a+b,0)}</b></span>`+
-      `　<span>予備の装備 <b>${(me.stash||[]).length}</b></span>`+
+      `　<span>倉庫の装備 <b>${(me.stash||[]).length}</b></span>`+
       ((bagOf(me,"act").length+bagOf(me,"pass").length)
         ? `　<span>控えの技・癖 <b>${bagOf(me,"act").length+bagOf(me,"pass").length}</b></span>`:"")
     : "";
