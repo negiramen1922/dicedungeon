@@ -182,12 +182,25 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
   border-top:1px dashed #2b3028;padding-top:2px;width:100%}
 .ctn.safe{color:#5f6e51}
 /* 見た目を選ぶ札（α1.0.041） */
+.nmrow{display:flex;gap:8px;margin:4px 0 12px}
+.nmrow input{flex:1;min-width:0;background:#1b1e15;border:1px solid #2e3325;border-radius:3px;
+  color:var(--ink);font-family:"DotGothic16",ui-monospace,monospace;font-size:17px;
+  letter-spacing:.08em;padding:8px 10px}
+.nmrow input:focus{outline:none;border-color:var(--brass)}
+.nmrow input::placeholder{color:#4d5346;letter-spacing:.04em}
+.nmrow .no2{flex:0 0 auto;padding:0 14px}
 .mkq2{font-size:12px;letter-spacing:.1em;color:var(--dim);margin:10px 0 5px}
 .mkq2 span{color:var(--brass);letter-spacing:.06em}
 .swrow{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .sw{position:relative;height:40px;border:1px solid #2b2f22;border-radius:3px;
   cursor:pointer;padding:0;overflow:hidden}
 .sw.on{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass) inset}
+.sw.free{display:block;cursor:pointer}
+.sw.free input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0}
+.sw.free::before{content:"";position:absolute;inset:0;
+  background:conic-gradient(#e05a4a,#e0c04a,#6fbf72,#4f9ad6,#8a6fbf,#e05a4a);opacity:.45}
+/* 選んでいるあいだは 虹を退けて、選んだ色そのものを見せる */
+.sw.free.on::before{opacity:0}
 .sw span{position:absolute;left:0;right:0;bottom:0;font-size:9px;letter-spacing:.02em;
   color:#f2eddc;background:rgba(10,12,8,.62);padding:1px 0;text-align:center}
 /* 役と狙い（α1.0.042） */
@@ -1175,7 +1188,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
-const VERSION="α1.0.049";
+const VERSION="α1.0.050";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1188,6 +1201,12 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1050",tag:"up",v:"α1.0.050",d:"2026-09-07",n:"名前と 好きな色。仲間も 自分で作れます",b:[
+   "<b>キャラに 名前を付けられます</b>（8文字まで）。盤・行動順・ログ・名簿すべてで その名で呼ばれます。空のままなら これまでどおり「ヒュームのナイト」です",
+   "<b>色は 見本のほかに 好きな色を選べます。</b>肌・服・目 それぞれ「自 由」の札から。つまみを動かすと 立ち絵がその場で追いかけます",
+   "<b>仲間も 自分で作れるようになりました。</b>これまでは「町に来ている3人」から引き当てるだけでした。<b>職 → 種族 → 見た目と名前 → 確認</b>と、主人公と同じ順に決めます（欲望だけは主人公のものなので 仲間は持ちません）",
+   "〔不具合〕<b>世界樹の森・魔法の森・夜空の洞窟の3区画が 無音でした。</b>曲は区画の鍵で引いていて、その3つに曲が無かったためです。苔むした洞窟・水没した回廊・水没都市には ちゃんと在りました（前の版の説明が間違っていました）",
+   "曲が入るまでのあいだ、世界樹の森と魔法の森は「樹木の息吹」、夜空の洞窟は「閉ざされし都」を鳴らします"]},
  {id:"v1049",tag:"fix",v:"α1.0.049",d:"2026-09-07",n:"宿を無くしました",b:[
    "<b>町へ帰ると全快する</b>いま、宿には売るものが何もありませんでした。α1.0.024 からずっと 押せない札のままでした",
    "町の札から外し、仕組みも消しました。傷を癒やすのは <b>町（ただで全快）</b>と <b>焚き火</b>と <b>道具</b>です"]},
@@ -2095,8 +2114,14 @@ const BGMN={
 };
 /* 区画の鍵 hall は「殿堂」とぶつかるので、曲だけ hallw に読み替える。
    （AREAS.hall＝水没した回廊 と 画面の hall＝殿堂 が同じ綴りだった） */
-function bgmFile(key){ return BGM[key]||null; }
-function bgmName(key){ return BGMN[key]||null; }
+/* ===== 曲の無い区画は 近しい曲で鳴らす（α1.0.050） =====
+   曲は区画の鍵で引いている。**世界樹の森（wtree）・魔法の森（magic）・
+   夜空の洞窟（night）の3つに曲が無く、そこだけ無音**だった。
+   苔むした洞窟・水没した回廊・水没都市には ちゃんと在る（cave / hallw / city）。
+   曲が入るまでのあいだ、近しい場所の曲を鳴らしておく。 */
+const BGMFALL={wtree:"seed", magic:"seed", night:"cave"};
+function bgmFile(key){ return BGM[key]||BGM[BGMFALL[key]]||null; }
+function bgmName(key){ return BGMN[key]||BGMN[BGMFALL[key]]||null; }
 const Music=(()=>{
   let el=null, now=null, want=null, on=true, vol=.5, tok=0;
   function ensure(){
@@ -2535,7 +2560,24 @@ function colOf(u){
           cloth:c.cloth||CLOTHDEF[(u&&u.job)||"knight"]||"c1",
           eye:c.eye||"e1"};
 }
-function hexOf(list,k){ const o=list.find(x=>x.k===k); return o?o.c:list[0].c; }
+/* ===== 色は **見本の鍵**でも **生の #rrggbb** でも受ける（α1.0.050） =====
+   見本（s2 / c1 / e1 …）は 選びやすさのために残し、そのうえで
+   好きな色をそのまま持てるようにした。古い記録は鍵で持っているので、
+   どちらでも読めないと 前の姿が出せない。 */
+function isHex(v){ return typeof v==="string"&&/^#[0-9a-fA-F]{6}$/.test(v); }
+function hexOf(list,k){
+  if(isHex(k))return k;
+  const o=list.find(x=>x.k===k); return o?o.c:list[0].c;
+}
+/* その色の呼び名。生の色なら 見本のうち いちばん近いものの名を借りる */
+function colName(list,k){
+  if(!isHex(k)){ const o=list.find(x=>x.k===k); return o?o.n:list[0].n; }
+  const d=h=>{const a=parseInt(h.slice(1),16),b=parseInt(k.slice(1),16);
+    return Math.abs((a>>16&255)-(b>>16&255))+Math.abs((a>>8&255)-(b>>8&255))+Math.abs((a&255)-(b&255));};
+  let best=list[0];
+  list.forEach(o=>{if(d(o.c)<d(best.c))best=o;});
+  return `${k}　<span class="s">${best.n}に近い</span>`;
+}
 /* 差し替えの表を作る。職の服の色と 肌の色だけを写す */
 function figMap(job,col){
   const M={};
@@ -4595,7 +4637,7 @@ const CHESTGAIN=[
    下地が無いと 4 まで下がり、その周は宝箱がほぼ空振りだけになっていた。 */
 const LUKBASE=10;
 function rollLuk(){const a=r6(),b=r6();return {v:(a+b)*2+LUKBASE,d:[a,b]};}
-function newChar(){sel.luk=0;sel.lukD=null;
+function newChar(){sel.luk=0;sel.lukD=null;sel.pname="";
   sel.col={skin:null,cloth:null,eye:"e1"};}   /* 作り直すときだけ振り直す */
 let LUKGRADE=0;                  /* catPool("gear") の等級上限に足す一時値 */
 
@@ -4940,6 +4982,8 @@ function fixUnit(u){
   if(!RACE[u.race])u.race=sel.race;
   if(!("orig" in u))u.orig=(u===me)?sel.orig:null;      /* 仲間は欲望を持たない */
   if(!u.short)u.short=(JOB[u.job]||{}).n||"";
+  /* ログや予告が読むのは name。名を付けたら そちらを名乗る（α1.0.050） */
+  if(u.pname)u.name=u.pname;
   if(!u.art)u.art=(JOB[u.job]||{}).art||u.job;
   /* 技能の育ち。古い控えは持っていないので、レベルぶんを ここで配り直す。
      すでに注いだぶんは引く（控えを読むたびに増えないように）。 */
@@ -4954,7 +4998,7 @@ let fleeUsed=false, foeStart=0;   /* 逃走は1戦闘に1回。倒した数だ�
 let scoutFirst=null;
 let owned=[];
 const sel={job:null,race:null,orig:null,area:"plain",enc:"e1",luk:0,lukD:null,
-  col:{skin:null,cloth:null,eye:"e1"}};
+  pname:"", col:{skin:null,cloth:null,eye:"e1"}};
 
 function build(host,note,data,key,after){
   const h=$(host);h.innerHTML="";
@@ -5011,6 +5055,7 @@ function makeMe(){
     skg:{},skp:0,                       /* 技能の育ち：注いだぶん／まだ注いでいない点 */
     sk:[],pass:[],block:0,half:false};
   m.col={...colOf({job:sel.job,race:sel.race,col:sel.col})};   /* 見た目（α1.0.041） */
+  if(sel.pname){m.pname=sel.pname;m.name=sel.pname;}           /* 名（α1.0.050） */
   m.uid=nextUid();
   recalcMe(m,true);
   return m;
@@ -5719,7 +5764,7 @@ function unitCell(u,isMine,fig){
   return `<div class="cell ${u.HP<=0?"dead":""} ${target?"sel":""} ${acting?"acting":""}"
       ${isMine?`data-me="${u.pid||0}"`:`data-id="${u.id}"`}>
     <div class="por">${isMine?meFig(fig,u):foeFig(u.fig||u.key,fig)}</div>
-    <div class="cn ${isMine?"mine":"foe"}">${u.name}</div>
+    <div class="cn ${isMine?"mine":"foe"}">${isMine?rosterName(u):u.name}</div>
     <div class="chp">${Math.max(0,u.HP)}/${u.maxHP}</div>
     <div class="bar ${isMine?"me":""}"><i style="width:${Math.max(0,u.HP/u.maxHP*100)}%"></i></div>
     ${isMine?`<div class="cmp">MP ${u.MP}/${u.maxMP}</div>
@@ -7923,7 +7968,7 @@ async function enemyAct(f){
     const victims=(aimOf(f,t)==="all")?pAlive().slice():[tg];
     if(victims.length>1)
       log(`<span class="b">${t.n}</span> が <span class="c">場のすべて</span>に及ぶ　`+
-        `<span class="s">${victims.map(u=>u.short).join("・")}</span>`);
+        `<span class="s">${victims.map(u=>shortOf(u)).join("・")}</span>`);
     holdDraw();                    /* ここから 演出。下の freeDraw で描き直す */
     for(const tg of victims){
     if(f.HP<=0)break;
@@ -8373,7 +8418,7 @@ function runSnapshot(){
     v:RVER, ver:VERSION, t:Date.now(), id:(RUN&&RUN.id)||null,
     sel:{job:sel.job,race:sel.race,orig:sel.orig,area:sel.area,
          luk:sel.luk,lukD:sel.lukD},
-    me, mates:party.filter(u=>u!==me), bench, hireOffer, owned,
+    me, mates:party.filter(u=>u!==me), bench, owned,
     run:inDive()?{act:RUN.act,area:RUN.area,seen:RUN.seen||[],curKey:RUN.curKey||null,
          path:RUN.path||[],M:RUN.M,stock:RUN.stock||null,
          shopRecipe:RUN.shopRecipe===undefined?null:RUN.shopRecipe,
@@ -8463,7 +8508,6 @@ function runResume(){
   /* 控えに仲間が入っていれば そのまま。無ければ（古い控え）その場で組む */
   setParty([me,...(r.mates||[])]);
   bench=(r.bench||[]).map(u=>fixUnit(u));
-  hireOffer=r.hireOffer||null;
   owned=r.owned||[];
   RUN=r.run?{id:r.id||runNewId(), act:r.run.act||0, area:r.run.area, seen:r.run.seen||[],
        curKey:r.run.curKey||null, cur:null, path:r.run.path||[],
@@ -9471,7 +9515,7 @@ function newGame(){
   setParty([me]);
   markSeen("w_"+me.baseWep);
   me.gold=(ORIG[sel.orig]&&ORIG[sel.orig].startGold)||30;
-  RUN=null; owned=[]; bench=[]; hireOffer=null;
+  RUN=null; owned=[]; bench=[];
   META.runs++;touchMeta();
   $("#log").innerHTML="";
   const n=(ORIG[sel.orig]&&ORIG[sel.orig].startGear)||1;
@@ -9513,7 +9557,7 @@ function goTown(why){
      ここで癒やさないと、傷ついた者を控えに回して 別の者を入れる、という
      ふつうの動きが「控えの傷が永久に残る」罠になる。 */
   bench.forEach(u=>{u.HP=u.maxHP;u.MP=u.maxMP;u.ail=[];u.block=0;u.buffs=[];u.dbuffs=[];});
-  if(woke.length)RUN_woke=woke.map(u=>u.short);
+  if(woke.length)RUN_woke=woke.map(u=>shortOf(u));
   runSave();
   townScreen(why,before);
 }
@@ -9527,7 +9571,7 @@ function logDive(why){
     route:(RUN.seen||[]).map(k=>AREAS[k]?AREAS[k].n:"").filter(Boolean),
     job:sel.job, race:sel.race, orig:sel.orig,
     lv:me.lv, hp:Math.max(0,me.HP), maxHP:me.maxHP,
-    party:party.map(u=>u.short),
+    party:party.map(u=>shortOf(u)),
     wep:me.wep.n, gold:me.gold,
     kills:Object.values(META.codex).reduce((a,b)=>a+b,0),
   });
@@ -10458,7 +10502,7 @@ function enterNode(nd){
         `<span class="s">火は一度きり。休むか、起こすか。</span>`]),
         [{n:`休 む（パーティの HP ${Math.round(45*rh)}%・MP ${Math.round(60*rh)}%）`,
           cb:()=>{restAtFire(nd,[],0.45*rh,0.6*rh);}},
-         {n:`起 こ す（${down.map(u=>u.short).join("・")}　HP ${Math.round(REVIVEPCT*100)}%）`,
+         {n:`起 こ す（${down.map(u=>shortOf(u)).join("・")}　HP ${Math.round(REVIVEPCT*100)}%）`,
           cb:()=>{
             const said=down.map(u=>{
               u.HP=Math.max(1,Math.round(u.maxHP*REVIVEPCT));
@@ -10493,7 +10537,7 @@ function restAtFire(nd,out,hp,mp){
     const h=Math.min(Math.round(u.maxHP*hp),u.maxHP-u.HP);
     const m=Math.min(Math.round(u.maxMP*mp),u.maxMP-u.MP);
     u.HP+=h;u.MP+=m;
-    said.push(`${u.short}　HP <span class="gain">+${h}</span>　MP <span class="gain">+${m}</span>`);
+    said.push(`${shortOf(u)}　HP <span class="gain">+${h}</span>　MP <span class="gain">+${m}</span>`);
   });
   backToFloor(nd.name,out.concat(["火にあたって休んだ"],said),[
     {n:"火を使って こしらえる",cb:()=>craftModal(null)},
@@ -10528,7 +10572,7 @@ function resolveEvent(nd,out){
       const h=Math.min(Math.round(u.maxHP*0.40*rh),u.maxHP-u.HP);
       const m=Math.min(Math.round(u.maxMP*0.5*rh),u.maxMP-u.MP);
       u.HP+=h;u.MP+=m;
-      out.push(`　${u.short}　HP <b>+${h}</b>　MP <b>+${m}</b>`);
+      out.push(`　${shortOf(u)}　HP <b>+${h}</b>　MP <b>+${m}</b>`);
     });
     backToFloor(nd.name,out,[
       {n:"火を使って こしらえる",cb:()=>craftModal(null)},
@@ -11091,17 +11135,26 @@ function canSwap(){ return !inBattle(); }
 function swapWhy(){
   return canSwap()?"":"戦いのあいだは 入れ替えられない";
 }
-/* パーティと控えに 同じ職が並ぶと 見分けがつかない。かぶったときだけ
-   種族まで（＝name）出し、それでもかぶるなら 番号を足す。
-   名前そのものは まだ決めていない（決まったら ここは要らなくなる）。 */
+/* ===== 名前（α1.0.050） =====
+   自分で付けた名（pname）があれば それを使う。無ければこれまでどおり
+   「ヒュームのナイト」から呼び分ける ── パーティと控えに同じ職が並ぶと
+   見分けがつかないので、かぶったときだけ 種族まで出し、
+   それでもかぶるなら 番号を足す。 */
 const RNUM="①②③④⑤⑥⑦⑧⑨";
+const NAMEMAX=8;
+function cleanName(v){
+  return String(v||"").replace(/[<>&"'`\\]/g,"").trim().slice(0,NAMEMAX);
+}
 function rosterName(u){
+  if(u&&u.pname)return u.pname;
   const L=[...party,...bench];
   if(L.filter(x=>x.short===u.short).length<=1)return u.short;
   const same=L.filter(x=>x.name===u.name);
   if(same.length<=1)return u.name;
   return u.name+(RNUM[same.indexOf(u)]||"");
 }
+/* 盤やログで使う短い呼び名。付けた名があれば そちら */
+function shortOf(u){ return (u&&u.pname)||(u&&u.short)||""; }
 /* パーティのうち いま見ている者。盤面や行動順から開いたときは その者になる */
 let chWho=0;
 function charModal(back,U){
@@ -11570,22 +11623,11 @@ function mateLearn(m,cat,r){
 const PARTYMAX=3;
 const HIRE1=150, HIREUP=150;          /* 2人目 150、以降 +150。仮の値 */
 let bench=[];                          /* 雇ったが パーティに入っていない者 */
-let hireOffer=null;                    /* 町に来ている 雇える者たち */
 function hiredCount(){ return (party.length-1)+bench.length; }
 function hireCost(){ const n=hiredCount(); return n===0?0:HIRE1+(n-1)*HIREUP; }
 /* 町に来ている顔ぶれ。主人公と違う職を先に、種族はばらばらに */
-function rollHire(){
-  const jobs=Object.keys(JOB).filter(j=>j!==sel.job);
-  const races=Object.keys(RACE);
-  const pick=[];
-  while(pick.length<3){
-    const j=jobs[Math.floor(Math.random()*jobs.length)];
-    const r=races[Math.floor(Math.random()*races.length)];
-    pick.push(makeMate(j,r,me.lv));
-  }
-  hireOffer=pick;
-  return pick;
-}
+/* 〔rollHire は α1.0.050 で無くした。「町に来ている3人から選ぶ」形をやめ、
+   主人公と同じように 自分で組む形にした（hireStart / hireModal）。〕 */
 /* パーティに入れる。いっぱいなら控えへ */
 function takeMate(m){
   syncOne(m);
@@ -11775,7 +11817,7 @@ function mateLearnQueue(after){
 /* 仲間ぶんの選択窓。主人公の choiceModal は me に入れてしまうので別に持つ */
 function mateChoiceModal(m,list,done){
   let h=`<div class="mtitle">${m.name} が 覚 え る</div>
-    <div class="mgrow">${meFig(28,m)}　<b>${m.short}</b>　Lv ${m.lv}　
+    <div class="mgrow">${meFig(28,m)}　<b>${rosterName(m)}</b>　Lv ${m.lv}　
       <span class="s">技 ${m.sk.length}/${MATESKMAX}　特 ${m.pass.length}/${MATEPASSMAX}</span></div>
     <div class="msub">覚えるものを ひとつ選ぶ</div><div class="acts">`;
   list.forEach(({cat,r},i)=>{
@@ -12403,11 +12445,19 @@ function drawMake(){
 function drawMakeLook(){
   const c=colOf({job:sel.job,race:sel.race,col:sel.col});
   const row=(ttl,list,key,now)=>
-    `<div class="mkq2">${ttl}　<span>${(list.find(x=>x.k===now)||list[0]).n}</span></div>
+    `<div class="mkq2">${ttl}　<span>${colName(list,now)}</span></div>
      <div class="swrow">${list.map(o=>
        `<button class="sw${o.k===now?" on":""}" data-col="${key}" data-v="${o.k}"
-          style="background:${o.c}" title="${o.n}"><span>${o.n}</span></button>`).join("")}</div>`;
-  let h=`<div class="mkq">見 た 目　<span>あとから変えることはできない</span></div>`;
+          style="background:${o.c}" title="${o.n}"><span>${o.n}</span></button>`).join("")}
+       <label class="sw free${isHex(now)?" on":""}" style="background:${hexOf(list,now)}">
+         <input type="color" data-free="${key}" value="${hexOf(list,now)}">
+         <span>自 由</span></label></div>`;
+  let h=`<div class="mkq">名 前　<span>${NAMEMAX} 文字まで　空でも良い</span></div>
+    <div class="nmrow">
+      <input id="mkName" type="text" maxlength="${NAMEMAX}" value="${sel.pname||""}"
+        placeholder="${RACE[sel.race]?RACE[sel.race].n:""}の${JOB[sel.job]?JOB[sel.job].n:""}">
+      <button class="no2" id="mkNmX">消 す</button></div>
+    <div class="mkq">見 た 目　<span>あとから変えることはできない</span></div>`;
   h+=row("肌 の 色",SKINS,"skin",c.skin);
   h+=row("服 の 色",CLOTHS,"cloth",c.cloth);
   h+=row("目 の 色",EYECOL,"eye",c.eye);
@@ -12416,19 +12466,37 @@ function drawMakeLook(){
       <button class="go2" id="mkLookGo">こ の 姿 で</button></div>
     <button class="mclose" id="mkPrev">ひとつ もどる</button>`;
   $("#mkBody").innerHTML=h;
+  const put=(key,v)=>{
+    sel.col={...c,[key]:v};
+    $("#mkFig").innerHTML=mkFig();      /* 立ち絵だけ先に差し替えて 手応えを出す */
+  };
+  const nm=$("#mkName");
+  if(nm){
+    nm.oninput=()=>{sel.pname=cleanName(nm.value);};
+    $("#mkNmX").onclick=()=>{sel.pname="";nm.value="";nm.focus();};
+  }
   $("#mkBody").querySelectorAll("[data-col]").forEach(b=>{
-    b.onclick=()=>{
-      sel.col={...c,[b.dataset.col]:b.dataset.v};
-      SFX.click();
-      $("#mkFig").innerHTML=mkFig();      /* 立ち絵だけ先に差し替えて 手応えを出す */
-      drawMakeLook();
-    };});
+    b.onclick=()=>{SFX.click();put(b.dataset.col,b.dataset.v);drawMakeLook();};});
+  /* 好きな色。動かしているあいだ 立ち絵が追いかける（描き直すと つまみが閉じる） */
+  $("#mkBody").querySelectorAll("[data-free]").forEach(inp=>{
+    inp.oninput=()=>{
+      put(inp.dataset.free,inp.value);
+      inp.closest(".sw").style.background=inp.value;
+      const lbl=inp.closest(".swrow").previousElementSibling.querySelector("span");
+      if(lbl)lbl.innerHTML=colName(
+        inp.dataset.free==="skin"?SKINS:inp.dataset.free==="cloth"?CLOTHS:EYECOL,inp.value);
+    };
+    inp.onchange=()=>{SFX.click();drawMakeLook();};
+  });
   $("#mkRnd").onclick=()=>{
     const pk=a=>a[Math.floor(Math.random()*a.length)].k;
     sel.col={skin:pk(SKINS),cloth:pk(CLOTHS),eye:pk(EYECOL)};
     SFX.open();$("#mkFig").innerHTML=mkFig();drawMakeLook();};
   $("#mkLookGo").onclick=()=>{
-    sel.col={...c};
+    /* 〔罠〕c は 描き直したときの写し。自由な色で更新したあとに c を書き戻すと
+       選んだ色が その場で消える。**いまの値**（sel.col）を読む */
+    sel.col={...colOf({job:sel.job,race:sel.race,col:sel.col})};
+    if(nm)sel.pname=cleanName(nm.value);
     SFX.open();mkStep++;drawMake();window.scrollTo(0,0);};
   $("#mkPrev").onclick=()=>{mkStep--;drawMake();window.scrollTo(0,0);};
 }
@@ -12478,6 +12546,7 @@ function drawMakeConfirm(){
   const m=makeMe();
   $("#mkBody").innerHTML=`
     <div class="qzres">
+      ${sel.pname?`<div class="qzname" style="color:var(--brass);font-size:20px">${sel.pname}</div>`:""}
       <div class="qzname">${tagFig(sel.job,15)} ${JOB[sel.job].n}　${
         tagFig(sel.race,15)} ${RACE[sel.race].n}　${tagFig(sel.orig,15)} ${ORIG[sel.orig].n}</div>
       <div class="qzd">${JOB[sel.job].d}</div>
@@ -12500,10 +12569,8 @@ function drawMakeConfirm(){
       <div class="qzd" style="color:var(--ink)">戦う技能は
         <b>20 ごとに ダイスが 1つ</b>。レベルが上がるたび 1点を 好きな技能に注げる。</div>
       <div class="qzd" style="color:var(--ink)">${m.wep.n}　を手に始まる</div>
-      <div class="qzd" style="color:var(--ink)">肌 <b>${
-        (SKINS.find(x=>x.k===m.col.skin)||SKINS[0]).n}</b>　服 <b>${
-        (CLOTHS.find(x=>x.k===m.col.cloth)||CLOTHS[0]).n}</b>　目 <b>${
-        (EYECOL.find(x=>x.k===m.col.eye)||EYECOL[0]).n}</b></div>
+      <div class="qzd" style="color:var(--ink)">肌 <b>${colName(SKINS,m.col.skin)}</b>　服 <b>${
+        colName(CLOTHS,m.col.cloth)}</b>　目 <b>${colName(EYECOL,m.col.eye)}</b></div>
       <div class="qzd" style="color:var(--ink)">幸運は生まれつき。<b>2d6×2 ＋${LUKBASE}</b> で
         [${(sel.lukD||[]).join("][")}] → <b style="color:#c9a227">${sel.luk}</b>。
         <br>1d100 を振り、<span style="color:${LUKRANK[1].c}">あたり</span>・<span
@@ -12607,7 +12674,7 @@ function drawHome(){
   $("#townParty").innerHTML=started
     ? party.map((u,i)=>`<button class="tpc" data-tp="${i}">
         ${meFig(30,u)}
-        <span class="tpn">${u.short}</span>
+        <span class="tpn">${rosterName(u)}</span>
         <span class="tph${u.HP<=0?" down":""}">${u.HP<=0?"倒れている":`HP ${u.HP}/${u.maxHP}`}</span>
         <span class="tpl">Lv ${u.lv}</span></button>`).join("")
     : "";
@@ -12623,7 +12690,7 @@ function drawHome(){
 function goHome(){drawHome();showScreen("home");window.scrollTo(0,0);}
 /* ===== 表題 と 記録の選択（α1.0.006） ===== */
 function goTitle(){
-  slot=null;me=null;party=[];RUN=null;bench=[];hireOffer=null;
+  slot=null;me=null;party=[];RUN=null;bench=[];hireSel=null;
   drawTitle();showScreen("title");window.scrollTo(0,0);
 }
 function drawTitle(){
@@ -12850,7 +12917,7 @@ $("#hGo").onclick=()=>{
   SFX.pick();diveModal();
 };
 $("#hChar").onclick=()=>{SFX.click();charModal();};
-$("#hHire").onclick=()=>{SFX.click();hireModal();};
+$("#hHire").onclick=()=>{SFX.click();hireStart();};
 /* どこへ潜るかを 世界地図で選ぶ。**光っている場所だけ押せる。**
    開くのは 抜けた区画と その先（diveTargets）。最初は 原始の草原だけ。 */
 function diveModal(){
@@ -12886,46 +12953,146 @@ function diveModal(){
   $("#dvX").onclick=closeModal;
 }
 /* 仲間を雇う窓 */
+/* ===== 仲 間 を 作 る（α1.0.050） =====
+   前は「町に来ている3人」から選ぶだけで、職も種族も見た目も 引き次第だった。
+   **主人公と同じように 自分で決める。**欲望だけは持たない（主人公のもの）。
+
+   窓ひとつの中で 職 → 種族 → 見た目と名前 → 確認 と進む。 */
+let hireSel=null;
+function hireStart(){
+  hireSel={step:0, job:null, race:null, pname:"",
+           col:{skin:null,cloth:null,eye:"e1"}};
+  hireModal();
+}
+/* いま組んでいる仲間の 仮の姿。立ち絵と数値を出すのに使う */
+function hirePreview(){
+  const H=hireSel;
+  if(!H.job||!H.race)return null;
+  const m=makeMate(H.job,H.race,me.lv);
+  m.col=colOf({job:H.job,race:H.race,col:H.col});
+  if(H.pname){m.pname=H.pname;m.name=H.pname;}
+  return m;
+}
 function hireModal(){
-  if(!hireOffer||!hireOffer.length)rollHire();
-  const cost=hireCost(), full=(party.length>=PARTYMAX);
-  let h=`<div class="mtitle">仲 間 を 雇 う</div>
+  if(!hireSel)return hireStart();
+  const H=hireSel, cost=hireCost(), full=(party.length>=PARTYMAX);
+  const head=`<div class="mtitle">仲 間 を 作 る</div>
     <div class="mgrow">${cost?`ひとり <b style="color:#c9a227">${cost}</b> 金貨`
       :`<b style="color:#8fa261">はじめの ひとりは ただ</b>`}　
       <span class="s">所持 ${me.gold}　パーティ ${party.length}/${PARTYMAX}人`+
       (bench.length?`　控え ${bench.length}人`:"")+`</span></div>
-    <div class="msub">${full
+    <div class="mkstep" style="margin:6px 0 10px">${[0,1,2,3].map(i=>
+      `<span class="mkdot${i===H.step?" on":(i<H.step?" done":"")}"></span>`).join("")}</div>`;
+
+  /* ① 職 ② 種族 */
+  if(H.step<=1){
+    const isJob=(H.step===0);
+    const D=isJob?JOB:RACE, key=isJob?"job":"race";
+    let h=head+`<div class="msub">${isJob?"何で戦うか":"どんな体か"}</div><div class="acts">`;
+    Object.keys(D).forEach(k=>{
+      const o=D[k], on=(H[key]===k);
+      h+=`<button class="act rew${on?" mkon":""}" data-k="${k}">
+        <span class="an">${tagFig(k,15)} ${o.n}</span>
+        <span class="ad">${o.d||""}</span></button>`;});
+    h+=`</div>`+(H.step?`<button class="mclose" id="hrBack">ひとつ もどる</button>`:"")+
+       `<button class="mclose" id="hrX">やめる</button>`;
+    openModal(h,true);
+    $("#mbox").querySelectorAll("[data-k]").forEach(b=>{
+      b.onclick=()=>{H[key]=b.dataset.k;H.step++;SFX.open();hireModal();};});
+    const bk=$("#hrBack"); if(bk)bk.onclick=()=>{H.step--;hireModal();};
+    $("#hrX").onclick=()=>{hireSel=null;closeModal();};
+    return;
+  }
+
+  /* ③ 見た目と名前 */
+  if(H.step===2){
+    const c=colOf({job:H.job,race:H.race,col:H.col});
+    const row=(ttl,list,key,now)=>
+      `<div class="mkq2">${ttl}　<span>${colName(list,now)}</span></div>
+       <div class="swrow">${list.map(o=>
+         `<button class="sw${o.k===now?" on":""}" data-col="${key}" data-v="${o.k}"
+            style="background:${o.c}" title="${o.n}"><span>${o.n}</span></button>`).join("")}
+         <label class="sw free${isHex(now)?" on":""}" style="background:${hexOf(list,now)}">
+           <input type="color" data-free="${key}" value="${hexOf(list,now)}">
+           <span>自 由</span></label></div>`;
+    let h=head+`<div class="mgrow" id="hrFig" style="text-align:center">${
+      pixFig(H.job,H.race,72,null,c)}</div>
+      <div class="mkq2">名 前　<span>${NAMEMAX} 文字まで　空でも良い</span></div>
+      <div class="nmrow">
+        <input id="hrName" type="text" maxlength="${NAMEMAX}" value="${H.pname||""}"
+          placeholder="${RACE[H.race].n}の${JOB[H.job].n}">
+        <button class="no2" id="hrNmX">消 す</button></div>`;
+    h+=row("肌 の 色",SKINS,"skin",c.skin);
+    h+=row("服 の 色",CLOTHS,"cloth",c.cloth);
+    h+=row("目 の 色",EYECOL,"eye",c.eye);
+    h+=`<div class="ndbtn">
+        <button class="no2" id="hrRnd">お ま か せ</button>
+        <button class="go2" id="hrNext">こ の 姿 で</button></div>
+      <button class="mclose" id="hrBack">ひとつ もどる</button>
+      <button class="mclose" id="hrX">やめる</button>`;
+    openModal(h,true);
+    const redraw=()=>{$("#hrFig").innerHTML=pixFig(H.job,H.race,72,null,
+      colOf({job:H.job,race:H.race,col:H.col}));};
+    const nm=$("#hrName");
+    nm.oninput=()=>{H.pname=cleanName(nm.value);};
+    $("#hrNmX").onclick=()=>{H.pname="";nm.value="";nm.focus();};
+    $("#mbox").querySelectorAll("[data-col]").forEach(b=>{
+      b.onclick=()=>{H.col={...c,[b.dataset.col]:b.dataset.v};SFX.click();hireModal();};});
+    $("#mbox").querySelectorAll("[data-free]").forEach(inp=>{
+      inp.oninput=()=>{H.col={...c,[inp.dataset.free]:inp.value};
+        inp.closest(".sw").style.background=inp.value;redraw();};
+      inp.onchange=()=>{SFX.click();hireModal();};});
+    $("#hrRnd").onclick=()=>{
+      const pk=a=>a[Math.floor(Math.random()*a.length)].k;
+      H.col={skin:pk(SKINS),cloth:pk(CLOTHS),eye:pk(EYECOL)};
+      SFX.open();hireModal();};
+    $("#hrNext").onclick=()=>{
+      /* c ではなく いまの値。自由な色を消さないため（上と同じ罠） */
+      H.col={...colOf({job:H.job,race:H.race,col:H.col})};
+      H.pname=cleanName(nm.value);
+      H.step++;SFX.open();hireModal();};
+    $("#hrBack").onclick=()=>{H.step--;hireModal();};
+    $("#hrX").onclick=()=>{hireSel=null;closeModal();};
+    return;
+  }
+
+  /* ④ 確認して 雇う */
+  const m=hirePreview();
+  const poor=(me.gold<cost);
+  let h=head+`<div class="mgrow" style="text-align:center">${meFig(72,m)}</div>
+    <div class="mtitle" style="font-size:18px">${rosterName(m)}</div>
+    <div class="msub">${tagFig(m.job,14)} ${JOB[m.job].n}　${tagFig(m.race,14)} ${RACE[m.race].n}</div>
+    <div class="mstat chhead">
+      <span>HP <b>${m.maxHP}</b></span><span>MP <b>${m.maxMP}</b></span>
+      <span>STR <b>${m.STR}</b></span><span>DEX <b>${m.DEX}</b></span>
+      <span>INT <b>${m.INT}</b></span><span>VIT <b>${m.VIT}</b></span></div>
+    <div class="mitem"><span class="s">${JOB[m.job].d}</span></div>
+    <div class="mitem"><span class="s">${RACE[m.race].d}</span></div>
+    <div class="mitem" style="color:#4d5346"><span class="s">${full
       ?"パーティはいっぱい。雇った者は 控えに入る"
-      :"雇うと そのままパーティに加わる"}</div><div class="acts">`;
-  hireOffer.forEach((m,i)=>{
-    h+=`<button class="act rew cskill" data-h="${i}" ${me.gold<cost?"disabled":""}>
-      <span class="rcat">${JOB[m.job].n}</span>
-      <span class="an">${meFig(22,m)} ${m.name}</span>
-      <span class="ad">${JOB[m.job].d}</span>
-      <span class="rmeta">Lv ${me.lv}　HP ${m.maxHP}　MP ${m.maxMP}　
-        STR ${m.STR} DEX ${m.DEX} INT ${m.INT} VIT ${m.VIT}　
-        ${RACE[m.race].n}</span></button>`;
-  });
-  h+=`</div><button class="mclose" id="hrX">やめる</button>`;
+      :"雇うと そのままパーティに加わる"}　仲間は 欲望を持たない</span></div>
+    <div class="ndbtn">
+      <button class="no2" id="hrBack">見 た 目 を 直 す</button>
+      <button class="go2" id="hrGo"${poor?" disabled":""}>${
+        poor?`金貨が ${cost-me.gold} 足りない`:"こ の 者 を 雇 う"}</button></div>
+    <button class="mclose" id="hrX">やめる</button>`;
   openModal(h,true);
-  $("#mbox").querySelectorAll("[data-h]").forEach(b=>{
-    b.onclick=()=>{
-      const i=+b.dataset.h, m=hireOffer[i], c=hireCost();
-      if(me.gold<c)return;
-      me.gold-=c;
-      hireOffer.splice(i,1);
-      takeMate(m);
-      SFX.found();closeModal();
-      runSave();drawHome();
-      /* 雇ったばかりの者に 覚えるものを選ばせる */
-      mateLearnQueue(()=>{drawHome();
-        resultModal("仲 間 が 加 わ っ た",
-          [`<span class="gain">${m.name}</span> がパーティに加わった`,
-           party.includes(m)?`パーティ ${party.map(u=>u.short).join(" ▸ ")}`
-                            :`控えに入った　<span class="s">パーティは ${PARTYMAX}人まで</span>`],
-          [{n:"よろしく"}]);});
-    };});
-  $("#hrX").onclick=closeModal;
+  $("#hrBack").onclick=()=>{H.step--;hireModal();};
+  $("#hrX").onclick=()=>{hireSel=null;closeModal();};
+  if(!poor)$("#hrGo").onclick=()=>{
+    me.gold-=hireCost();
+    takeMate(m);
+    hireSel=null;
+    SFX.found();closeModal();
+    runSave();drawHome();
+    /* 雇ったばかりの者に 覚えるものを選ばせる */
+    mateLearnQueue(()=>{drawHome();
+      resultModal("仲 間 が 加 わ っ た",
+        [`<span class="gain">${rosterName(m)}</span> がパーティに加わった`,
+         party.includes(m)?`パーティ ${party.map(u=>rosterName(u)).join(" ▸ ")}`
+                          :`控えに入った　<span class="s">パーティは ${PARTYMAX}人まで</span>`],
+        [{n:"よろしく"}]);});
+  };
 }
 /* 潜れる区画。**はじめの区画と、抜けた区画・その先**。
    areaKnown は「はじめの区画」も真になるので ここでは使えない。

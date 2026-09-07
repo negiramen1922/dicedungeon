@@ -9,7 +9,7 @@ await pg.goto('http://localhost:8765/index.html');
 await pg.evaluate(()=>{try{localStorage.clear()}catch(e){}});
 await pg.reload();await pg.waitForTimeout(900);
 await pg.evaluate(()=>{window.wait=async()=>{};window.ovMsg=()=>{};});
-const log=[];
+const log=[];const bad=[];
 const scr=()=>pg.evaluate(()=>curScreen+(modalOpen()?"+窓":""));
 const tap=async(sel)=>{const e=await pg.$(sel);if(!e||!(await e.isVisible()))return false;await e.click({force:true});await pg.waitForTimeout(200);return true;};
 const once=async()=>{
@@ -58,13 +58,27 @@ for(let n=1;n<=5;n++){
   await pg.evaluate(()=>{me.gold+=2000;});
   const h=await pg.$('#hHire'); const t=(await h.innerText()).replace(/\s/g,"");
   await h.click({force:true}); await pg.waitForTimeout(450);
-  const cand=await pg.evaluate(()=>document.querySelectorAll('#mbox [data-h]').length);
   const g0=await pg.evaluate(()=>me.gold);
-  if(!cand){log.push(`${n}人目 候補なし　画面 ${await scr()}`);await drain();break;}
-  await tap('#mbox [data-h]');
+  /* α1.0.050：候補から選ぶのではなく **自分で組む**。職 → 種族 → 見た目 → 雇う */
+  const made=await pg.evaluate(async(n)=>{
+    /* `let hireSel` は window に載らない。素の名で見る */
+    if(typeof hireSel==="undefined"||!hireSel)return "窓が開いていない";
+    const jobs=Object.keys(JOB), races=Object.keys(RACE);
+    const j=jobs[n%jobs.length], r=races[n%races.length];
+    document.querySelector(`#mbox [data-k="${j}"]`).click();
+    document.querySelector(`#mbox [data-k="${r}"]`).click();
+    const nm=document.querySelector("#hrName");
+    if(nm){nm.value="仲間"+n;nm.oninput();}
+    document.querySelector("#hrNext").click();
+    const go=document.querySelector("#hrGo");
+    if(!go||go.disabled)return "雇えない";
+    go.click();
+    return `${JOB[j].n}/${RACE[r].n}`;
+  },n);
   await drain(12);
   const s=await st();
-  log.push(`${n}人目 札「${t}」候補${cand}人 → パーティ ${s.p.join("/")}　控え ${s.b.join("/")}　払った ${g0-s.g}`);
+  log.push(`${n}人目 札「${t}」→ 作った ${made}　パーティ ${s.p.join("/")}　控え ${s.b.join("/")}　払った ${g0-s.g}`);
+  if(/窓が開いていない|雇えない/.test(made)){bad.push(`${n}人目 ${made}`);break;}
 }
 /* パーティの窓で 入れ替え */
 await tap("#hChar");
@@ -113,4 +127,6 @@ log.push(`読み直し → ${b2.s}　パーティ ${b2.p.join("/")}　控え ${b
 log.push(`保存の一致 ${JSON.stringify(b1.p)===JSON.stringify(b2.p)&&JSON.stringify(b1.b)===JSON.stringify(b2.b)&&b1.g===b2.g?"✓":"✗ "+JSON.stringify(b1)+" / "+JSON.stringify(b2)}`);
 console.log(log.join("\n"));
 console.log(errs.length?"⚠ "+[...new Set(errs)].slice(0,8).join("\n⚠ "):"例外なし");
+if(bad.length){console.log("⚠ "+bad.join("\n⚠ "));process.exitCode=1;}
+else console.log("✓ 仲間を 自分で組んで 雇えている");
 await b.close();
