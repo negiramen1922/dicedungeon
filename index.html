@@ -181,6 +181,15 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .ctn{font-size:8px;line-height:1.3;text-align:center;margin-top:2px;color:#6f7a63;
   border-top:1px dashed #2b3028;padding-top:2px;width:100%}
 .ctn.safe{color:#5f6e51}
+/* 見た目を選ぶ札（α1.0.041） */
+.mkq2{font-size:12px;letter-spacing:.1em;color:var(--dim);margin:10px 0 5px}
+.mkq2 span{color:var(--brass);letter-spacing:.06em}
+.swrow{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.sw{position:relative;height:40px;border:1px solid #2b2f22;border-radius:3px;
+  cursor:pointer;padding:0;overflow:hidden}
+.sw.on{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass) inset}
+.sw span{position:absolute;left:0;right:0;bottom:0;font-size:9px;letter-spacing:.02em;
+  color:#f2eddc;background:rgba(10,12,8,.62);padding:1px 0;text-align:center}
 .pop{position:absolute;top:-30px;left:50%;transform:translateX(-50%);
   font-family:"DotFont",ui-monospace,monospace;font-weight:700;
   font-size:24px;letter-spacing:.04em;color:#ff6a5a;z-index:12;white-space:nowrap;
@@ -1156,7 +1165,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
-const VERSION="α1.0.040";
+const VERSION="α1.0.041";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1169,6 +1178,12 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1041",tag:"up",v:"α1.0.041",d:"2026-09-07",n:"キャラを作るときに 肌・服・目の色を選べます",b:[
+   "<b>作成に「見た目」の段が増えました。</b>肌・服・目 それぞれ 8色。選んだそばから 上の立ち絵が変わります。<b>おまかせ</b>で振ることもできます",
+   "16通り（4種族 × 4職）すべてで 3つの色が絵に出ます。兜や頭巾で肌がまるきり隠れていた姿には <b>首をひと筋</b>足しました",
+   "<b>雇う仲間も 見た目がばらけます。</b>これまでは同じ職・種族なら 見分けがつきませんでした",
+   "見立て（診断）から来たときも 見た目の段を通ります",
+   "見た目はあとから変えられません。作るときに決めます"]},
  {id:"v1040",tag:"up",v:"α1.0.040",d:"2026-09-07",n:"倉庫ができました。仲間にも装備を着けられます",b:[
    "<b>買ったもの・拾ったものは まず倉庫に入ります。</b>これまでは主人公の空き枠に勝手に着いていました。誰に着けるかは <b>「パーティを見る」→ 装備</b> で選びます",
    "<b>倉庫はパーティ共有</b>で、どの仲間の欄からでも同じ倉庫が見えます。持てる数に上限はありません",
@@ -2317,12 +2332,13 @@ const PX={
  },
  head:{
   hume:{
+   /* 兜と頭巾で 肌がまるきり隠れていたので、首を肌の色にした（α1.0.041） */
    knight:[[7,0,2,1,"#c9a227"],[4,1,8,2,"#a8b978"],[3,3,10,4,"#a8b978"],
-           [5,4,6,2,"#14160f"],[6,7,4,1,"#6f8049"]],
+           [5,4,6,2,"#14160f"],[6,7,4,1,"#d9cfae"]],
    archer:[[4,1,8,3,"#8fbfa2"],[3,4,10,2,"#8fbfa2"],[5,4,6,2,"#14160f"],
-           [6,6,4,1,"#6f9a80"]],
+           [6,6,4,1,"#d9cfae"]],
    scout:[[4,1,8,3,"#9c8fc4"],[3,4,10,2,"#9c8fc4"],[4,4,8,2,"#14160f"],
-          [6,4,1,1,"#c9a227"],[9,4,1,1,"#c9a227"]],
+          [6,4,1,1,"#c9a227"],[9,4,1,1,"#c9a227"],[6,6,4,1,"#d9cfae"]],
    mage:[[6,0,4,1,"#7ba2bd"],[5,1,6,1,"#7ba2bd"],[3,2,10,1,"#5d84a0"],
          [5,3,6,3,"#9dc0d6"],[6,4,4,1,"#14160f"]],
   },
@@ -2345,30 +2361,34 @@ const PX={
          [12,3,1,1,"#d9cfae"],[12,4,2,1,"#d9cfae"]],
   },
   dwarf:{
+   /* 髭の上に 頬をひと筋。肌の色が見えるように（α1.0.041） */
    knight:[[7,2,2,1,"#c9a227"],[3,3,10,2,"#a8b978"],[2,5,12,3,"#a8b978"],
-           [4,6,8,2,"#14160f"],[3,8,10,3,"#c9c3b2"],[5,11,6,1,"#c9c3b2"]],
+           [4,6,8,2,"#14160f"],[4,8,8,1,"#d9cfae"],
+           [3,9,10,2,"#c9c3b2"],[5,11,6,1,"#c9c3b2"]],
    archer:[[3,3,10,2,"#8fbfa2"],[2,5,12,2,"#8fbfa2"],[4,5,8,2,"#14160f"],
-           [3,7,10,3,"#c9b98a"],[5,10,6,1,"#c9b98a"]],
+           [4,7,8,1,"#d9cfae"],
+           [3,8,10,2,"#c9b98a"],[5,10,6,1,"#c9b98a"]],
    scout:[[3,3,10,2,"#9c8fc4"],[2,5,12,2,"#9c8fc4"],[3,5,10,2,"#14160f"],
-          [5,5,1,1,"#c9a227"],[10,5,1,1,"#c9a227"],
-          [3,7,10,3,"#8a7f6a"],[5,10,6,1,"#8a7f6a"]],
+          [5,5,1,1,"#c9a227"],[10,5,1,1,"#c9a227"],[4,7,8,1,"#d9cfae"],
+          [3,8,10,2,"#8a7f6a"],[5,10,6,1,"#8a7f6a"]],
    mage:[[6,0,4,1,"#7ba2bd"],[4,1,8,1,"#7ba2bd"],[2,2,12,2,"#5d84a0"],
          [4,4,8,2,"#d9c9a0"],[5,4,1,1,"#14160f"],[10,4,1,1,"#14160f"],
          [3,6,10,3,"#e4dcc4"],[5,9,6,1,"#e4dcc4"]],
   },
   beast:{
+   /* 兜と頭巾のぶん、首を肌の色に（α1.0.041） */
    knight:[[7,0,2,1,"#c9a227"],[4,1,8,2,"#a8b978"],[3,3,10,4,"#a8b978"],
-           [5,4,6,2,"#14160f"],
+           [5,4,6,2,"#14160f"],[6,7,4,1,"#c8b48a"],
            [1,2,2,3,"#8a6f4a"],[1,5,2,2,"#6b5233"],
            [13,2,2,3,"#8a6f4a"],[13,5,2,2,"#6b5233"]],
    archer:[[4,0,1,1,"#b09a72"],[3,1,2,1,"#b09a72"],[3,2,3,1,"#b09a72"],
            [11,0,1,1,"#b09a72"],[11,1,2,1,"#b09a72"],[10,2,3,1,"#b09a72"],
            [4,3,8,4,"#8fbfa2"],[5,4,6,2,"#14160f"],
-           [6,4,1,1,"#c9a227"],[9,4,1,1,"#c9a227"]],
+           [6,4,1,1,"#c9a227"],[9,4,1,1,"#c9a227"],[6,7,4,1,"#c8b48a"]],
    scout:[[4,0,1,1,"#6b6280"],[3,1,2,1,"#6b6280"],[3,2,3,1,"#6b6280"],
           [11,0,1,1,"#6b6280"],[11,1,2,1,"#6b6280"],[10,2,3,1,"#6b6280"],
           [4,3,8,4,"#9c8fc4"],[4,4,8,3,"#14160f"],
-          [5,5,2,1,"#c9a227"],[9,5,2,1,"#c9a227"]],
+          [5,5,2,1,"#c9a227"],[9,5,2,1,"#c9a227"],[6,7,4,1,"#c8b48a"]],
    mage:[[6,0,4,1,"#7ba2bd"],[5,1,6,1,"#5d84a0"],[3,2,10,1,"#5d84a0"],
          [2,1,1,2,"#a8916a"],[13,1,1,2,"#a8916a"],
          [4,3,8,4,"#c8b48a"],
@@ -2387,16 +2407,91 @@ const PX={
  },
 };
 
-/* 立ち絵を描く。race を省くとヒューム扱い */
-function pixFig(job,race,size,color){
+/* ===== 見た目の色（α1.0.041） =====
+   ドット絵の色を そのまま描いていたので、誰も彼も同じ姿だった。
+   **肌・服・目**の3つだけ選べるようにする。絵そのものは1つのまま、
+   描くときに **決まった色を差し替える**（下の SKINSRC / CLOTHBASE）。 */
+const SKINS=[
+  {k:"s1",n:"白 磁",c:"#e8d5b8"},{k:"s2",n:"小 麦",c:"#d9b48a"},
+  {k:"s3",n:"日 焼 け",c:"#bd8c5c"},{k:"s4",n:"褐 色",c:"#96603a"},
+  {k:"s5",n:"黒 檀",c:"#6b452e"},{k:"s6",n:"灰 白",c:"#cfc8bb"},
+  {k:"s7",n:"翠",c:"#9ab98a"},{k:"s8",n:"蒼 白",c:"#b8ccd6"}];
+const CLOTHS=[
+  {k:"c1",n:"若 草",c:"#8fa261"},{k:"c2",n:"深 緑",c:"#6f9a80"},
+  {k:"c3",n:"藤",c:"#7b6f9c"},{k:"c4",n:"空",c:"#6f92ab"},
+  {k:"c5",n:"臙 脂",c:"#a35a52"},{k:"c6",n:"黄 土",c:"#b08a45"},
+  {k:"c7",n:"鉄 紺",c:"#4f5f80"},{k:"c8",n:"墨",c:"#5f5f56"}];
+const EYECOL=[
+  {k:"e1",n:"黒",c:"#14160f"},{k:"e2",n:"琥 珀",c:"#c9a227"},
+  {k:"e3",n:"碧",c:"#4f9a8a"},{k:"e4",n:"蒼",c:"#5a8fc4"},
+  {k:"e5",n:"紅",c:"#b1544a"},{k:"e6",n:"菫",c:"#8a6fbf"},
+  {k:"e7",n:"金",c:"#e0c04a"},{k:"e8",n:"灰",c:"#9aa08f"}];
+/* 種族ごとの はじめの肌。押し付けではなく 初期値なので 自由に変えられる */
+const SKINDEF={hume:"s2",elf:"s1",dwarf:"s3",beast:"s6"};
+/* その職の服に 元から使われている色。ここを選んだ色に差し替える */
+const CLOTHBASE={
+  knight:{main:"#8fa261",shade:"#6f8049",leg:"#4e5c36",light:"#a8b978"},
+  archer:{main:"#6f9a80",shade:"#4f7360",leg:"#4a5a4e",light:"#8fbfa2"},
+  scout: {main:"#7b6f9c",shade:"#5f5578",leg:"#4a4258",light:"#9c8fc4"},
+  mage:  {main:"#6f92ab",shade:"#4f6c85",light:"#7ba2bd",light2:"#5d84a0"},
+};
+const CLOTHDEF={knight:"c1",archer:"c2",scout:"c3",mage:"c4"};
+/* 肌として使われている色と、その明暗のずれ（獣人の毛並みもここに入る） */
+const SKINSRC=[["#d9cfae",0],["#d9c9a0",0],["#9dc0d6",0],["#f0e6c8",0.14],
+  ["#c8b48a",0],["#a8916a",-0.20],["#b09a72",-0.14],
+  ["#8a6f4a",-0.34],["#6b5233",-0.50]];
+/* 目を置く場所。絵の上に あとから1つずつ乗せる */
+const EYEAT={
+  hume:{knight:[[6,4,1,1],[9,4,1,1]],archer:[[6,4,1,1],[9,4,1,1]],
+        scout:[[6,4,1,1],[9,4,1,1]],mage:[[6,4,1,1],[9,4,1,1]]},
+  elf:{knight:[[6,4,1,1],[9,4,1,1]],archer:[[6,4,1,1],[9,4,1,1]],
+       scout:[[6,4,1,1],[9,4,1,1]],mage:[[6,4,1,1],[9,4,1,1]]},
+  dwarf:{knight:[[5,6,1,1],[10,6,1,1]],archer:[[5,5,1,1],[10,5,1,1]],
+         scout:[[5,5,1,1],[10,5,1,1]],mage:[[5,4,1,1],[10,4,1,1]]},
+  beast:{knight:[[6,4,1,1],[9,4,1,1]],archer:[[6,4,1,1],[9,4,1,1]],
+         scout:[[5,5,2,1],[9,5,2,1]],mage:[[5,5,1,1],[10,5,1,1]]},
+};
+/* 色を明るく／暗くする。f>0 で明るく、f<0 で暗く */
+function shiftHex(hex,f){
+  const n=parseInt((hex||"#000000").slice(1),16);
+  const ch=[(n>>16)&255,(n>>8)&255,n&255].map(v=>
+    Math.max(0,Math.min(255,Math.round(f>=0?v+(255-v)*f:v*(1+f)))));
+  return "#"+ch.map(v=>v.toString(16).padStart(2,"0")).join("");
+}
+function colOf(u){
+  const c=(u&&u.col)||{};
+  return {skin:c.skin||SKINDEF[(u&&u.race)||"hume"]||"s2",
+          cloth:c.cloth||CLOTHDEF[(u&&u.job)||"knight"]||"c1",
+          eye:c.eye||"e1"};
+}
+function hexOf(list,k){ const o=list.find(x=>x.k===k); return o?o.c:list[0].c; }
+/* 差し替えの表を作る。職の服の色と 肌の色だけを写す */
+function figMap(job,col){
+  const M={};
+  const C=hexOf(CLOTHS,col.cloth), G=CLOTHBASE[job]||CLOTHBASE.knight;
+  M[G.main]=C;
+  M[G.shade]=shiftHex(C,-0.22);
+  if(G.leg)M[G.leg]=shiftHex(C,-0.42);
+  if(G.light)M[G.light]=shiftHex(C,0.20);
+  if(G.light2)M[G.light2]=shiftHex(C,-0.12);
+  const S=hexOf(SKINS,col.skin);
+  SKINSRC.forEach(([h,f])=>{M[h]=shiftHex(S,f);});
+  return M;
+}
+/* 立ち絵を描く。race を省くとヒューム扱い。col は {skin,cloth,eye} */
+function pixFig(job,race,size,color,col){
   race=race||"hume";
-  const px=(size||46)/16;
+  job=job||"knight";
+  const c=colOf({job,race,col:col||null});
+  const M=figMap(job,c), E=hexOf(EYECOL,c.eye);
   const bodySet = race==="dwarf" ? PX.bodyStout : (race==="elf" ? PX.bodySlim : PX.body);
   const parts=(bodySet[job]||PX.body.knight)
     .concat((PX.head[race]&&PX.head[race][job])||PX.head.hume[job]||[])
     .concat((PX.extra[race]&&PX.extra[race][job])||[]);
-  const r=parts.map(p=>
-    `<rect x="${p[0]}" y="${p[1]}" width="${p[2]}" height="${p[3]}" fill="${p[4]}"/>`).join("");
+  const eyes=((EYEAT[race]&&EYEAT[race][job])||EYEAT.hume[job]||[])
+    .map(p=>[p[0],p[1],p[2],p[3],E]);
+  const r=parts.concat(eyes).map(p=>
+    `<rect x="${p[0]}" y="${p[1]}" width="${p[2]}" height="${p[3]}" fill="${M[p[4]]||p[4]}"/>`).join("");
   return `<svg viewBox="0 0 16 20" width="${(size||46)}" height="${Math.round((size||46)*20/16)}"
     shape-rendering="crispEdges" aria-hidden="true">${r}</svg>`;
 }
@@ -2946,7 +3041,8 @@ function poolTag(cat,id){
 /* ---------- 立ち絵 ---------- */
 function meFig(size,u){
   u=u||me;
-  return pixFig(u?u.job:sel.job,u?u.race:sel.race,size||46);
+  return pixFig(u?u.job:sel.job,u?u.race:sel.race,size||46,null,
+    u?u.col:sel.col);
 }
 function fig(kind,c,w){
   w=w||34;
@@ -4347,7 +4443,8 @@ const CHESTGAIN=[
    下地が無いと 4 まで下がり、その周は宝箱がほぼ空振りだけになっていた。 */
 const LUKBASE=10;
 function rollLuk(){const a=r6(),b=r6();return {v:(a+b)*2+LUKBASE,d:[a,b]};}
-function newChar(){sel.luk=0;sel.lukD=null;}   /* 作り直すときだけ振り直す */
+function newChar(){sel.luk=0;sel.lukD=null;
+  sel.col={skin:null,cloth:null,eye:"e1"};}   /* 作り直すときだけ振り直す */
 let LUKGRADE=0;                  /* catPool("gear") の等級上限に足す一時値 */
 
 /* ---------- 敵 ---------- *//* ---------- 敵 ---------- */
@@ -4704,7 +4801,8 @@ let fleeUsed=false, foeStart=0;   /* 逃走は1戦闘に1回。倒した数だ�
    成功したほうが先に動く。"me" / "foe" / null。 */
 let scoutFirst=null;
 let owned=[];
-const sel={job:null,race:null,orig:null,area:"plain",enc:"e1",luk:0,lukD:null};
+const sel={job:null,race:null,orig:null,area:"plain",enc:"e1",luk:0,lukD:null,
+  col:{skin:null,cloth:null,eye:"e1"}};
 
 function build(host,note,data,key,after){
   const h=$(host);h.innerHTML="";
@@ -4760,6 +4858,7 @@ function makeMe(){
     gold:0,bag:{},mats:{},recipes:[],lv:1,exp:0,
     skg:{},skp:0,                       /* 技能の育ち：注いだぶん／まだ注いでいない点 */
     sk:[],pass:[],block:0,half:false};
+  m.col={...colOf({job:sel.job,race:sel.race,col:sel.col})};   /* 見た目（α1.0.041） */
   m.uid=nextUid();
   recalcMe(m,true);
   return m;
@@ -10980,6 +11079,11 @@ function makeMate(job,race,lv){
     gold:0,bag:{},mats:{},recipes:[],lv:1,exp:0,
     skg:{},skp:0,                       /* 技能の育ち：注いだぶん／まだ注いでいない点 */
     sk:[],pass:[],block:0,half:false};
+  /* 雇う者は 顔ぶれが揃わないように 見た目をばらす（α1.0.041） */
+  const pk=a=>a[Math.floor(Math.random()*a.length)].k;
+  m.col={skin:Math.random()<0.45?(SKINDEF[race]||"s2"):pk(SKINS),
+         cloth:Math.random()<0.45?(CLOTHDEF[job]||"c1"):pk(CLOTHS),
+         eye:pk(EYECOL)};
   m.uid=nextUid();
   m.picks=0;
   recalcMe(m,true);
@@ -11743,7 +11847,10 @@ function drawQuizResult(){
   $("#qzAgain").onclick=()=>{qzStep=0;qzAns={};drawQuiz();};
   $("#qzGo").onclick=()=>{
     sel.job=j;sel.race=r;sel.orig=o;newChar();
-    mkStep=3;drawMake();showScreen("make");window.scrollTo(0,0);
+    /* 見立てで職・種族・欲望は決まった。**見た目の段から**続ける（α1.0.041）。
+       段の数を直に書くと 段を足すたびにずれるので、鍵で引く */
+    mkStep=Math.max(0,MKSTEPS.findIndex(x=>x.k==="__look"));
+    drawMake();showScreen("make");window.scrollTo(0,0);
   };
   $("#qzFree").onclick=()=>{newChar();mkStep=0;drawMake();showScreen("make");window.scrollTo(0,0);};
 }
@@ -11817,6 +11924,7 @@ const MKSTEPS=[
   {k:"job", ttl:"職 業", data:()=>JOB,  sub:"何で戦うか"},
   {k:"race",ttl:"種 族", data:()=>RACE, sub:"どんな体か"},
   {k:"orig",ttl:"欲 望", data:()=>ORIG, sub:"何を求めるか"},
+  {k:"__look",ttl:"見 た 目", sub:"肌・服・目の色"},
   {k:"__ok",ttl:"確 認", sub:""},
   /* 「始める場所」の段はここに在った。α1 では 作ったあと **町から始まる**ので、
      どこへ潜るかは町の窓（diveModal）が受け持つ。作成で選ばせても
@@ -11825,15 +11933,17 @@ const MKSTEPS=[
 let mkStep=0;
 function mkFig(){
   const j=sel.job||"knight", r=sel.race||"hume";
-  return (sel.job||sel.race)?pixFig(j,r,72):"";
+  return (sel.job||sel.race)?pixFig(j,r,72,null,sel.col):"";
 }
 function drawMake(){
   const S=MKSTEPS[mkStep];
   $("#mkStep").innerHTML=MKSTEPS.map((x,i)=>
     `<span class="mkdot${i===mkStep?" on":(i<mkStep?" done":"")}"></span>`).join("");
   $("#mkFig").innerHTML=mkFig();
-  $("#mkTtl").textContent=S.k==="__ok"?"こ の 者 で 良 い か":"キ ャ ラ を 作 る";
+  $("#mkTtl").textContent=S.k==="__ok"?"こ の 者 で 良 い か"
+    :S.k==="__look"?"見 た 目 を 決 め る":"キ ャ ラ を 作 る";
   if(S.k==="__ok")return drawMakeConfirm();
+  if(S.k==="__look")return drawMakeLook();
   const D=S.data();
   let h=`<div class="mkq">${S.ttl}　<span>${S.sub}</span></div><div class="acts">`;
   Object.keys(D).forEach(k=>{
@@ -11852,6 +11962,41 @@ function drawMake(){
       SFX.open();mkStep++;drawMake();window.scrollTo(0,0); };});
   const pv=$("#mkPrev");
   if(pv)pv.onclick=()=>{mkStep--;drawMake();window.scrollTo(0,0);};
+}
+/* ===== 見た目を決める段（α1.0.041） =====
+   選んだそばから 上の立ち絵が変わる。決めるのは3つだけ ── 肌・服・目。
+   「おまかせ」で ばらばらに振ることもできる。 */
+function drawMakeLook(){
+  const c=colOf({job:sel.job,race:sel.race,col:sel.col});
+  const row=(ttl,list,key,now)=>
+    `<div class="mkq2">${ttl}　<span>${(list.find(x=>x.k===now)||list[0]).n}</span></div>
+     <div class="swrow">${list.map(o=>
+       `<button class="sw${o.k===now?" on":""}" data-col="${key}" data-v="${o.k}"
+          style="background:${o.c}" title="${o.n}"><span>${o.n}</span></button>`).join("")}</div>`;
+  let h=`<div class="mkq">見 た 目　<span>あとから変えることはできない</span></div>`;
+  h+=row("肌 の 色",SKINS,"skin",c.skin);
+  h+=row("服 の 色",CLOTHS,"cloth",c.cloth);
+  h+=row("目 の 色",EYECOL,"eye",c.eye);
+  h+=`<div class="ndbtn">
+      <button class="no2" id="mkRnd">お ま か せ</button>
+      <button class="go2" id="mkLookGo">こ の 姿 で</button></div>
+    <button class="mclose" id="mkPrev">ひとつ もどる</button>`;
+  $("#mkBody").innerHTML=h;
+  $("#mkBody").querySelectorAll("[data-col]").forEach(b=>{
+    b.onclick=()=>{
+      sel.col={...c,[b.dataset.col]:b.dataset.v};
+      SFX.click();
+      $("#mkFig").innerHTML=mkFig();      /* 立ち絵だけ先に差し替えて 手応えを出す */
+      drawMakeLook();
+    };});
+  $("#mkRnd").onclick=()=>{
+    const pk=a=>a[Math.floor(Math.random()*a.length)].k;
+    sel.col={skin:pk(SKINS),cloth:pk(CLOTHS),eye:pk(EYECOL)};
+    SFX.open();$("#mkFig").innerHTML=mkFig();drawMakeLook();};
+  $("#mkLookGo").onclick=()=>{
+    sel.col={...c};
+    SFX.open();mkStep++;drawMake();window.scrollTo(0,0);};
+  $("#mkPrev").onclick=()=>{mkStep--;drawMake();window.scrollTo(0,0);};
 }
 /* 生まれつきの幸運を、目の前で振って見せる。
    ここだけは自分では動かせない数字なので、黙って決まると据わりが悪い。
@@ -11921,6 +12066,10 @@ function drawMakeConfirm(){
       <div class="qzd" style="color:var(--ink)">戦う技能は
         <b>20 ごとに ダイスが 1つ</b>。レベルが上がるたび 1点を 好きな技能に注げる。</div>
       <div class="qzd" style="color:var(--ink)">${m.wep.n}　を手に始まる</div>
+      <div class="qzd" style="color:var(--ink)">肌 <b>${
+        (SKINS.find(x=>x.k===m.col.skin)||SKINS[0]).n}</b>　服 <b>${
+        (CLOTHS.find(x=>x.k===m.col.cloth)||CLOTHS[0]).n}</b>　目 <b>${
+        (EYECOL.find(x=>x.k===m.col.eye)||EYECOL[0]).n}</b></div>
       <div class="qzd" style="color:var(--ink)">幸運は生まれつき。<b>2d6×2 ＋${LUKBASE}</b> で
         [${(sel.lukD||[]).join("][")}] → <b style="color:#c9a227">${sel.luk}</b>。
         <br>1d100 を振り、<span style="color:${LUKRANK[1].c}">あたり</span>・<span

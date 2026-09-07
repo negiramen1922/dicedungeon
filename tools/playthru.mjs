@@ -104,6 +104,12 @@ for(const step of ["職業","種族","欲望"]){
   await cards[0].click();await pg.waitForTimeout(160);
   log.push(`   ${step} を選んだ → ${await scr()}`);
 }
+/* 見た目の段（α1.0.041）。おまかせで振って そのまま進む */
+if(await pg.$("#mkRnd")){
+  await pg.click("#mkRnd");await pg.waitForTimeout(120);
+  await pg.click("#mkLookGo");await pg.waitForTimeout(200);
+  log.push(`   見た目を決めた → ${await scr()}`);
+}
 /* 幸運を振る演出が終わって 確認の札が出るのを待つ */
 try{ await pg.waitForSelector("#mkNext",{timeout:8000}); }
 catch(e){ log.push("✗ 確認の札が出ない"); }
