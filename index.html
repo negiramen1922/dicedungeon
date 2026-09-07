@@ -197,6 +197,7 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .crole{position:absolute;top:2px;left:3px;font-size:9px;letter-spacing:0;
   color:#8b9080;border:1px solid #3a3f30;border-radius:2px;padding:0 2px;background:#1b1e15}
 .caimn{font-size:9px;color:#b1544a;letter-spacing:.02em;margin-top:1px}
+.caimn.all{color:#e0705a;font-weight:700;letter-spacing:.06em}
 .caim{font-size:9px;letter-spacing:.06em;color:#8b9080;border:1px solid #3a3f30;
   border-radius:2px;padding:0 3px;margin-top:2px;display:inline-block}
 .caim.bad{color:#e0705a;border-color:#7a3a30;background:#2a1c18}
@@ -1175,7 +1176,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
-const VERSION="α1.0.046";
+const VERSION="α1.0.047";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1188,6 +1189,17 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1047",tag:"up",v:"α1.0.047",d:"2026-09-07",n:"場のすべてに及ぶ敵の手。当たり方が 役ごとに変わります",b:[
+   "<b>ひと振りで 全員に入る手ができました。</b>ゴーレム「地を割る」・マンドラゴラ「叫声」・エルダートレント「森を薙ぐ」・ゴブリンシャーマン「呪いの奔流」・ディープワン「大海」の5つ",
+   "判定は <b>ひと振りきり</b>です。通れば全員に入り、外せば全員が避けます。そのぶん 1体あたりの重さは下げてあります",
+   "<b>予告に「→ 全 員」</b>と出ます。狙われている味方の「狙 n体」も 全体の手を数えます",
+   "<b>敵の当たり方が 役ごとに変わりました。</b>これまで 89手のうち 54手が 必要1 で、どの敵も同じ当たり方でした",
+   "　<b>タンク</b>　軽く 確実に当てる（必要1中心）",
+   "　<b>アタッカー</b>　痛い（必要1〜2）",
+   "　<b>シューター</b>　<b>波がある</b>（必要2〜3）。当たりにくいが 通ると重い ── 必要1 の手が ひとつも無くなりました",
+   "　<b>サポート</b>　デバフが本体（必要1）",
+   "動かしたのは <b>当たり方の形だけ</b>で、平均の重さは変えていません（必要成功数を上げたぶん 威力を上げ直しています）",
+   "そのうえで <b>60 の遭遇すべて</b>と 区画ごとの手応えを 測り直しました"]},
  {id:"v1046",tag:"fix",v:"α1.0.046",d:"2026-09-07",n:"遭遇ひとつずつの手応えを揃えました",b:[
    "<b>顔ぶれの偏りが そのまま手応えの差になっていました。</b>同じ区画でも <b>×0.56 〜 ×5.03</b> と 9倍の開きがありました",
    "　<b>盾を3体並べた顔ぶれ</b>（歩く苗・石の守り手）は HP の山になって いつまでも終わらない",
@@ -4596,9 +4608,9 @@ const FOE={
          {n:"芽を飛ばす",k:"atk",suc:2,dice:3,pct:90,w:2}]},
  wslime:{n:"水スライム",d:"水を体に取り込んで透き通ったスライム。回廊の水路に湧き、冷たく、見た目よりずっと重い。動きはひどく鈍いが、そのぶん叩いても崩れない。押し流されると鎧の隙間から入り込んでくる。",mat:"gel",weak:"bolt",resist:"blunt",elem:"water",art:"wslime",snd:"blunt",
    HP:175,STR:36,VIT:22,DEX:5,rank:"front",scout:1,
-   acts:[{n:"押し流す",k:"atk",suc:2,dice:3,pct:90,w:5},
+   acts:[{n:"押し流す",k:"atk",suc:1,pct:35,dice:3,w:5},
          {n:"水を含む",k:"guard",block:16,w:3},
-         {n:"飲み込む",k:"atk",suc:3,dice:4,pct:220,w:2}]},
+         {n:"飲み込む",k:"atk",suc:2,pct:85,dice:4,w:2}]},
  rat:{n:"ラット",d:"暗い場所を好む大鼠。一匹では取るに足らないが、一匹を潰すと暗がりから次が湧いてくる。牙は細く鋭く、数だけはある。",mat:"tooth",weak:"slash",art:"rat",snd:"slash",HP:48,STR:23,VIT:4,DEX:36,rank:"front",scout:5,
    acts:[{n:"噛みつく",k:"atk",dice:3,w:6},
          {n:"跳ね回る",k:"guard",block:12,w:2},
@@ -4608,7 +4620,7 @@ const FOE={
          {n:"力をためる",k:"buff",pctUp:30,dur:1,w:2},
          {n:"身をかがめる",k:"guard",block:16,w:2}]},
  garcher:{n:"弓ゴブリン",d:"群れの後方から射かける役目を負ったゴブリン。前に出ることはなく、味方が崩れると真っ先に逃げる。矢は拾ったものを削り直して使うので、同じ矢が二度飛んでくる。",mat:"ear",weak:"slash",art:"garcher",snd:"bow",HP:78,STR:29,VIT:5,DEX:28,rank:"back",scout:4,
-   acts:[{n:"矢を放つ",k:"atk",dice:2,w:6},
+   acts:[{n:"矢を放つ",k:"atk",suc:2,pct:95,dice:2,w:6},
          {n:"狙いを定める",k:"buff",pctUp:30,w:2}]},
  hobgoblin:{n:"ホブゴブリン",d:"群れを率いる大型のゴブリン。奪った鉄の斧と盾を使いこなし、仲間を叱咤して前へ押し出す。これを先に落とすと、残りは驚くほど脆い。",mat:"ear",weak:"pierce",resist:"slash",art:"hobgoblin",snd:"blunt",HP:150,STR:37,VIT:12,DEX:18,rank:"front",scout:3,
    acts:[{n:"斧を振り下ろす",k:"atk",dice:2,pct:15,w:5},
@@ -4617,7 +4629,7 @@ const FOE={
  shaman:{n:"ゴブリンキャスター",d:"見よう見まねで術を覚えたゴブリン。誰に習ったわけでもないので詠唱は出鱈目で、ときどき自分の足元で暴発する。それでも当たれば効く。",mat:"ear",weak:"pierce",elem:"dark",art:"shaman",snd:"magic",HP:95,STR:27,VIT:5,DEX:23,rank:"back",scout:5,
    acts:[{n:"仲間を鼓舞する",k:"cheer",pctUp:20,dur:1,seq:1},
          {n:"力を奪う",k:"hex",weak:1,dur:2,seq:2},
-         {n:"ファイヤーボール",k:"atk",suc:2,dice:3,pct:90,w:4,solo:true},
+         {n:"ファイヤーボール",k:"atk",suc:1,pct:40,dice:3,w:4,solo:true},
          {n:"守りの霧",k:"veil",block:8,w:3,needFront:true}]},
 
  /* ===== 2 階層　石造りの回廊 ===== */
@@ -4628,7 +4640,7 @@ const FOE={
  golem:{n:"ゴーレム",d:"回廊を守るために作られたもの。誰が何のために作ったのかは、もう分からない。命じた者が絶えた今も、決められた道筋を歩き続けている。",mat:"frag",weak:"blunt",resist:"slash",elem:"earth",art:"golem",snd:"blunt",HP:220,STR:43,VIT:28,DEX:10,rank:"front",scout:0,
    acts:[{n:"石 拳",k:"atk",dice:2,pct:15,w:4},
          {n:"身を固める",k:"guard",block:20,w:3},
-         {n:"地を割る",k:"atk",suc:2,dice:3,pct:90,w:3}]},
+         {n:"地を割る",k:"atk",suc:2,dice:3,pct:-10,aim:"all",w:3}]},
  troll:{n:"トロル",d:"岩陰に潜む大喰らい。腕を落とされてもすぐ生え変わるので、削り合いでは決して勝てない。焼いた傷だけは戻せない。",mat:"claw",weak:"fire",resist:"blunt",art:"troll",snd:"blunt",HP:205,STR:47,VIT:16,DEX:12,rank:"front",scout:1,
    acts:[{n:"叩きつける",k:"atk",dice:2,pct:15,w:5},
          {n:"薙ぎ払う",k:"atk",suc:2,dice:3,pct:90,w:3},
@@ -4672,7 +4684,7 @@ const FOE={
      acts:[{n:"体 当 た り",k:"atk",dice:3,w:4},
            {n:"糸 を 吐 く",k:"hex",slow:12,dur:2,w:3}]}]},
  gargoyle:{n:"ガーゴイル",d:"門の上に据えられていた石像。飛べるはずのない重さで飛び、高みから見下ろして睨みつける。石の羽は、握ってみるとやはり石でしかない。",mat:"swing",weak:"blunt",resist:"slash",elem:"earth",art:"gargoyle",snd:"slash",HP:135,STR:38,VIT:14,DEX:32,rank:"back",scout:5,
-   acts:[{n:"斬りつける",k:"atk",dice:3,w:5},
+   acts:[{n:"斬りつける",k:"atk",suc:2,pct:35,dice:3,w:5},
          {n:"石の唸り",k:"hex",weak:1,slow:6,dur:2,w:3},
          {n:"睨めつける",k:"hex",curse:7,dur:2,w:2},
          {n:"翼を広げる",k:"veil",block:10,w:2,needFront:true}]},
@@ -4683,7 +4695,7 @@ const FOE={
          {n:"骨を鳴らす",k:"buff",pctUp:20,w:2},
          {n:"骨で受ける",k:"guard",block:12,w:2}]},
  skarcher:{n:"スケルトンアーチャー",d:"弓を持ったまま死んだ者。肉も目も失われているのに、狙いだけは生前のまま正確に残っている。何を見て狙っているのかは分からない。",mat:"bone",weak:"blunt",resist:"pierce",elem:"dark",art:"skarcher",snd:"bow",HP:140,STR:44,VIT:10,DEX:34,rank:"back",scout:5,
-   acts:[{n:"骨の矢",k:"atk",dice:2,pct:15,w:6},
+   acts:[{n:"骨の矢",k:"atk",suc:2,pct:110,dice:2,w:6},
          {n:"狙いすます",k:"buff",pctUp:30,w:2}]},
  sahagin:{n:"サハギン",d:"水没したあとに移り住んだ魚人。三叉槍を巧みに使い、群れで押し包む。この都市を自分たちのものだと思っており、事実いまはそうである。",mat:"scale",weak:"bolt",resist:"water",elem:"water",art:"sahagin",snd:"slash",HP:215,STR:50,VIT:18,DEX:28,rank:"front",flex:true,scout:4,
    acts:[{n:"三叉槍",k:"atk",suc:2,dice:3,pct:90,pos:"front",w:5},
@@ -4697,14 +4709,14 @@ const FOE={
          {n:"水 の 加 護",k:"veil",block:12,w:2,needFront:true}]},
  abyssfish:{n:"深 淵 の 魚",d:"灯りに寄ってくる大魚。都市が沈むより前から深みにいたもので、開いた口は人の背丈ほどある。硬くはないが、噛まれれば骨まで届く。",mat:"scale",weak:"bolt",resist:"water",elem:"water",art:"abyssfish",snd:"blunt",
    HP:260,STR:58,VIT:12,DEX:20,rank:"front",scout:2,
-   acts:[{n:"喰 ら い つ く",k:"atk",suc:2,dice:3,pct:90,w:5},
+   acts:[{n:"喰 ら い つ く",k:"atk",suc:1,pct:25,dice:3,w:5},
          {n:"潜 る",k:"guard",block:14,w:2}]},
  bonefish:{n:"ボーンフィッシュ",d:"肉の落ちた魚が、骨だけで泳ぎ続けている。一匹では大したことはないが、都市の水路にはいくらでもいる。",mat:"bone",weak:"blunt",resist:"pierce",elem:"dark",art:"bonefish",snd:"slash",
    HP:130,STR:36,VIT:8,DEX:38,rank:"front",scout:3,
    acts:[{n:"骨 の 牙",k:"atk",dice:3,w:5},
          {n:"群 れ る",k:"cheer",pctUp:20,dur:2,w:2,needFront:true}]},
  wraith:{n:"レ イ ス",d:"沈んだ日の恨みだけが形を保っているもの。触れられたところから体温が失われ、しばらく指先が戻らない。残滓は冷たいままで、決して温まらない。",mat:"residue",weak:"light",resist:"slash",elem:"dark",art:"wraith",snd:"magic",HP:165,STR:44,VIT:10,DEX:30,rank:"back",scout:6,
-   acts:[{n:"呪いを注ぐ",k:"atk",suc:2,dice:3,pct:90,w:5},
+   acts:[{n:"呪いを注ぐ",k:"atk",suc:1,pct:30,dice:3,w:5},
          {n:"弱りに食らいつく",k:"atk",suc:2,dice:3,pct:90,vsAil:40,w:3},
          {n:"仲間を蝕む",k:"cheer",pctUp:20,w:3},
          {n:"呪 縛",k:"hex",curse:7,dur:2,w:3},
@@ -4728,9 +4740,9 @@ const FOE={
          {n:"牙を振る",k:"atk",dice:3,w:2}]},
  killerbee:{n:"キラービー",d:"草原に巣を張る大蜂。羽音のするほうを見上げたときには、もう囲まれている。腹の先の針は抜けたあとも刺さり続け、傷口から毒がまわる。",mat:"sting",weak:"blunt",art:"killerbee",snd:"slash",
    HP:32,STR:24,VIT:3,DEX:34,rank:"back",scout:4,
-   acts:[{n:"飛びかかる",k:"atk",dice:2,w:5},
+   acts:[{n:"飛びかかる",k:"atk",suc:2,pct:125,dice:2,w:5},
          {n:"毒針を刺す",k:"hex",poison:5,dur:2,w:3},
-         {n:"刺し続ける",k:"atk",suc:2,dice:3,pct:90,w:2}]},
+         {n:"刺し続ける",k:"atk",suc:3,pct:275,dice:3,w:2}]},
  kingslime:{n:"キングスライム",d:"無数のスライムが寄り集まり、ひとつの意思を持つに至ったもの。潰しても中から次が出てくるので、核となる一体を見つけない限り終わらない。透き通った粘液は、まだ動いている。",mat:"kgel",weak:"bolt",resist:"blunt",elem:"water",art:"kingslime",snd:"blunt",
    HP:340,STR:34,VIT:18,DEX:10,rank:"front",scout:1,
    /* 最初のボス。仕掛けは持たせず、3つの攻撃だけで組む。
@@ -4759,13 +4771,13 @@ const FOE={
          {n:"盾を構える",k:"guard",block:22,w:2}]},
  bear:{n:"ワイルドベア",d:"森の頂点に立つ獣。立ち上がると人の背を余裕で超え、厚い毛皮は並の刃を通さない。爪は重く硬いため、武具の芯として高く買われる。",mat:"claw2",weak:"pierce",resist:"blunt",art:"bear",snd:"slash",
    HP:175,STR:40,VIT:9,DEX:18,rank:"front",scout:3,
-   acts:[{n:"薙ぎ払う",k:"atk",suc:2,dice:3,pct:90,w:5},
+   acts:[{n:"薙ぎ払う",k:"atk",suc:1,pct:35,dice:3,w:5},
          {n:"抱き潰す",k:"atk",suc:2,dice:3,pct:90,w:3},
          {n:"立ち上がる",k:"buff",pctUp:30,dur:1,w:2},
          {n:"毛皮で受ける",k:"guard",block:24,w:2}]},
  mandragora:{n:"マンドラゴラ",d:"引き抜くと叫ぶ根。その声は空気そのものを裂き、聞いた者は耳から先に壊れていく。土に潜られると、次に顔を出すまで手が出せない。",mat:"root",elem:"earth",weak:"fire",resist:"dark",art:"mandragora",snd:"magic",
    HP:80,STR:28,VIT:5,DEX:26,rank:"back",scout:4,
-   acts:[{n:"叫 声",k:"atk",suc:2,dice:3,pct:90,w:5},
+   acts:[{n:"叫 声",k:"atk",suc:2,dice:3,pct:-10,aim:"all",w:5},
          {n:"耳を裂く声",k:"hex",weak:1,dur:2,w:3},
          {n:"土に潜る",k:"guard",defUp:10,dur:2,w:2}]},
  treant:{n:"トレント",d:"歩く古木。世界樹のマナを長く浴びた木が、あるとき根を抜いて動き出したものだと言われる。日を浴びているあいだは傷が塞がるが、火にだけはひどく弱い。",mat:"bark",weak:"fire",resist:"slash",elem:"earth",art:"treant",snd:"blunt",
@@ -4788,9 +4800,9 @@ const FOE={
  spriggan:{n:"スプリガン",d:"森の境を守る妖精。普段は岩と見分けがつかないほど小さいが、侵入者を見つけると膨れ上がって道を塞ぐ。膨れる前に仕留めれば、ただの小石でしかない。",mat:"fdust",weak:"blunt",resist:"pierce",elem:"earth",art:"spriggan",snd:"blunt",
    HP:100,STR:38,VIT:28,DEX:10,rank:"front",scout:1,
    acts:[{n:"膨れ上がる",k:"grow",hp:110,seq:1},
-         {n:"石の拳",k:"atk",suc:2,dice:3,pct:90,w:6},
+         {n:"石の拳",k:"atk",suc:1,pct:35,dice:3,w:6},
          {n:"背を固める",k:"guard",defUp:10,dur:2,w:2},
-         {n:"岩を振り下ろす",k:"atk",suc:3,dice:4,pct:220,w:2}]},
+         {n:"岩を振り下ろす",k:"atk",suc:2,pct:85,dice:4,w:2}]},
  redcap:{n:"レッドキャップ",d:"血に染めた帽子をかぶった小妖精。帽子の色が褪せると死ぬと信じており、そのために刃物を手放さない。足が速く、走りながら斬りつけてくる。",mat:"fdust",weak:"light",resist:"dark",elem:"dark",art:"redcap",snd:"slash",
    HP:130,STR:40,VIT:10,DEX:38,rank:"front",scout:4,
    acts:[{n:"駆け抜ける",k:"atk",suc:2,dice:3,pct:90,w:5},
@@ -4803,7 +4815,7 @@ const FOE={
          {n:"根を張る",k:"guard",block:18,w:2}]},
  centaur:{n:"ケンタウロス",d:"上半身が人、下半身が馬の種族。森の道を巡回している。弓の腕は確かで、間合いを取ったまま射続ける。話は通じるが、まず矢が飛んでくる。",mat:"hoof",weak:"pierce",resist:"blunt",art:"centaur",snd:"bow",
    HP:175,STR:47,VIT:16,DEX:30,rank:"back",scout:5,
-   acts:[{n:"矢を射る",k:"atk",dice:3,w:5},
+   acts:[{n:"矢を射る",k:"atk",suc:2,pct:35,dice:3,w:5},
          {n:"引き絞る",k:"buff",pctUp:30,dur:1,w:3},
          {n:"貫きの一矢",k:"atk",suc:3,dice:4,pct:220,w:2}]},
  harpy:{n:"ハーピー",d:"人の顔と鳥の体を持つ。高い梢に巣を作り、上から獲物に襲いかかる。甲高い声で仲間を呼ぶので、一羽を追うと数が増える。",mat:"quill",weak:"pierce",resist:"earth",art:"harpy",snd:"slash",
@@ -4813,12 +4825,12 @@ const FOE={
          {n:"羽ばたく",k:"buff",dex:10,dur:2,w:2}]},
  sprout:{n:"世界樹の苗",d:"世界樹から落ちた種のうち、根を下ろす前に自ら歩き出したもの。全身からマナが漏れており、周りの草木が異様に育つ。森の奥ほど多い。",mat:"mana",weak:"fire",resist:"bolt",elem:"earth",art:"sprout",snd:"blunt",
    HP:230,STR:44,VIT:22,DEX:14,rank:"front",scout:2,
-   acts:[{n:"根で薙ぐ",k:"atk",suc:2,dice:3,pct:90,w:6},
+   acts:[{n:"根で薙ぐ",k:"atk",suc:1,pct:30,dice:3,w:6},
          {n:"マナを吸う",k:"regen",heal:40,w:2},
          {n:"芽吹かせる",k:"cheer",pctUp:20,dur:2,w:2}]},
  gant:{n:"ジャイアントアント",d:"腐葉土の下に巣を広げる大蟻。硬い外殻は生半可な刃を弾き、大顎は木の枝ほどなら音もなく断つ。巣穴の入口を踏み抜くと、一度に何匹も這い出てくる。",mat:"jaw",weak:"blunt",resist:"slash",art:"gant",snd:"blunt",
    HP:135,STR:30,VIT:20,DEX:14,rank:"front",scout:2,
-   acts:[{n:"大顎で挟む",k:"atk",suc:2,dice:3,pct:90,w:5},
+   acts:[{n:"大顎で挟む",k:"atk",suc:1,pct:40,dice:3,w:5},
          {n:"酸を吐く",k:"hex",curse:6,dur:2,w:2},
          {n:"外殻を閉じる",k:"guard",block:22,w:2}]},
  cyclops:{n:"サイクロプス",d:"一つ目の巨人。森の奥深くに一体で生息している。掴んだ岩をそのまま投げてくるが、投げる前に必ず大きく振りかぶる。",mat:"eye",weak:"pierce",resist:"blunt",elem:"earth",art:"cyclops",snd:"blunt",
@@ -4845,7 +4857,7 @@ const FOE={
    acts:[{n:"祓 う",k:"cleanse",w:3},
          {n:"眷属を鼓舞する",k:"cheer",pctUp:20,dur:1,seq:1},
          {n:"力を奪う",k:"hex",weak:1,dur:2,seq:2},
-         {n:"呪いの奔流",k:"atk",dice:3,pct:10,w:4,solo:true},
+         {n:"呪いの奔流",k:"atk",suc:2,dice:3,pct:-25,aim:"all",w:4,solo:true},
          {n:"呪 縛",k:"hex",curse:7,dur:2,w:3,solo:true},
          {n:"力 を 奪 う",k:"hex",weak:1,dur:2,w:2,solo:true},
          {n:"骨の壁",k:"veil",block:12,w:2,needFront:true}]},
@@ -4853,7 +4865,7 @@ const FOE={
    HP:520,STR:58,VIT:30,DEX:12,rank:"front",scout:3,
    acts:[{n:"大枝を振り下ろす",k:"atk",dice:3,pct:10,w:5},
          {n:"樹皮を固める",k:"guard",block:20,w:3},
-         {n:"森を薙ぐ",k:"atk",suc:2,dice:4,pct:90,open:{t:1},w:3},
+         {n:"森を薙ぐ",k:"atk",suc:2,dice:4,pct:-10,aim:"all",open:{t:1},w:3},
          {n:"根 を 貼 る",k:"buff",pctUp:20,dur:2,w:2}],
    phases:[{at:.5,n:"森 が 花 を つ け る",d:"根もとの土が盛り上がり、蕾が首をもたげた",
      acts:[{n:"大枝を振り下ろす",k:"atk",dice:3,pct:10,w:5},
@@ -4883,13 +4895,13 @@ const FOE={
    acts:[{n:"トライデント",k:"atk",suc:2,dice:3,pct:90,w:5},
          {n:"水 の 奔 流",k:"atk",dice:3,hits:2,pct:-15,ail:{curse:15,t:2},w:3},
          {n:"水 の 膜",k:"guard",block:20,w:3},
-         {n:"大 海",k:"atk",dice:4,pct:-30,ail:{slow:10,curse:8,t:2},w:1}],
+         {n:"大 海",k:"atk",suc:2,dice:4,pct:-45,aim:"all",ail:{slow:10,curse:8,t:2},w:1}],
    phases:[{at:.5,n:"深 き 者 の 呼 び 声",d:"鱗が青黒く染まり、禍々しくなる",
      str:18,def:10,dex:10,
      acts:[{n:"トライデント",k:"atk",suc:2,dice:3,pct:90,w:5},
            {n:"水 の 奔 流",k:"atk",dice:3,hits:2,pct:-15,ail:{curse:15,t:2},w:3},
            {n:"水 の 膜",k:"guard",block:20,w:3},
-           {n:"大 海",k:"atk",dice:4,pct:-30,ail:{slow:10,curse:8,t:2},w:1},
+           {n:"大 海",k:"atk",suc:2,dice:4,pct:-45,aim:"all",ail:{slow:10,curse:8,t:2},w:1},
            {n:"トライデントの乱撃",k:"atk",dice:3,hits:3,pct:-15,seq:3}]}]},
 };
 
@@ -5109,10 +5121,10 @@ function lvScale(t){ t=(t||areaTier()||1); return LVSCALE[t-1]||LVSCALE[LVSCALE.
 
    1体あたりを軽くしても 数が多いぶん 戦いは重いまま。
    精鋭は「用意が要る戦い」であって「勝てない戦い」ではない。 */
-const ELITETOUGH={plain:0.87,seed:1.04,wtree:0.76,cave:0.59,hall:0.98,city:1};
+const ELITETOUGH={plain:0.87,seed:1.04,wtree:0.75,cave:0.59,hall:0.98,city:0.96};
 function eliteTough(){ return ELITETOUGH[RUN&&RUN.area]||1; }
-const AREATOUGH={plain:1.12,seed:1.13,wtree:1.13,cave:1.54,hall:1.24,city:1.07};
-const BOSSTOUGH={plain:0.87,seed:0.93,wtree:1.1,cave:0.94,hall:1.11,city:0.67};
+const AREATOUGH={plain:1.12,seed:1.13,wtree:1.14,cave:1.54,hall:1.25,city:1.11};
+const BOSSTOUGH={plain:0.87,seed:0.92,wtree:1.04,cave:0.93,hall:1.06,city:0.61};
 function areaTough(){ return AREATOUGH[RUN&&RUN.area]||1; }
 function bossTough(){ return BOSSTOUGH[RUN&&RUN.area]||1; }
 /* 敵ひとりに掛かる合計の倍率 */
@@ -5126,7 +5138,7 @@ function bossTough(){ return BOSSTOUGH[RUN&&RUN.area]||1; }
 
    ここは tools/encchk.mjs が測って書き込む値で、0.6〜1.6 に収めてある。
    その外に振り切れる顔ぶれは 摘みでは直せない ── **編成を直すこと。** */
-const ENCTOUGH={p_wr:1.13,p_rb3:1.19,p_gw2:0.8,p_be3:1.23,p_wf2:1.09,p_wr2:0.98,p_bo2:0.85,p_bo3:0.91,p_bs:0.81,p_fang:1.09,p_hard:0.88,pb1:1.05,f_og:0.86,f_to:0.81,f_be:0.85,f_or2:1.34,f_bm:1.27,f_gb:0.9,f_tb:0.76,f_ob:1.02,f_hard:0.85,f_be2:1.13,pb2:1.03,w_sp2:1.46,w_ss:0.82,w_sd:0.94,w_wi2:1.03,w_sa:0.93,w_wr:0.82,w_al:0.84,w_ce:0.85,w_rc2:1.1,w_hard:0.7,w_el:1.08,w_dh:0.91,sh2:0.83,gb1:1.35,gc1:1.06,gb2:0.94,hb1:0.76,db2:0.89,gc3:1.1,gr1:1.09,rt1:1.1,hb2:0.77,c_bs1:1.08,c_bs2:0.91,b1:1.02,h_bg:0.9,ls2:0.82,h_gg:1.05,gl1:0.72,rw1:1.25,rw2:0.75,bt1:1.01,h_gt:1.32,gl2:1.21,tr1:0.95,rw3:0.9,gg2:0.92,gl3:0.9,rw4:1.16,c_ar2:1.16,c_sw:0.9,sk1:0.93,c_bf2:0.76,sg2:1.17,sg1:1.08,c_afb:1.08,c_spw:1.15,sg3:1.3,wr2:0.95,c_af3:0.92,c_spa:0.72,b3:0.98};
+const ENCTOUGH={p_wr:1.13,p_rb3:1.19,p_gw2:0.8,p_be3:1.44,p_wf2:1.09,p_wr2:0.98,p_bo2:0.85,p_bbe:1.09,p_bo3:0.91,p_bs:0.81,p_fang:1.14,p_hard:0.88,pb1:1.05,f_og:0.84,f_to:0.82,f_be:0.79,f_or2:1.34,f_bm:1.17,f_gb:0.82,f_tb:0.71,f_ob:0.99,f_hard:0.81,f_be2:1.04,w_sp2:1.3,w_ss:0.75,w_sd:0.89,w_wi2:1.03,w_sa:0.9,w_wr:0.79,w_al:0.78,w_ce:0.87,w_rc2:1.01,w_hard:0.73,w_el:1.06,w_dh:0.87,wb:0.95,sh2:0.77,gb1:1.35,gc1:1.06,gb2:1.01,hb1:0.86,db2:0.89,gc3:1.1,sh1:0.96,gr1:1.09,rt1:1.1,hb2:0.77,c_bs1:1.08,c_bs2:0.92,b1:1.02,h_bg:0.93,ls2:0.82,h_gg:1.22,gl1:0.72,rw1:1.45,rw2:0.73,bt1:1.01,h_gt:1.54,gl2:1.17,tr1:0.95,rw3:0.89,gg2:0.94,gl3:0.92,rw4:1.26,b2:0.97,c_ar2:1.51,sk2:1.19,c_sw:0.9,sk1:0.93,c_bf2:0.76,sg2:1.35,c_bwa:1.14,sg1:1.08,c_afb:1.03,c_spw:0.82,sg3:1.3,sk3:1.13,wr2:1.06,c_af3:0.89,c_spa:0.99,b3:0.92};
 function encTough(){
   const e=(RUN&&RUN.boss)?null:sel.enc;
   return (e&&ENCTOUGH[e])||1;
@@ -5716,9 +5728,10 @@ function unitCell(u,isMine,fig){
            ?{thr:A.sk[pending.i].thr||0,even:A.sk[pending.i].even}:{})}以上</div>`;})():""}
     ${!isMine?`<div class="crole">${ROLEN[roleOf(u)]||""}</div>`:""}
     ${!isMine?(u.HP>0?(()=>{const ic=actIcon(st.t);
+        const all=(st.t&&aimOf(u,st.t)==="all");
         const tg=foeTarget(u,st.t);
         return `<div class="cact ${p.danger?"bad":"ok"}" title="${p.txt}">${ic.g}</div>
-          <div class="caimn">→ ${tg?tg.short:"—"}</div>`;})()
+          <div class="caimn${all?" all":""}">→ ${all?"全 員":(tg?tg.short:"—")}</div>`;})()
       /* 倒れても枠は空けておく。消すとセルが縮み、行動一覧が毎ターン動く */
       :`<div class="cact" style="visibility:hidden"></div>`):""}
   </div>`;
@@ -5730,7 +5743,7 @@ function aimedBy(u){
   alive().forEach(f=>{
     const t=shownTele(f).t;
     if(!t)return;
-    if(foeTarget(f,t)!==u)return;
+    if(aimOf(f,t)!=="all"&&foeTarget(f,t)!==u)return;
     n++;
     if(t.k==="atk")bad=true;
   });
@@ -7897,7 +7910,18 @@ async function enemyAct(f){
        判定はひと振りきり ── 空振りなら 1回も入らない。 */
     const FHITS=Math.max(1,t.hits||1);
     if(FHITS>1)log(`<span class="c">重ねて ${FHITS} 回</span>`);
+    /* ===== 場のすべてに及ぶ手（α1.0.047） =====
+       息・咆哮・地鳴りのような手は ひとりを殴るものではない。
+       **判定はひと振りきり**（上で振ってある）で、通れば全員に入る。
+       外せば 全員が避ける ── 一発で場が決まるので、重い手にしか付けない。 */
+    const victims=(aimOf(f,t)==="all")?pAlive().slice():[tg];
+    if(victims.length>1)
+      log(`<span class="b">${t.n}</span> が <span class="c">場のすべて</span>に及ぶ　`+
+        `<span class="s">${victims.map(u=>u.short).join("・")}</span>`);
     holdDraw();                    /* ここから 演出。下の freeDraw で描き直す */
+    for(const tg of victims){
+    if(f.HP<=0)break;
+    if(tg.HP<=0)continue;
     let fDealt=0;
     /* あとのログが読む値。ループの中で宣言すると外から見えない */
     let halved=false, soaked=0, shLeft=0, mdef=0, raw=0;
@@ -7986,6 +8010,7 @@ async function enemyAct(f){
       (soaked?`　<span class="c">シールド −${soaked}</span>${shLeft?`<span class="s">（残り ${shLeft}）</span>`:""}`:"")+
       (mdef?`　<span class="s">（VIT −${mdef}）</span>`:"")+
       `　→ <span class="m">${dmg}</span>`);
+    }   /* ← 場のすべてに及ぶぶんの締め（α1.0.047） */
     freeDraw();
     await wait(300);
   }else if(t.k==="guard"){

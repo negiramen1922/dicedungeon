@@ -46,8 +46,12 @@ window.expDmg=function(n,thr,need,pow,sh,def){
 window.expFoeAct=function(f,a,tgt){
   if(a.k!=="atk")return 0;
   const pow=powOf(f,{pct:a.pct||0,pow:a.pow||0});
-  return window.expDmg((a.dice||a.diceRand||1),threshold(f,tgt,{act:a}),
+  const one=window.expDmg((a.dice||a.diceRand||1),threshold(f,tgt,{act:a}),
     Math.max(1,a.suc||1),pow,0,defOf(tgt));
+  /* 何回入るか（hits）と 何人に入るか（aim:"all"）。
+     ひと振りで通れば全員に入るので、パーティの人数ぶん重い */
+  const many=(typeof aimOf==="function"&&aimOf(f,a)==="all")?Math.max(1,pAlive().length):1;
+  return one*Math.max(1,a.hits||1)*many;
 };
 /* 味方ひとりの通常攻撃ひと振りぶん。ダイスは **技能**から。
    得物の個性（短剣の2回・槍の貫通）も見る（α1.0.035）。

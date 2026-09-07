@@ -102,6 +102,35 @@ const out=await pg.evaluate(async()=>{
   }
   L.push(`⑧ 弱った者へ乗り換えた割合 ${Math.round(sw/tot*100)}%（狙い ${Math.round(HUNTP*100)}%）`);
   if(sw/tot>0.75||sw/tot<0.25)bad.push("乗り換えの割合が 狙いから外れている: "+Math.round(sw/tot*100)+"%");
+  /* ⑨ 場のすべてに及ぶ手（aim:"all"）が 本当に全員に入るか */
+  const allOwner=Object.keys(FOE).find(k=>(FOE[k].acts||[]).some(a=>a.aim==="all"));
+  const allAct=allOwner&&FOE[allOwner].acts.find(a=>a.aim==="all");
+  L.push(`⑨ 場のすべてに及ぶ手 ${allOwner?FOE[allOwner].n.replace(/ /g,"")+"「"+allAct.n+"」":"—"}`);
+  if(!allOwner)bad.push("aim:\"all\" を持つ敵がいない");
+  else{
+    window.rollDice=async()=>0;window.ovHide=()=>{};
+    window.lungeUnit=async()=>{};window.fxOn=()=>{};window.popOn=()=>{};
+    window.popSelf=()=>{};window.setHPBar=()=>{};
+    party.forEach(u=>{u.HP=u.maxHP;u.block=0;u.ail=[];});
+    foes.length=0;
+    foes.push({...FOE[allOwner],id:0,key:allOwner,name:"試",isFoe:true,
+      HP:9999,maxHP:9999,ail:[],buffs:[],dbuffs:[],block:0,turn:0,
+      tele:teleOf({...allAct}),acts:[allAct]});
+    let hurt=0,tries=0;
+    for(;tries<24&&hurt<party.length;tries++){
+      party.forEach(u=>{u.HP=u.maxHP;});
+      busy=false;over=false;
+      await enemyAct(foes[0]);
+      hurt=party.filter(u=>u.HP<u.maxHP).length;
+    }
+    L.push(`　 ${tries}回目で通った → ${party.length} 人中 ${hurt} 人に入った`);
+    if(hurt!==party.length)bad.push("全体の手が 全員に入っていない");
+    /* 予告に「全員」と出るか */
+    const cellHtml=unitCell(foes[0],false,40);
+    L.push(`　 予告に「全 員」と出る ${/全\s*員/.test(cellHtml)}`);
+    if(!/全\s*員/.test(cellHtml))bad.push("予告に 全員と出ていない");
+  }
+
   return {L,bad};
 });
 console.log(out.L.join("\n"));
