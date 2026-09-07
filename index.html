@@ -1070,7 +1070,7 @@ body.attitle #brand{display:none}
     <button class="go" id="hGo">潜 る</button>
     <button class="topbtn hide" id="hInn">宿 に 泊 ま る</button>
     <button class="topbtn hide" id="hHire">仲 間 を 雇 う</button>
-    <button class="topbtn hide" id="hChar">一 味 を 見 る</button>
+    <button class="topbtn hide" id="hChar">パ ー テ ィ を 見 る</button>
     <button class="topbtn" id="hWorld">世 界 地 図</button>
     <button class="topbtn" id="hHall">潜 行 の 記 録</button>
     <button class="topbtn" id="hCodex">図 鑑</button>
@@ -1155,8 +1155,8 @@ body.attitle #brand{display:none}
 /* 版の付け方は 大.中.小。マージのたびに tools/bump.js で上げる。
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
-     α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.038";
+     α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
+const VERSION="α1.0.039";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1169,11 +1169,19 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1039",tag:"up",v:"α1.0.039",d:"2026-09-07",n:"癒しと守りを 仲間に掛けられます。攻撃の演出を組み直しました",b:[
+   "<b>癒し・蘇生・盾・見切り・集中・気を静める は 掛ける相手を選べます。</b>攻撃で相手を選ぶのと同じで、こちら側のマスが押せるようになります。蘇生は <b>倒れている仲間だけ</b>が選べます",
+   "自分だけの手（獣化・力を纏う・休む・討つと告げる）と 全体に及ぶ手は これまでどおり「これで使う」です",
+   "盾の厚さは <b>掛けた者の技</b>で決まります（受ける側の最大HPでは測りません）。札に出ている数字がそのまま張られます",
+   "<b>攻撃の演出を 踏み込み → 当たりの光 → 数字 → HPの帯 の順に組み直しました。</b>これまでは踏み込んだ直後に結果だけが出て、途中がありませんでした",
+   "〔不具合〕<b>ダメージの数字が 出た瞬間に消えていました。</b>盤を描き直す処理が、浮いている数字も光も踏み込みも まとめて消していたためです。演出のあいだは描き直しを溜めるようにしました",
+   "〔不具合〕<b>敵に殴られたときの数字が いつも主人公の上に出ていました。</b>仲間が殴られても 主人公の頭上に「−52」と出ていました",
+   "「一味」という呼び方を <b>「パーティ」</b>に改めました"]},
  {id:"v1038",tag:"up",v:"α1.0.038",d:"2026-09-07",n:"覚えた技は もう失いません。町と焚き火で 持ち物を入れ替えられます",b:[
    "<b>枠が埋まっていても 覚えたものは残ります。</b>これまでは「忘れるものを選ぶ」しかなく、せっかく覚えた技が <b>消えていました</b>",
    "枠に入らないぶんは <b>控え</b>に回ります。控えに持てる数に <b>上限はありません</b>",
    "<b>装備の予備も いくつでも持てます。</b>これまでは 2つまでで、溢れたぶんは捨てるしかありませんでした",
-   "<b>入れ替えは 町と、潜行中なら焚き火のそばだけ。</b>「一味を見る」→ スキル/パッシブ の欄に <b>控えへ</b>／<b>持ち出す</b> の札が出ます。焚き火には <b>「持ち物を 入れ替える」</b>の札を足しました",
+   "<b>入れ替えは 町と、潜行中なら焚き火のそばだけ。</b>「パーティを見る」→ スキル/パッシブ の欄に <b>控えへ</b>／<b>持ち出す</b> の札が出ます。焚き火には <b>「持ち物を 入れ替える」</b>の札を足しました",
    "戦いに持ち出せる数（技 6・癖 10・装飾 4）は <b>これまでどおり</b>です。<b>持っている数</b>と <b>持ち出せる数</b>を分けただけで、強くなるわけではありません",
    "<b>仲間も同じです。</b>枠が満杯でもレベルアップで覚え続け、控えから入れ替えられます"]},
  {id:"v1037",tag:"up",v:"α1.0.037",d:"2026-09-07",n:"技を覚えるのが 5 レベルごとになりました",b:[
@@ -1189,7 +1197,7 @@ const NEWS=[
  {id:"v1035",tag:"fix",v:"α1.0.035",d:"2026-09-07",n:"手練れ（精鋭）が どの区画でも勝てない戦いになっていました",b:[
    "<b>精鋭は 4体、普通は 2〜3体。</b>こちらは最大3人なので 4対3 は構造的に重く、前提の人数では <b>どこでも勝てません</b>でした（余裕 ×0.35〜0.92）",
    "普通には区画ごとの摘み、ボスにも区画ごとの摘みがあったのに、<b>精鋭にだけありませんでした</b>。足しました",
-   "<b>敵の硬さを配り直しました。</b>技を配り直して一味の火力が 1.3〜1.5倍になったのに、敵は据え置きでした",
+   "<b>敵の硬さを配り直しました。</b>技を配り直してパーティの火力が 1.3〜1.5倍になったのに、敵は据え置きでした",
    "前提の人数で挑んだとき　<b>普通 ×1.8〜2.9（快勝）／重い・精鋭 ×1.1〜1.6（用意が要る）／ボス ×1.0〜1.15（拮抗）</b>",
    "潜る前提の人数は これまでどおり　第1階層の前半 1人・後半 2人・第2階層から 3人"]},
  {id:"v1034",tag:"up",v:"α1.0.034",d:"2026-09-07",n:"得物に個性が戻りました。技の必要成功数と威力を配り直しました",b:[
@@ -1219,7 +1227,7 @@ const NEWS=[
    "<b>蘇生でこそ 治療の決めごとが効きます。</b>必要3 に届かなくても、1成功なら 9%、2成功なら 30% で <b>かろうじて息を吹き返します</b>。空振りだけが 本当に何も起きません",
    "倒れた仲間がいなければ 札は押せません"]},
  {id:"v1030",tag:"up",v:"α1.0.030",d:"2026-09-06",n:"町に帰れば傷は癒えます。癒しにも階段ができました",b:[
-   "<b>町へ帰ると 一味の HP が全快します。</b>これまでは傷が残ったので、帰るたびに 宿代を払うか 道具を割かないと 次に潜れませんでした。町は 立て直す場所です",
+   "<b>町へ帰ると パーティの HP が全快します。</b>これまでは傷が残ったので、帰るたびに 宿代を払うか 道具を割かないと 次に潜れませんでした。町は 立て直す場所です",
    "<b>MP は戻りません。</b>そこが宿の仕事です。HP が満ちているぶん <b>宿代はぐっと安く</b>なります",
    "<b>癒しにも 必要成功数の階段ができました</b>（数と名は仮）。応急手当 ●（30%）／癒 し ●●（55%）／大癒し ●●●（90%）",
    "攻撃の階段と違うのは、<b>届かなくても目減りして出る</b>こと。必要3 の技を 1成功で撃っても まるきり無駄にはなりません"]},
@@ -1281,8 +1289,8 @@ const NEWS=[
    "<b>草原の敵にも 重い一撃が入りました。</b>スライムの「のびる」、草スライムの「芽を飛ばす」、キラービーの「刺し続ける」などが <b>必要成功2</b> になります。予告に出ても <b>不発に終わる</b>ことがあります",
    "攻撃を2つ以上持つ敵は <b>全員が 必要2 の一撃を持つ</b>ようになりました（22体）。これまでは 9体が すべて必要1でした",
    "手応えは変えていません。重くしたぶん 当たりにくくしてあります"]},
- {id:"v1018",tag:"up",v:"α1.0.018",d:"2026-09-06",n:"町に宿ができました。金貨を払えば 一味が全快します",b:[
-   "<b>町の札に「宿 に 泊 ま る」が増えました。</b>一味の HP と MP が全快します",
+ {id:"v1018",tag:"up",v:"α1.0.018",d:"2026-09-06",n:"町に宿ができました。金貨を払えば パーティが全快します",b:[
+   "<b>町の札に「宿 に 泊 ま る」が増えました。</b>パーティの HP と MP が全快します",
    "<b>代金は 傷のぶんだけ。</b>戻る HP 1 につき 0.08 金貨、MP 1 につき 0.7 金貨。札に そのときの代金が出ます",
    "<b>持ち歩けないぶん 道具より ずっと安いです。</b>フルポーション（ひとり全快）が 88金貨なのに対し、宿は 3人ぶん全快でも 100金貨ほど。傷が無ければ 押せません",
    "<b>控えの仲間は 町に帰れば ただで癒えます。</b>潜っていないので。宿代がかかるのは 連れて行った者のぶんだけです",
@@ -1293,14 +1301,14 @@ const NEWS=[
    "<b>しきい値を動かすのは 3つだけになりました。</b>技のバフ・デバフ／遠さ（隊列）／<b>DEX の差</b>",
    "<b>DEX の差は 両向きに効きます。</b>差 25 で1段、40 で2段。相手が速ければ当てにくく、<b>こちらが速ければ当てやすい</b>。これまでは相手の速さだけを見ていて、自分の DEX は命中に効きませんでした",
    "<b>索敵も d6 の振り合いになりました。</b>探索技能ぶんのダイスを振り、4以上が成功。成功の数の差が そのまま最初の攻撃のダイスになります",
-   "<b>索敵は 一味でいちばん探索の高い者が振ります。</b>これまでは必ず主人公だったので、スカウトの仲間を連れても先制には何も足しませんでした",
+   "<b>索敵は パーティでいちばん探索の高い者が振ります。</b>これまでは必ず主人公だったので、スカウトの仲間を連れても先制には何も足しませんでした",
    "<b>手応えを測り直しました。</b>命中率が変わったぶん、区画ごとの倍率を引き直しています"]},
  {id:"v1016",tag:"bal",v:"α1.0.016",d:"2026-09-06",n:"区画ごとの手応えを揃えました。終盤のボスが 勝てない重さでした",b:[
    "<b>水没都市のボスが 相打ちにも届かない重さでした</b>（余裕 ×0.41）。ほかの区画のボスは ×1.0〜1.6 だったので、終盤だけ跳ね上がっていました。いまは <b>どの区画も ×1.2〜1.6</b> です",
    "<b>苔むした洞窟が 木漏れ日の森より 1.8倍 楽でした。</b>同じ第2階層なのに 顔ぶれの違いで軽くなっていたので 揃えました",
    "<b>ふつうの戦いは 進むほど じわじわ重くなります。</b>草原 ×4.3 → 都市 ×2.3。前は 草原 ×4.4 → 都市 ×1.7 で 終盤だけ急に苦しくなっていました",
    "区画ごと・ボスごとの倍率を <b>持ち替えられる形</b>にしました（AREATOUGH / BOSSTOUGH）。敵や遭遇を足したら <b>tools/tune4.mjs</b> で測り直せます",
-   "〔修正〕手応えの物差し（audit4）が <b>「一味3人」と書きながら 主人公ひとりで測っていました</b>。α1 で「ひとりで始めて町で雇う」形にしたときの取り残しです。<b>その場所が前提にしている人数</b>で組むようにしました"]},
+   "〔修正〕手応えの物差し（audit4）が <b>「パーティ3人」と書きながら 主人公ひとりで測っていました</b>。α1 で「ひとりで始めて町で雇う」形にしたときの取り残しです。<b>その場所が前提にしている人数</b>で組むようにしました"]},
  {id:"v1015",tag:"fix",v:"α1.0.015",d:"2026-09-06",n:"仲間が覚えた特性が 働いていませんでした",b:[
    "<b>仲間の手番でも 特性だけ主人公のものを見ていました。</b>得物も技能も仲間のものを使うのに、特性だけ主人公 ── という食い違いが 14 か所ありました",
    "<b>仲間が覚えた特性は 何も効いていませんでした。</b>仲間は特性を4つまで持てます",
@@ -1308,12 +1316,12 @@ const NEWS=[
    "<b>鈍感・頑迷・肺活量も 主人公だけのものでした。</b>受ける者の特性を見るようにしました（仲間が頑迷を覚えれば 鈍足と麻痺を弾きます）",
    "手応えの平均は 変わりません（×0.75）。仲間が自分の特性で戦い、主人公の特性は主人公のものになった、という筋の話です"]},
  {id:"v1014",tag:"up",v:"α1.0.014",d:"2026-09-06",n:"レベルの上限が 100 になりました。技能に注げる点も 99 になります",b:[
-   "<b>上限が Lv25 → Lv100 になりました。</b>技能に注げる点は レベル1つにつき1点なので、<b>一周で 99点</b>配れます。得意技能を 100 まで極めると 残りは44点 ── 何に注ぐかが 一味の役割になります",
+   "<b>上限が Lv25 → Lv100 になりました。</b>技能に注げる点は レベル1つにつき1点なので、<b>一周で 99点</b>配れます。得意技能を 100 まで極めると 残りは44点 ── 何に注ぐかが パーティの役割になります",
    "<b>一周の長さは変えていません。</b>必要な経験の合計はほぼ同じで、刻みを4倍に細かくしただけです。どの区画も <b>3回ほど潜れば次へ行けます</b>（都市だけ5回）",
    "<b>覚えるのは 4レベルごと</b>になりました（Lv100 までに 25 回）。毎レベルだと 99回 窓が出てしまうためです。技の枠は 6・特性は 10 のままです",
    "<b>レベルはまとめて上がります。</b>1段が軽くなったので 一度に2〜3上がることがあります",
    "<b>上限で止まるようになりました。</b>これまでは上限を見ておらず、Lv25 より上へ行けてしまっていました",
-   "<b>敵の数値を 新しい目盛りに合わせました。</b>同じ場所での一味が 段ごとに 1.7〜3.0 倍強くなったぶん、敵にも返しています。手応えは これまでとほぼ同じです",
+   "<b>敵の数値を 新しい目盛りに合わせました。</b>同じ場所でのパーティが 段ごとに 1.7〜3.0 倍強くなったぶん、敵にも返しています。手応えは これまでとほぼ同じです",
    "〔調整〕<b>アーチャーとスカウトの DEX の伸びを 3 → 0.6 にしました。</b>DEX の上限は 100 なので、3 のままだと <b>Lv21 で天井に張り付き</b>、そこから先の 80 段が丸ごと無駄になっていました",
    "〔修正〕レベルアップの窓で <b>MP が「undefined」</b>と出ていました。HP も 最大HP と いまのHP を比べていました"]},
  {id:"v1013",tag:"up",v:"α1.0.013",d:"2026-09-06",n:"技と敵の攻撃に「必要な成功の数」を振り分けました。ここから階段が働きます",b:[
@@ -1337,7 +1345,7 @@ const NEWS=[
  {id:"v1011",tag:"up",v:"α1.0.011",d:"2026-09-06",n:"技能が育つようになりました。レベルが上がるたび 1点を 好きな技能へ注げます",b:[
    "<b>レベルが1つ上がるごとに 1点</b>もらえます。装備・状態の窓の「ステータス」で 好きな技能に注げます。<b>戻せません</b>",
    "<b>技能20ごとに ダイスが1つ増えます。</b>注ぐほど 振れるダイスが増え、必要成功の多い技に手が届きます",
-   "技能の上限は100なので、<b>一芸を極めると 2つ目に回せる点は少なくなります。</b>何を伸ばすかが 一味の役割になります",
+   "技能の上限は100なので、<b>一芸を極めると 2つ目に回せる点は少なくなります。</b>何を伸ばすかが パーティの役割になります",
    "<b>仲間は 自分で注ぎます。</b>得物で使う技能から順に埋めていきます",
    "<b>戦闘の札に「振れるダイス」と「必要成功」が出るようになりました。</b>ダイスが必要成功に届かない技は 押せない札になります",
    "〔修正〕通常攻撃の札が <b>まだ武器のダイス数を出していました</b>。実際に振る数と食い違っていたのを直しました",
@@ -1362,8 +1370,8 @@ const NEWS=[
    "装備・状態の窓で 技能が2つの組に分かれて並びます"]},
  {id:"v1007",tag:"up",v:"α1.0.007",d:"2026-09-05",n:"町で仲間を雇えるようになりました。場所ごとに 何人で挑む前提かが決まります",b:[
    "<b>町で仲間を雇えます。</b>3人の候補から選びます。<b>1人目はただ</b>で、2人目からは金貨がいります",
-   "<b>一味に入れられるのは3人まで。</b>それ以上は 控えに回ります。雇える人数に上限はありません",
-   "<b>一味と控えの入れ替えは 町でも道でも、戦っていないあいだなら いつでも。</b>「一味を見る」から",
+   "<b>パーティに入れられるのは3人まで。</b>それ以上は 控えに回ります。雇える人数に上限はありません",
+   "<b>パーティと控えの入れ替えは 町でも道でも、戦っていないあいだなら いつでも。</b>「パーティを見る」から",
    "<b>場所ごとに 何人で挑む前提かが決まりました。</b>原始の草原の前半は1人、後半から2人、木漏れ日の森より先は3人です。前提の人数に合わせて 敵の丈夫さが変わります",
    "<b>雇った仲間は 主人公と同じLvに揃います。</b>3の倍数のLvで 技か特性を選びます",
    "<b>同じ職の仲間が並んだときは 種族まで出します。</b>それでも重なるなら 番号がつきます"]},
@@ -1387,7 +1395,7 @@ const NEWS=[
    "潜る先を選ぶ窓と 討伐のたびに <b>いまの入り方が %で出ます</b>",
    "<b>〔修正〕深い区画の 経験・金貨・戦利品の等級・店の値段が「1区画目」のままでした。</b>周回をやめたときに、深さを数えていたものが動かなくなっていました。区画そのものの段を見るようにしています"]},
  {id:"v1000",tag:"up",v:"α1.0.002",d:"2026-09-04",n:"ローグライクをやめ、町から何度でも潜る形になりました",b:[
-   "<b>周回が無くなりました。</b>一味は残り続けます。町から潜って、拾って、帰ってくる — その繰り返しです",
+   "<b>周回が無くなりました。</b>パーティは残り続けます。町から潜って、拾って、帰ってくる — その繰り返しです",
    "<b>いつでも町へ帰れます。</b>地図の「町 へ 帰 る」で引き返せて、拾ったものはすべて持ち帰れます。<b>どこで引くかが 毎回の判断</b>になります",
    "<b>全滅しても やり直せます。</b>町へ戻され、<b>その潜行で拾ったものだけ</b>を失います。レベルと 町に置いてあったものは そのままです",
    "<b>倒れた仲間は 町へ帰れば起き上がります</b>（HP・MP とも 30%）。傷は残るので、癒やすのは焚き火や道具の仕事です",
@@ -1406,12 +1414,12 @@ const NEWS=[
    "<b>列が3〜4体になりました。</b>奥の相手に 近接で +2 を払う場面が増え、範囲攻撃と貫通の値打ちが上がります",
    "盤の見出しで <b>4体目が「3番目」と出ていた</b>のを直しました（遠さは +2 で頭打ちですが、位置の番号は本当の数を出します）"]},
  {id:"v0052",tag:"bal",v:"α0.0052",d:"2026-09-04",n:"敵を引き上げ、行動の並びに決まりを入れました",b:[
-   "<b>一味が3人になったぶん、敵が弱すぎました。</b>手応え（耐えられるラウンド ÷ 倒すのにかかるラウンド）が <b>4.3倍 楽</b>になっていたのを測って引き直しています",
+   "<b>パーティが3人になったぶん、敵が弱すぎました。</b>手応え（耐えられるラウンド ÷ 倒すのにかかるラウンド）が <b>4.3倍 楽</b>になっていたのを測って引き直しています",
    "<b>敵の最大HP ×2.5　敵の攻撃力 ×1.4。</b>HP だけで戻すとボス戦が 55ターンになり、攻撃力だけで戻すと事故死ばかりになるので、両方から取っています",
    "<b>敵が2手続けて攻めてこない、ということが無くなりました。</b>強化や守りの次は 必ず攻撃に戻ります",
    "<b>敵が守りを続けて出さなくなりました。</b>前は「力をためる → 身を守る → 力をためる」と一度も殴らないまま何ターンも過ぎることがあり、ためた力が使われないままでした",
    "この2つで 敵が実際に攻撃してくる割合は <b>73.6%</b>、攻めない手が2度続くことは <b>0</b> になりました"]},
- {id:"v0051",tag:"fix",v:"α0.0051",d:"2026-09-04",n:"前の版から続けたとき 一味のタブが動かなかったのを直しました",b:[
+ {id:"v0051",tag:"fix",v:"α0.0051",d:"2026-09-04",n:"前の版から続けたとき パーティのタブが動かなかったのを直しました",b:[
    "<b>パーティより前の控えから続けると、主人公の職・種族・欲望が空のままでした。</b>その者のタブを押すと画面の組み立てが途中で止まり、<b>押しても何も起きない</b>ように見えていました",
    "読み込んだときに 職・種族・欲望を繕うようにしました。あわせて <b>主人公が隊列の最後尾に回されていた</b>のも直しています",
    "前の版から続けている場合は、一度 続きから始め直すと直ります"]},
@@ -3763,7 +3771,7 @@ function skillOf(k,u){
    Lv100 まで行っても 総量は 99点しかない。得意を 100 まで伸ばすと 残りは
    44点で、2つ目は 37 止まり（ダイス1個）。**予算が「一芸特化」しか買えない
    ように出来ている**ので、技能を増やしても薄まらず、増えるのは役割のほう。
-   3人の一味で噛み合わせるための作りつけ。                              */
+   3人のパーティで噛み合わせるための作りつけ。                              */
 const SKPTLV=1;                    /* レベル1つにつき配る点 */
 function skPtsOf(lv){ return Math.max(0,((lv|0)-1)*SKPTLV); }
 function skSpent(u){ u=u||me; let s=0; const g=u.skg||{}; for(const k in g)s+=g[k]|0; return s; }
@@ -3965,32 +3973,32 @@ const REW={
       治療だけは **届かなくても 足りない1つにつき ×0.3** で出るので、
       必要3 の技を 1成功で撃っても まるきり無駄にはならない。
       名は 試作台（lab/fight.html）で使っていたもの。 */
-   {id:"a1",n:"応急手当",kind:"heal",mp:2,cd:3,heal:0.30,suc:1,
-    d:"最大HPの 30% を回復する"},
-   {id:"a6",n:"癒 し",kind:"heal",mp:5,cd:3,heal:0.55,suc:2,
-    d:"最大HPの 55% を回復する"},
+   {id:"a1",n:"応急手当",kind:"heal",mp:2,cd:3,heal:0.30,suc:1,ally:true,
+    d:"仲間ひとりを 最大HPの 30% 回復する"},
+   {id:"a6",n:"癒 し",kind:"heal",mp:5,cd:3,heal:0.55,suc:2,ally:true,
+    d:"仲間ひとりを 最大HPの 55% 回復する"},
    /* 蘇 生。倒れた仲間ひとりを起こす。相手は選ばない ── 倒れている者が
       いなければ そもそも押せないので、いる者を自分で拾う。
       治療の決めごとどおり **届かなくても目減りして出る**ので、
       1成功でも「かろうじて息を吹き返す」ことはある。 */
-   {id:"a7",n:"蘇 生",kind:"revive",mp:9,cd:4,heal:0.50,suc:3,
-    d:"倒れた仲間を 最大HPの 50% で起こす"},
-   {id:"a2",n:"見切り",kind:"buff",mp:3,cd:3,half:true,
-    d:"次に受けるダメージを 半分にする"},
-   {id:"a3",n:"鉄 壁",kind:"guard",mp:3,cd:2,blockPct:8,hold:1,
-    d:"シールド 最大HPの 8%（2ターンのあいだ 毎ターン）"},
-   {id:"a4",n:"集 中",kind:"focus",mp:2,cd:3,thr:1,dur:1,
-    d:"命中閾値 −1（2ターンのあいだ）"},
-   {id:"a5",n:"気 を 静 め る",kind:"cure",mp:2,cd:2,cure1:true,
-    d:"自分の状態異常を 1 つ解く（いちばん長く残っているもの）"},
+   {id:"a7",n:"蘇 生",kind:"revive",mp:9,cd:4,heal:0.50,suc:3,ally:true,
+    d:"倒れた仲間ひとりを 最大HPの 50% で起こす"},
+   {id:"a2",n:"見切り",kind:"buff",mp:3,cd:3,half:true,ally:true,
+    d:"仲間ひとりが 次に受けるダメージを 半分にする"},
+   {id:"a3",n:"鉄 壁",kind:"guard",mp:3,cd:2,blockPct:8,hold:1,ally:true,
+    d:"仲間ひとりに シールド 最大HPの 8%（2ターンのあいだ 毎ターン）"},
+   {id:"a4",n:"集 中",kind:"focus",mp:2,cd:3,thr:1,dur:1,ally:true,
+    d:"仲間ひとりの 命中閾値 −1（2ターンのあいだ）"},
+   {id:"a5",n:"気 を 静 め る",kind:"cure",mp:2,cd:2,cure1:true,ally:true,
+    d:"仲間ひとりの 状態異常を 1 つ解く（いちばん長く残っているもの）"},
   ],
   knight:[
-   {id:"ak1",n:"盾 構",kind:"guard",mp:3,cd:2,blockPct:12,
-    d:"シールド 最大HPの 12%（使い切るまで残る）"},
-   {id:"ak2",n:"鉄 壁",kind:"guard",mp:5,cd:3,blockPct:20,
-    d:"シールド 最大HPの 20%。守りに徹する"},
-   {id:"ak3",n:"カウンター",kind:"guard",mp:4,cd:3,blockPct:10,counter:0.4,
-    d:"シールド 最大HPの 10%　受けたダメージの 40% を返す"},
+   {id:"ak1",n:"盾 構",kind:"guard",mp:3,cd:2,blockPct:12,ally:true,
+    d:"仲間ひとりに シールド 最大HPの 12%（使い切るまで残る）"},
+   {id:"ak2",n:"鉄 壁",kind:"guard",mp:5,cd:3,blockPct:20,ally:true,
+    d:"仲間ひとりに シールド 最大HPの 20%。守りに徹する"},
+   {id:"ak3",n:"カウンター",kind:"guard",mp:4,cd:3,blockPct:10,counter:0.4,ally:true,
+    d:"仲間ひとりに シールド 最大HPの 10%　受けたダメージの 40% を返す"},
    {id:"ak4",n:"渾 身",kind:"atk",mp:6,cd:4,suc:3,powMul:6.2,
     d:"当てにくいが 通れば重い（威力 ×6.2）"},
    {id:"ak5",n:"兜割り",kind:"atk",suc:1,mp:4,cd:3,powMul:1.3,ail:[{k:"break",v:10,t:2}],
@@ -4668,7 +4676,7 @@ function setParty(list){
 /* 職・種族・欲望を その者が持つようになったのは α0.0048 から。
    それより前の控えには入っていないので、読み込んだときに繕う。
    欠けたまま画面に出すと JOB[undefined].n で落ち、窓が更新されなくなる
-   （一味のタブが「押しても動かない」ように見えた）。 */
+   （パーティのタブが「押しても動かない」ように見えた）。 */
 function fixUnit(u){
   if(!u)return u;
   if(!JOB[u.job])u.job=sel.job;
@@ -4785,7 +4793,7 @@ function recalcMe(m,full){
    これまで depthMul は「その区画の何段目か」しか見ておらず、
    何区画目かを一切見ていなかった。だから後半が物足りなくなる。
    ボスに至っては常に等倍で、同じ区画の奥の雑魚より弱かった。 */
-/* ===== 一味が3人になったぶんの引き直し（α0.0052） =====
+/* ===== パーティが3人になったぶんの引き直し（α0.0052） =====
    味方が主人公ひとりだったころに比べ、合計HP が ×2.3、1ラウンドの与ダメが ×3 に
    なり、手応え（耐えられるラウンド ÷ 倒すのにかかるラウンド）が **4.6倍 楽**に
    なっていた。そのぶんを敵に返す。
@@ -4821,7 +4829,7 @@ function partyMul(){ return PARTYHP[wantParty()]||1; }
 function depthAt(tier){ return 1+((tier||1)-1)*0.34; }
 /* ===== 上限を Lv100 にしたぶんの 返し（α1.0.014） =====
    刻みを4倍に細かくしても **1レベルの伸び（GROW）は そのまま**にしたので、
-   同じ場所に立ったときの一味が 段ごとに 2〜5倍 強くなった。そのぶんを敵に返す。
+   同じ場所に立ったときのパーティが 段ごとに 2〜5倍 強くなった。そのぶんを敵に返す。
 
      段1 ×1.66　段2 ×2.22　段3 ×2.78　段4 ×3.04
 
@@ -5023,6 +5031,19 @@ function canTarget(f){
   return true;
 }
 
+/* ===== 味方に かける手（α1.0.039） =====
+   癒しも守りも 自分にしか掛けられなかった。**攻撃で相手を選ぶのと同じように、
+   味方を選んでかける。**選べるのは `ally:true` を持つ手だけ。
+   自分だけの手（獣化・纏う・休む・誓い）と 全体に及ぶ手は これまでどおり。 */
+function canAlly(u){
+  if(!pending||!pending.ally)return false;
+  return pending.rev ? u.HP<=0 : u.HP>0;      /* 蘇生は 倒れた者だけ */
+}
+/* 手が 味方を選ぶものかどうか。数値ではなく 手の側に書いてある */
+function allyOf(s){
+  if(!s||!s.ally)return null;
+  return (s.kind==="revive")?"down":"live";
+}
 /* ---------- 予告 ---------- */
 const AIDK=["buff","cheer","hex","veil"];
 /* 手の種類の見分け。行動の並びの決まり（chooseTele）で使う。
@@ -5284,8 +5305,11 @@ function unitCell(u,isMine,fig){
   fig=fig||40;
   const st=isMine?null:shownTele(u);
   const p=isMine?null:telePreview(u,st.t);
-  /* pending.self は「狙いを取らない手を 決める前」。相手は選ばせない（α1.0.027） */
-  const target=!isMine&&pending&&!pending.self&&canTarget(u);
+  /* pending.self は「狙いを取らない手を 決める前」。相手は選ばせない（α1.0.027）。
+     pending.ally は **味方を選ぶ手**。こちら側のマスが選べるようになる（α1.0.039） */
+  const target=pending&&!pending.self&&(isMine
+    ? (!!pending.ally&&canAlly(u))
+    : (!pending.ally&&canTarget(u)));
   const col=isMine?"#8fa261":"#b1544a";
   const acting=isMine&&u===cur&&!busy&&!over;
   return `<div class="cell ${u.HP<=0?"dead":""} ${target?"sel":""} ${acting?"acting":""}"
@@ -5298,7 +5322,8 @@ function unitCell(u,isMine,fig){
       <div class="bar mpb"><i style="width:${u.maxMP?u.MP/u.maxMP*100:0}%"></i></div>`:""}
     ${ailText(u)?`<div class="celrow">${ailText(u)}</div>`:""}
     ${isMine&&u.half?`<div class="cst">被弾 半減</div>`:""}
-    ${target&&u.HP>0?(()=>{const A=actor();
+    ${target&&isMine?`<div class="ctarget">${pending.rev?"起こす":"かける"}</div>`:""}
+    ${target&&!isMine&&u.HP>0?(()=>{const A=actor();
        return `<div class="ctarget">${
          threshold(A,u,pending&&pending.kind==="skill"&&A.sk[pending.i]
            ?{thr:A.sk[pending.i].thr||0,even:A.sk[pending.i].even}:{})}以上</div>`;})():""}
@@ -5435,7 +5460,21 @@ function drawDetail(){
    倒れた者も枠は残す。消すと生き残りが詰めて動き、盤面が縮んで
    行動一覧の位置が毎ターンずれる（押し間違える）。
    倒れた枠は unitCell が dead で灰色にし、canTarget が的から外す。 */
+/* ===== 演出のあいだは 盤を描き直さない（α1.0.039） =====
+   draw() は #board.innerHTML を作り直す。つまり **その瞬間に浮いている
+   ダメージの数字（.pop）も 当たりの光（.fx）も、踏み込みの transform も
+   まとめて消える**。攻撃の途中で draw() を呼んでいたので、
+   数字は出た端から消え、帯は transition が効かず パッと変わり、
+   「右に動いて 結果だけが急に出る」見え方になっていた。
+
+   ここでは 演出のあいだ draw() を **溜める**。
+   溜めているあいだの見た目は setHPBar / popOn / fxOn が受け持ち、
+   演出が終わったところで まとめて一度だけ描き直す。 */
+let drawHeld=0;
+function holdDraw(){ drawHeld++; }
+function freeDraw(){ if(drawHeld>0)drawHeld--; if(!drawHeld)draw(); }
 function draw(){
+  if(drawHeld)return;               /* 溜める。freeDraw が描き直す */
   const mine=party.slice(0,LINEMAX);
   const theirs=boardList(foes).slice(0,LINEMAX);
   /* 絵の大きさは 列が長いほど小さく。呼ばれた仲間で列が伸びても はみ出さない */
@@ -5484,7 +5523,7 @@ function bindCells(){
   });
 }
 function bindTargets(){
-  document.querySelectorAll(".cell.sel").forEach(el=>{
+  document.querySelectorAll("#board .cell.sel[data-id]").forEach(el=>{
     /* 狙いを合わせたら しきい値の帯を その相手のものに描き替える（α1.0.022）。
        遠さと速さの差は 相手ごとに違うので、選ぶ前に見えていないと意味がない */
     const f0=foes.find(x=>x.id===+el.dataset.id);
@@ -5500,6 +5539,16 @@ function bindTargets(){
       const p=pending;pending=null;$("#prompt").textContent="";
       if(p&&p.item)return doItem(p.item,f);
       resolvePlayer(p,f);};
+  });
+  /* 味方のマス。data-me は隊列の番号（pid）なので そこから引き当てる */
+  document.querySelectorAll("#board .cell.sel[data-me]").forEach(el=>{
+    el.onclick=()=>{
+      const pid=+el.dataset.me;
+      const u=party.find(x=>(x.pid||0)===pid);
+      if(!u)return;
+      const p=pending;pending=null;$("#prompt").textContent="";
+      resolvePlayer(p,u);
+    };
   });
 }
 
@@ -5960,6 +6009,13 @@ function blockValue(){
 }
 const GUARD_MP=4;
 
+/* 癒しの見込みを どの仲間で出すか。いちばん傷が深い者（蘇生なら倒れた者）。
+   掛け先を選べるようになったので、自分の数字だけ出すのはもう嘘になる（α1.0.039） */
+function healPreviewOf(A,rev){
+  const pool=rev?party.filter(u=>u.HP<=0)
+                :party.filter(u=>u.HP>0).sort((a,b)=>(a.HP/a.maxHP)-(b.HP/b.maxHP));
+  return pool[0]||A;
+}
 /* ---------- 行動一覧 ---------- */
 /* 狙える相手ぜんぶの命中閾値。ボタンを描く時点では相手が決まっていないので、
    幅があるときは「4〜5」のように範囲で出す。opt は技の補正（thr など）。 */
@@ -6032,7 +6088,7 @@ function drawActs(){
     }
     if(!dis)b.onclick=fn;host.appendChild(b);
   };
-  /* 誰の手番かを いちばん上に出す。一味が3人になったので、
+  /* 誰の手番かを いちばん上に出す。パーティが3人になったので、
      これが無いと どの者の技を選んでいるのか分からない */
   if(party.length>1){
     const who=document.createElement("div");
@@ -6187,7 +6243,7 @@ function drawActs(){
         const pk=C(hN,k)*Math.pow(p,k)*Math.pow(1-p,hN-k);
         e+=pk*healRate(k,sNeed)*xMulOf(Math.max(0,k-sNeed));
       }
-      const T=isRev?(party.find(u=>u.HP<=0)||A):A;
+      const T=healPreviewOf(A,isRev);
       return Math.round(T.maxHP*s.heal*e);
     })():0;
     /* 威力は powMul（倍率）と pow（足し算）の2つ。
@@ -6198,7 +6254,7 @@ function drawActs(){
       Math.round((pv+sAdd)*x*orgMul("outMul",A))-pvSh),
       Math.round(pvDef*(1-Math.min(1,(s.pen||0)/100))));
     add("sk"+(isHeal?" heal":""),s.n,sub,blocked,
-      ()=>{ if(s.kind==="atk"||s.kind==="declare")askTarget({kind:"skill",i},"sk"+i);
+      ()=>{ if(s.kind==="atk"||s.kind==="declare"||allyOf(s))askTarget({kind:"skill",i},"sk"+i);
             else askSelf({kind:"skill",i},"sk"+i); },
       infoHtml({
         name:(s.kind==="atk"||isHeal)?`${s.n} ${pips(sNeed,isHeal?hN:sDice)}`:s.n,
@@ -6210,7 +6266,7 @@ function drawActs(){
         dice:isHeal?hN:(s.kind==="atk"?sDice:0),
         thr:s.even?"偶数":sThr, ok:sOk,
         heal:(isHeal&&!noDown)?(()=>{
-          const T=isRev?(party.find(u=>u.HP<=0)||A):A;
+          const T=healPreviewOf(A,isRev);
           return [Math.round(T.maxHP*s.heal),
                   Math.round(T.maxHP*s.heal*xMulOf(1)),hAvg];
         })():null,
@@ -6242,6 +6298,9 @@ function drawActs(){
       ? `▸ ${ITEMS[pending.item].n} を投げる相手を選ぶ`
       : pending.self
       ? "▸ 「これで使う」で決める　（同じ手をもう一度押すと やめる）"
+      : pending.ally
+      ? (pending.rev?"▸ 起こす仲間を選ぶ　（同じ手をもう一度押すと やめる）"
+                    :"▸ かける仲間を選ぶ　（同じ手をもう一度押すと やめる）")
       : "▸ 狙う相手を選ぶ　（同じ手をもう一度押すと やめる）";
   }
   /* まだ何も触っていないときは いちばん上の手（通常攻撃）を出しておく。
@@ -6354,8 +6413,15 @@ function unpick(){ pending=null;draw();drawActs(); }
 function askTarget(a,key){
   const A=actor();   /* 手番の主。仲間が動いているときは その者 */
   const s=a.kind==="skill"?A.sk[a.i]:null;
-  if(s&&s.all){ return askSelf(a,key); }   /* 全体技も 相手を選ばない */
+  if(s&&s.all&&!allyOf(s)){ return askSelf(a,key); }   /* 全体技も 相手を選ばない */
   if(pending&&pending.pickKey===key)return unpick();
+  const al=allyOf(s);
+  if(al){
+    /* 味方に かける手。かけられる相手がいなければ 押しても何も起きない */
+    pending={...a,ally:true,rev:(al==="down"),pickKey:key};
+    if(!party.some(u=>canAlly(u))){ pending=null; return; }
+    draw();drawActs();return;
+  }
   pending=s?{...a,backOnly:s.backOnly,slower:s.slower,pickKey:key}
            :{...a,pickKey:key};
   /* 手は消さない。drawActs が 印と「やめる」まで面倒を見る（α1.0.026） */
@@ -6510,12 +6576,16 @@ function cellOf(u){
   return u.isFoe?document.querySelector(`.cell[data-id="${u.id}"]`)
                :document.querySelector(`.cell[data-me="${u.pid||0}"]`);
 }
+/* 踏み込む → **踏み込みきってから** 当たる → ゆっくり戻る。
+   前は 130ms 待った直後に戻していたので、出きる前に引き返していた。 */
 async function lungeUnit(u){
   const c=cellOf(u);if(!c)return;
   const p=c.querySelector(".por");if(!p)return;
   const dir=u.isFoe?-1:1;
-  p.style.transform=`translateX(${dir*16}px)`;
-  await wait(130);
+  p.style.transition="transform .12s ease-out";
+  p.style.transform=`translateX(${dir*20}px)`;
+  await wait(155);
+  p.style.transition="transform .26s ease-in";
   p.style.transform="translateX(0)";
 }
 function fxOn(u,kind){
@@ -6535,14 +6605,17 @@ function setHPBar(u,val){
   if(bar)bar.style.width=Math.max(0,val/u.maxHP*100)+"%";
   if(num)num.textContent=`${Math.max(0,Math.round(val))}/${u.maxHP}`;
 }
-function popOn(f,text,cls){
+/* ms を渡すと そのぶん遅れて浮く。攻撃の拍に合わせるために使う（α1.0.039） */
+function popOn(f,text,cls,ms){
+  if(ms){setTimeout(()=>popOn(f,text,cls),ms);return;}
   const el=cellOf(f);
   if(!el)return;
   const p=document.createElement("div");p.className="pop "+(cls||"");p.textContent=text;
   el.appendChild(p);
 
 }
-function popSelf(text,cls,u){
+function popSelf(text,cls,u,ms){
+  if(ms){setTimeout(()=>popSelf(text,cls,u),ms);return;}
   const el=cellOf(u||me);
   if(!el)return;
   const p=document.createElement("div");p.className="pop "+(cls||"");p.textContent=text;
@@ -6553,6 +6626,10 @@ function log(html,cls){
   $("#log").appendChild(d);$("#log").scrollTop=$("#log").scrollHeight;
 }
 
+/* ===== 攻撃の拍（α1.0.039） =====
+   踏み込み（lungeUnit 155ms）→ ① 当たりの光 → ② 数字 → ③ 帯が減る、の順。
+   数字は .pop が 550ms かけて浮いて消えるので、そのぶんまで待って締める。 */
+const BEAT={pop:140, bar:270, late:360, hold:730, wave:490};
 /* ---------- 攻撃の解決 ---------- */
 let killedThisAttack=false,sawSix=false;
 async function playerAttack(targets,opt){
@@ -6681,6 +6758,7 @@ async function playerAttack(targets,opt){
     }else waves.push(targets.slice());
   }
   if(HITS>1)log(`<span class="c">${opt.spread?"散らして":"重ねて"} ${HITS} 回</span>`);
+  holdDraw();                    /* ここから 演出。freeDraw が下で描き直す */
   for(const wave of waves){
    if(!wave.some(x=>x.HP>0))continue;
    /* 踏み込みと効果音は **波にひとつ**。的の数だけ鳴らさない */
@@ -6749,15 +6827,18 @@ async function playerAttack(targets,opt){
        仕組みと真逆なので落とした。**重さは 出る数字で見せる。**
        踏み込みと効果音は 波の頭で1回だけ鳴らしてある（α1.0.036）ので、
        ここは **その的に何が起きたか**だけを出す ── 全部の的で同時に出る。 */
-    fxOn(t,A.wep.snd);
-    setHPBar(t,endHP);
-    popOn(t,"−"+dmg,(over>0?"big ":"")+"each"+(em>1?" weakhit":em<1?" resisthit":""));
+    /* 三拍。的が何体いても 同じ拍で動くので、複数体でも同時に見える */
+    fxOn(t,A.wep.snd);                                     /* ① 当たった光 */
+    SFX.dmg();
+    const pcls=(over>0?"big ":"")+"each"+(em>1?" weakhit":em<1?" resisthit":"");
+    popOn(t,"−"+dmg,pcls,BEAT.pop);                        /* ② 数字が浮く */
+    setTimeout(()=>setHPBar(t,endHP),BEAT.bar);            /* ③ 帯が減る */
     t.HP=endHP;
     await checkPhase(t);       /* しきい値を切ったらボスが段階を上げる */
     const pin=passOn("pin",A);
     if(pin>0&&hits>=pin&&t.HP>0){
       ailAdd(t,"slow",8,2);
-      popOn(t,"鈍 足","blk");
+      popOn(t,"鈍 足","blk",BEAT.late);
       log(`　<span class="c">影縫い</span>　<span class="b">${t.name}</span> が 鈍足になった`);
     }
     if(opt.ail&&t.HP>0){
@@ -6765,24 +6846,25 @@ async function playerAttack(targets,opt){
       if(R.ok){
         opt.ail.forEach(a=>{
           ailAdd(t,a.k,a.v||0,a.t||2);
-          popOn(t,AIL[a.k].n,"blk");
+          popOn(t,AIL[a.k].n,"blk",BEAT.late);
         });
         log(`　<span class="c">効いた</span> <span class="s">1d6 ${R.v}／${R.thr}以上</span>　`+
           `<span class="b">${t.name}</span> に `+
           opt.ail.map(a=>`<span class="c">${AIL[a.k].n}</span>`).join("・"));
       }else{
-        popOn(t,"効かない","blk");
+        popOn(t,"効かない","blk",BEAT.late);
         log(`　<span class="s">1d6 ${R.v}／${R.thr}以上　効き目は乗らなかった</span>`);
       }
       draw();
     }
     if(em>1&&t.key){learnElem(t.key,"weak",atkEl);
-      fxOn(t,"charge");popOn(t,"弱 点","weakhit");}
+      setTimeout(()=>fxOn(t,"charge"),BEAT.late);
+      popOn(t,"弱 点","weakhit",BEAT.late);}
     else if(em<1&&t.key)learnElem(t.key,"resist",atkEl);
     if(opt.stun)t.stun=true;
     /* 数字は 一撃のところで もう出した（α1.0.021）。ここで出すと **同じ数字が2つ**
        浮いて「2回殴った」ように見える。音だけ鳴らす。 */
-    draw();SFX.dmg();
+    draw();
     log(`<span class="a">${A.name}</span> → <span class="b">${t.name}</span>　`+
       `${n}d6・${thr}以上 <span class="m">成功 ${hits}</span>／必要 ${need}　`+
       (over?`<span class="c">超過 ${over}（×${xMul.toFixed(2)}）</span>　`:"")+
@@ -6794,7 +6876,7 @@ async function playerAttack(targets,opt){
       `　→ <span class="m">${dmg}</span>`+(t.HP<=0?`　<span class="b">撃破</span>`:""));
     if(opt.charm&&t.HP>0){
       ailAdd(t,"charm",0,opt.charm);
-      popOn(t,"混 乱","blk");
+      popOn(t,"混 乱","blk",BEAT.late);
       log(`　<span class="c">魅 了</span>　<span class="b">${t.name}</span> は 誰が敵か 分からなくなった`);
       draw();
     }
@@ -6802,22 +6884,22 @@ async function playerAttack(targets,opt){
       const b=t.buffs.shift();
       const pct=Math.max(5,Math.round(b.v/Math.max(1,t.STR)*100));
       A.selfPow={v:pct,t:Math.max(1,b.t)};
-      popOn(t,"奪 取","weakhit");popSelf("+"+pct+"%","blk");
+      popOn(t,"奪 取","weakhit",BEAT.late);popSelf("+"+pct+"%","blk",null,BEAT.late);
       log(`　<span class="c">簒 奪</span>　<span class="b">${t.name}</span> の強化を奪った（威力 <span class="m">+${pct}%</span>）`);
       draw();
     }
     if(opt.lifeSteal&&dmg>0){
       const h=Math.min(Math.round(dmg*opt.lifeSteal),A.maxHP-A.HP);
-      if(h>0){A.HP+=h;popSelf("+"+h,"heal");
+      if(h>0){A.HP+=h;popSelf("+"+h,"heal",null,BEAT.late);
         log(`　<span class="c">捕 食</span>　HP <span class="m">+${h}</span>`);}
     }
     if(opt.devour&&t.HP>0&&t.HP<=t.maxHP*opt.devour&&!RUN.boss){
       log(`　<span class="c">丸 呑 み</span>　<span class="b">${t.name}</span> を 呑み込んだ`);
-      t.HP=0;fxOn(t,"blunt");popOn(t,"呑 込","weakhit");SFX.dmg();
+      t.HP=0;fxOn(t,"blunt");popOn(t,"呑 込","weakhit",BEAT.late);SFX.dmg();
     }
     if(opt.mpDrain&&dmg>0){
       const g=Math.min(Math.round(A.maxMP*opt.mpDrain),A.maxMP-A.MP);
-      if(g>0){A.MP+=g;popSelf("MP+"+g,"blk");
+      if(g>0){A.MP+=g;popSelf("MP+"+g,"blk",null,BEAT.late);
         log(`　<span class="c">魔力を吸い取った</span>　MP <span class="m">+${g}</span>`);}
     }
     if(opt.loot&&dmg>0){
@@ -6847,9 +6929,10 @@ async function playerAttack(targets,opt){
     }
     if(sixes>0)sawSix=true;
    }
-   await wait(waves.length>1?300:470);   /* 待つのも 波にひとつ */
+   /* 三拍ぶん（当たり → 数字 → 帯）と 数字が浮いて消えるまでを待つ */
+   await wait(waves.length>1?BEAT.wave:BEAT.hold);
   }
-  draw();
+  freeDraw();
 }
 
 /* ---------- プレイヤーの手番 ---------- */
@@ -6893,18 +6976,24 @@ async function resolvePlayer(a,target){
     }
   }else if(a.kind==="skill"){
     const s=A.sk[a.i];
+    /* 受ける者。味方にかける手（ally）なら 選んだ相手、そうでなければ自分。
+       MP と再使用は かけた側（A）が払う（α1.0.039） */
+    const RC=(s.ally&&target&&!target.isFoe)?target:A;
+    const toName=(RC===A)?"":` → <span class="a">${RC.name}</span>`;
     A.MP-=s.mp;s.cdLeft=s.cd;
-    log(`<span class="a">${A.name}</span> が <span class="c">${s.n}</span>（MP −${s.mp}）`);
+    log(`<span class="a">${A.name}</span> が <span class="c">${s.n}</span>（MP −${s.mp}）`+toName);
     if(s.kind==="guard"){
+      /* 盾の厚さは **かけた者の技**で決まる（受ける者の最大HPでは測らない）。
+         札に出ている数字と 実際に張られる数字を食い違わせないため。 */
       const amt=shieldAmount(A,s);
-      A.block+=amt;
+      RC.block+=amt;
       /* hold は「そのあと何ターン 毎ターン張り直すか」。
-         書かれていたのに どこからも A.holdDef に入れていなかったので、
+         書かれていたのに どこからも holdDef に入れていなかったので、
          鉄壁の「2ターンのあいだ」がずっと効いていなかった。 */
-      if(s.hold)A.holdDef={v:amt,t:s.hold};
-      if(s.counter)A.counter=s.counter;
-      draw();fxOn(A,"guard");popSelf("+"+amt,"blk");SFX.open();
-      if(s.counter)log(`<span class="a">${A.name}</span> は反撃の構えを取った（受けた分の ${
+      if(s.hold)RC.holdDef={v:amt,t:s.hold};
+      if(s.counter)RC.counter=s.counter;
+      draw();fxOn(RC,"guard");popSelf("+"+amt,"blk",RC);SFX.open();
+      if(s.counter)log(`<span class="a">${RC.name}</span> は反撃の構えを取った（受けた分の ${
         Math.round(s.counter*100)}% を返す）`);
       await wait(650);}
     else if(s.kind==="focus"&&s.goldPow){
@@ -6945,9 +7034,9 @@ async function resolvePlayer(a,target){
         (s.rest.pow?`威力 <span class="m">+${s.rest.pow}%</span>`:`攻撃ダイス <span class="m">+${s.rest.dice}</span>`));
       await wait(650);}
     else if(s.kind==="focus"){
-      A.focus={v:s.thr,t:s.dur||1};
-      draw();fxOn(A,"charge");popSelf("集 中","blk");SFX.buff();
-      log(`<span class="a">${A.name}</span> は狙いを定めた（命中閾値 −${s.thr}　${(s.dur||1)+1}ターン）`);
+      RC.focus={v:s.thr,t:s.dur||1};
+      draw();fxOn(RC,"charge");popSelf("集 中","blk",RC);SFX.buff();
+      log(`<span class="a">${RC.name}</span> は狙いを定めた（命中閾値 −${s.thr}　${(s.dur||1)+1}ターン）`);
       await wait(650);}
     else if(s.kind==="declare"){
       /* 討つ相手を告げる。前は declare の枝が無く、下の攻撃に落ちていたので
@@ -6960,16 +7049,16 @@ async function resolvePlayer(a,target){
         (g?`　MP <span class="m">+${g}</span>`:"")+
         `　次のターンは この相手しか狙えないが 威力 <span class="m">×${(s.powMul||2).toFixed(1)}</span>`);
       await wait(700);}
-    else if(s.kind==="buff"){A.half=true;draw();fxOn(A,"charge");popSelf("半減","blk");SFX.buff();await wait(650);}
+    else if(s.kind==="buff"){RC.half=true;draw();fxOn(RC,"charge");popSelf("半減","blk",RC);SFX.buff();await wait(650);}
     else if(s.kind==="cure"){
-      const one=(A.ail||[]).slice().sort((a,b)=>b.t-a.t)[0];
+      const one=(RC.ail||[]).slice().sort((a,b)=>b.t-a.t)[0];
       if(one){
-        A.ail=A.ail.filter(a=>a!==one);draw();fxOn(A,"charge");
-        popSelf(AIL[one.k].n,"blk");SFX.found();
-        log(`<span class="a">${A.name}</span> は息を整えた　<span class="m">${AIL[one.k].n}</span> が解けた`);
+        RC.ail=RC.ail.filter(a=>a!==one);draw();fxOn(RC,"charge");
+        popSelf(AIL[one.k].n,"blk",RC);SFX.found();
+        log(`<span class="a">${RC.name}</span> の <span class="m">${AIL[one.k].n}</span> が解けた`);
       }else{
-        draw();popSelf("変化なし","blk");
-        log(`<span class="a">${A.name}</span> は息を整えた　解くべきものはなかった`);
+        draw();popSelf("変化なし","blk",RC);
+        log(`<span class="a">${RC.name}</span> に 解くべきものはなかった`);
       }
       await wait(650);
     }
@@ -6982,13 +7071,16 @@ async function resolvePlayer(a,target){
          蘇生（α1.0.031）も同じ振り方。**倒れた仲間を自分で拾う**ので
          相手は選ばない ── 倒れている者がいなければ 札が押せない。 */
       const rev=(s.kind==="revive");
-      const T=rev?(party.find(u=>u.HP<=0)||null):A;
+      /* 選んだ相手へ。選ばずに来たとき（仲間の自動行動など）は これまでどおり
+         倒れている者を自分で拾う／自分にかける */
+      const T=(s.ally&&target&&!target.isFoe)?target
+             :rev?(party.find(u=>u.HP<=0)||null):A;
       if(rev&&!T){ log(`<span class="s">倒れている仲間がいない</span>`);await wait(300); }
       else{
       const R=await healRoll(A,s,rev?"蘇 ら せ る":"癒 や す",T);
       const full=Math.round(T.maxHP*s.heal);
       const h=Math.min(Math.round(full*R.rate*R.mul),T.maxHP-Math.max(0,T.HP));
-      const pop=(t,c)=>{ if(T===A)popSelf(t,c); else popOn(T,t,c); };
+      const pop=(t,c)=>popSelf(t,c,T);
       if(h>0){
         T.HP=Math.max(0,T.HP)+h;
         draw();fxOn(T,"charge");pop("+"+h,"heal");SFX.found();
@@ -7156,6 +7248,9 @@ function buildQueue(){
 }
 async function runQueue(){
   while(qi<queue.length){
+    /* 演出の途中で抜ける道があっても 盤が止まったままにならないよう、
+       手番の頭で 溜めを必ず落とす（α1.0.039） */
+    if(drawHeld){drawHeld=0;draw();}
     const u=queue[qi];
     if(u.HP<=0){qi++;continue;}
     if(!u.isFoe){
@@ -7282,6 +7377,7 @@ async function enemyAct(f){
        判定はひと振りきり ── 空振りなら 1回も入らない。 */
     const FHITS=Math.max(1,t.hits||1);
     if(FHITS>1)log(`<span class="c">重ねて ${FHITS} 回</span>`);
+    holdDraw();                    /* ここから 演出。下の freeDraw で描き直す */
     let fDealt=0;
     /* あとのログが読む値。ループの中で宣言すると外から見えない */
     let halved=false, soaked=0, shLeft=0, mdef=0, raw=0;
@@ -7318,10 +7414,12 @@ async function enemyAct(f){
          **重さは 出る数字で見せる。** */
       await lungeUnit(f);
       SFX.atk(f.snd);
-      fxOn(tg,f.snd);
-      setHPBar(tg,endHP);
-      await wait(FHITS>1?110:170);
-      popSelf("−"+dmg,(fover>0?"big ":"")+"each");
+      fxOn(tg,f.snd);                                        /* ① 当たった光 */
+      SFX.dmg();
+      const fcls=(fover>0?"big ":"")+"each";
+      popSelf("−"+dmg,fcls,tg,BEAT.pop);                     /* ② 数字が浮く */
+      setTimeout(()=>setHPBar(tg,endHP),BEAT.bar);           /* ③ 帯が減る */
+      await wait(FHITS>1?BEAT.wave:BEAT.bar+110);
     }
     tg.HP=endHP;
     fDealt+=Math.max(0,startHP-endHP);
@@ -7349,8 +7447,7 @@ async function enemyAct(f){
         await wait(380);
       }
     }
-    draw();
-    if(hits){SFX.dmg();}   /* 数字は 一撃のところで出している（α1.0.021） */
+    draw();   /* 溜めているので すぐには描き直らない。音と数字は上で出した */
     /* 反撃は シールドで消したぶんも含めて返す。
        受け止めた一撃こそ返したいので、HP が減った量ではなく 来た量で測る。 */
     if(tg.counter&&raw>0&&f.HP>0){
@@ -7358,8 +7455,8 @@ async function enemyAct(f){
       f.HP=Math.max(0,f.HP-back);
       fxOn(f,"slash");popOn(f,"−"+back,"each");SFX.dmg();
       log(`　<span class="a">反撃</span>　<span class="b">${f.name}</span> に <span class="m">${back}</span>`);
-      draw();await wait(360);
-      if(f.HP<=0)draw();
+      setTimeout(()=>setHPBar(f,f.HP),BEAT.bar);
+      await wait(BEAT.hold-160);
     }
     log(`<span class="b">${f.name}</span> → <span class="a">${tg.name}</span>　`+
       `${nd}d6・${thr}以上 <span class="m">成功 ${hits}</span>／必要 ${fneed}　`+
@@ -7369,7 +7466,8 @@ async function enemyAct(f){
       (soaked?`　<span class="c">シールド −${soaked}</span>${shLeft?`<span class="s">（残り ${shLeft}）</span>`:""}`:"")+
       (mdef?`　<span class="s">（VIT −${mdef}）</span>`:"")+
       `　→ <span class="m">${dmg}</span>`);
-    await wait(430);
+    freeDraw();
+    await wait(300);
   }else if(t.k==="guard"){
     /* 守りの手は 2 種類ある。
          block / blockPct … シールド（受けたぶんを肩代わりして減る。次の手番で消える）
@@ -7693,7 +7791,7 @@ function metaClear(){
    RUN.cur は RUN.M.node の中身を指しているだけなので控えない。
    読み戻すときに curKey から繋ぎ直す。
    RUN.preview・RUN.lootLines はその場かぎりのものなので落とす。 */
-/* 控えの形。α1 で「1周ぶんの潜行」から「一味そのもの」に変わったので上げた。
+/* 控えの形。α1 で「1周ぶんの潜行」から「パーティそのもの」に変わったので上げた。
    v1（ローグライクの潜行）は読まない。 */
 /* ===== 記録は3つ（α1.0.006） =====
    鍵は dd.run.0 / .1 / .2。図鑑と潜行の記録（META）は どの記録でも共通。
@@ -7713,7 +7811,7 @@ let runBroken=false;
 function runNewId(){
   return Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 }
-/* 控えるのは **一味そのもの**。潜行中なら そのぶんも一緒に控える。
+/* 控えるのは **パーティそのもの**。潜行中なら そのぶんも一緒に控える。
    町にいるときは run が null になる。 */
 function runSnapshot(){
   if(!me)return null;
@@ -7751,7 +7849,7 @@ function runLoad(r){
   if(!r||r.v!==RVER||!r.me||!r.sel)return null;
   if(!JOB[r.sel.job]||!RACE[r.sel.race]||!ORIG[r.sel.orig])return null;
   /* 潜行中の控えなら、地図が いまの表で通るかまで見る。
-     通らないときは 地図だけ捨てて 町にいることにする（一味は失わない）。 */
+     通らないときは 地図だけ捨てて 町にいることにする（パーティは失わない）。 */
   if(r.run){
     const N=(r.run.M&&r.run.M.node)||{};
     const ok=AREAS[r.run.area]&&Object.keys(N).length
@@ -8772,7 +8870,7 @@ function price(base){
 /* ===== 町と潜行（α1） =====
    ローグライクをやめ、町と持ち帰りにした（IDEAS §16）。
 
-     町      … 一味と持ち物が置いてある場所。ここから何度でも潜る
+     町      … パーティと持ち物が置いてある場所。ここから何度でも潜る
      潜行    … 区画に降りて、拾って、帰ってくるまで
      全滅    … 町へ戻される。**その潜行で拾ったものを失う**
 
@@ -9795,7 +9893,7 @@ function enterNode(nd){
       resultModal(nd.name,out.concat([
         `<span class="loss">${down.map(u=>u.name).join("・")}</span> が倒れたままだ`,
         `<span class="s">火は一度きり。休むか、起こすか。</span>`]),
-        [{n:`休 む（一味の HP ${Math.round(45*rh)}%・MP ${Math.round(60*rh)}%）`,
+        [{n:`休 む（パーティの HP ${Math.round(45*rh)}%・MP ${Math.round(60*rh)}%）`,
           cb:()=>{restAtFire(nd,[],0.45*rh,0.6*rh);}},
          {n:`起 こ す（${down.map(u=>u.short).join("・")}　HP ${Math.round(REVIVEPCT*100)}%）`,
           cb:()=>{
@@ -9824,7 +9922,7 @@ function enterNode(nd){
 }
 /* 焚き火で倒れた者を起こしたときに戻る HP と MP の割合。仮の値 */
 const REVIVEPCT=0.30;
-/* 火にあたって休む。一味ぜんぶが回復する */
+/* 火にあたって休む。パーティぜんぶが回復する */
 function restAtFire(nd,out,hp,mp){
   const said=[];
   party.forEach(u=>{
@@ -10425,7 +10523,7 @@ function swapWhy(){
     ? "戦いのあいだは 入れ替えられない"
     : "入れ替えられるのは <b>町</b>と、潜行中なら <b>焚き火のそば</b>だけ";
 }
-/* 一味と控えに 同じ職が並ぶと 見分けがつかない。かぶったときだけ
+/* パーティと控えに 同じ職が並ぶと 見分けがつかない。かぶったときだけ
    種族まで（＝name）出し、それでもかぶるなら 番号を足す。
    名前そのものは まだ決めていない（決まったら ここは要らなくなる）。 */
 const RNUM="①②③④⑤⑥⑦⑧⑨";
@@ -10436,14 +10534,14 @@ function rosterName(u){
   if(same.length<=1)return u.name;
   return u.name+(RNUM[same.indexOf(u)]||"");
 }
-/* 一味のうち いま見ている者。盤面や行動順から開いたときは その者になる */
+/* パーティのうち いま見ている者。盤面や行動順から開いたときは その者になる */
 let chWho=0;
 function charModal(back,U){
   if(typeof back!=="function")back=null;   /* onclick から出来事が来ることがある */
   if(U)chWho=Math.max(0,party.indexOf(U));
   if(chWho>=party.length)chWho=0;
   U=party[chWho]||me;
-  /* 装備と持ち物は 一味の共有物で、持っているのは主人公。
+  /* 装備と持ち物は パーティの共有物で、持っているのは主人公。
      仲間の欄では その2つを出さない（付け替えは 次の段でできるようにする）。 */
   const tabs=(U===me)?CHTABS:CHTABS.filter(t=>t.k==="st"||t.k==="sk");
   if(!tabs.some(t=>t.k===chNow))chNow=tabs[0].k;
@@ -10484,7 +10582,7 @@ function charModal(back,U){
     if(bench.length||party.length<PARTYMAX){
       h+=`<div class="msec">控 え</div>`;
       if(!bench.length)h+=`<div class="mitem" style="color:#4d5346">控えは いない</div>`;
-      /* 一味がいっぱいなら「誰と入れ替えるか」が要る。主人公とは入れ替えられないので、
+      /* パーティがいっぱいなら「誰と入れ替えるか」が要る。主人公とは入れ替えられないので、
          主人公を見ているあいだは押せない札にして、そのわけを添える。
          （黙って効かない札だった。α1.0.007 で直した） */
       const full=party.length>=PARTYMAX, noSwap=full&&U===me;
@@ -10494,7 +10592,7 @@ function charModal(back,U){
           <span class="eqv">Lv ${u.lv}　HP ${u.HP}/${u.maxHP}　技${u.sk.length} 特${u.pass.length}
             <button class="minib" style="margin:0 0 0 8px" data-in="${j}"${
               noSwap?" disabled":""}>${
-              full?(noSwap?"入れ替える":rosterName(U)+" と 入れ替える"):"一味に入れる"}</button>
+              full?(noSwap?"入れ替える":rosterName(U)+" と 入れ替える"):"パーティに入れる"}</button>
           </span></div>`;
       });
       if(noSwap&&bench.length)
@@ -10754,7 +10852,7 @@ function accPickModal(g,i){
 }
 /* 覚えたものを忘れさせる窓（swapModal / gearSwapModal）は α1.0.038 で無くした。
    枠に入らないぶんは 控え・予備へ回るので、捨てさせる必要が無くなった。
-   入れ替えは「一味を見る」から、町と焚き火のそばで。 */
+   入れ替えは「パーティを見る」から、町と焚き火のそばで。 */
 function growUp(u){
   u=u||me;
   const g=GROW[u.job]||GROW[sel.job];
@@ -10768,7 +10866,7 @@ function growUp(u){
    主人公の隣に立つ者。育てるのは主人公だけで、仲間は主人公に追従する。
 
      ・レベルは主人公と同じ（syncMates が追いつかせる）
-     ・経験・金貨・道具・素材は 主人公ひとりが持つ（一味の共有物）
+     ・経験・金貨・道具・素材は 主人公ひとりが持つ（パーティの共有物）
      ・技（スキル）と特（パッシブ）は 職と種族のプールから選んで持つ
      ・欲望は持たない（欲望は主人公ひとりのもの）。orig:null
 
@@ -10842,7 +10940,7 @@ function mateLearn(m,cat,r){
 /* ===== 雇 用（α1.0.007・段C） =====
    ひとりで始まり、町で仲間を雇う。
 
-     ・一味に入れられるのは **3人まで**（主人公を含む）
+     ・パーティに入れられるのは **3人まで**（主人公を含む）
      ・雇った者は 何人でも控えに置ける
      ・**1人目は無料。**そのあとは金貨がいる（HIRE1・HIREUP は仮の値）
      ・雇える顔ぶれは 町に来ている者。雇うまで変わらない
@@ -10850,7 +10948,7 @@ function mateLearn(m,cat,r){
    仲間の育ち方は 主人公と同じ（レベルは追従、技と特は選ぶ）。 */
 const PARTYMAX=3;
 const HIRE1=150, HIREUP=150;          /* 2人目 150、以降 +150。仮の値 */
-let bench=[];                          /* 雇ったが 一味に入っていない者 */
+let bench=[];                          /* 雇ったが パーティに入っていない者 */
 let hireOffer=null;                    /* 町に来ている 雇える者たち */
 function hiredCount(){ return (party.length-1)+bench.length; }
 function hireCost(){ const n=hiredCount(); return n===0?0:HIRE1+(n-1)*HIREUP; }
@@ -10867,7 +10965,7 @@ function rollHire(){
   hireOffer=pick;
   return pick;
 }
-/* 一味に入れる。いっぱいなら控えへ */
+/* パーティに入れる。いっぱいなら控えへ */
 function takeMate(m){
   syncOne(m);
   if(party.length<PARTYMAX){
@@ -11311,18 +11409,18 @@ async function doItem(k,tgt){
    索敵だけ別の振り方が残っていて、**同じ「探索」という数字が
    2通りに読まれていた。**戦いと同じ振り方に揃えた。
 
-     こちら … 一味でいちばん探索の高い者の ダイス。4以上が成功
+     こちら … パーティでいちばん探索の高い者の ダイス。4以上が成功
      相手  … いちばん勘のいい一匹の 気配（scoutHide）を ダイスに直す
      成功の数の差が そのまま 最初の攻撃の攻撃ダイスになる（最大 +3）
 
-   **一味でいちばん勘のいい者が気づく。**敵の側も同じ決めごとで
+   **パーティでいちばん勘のいい者が気づく。**敵の側も同じ決めごとで
    「いちばん勘のいい一匹が群れを代表して気づく」ようにしてある ── 揃えた。
    （前は必ず主人公の探索だけを見ていたので、スカウトの仲間を連れても
      先制には何も足さなかった） */
 const SCOUTTHR=4;                    /* 索敵の成功しきい値。戦いと同じ */
 /* 気配（0〜100 前後）を ダイスの数に直す。技能と同じ刻み */
 function hideDice(v){ return Math.max(1,Math.min(SKDIEMAX,1+Math.floor(Math.max(0,v)/SKDIESTEP))); }
-/* 一味でいちばん探索の高い者 */
+/* パーティでいちばん探索の高い者 */
 function bestScout(){
   const l=party.filter(u=>u.HP>0);
   const ls=l.length?l:party;
@@ -11380,7 +11478,7 @@ async function doScout(){
     return hits;
   };
 
-  const a=await side("scMine",eye.name+(party.length>1?"（一味でいちばん勘がいい）":""),
+  const a=await side("scMine",eye.name+(party.length>1?"（パーティでいちばん勘がいい）":""),
     myDice,"mine");
   const b=await side("scFoe",lead.name+(foes.length>1?` ほか ${foes.length-1}`:""),
     foeDice,"foe");
@@ -11754,7 +11852,7 @@ function drawMakeConfirm(){
       <button class="go2" id="mkNext">こ の 者 で 始 め る</button>
     </div>`;
   $("#mkRe").onclick=()=>{mkStep=0;drawMake();window.scrollTo(0,0);};
-  /* ここで一味ができて 町へ出る。sel.area は「いま見ている区画」でしかないので、
+  /* ここでパーティができて 町へ出る。sel.area は「いま見ている区画」でしかないので、
      はじめの区画を入れておく（潜るたびに dive() が書き換える）。 */
   $("#mkNext").onclick=()=>{sel.area=startArea();SFX.pick();newGame();};
 }
@@ -11795,7 +11893,7 @@ function townScreen(why,before){
     L.push(`引き返して 戻った`);
     L.push(`持ち帰ったものは すべて残る`);
   }else if(why==="wipe"){
-    L.push(`<span class="loss">一味は倒れ、気づけば町にいた</span>`);
+    L.push(`<span class="loss">パーティは倒れ、気づけば町にいた</span>`);
     const d=[];
     if(before){
       const dg=before.gold-me.gold;
@@ -11839,7 +11937,7 @@ function drawHome(){
     `<span>抜けた区画 <b>${cleared}</b></span>`+
     `<span>最も深く <b>${META.best}</b> 階層</span>`+
     `<span>図鑑 <b>${c.got}</b>/${c.all}　<b>${c.pct}%</b></span>`;
-  /* 一味の顔ぶれ。押すと その者の詳細 */
+  /* パーティの顔ぶれ。押すと その者の詳細 */
   $("#townParty").innerHTML=started
     ? party.map((u,i)=>`<button class="tpc" data-tp="${i}">
         ${meFig(30,u)}
@@ -11898,7 +11996,7 @@ function drawSlots(){
       <span class="sln">記 録 ${i+1}</span>
       <span class="slt">${o?`${pixFig(o.job,o.race,26)} ${o.name}`:"— 空き —"}</span>
       <span class="sld">${o
-        ?`Lv <b>${o.lv}</b>　一味 <b>${o.party}</b>人　金貨 <b>${o.gold}</b>　${o.where}　<span style="color:#4d5346">${o.ago}</span>`
+        ?`Lv <b>${o.lv}</b>　パーティ <b>${o.party}</b>人　金貨 <b>${o.gold}</b>　${o.where}　<span style="color:#4d5346">${o.ago}</span>`
         :"押すと 新しく始める"}</span>
     </button>`;
     if(o)h+=`<button class="slotdel" data-del="${i}">この記録を消す</button>`;
@@ -12087,7 +12185,7 @@ function cxBody(){
 }
 
 $("#hGo").onclick=()=>{
-  /* まだ一味がいなければ キャラを作るところから。いれば 行き先を選んで潜る */
+  /* まだパーティがいなければ キャラを作るところから。いれば 行き先を選んで潜る */
   if(!me){
     newChar();mkStep=0;drawMake();showScreen("make");window.scrollTo(0,0);return;
   }
@@ -12131,7 +12229,7 @@ function diveModal(){
   $("#dvX").onclick=closeModal;
 }
 /* ===== 宿（α1.0.018） =====
-   町で 一味の HP と MP を全快させる場所。**傷のぶんだけ払う。**
+   町で パーティの HP と MP を全快させる場所。**傷のぶんだけ払う。**
 
    値づけの目安は 道具から取った。フルポーション（ひとり全快）は 88金貨で、
    段1のナイトの最大HP 383 に対して **1 HP あたり 0.23 金貨**。
@@ -12139,7 +12237,7 @@ function diveModal(){
    MP も同じ考えで マナポーション（12 MP／30金貨 ＝ 2.5）の3分の1。
 
    1潜行の実入りは 段1で 300金貨ほど。ひとりの全快が 50金貨前後、
-   3人の一味を段4で全快させて 450金貨ほど ── **痛いが払える**あたり。
+   3人のパーティを段4で全快させて 450金貨ほど ── **痛いが払える**あたり。
 
    〔決めごと〕強欲の `restHalf`（休息の効きは半分）は **宿には効かない。**
    あれは野で火にあたる話で、宿は金を払って買う手当て。
@@ -12155,7 +12253,7 @@ function innCost(){
 function innModal(){
   const c=innCost();
   if(c.hp+c.mp<=0){
-    resultModal("宿",[ "一味に 傷は無い",
+    resultModal("宿",[ "パーティに 傷は無い",
       `<span class="s">泊まる用はない。金貨は取っておこう</span>`],[{n:"閉じる"}]);
     return;
   }
@@ -12186,7 +12284,7 @@ function innModal(){
     party.forEach(u=>{u.HP=u.maxHP;u.MP=u.maxMP;});
     SFX.found();runSave();closeModal();
     resultModal("ひ と 晩 が 明 け た",
-      [`<span class="gain">一味は すっかり癒えた</span>`,
+      [`<span class="gain">パーティは すっかり癒えた</span>`,
        `<span class="s">代金 ${c.gold} 金貨　残り ${me.gold}</span>`],
       [{n:"確 認",cb:()=>drawHome()}]);
     drawHome();
@@ -12199,11 +12297,11 @@ function hireModal(){
   let h=`<div class="mtitle">仲 間 を 雇 う</div>
     <div class="mgrow">${cost?`ひとり <b style="color:#c9a227">${cost}</b> 金貨`
       :`<b style="color:#8fa261">はじめの ひとりは ただ</b>`}　
-      <span class="s">所持 ${me.gold}　一味 ${party.length}/${PARTYMAX}人`+
+      <span class="s">所持 ${me.gold}　パーティ ${party.length}/${PARTYMAX}人`+
       (bench.length?`　控え ${bench.length}人`:"")+`</span></div>
     <div class="msub">${full
-      ?"一味はいっぱい。雇った者は 控えに入る"
-      :"雇うと そのまま一味に加わる"}</div><div class="acts">`;
+      ?"パーティはいっぱい。雇った者は 控えに入る"
+      :"雇うと そのままパーティに加わる"}</div><div class="acts">`;
   hireOffer.forEach((m,i)=>{
     h+=`<button class="act rew cskill" data-h="${i}" ${me.gold<cost?"disabled":""}>
       <span class="rcat">${JOB[m.job].n}</span>
@@ -12227,9 +12325,9 @@ function hireModal(){
       /* 雇ったばかりの者に 覚えるものを選ばせる */
       mateLearnQueue(()=>{drawHome();
         resultModal("仲 間 が 加 わ っ た",
-          [`<span class="gain">${m.name}</span> が一味に加わった`,
-           party.includes(m)?`一味 ${party.map(u=>u.short).join(" ▸ ")}`
-                            :`控えに入った　<span class="s">一味は ${PARTYMAX}人まで</span>`],
+          [`<span class="gain">${m.name}</span> がパーティに加わった`,
+           party.includes(m)?`パーティ ${party.map(u=>u.short).join(" ▸ ")}`
+                            :`控えに入った　<span class="s">パーティは ${PARTYMAX}人まで</span>`],
           [{n:"よろしく"}]);});
     };});
   $("#hrX").onclick=closeModal;
@@ -12279,7 +12377,7 @@ $("#slBack").onclick=goTitle;
 $("#hallBack").onclick=()=>{ if(slot===null)goTitle(); else goHome(); };
 $("#mkBack").onclick=()=>{ drawSlots();showScreen("slots");window.scrollTo(0,0); };
 $("#cxBack").onclick=()=>{ if(slot===null)goTitle(); else goHome(); };
-/* 起動。**まず表題。**記録を選ぶまで 一味は居ない。
+/* 起動。**まず表題。**記録を選ぶまで パーティは居ない。
    α1.0.005 までの控え（dd.run）は 1つ目の枠へ移す。 */
 slotMigrate();
 goTitle();

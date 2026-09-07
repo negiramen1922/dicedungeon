@@ -1,6 +1,6 @@
 /* 手応えの物差し。**敵は本物の makeFoes で組む**ので、倍率を変えれば必ず反映される。
-   耐えるT = 一味の合計HP ÷ 敵1ラウンドの与ダメ
-   倒すT   = 敵の合計HP  ÷ 一味1ラウンドの与ダメ（遠さの +1/+2 込み）
+   耐えるT = パーティの合計HP ÷ 敵1ラウンドの与ダメ
+   倒すT   = 敵の合計HP  ÷ パーティ1ラウンドの与ダメ（遠さの +1/+2 込み）
    余裕    = 耐えるT ÷ 倒すT （1.0 で拮抗）
    引数 solo … 味方1人（昔の形）で測る
    引数 grow … 技能の点を「得物で使う技能」に全部注いだ形で測る（上振れのほう）。
@@ -24,10 +24,10 @@ const out=await pg.evaluate(({solo,raw,grow})=>{
     if(A.wip)return;
     sel.job="knight";sel.race="hume";sel.orig="greed";sel.area=ak;
     newGame();dive(ak);
-    /* **その場所が前提にしている人数**まで一味を組む。
+    /* **その場所が前提にしている人数**までパーティを組む。
        α1 は ひとりで始まって町で雇う形になったので `newGame()` は
        `setParty([me])` を呼ぶ。ここを直さないまま
-       「一味3人・横一列」と見出しに書いていた（α1.0.016 で直した）。
+       「パーティ3人・横一列」と見出しに書いていた（α1.0.016 で直した）。
        敵の丈夫さは `PARTYHP` が前提の人数で割ってあるので、
        ひとりで測ると 段2以降が必ず「勝てない」と出る ── それは設計どおり。 */
     RUN.cur={r:8};
@@ -98,7 +98,7 @@ const GN={norm:"普通",hard:"重い",elite:"精鋭"};
 let all=[];
 console.log((solo?"味方1人（昔の形）":"その場所が前提にしている人数で組む")+(raw?"／敵は昔のまま":""));
 for(const a of out){
-  console.log(`\n══ ${a.n}  Lv${a.lv}　一味の合計HP ${a.ourHP}`);
+  console.log(`\n══ ${a.n}  Lv${a.lv}　パーティの合計HP ${a.ourHP}`);
   for(const g of ["norm","hard","elite"]){
     const rows=a.g[g]; if(!rows)continue;
     const e=rows.map(r=>r.ease); all=all.concat(e);

@@ -56,7 +56,7 @@ await pg.evaluate(()=>{closeModal();me.gold=9999;
 await pg.waitForTimeout(400);
 r.push(await pg.evaluate(()=>["控えは町でただで癒える",
   bench[0].HP===bench[0].maxHP&&bench[0].MP===bench[0].maxMP,true]));
-r.push(await pg.evaluate(()=>["宿代は 一味のぶんだけ",
+r.push(await pg.evaluate(()=>["宿代は パーティのぶんだけ",
   innCost().hp,party.reduce((a,u)=>a+(u.maxHP-Math.max(0,u.HP)),0)]));
 /* 傲慢は半額 */
 await pg.evaluate(()=>closeModal());

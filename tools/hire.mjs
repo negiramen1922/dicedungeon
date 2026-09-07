@@ -59,12 +59,12 @@ for(let n=1;n<=5;n++){
   await tap('#mbox [data-h]');
   await drain(12);
   const s=await st();
-  log.push(`${n}人目 札「${t}」候補${cand}人 → 一味 ${s.p.join("/")}　控え ${s.b.join("/")}　払った ${g0-s.g}`);
+  log.push(`${n}人目 札「${t}」候補${cand}人 → パーティ ${s.p.join("/")}　控え ${s.b.join("/")}　払った ${g0-s.g}`);
 }
-/* 一味の窓で 入れ替え */
+/* パーティの窓で 入れ替え */
 await tap("#hChar");
 await pg.waitForTimeout(300);
-log.push(`一味の窓 → ${await scr()}　主人公を見ているとき 入れる札 ${
+log.push(`パーティの窓 → ${await scr()}　主人公を見ているとき 入れる札 ${
   await pg.evaluate(()=>document.querySelectorAll('#mbox [data-in]').length)}（うち押せる ${
   await pg.evaluate(()=>[...document.querySelectorAll('#mbox [data-in]')].filter(b=>!b.disabled).length)}）　外す札 ${
   await pg.evaluate(()=>document.querySelectorAll('#mbox [data-out]').length)}`);
@@ -79,8 +79,8 @@ log.push(`2人目を選んだ → 入れる札のうち押せる ${
 let s0=await st();
 await tap('#mbox [data-in]'); await pg.waitForTimeout(350);
 let s1=await st();
-log.push(`入れ替え → 一味 ${s1.p.join("/")}　控え ${s1.b.join("/")}（前 一味 ${s0.p.join("/")}／控え ${s0.b.join("/")}）`);
-log.push(`　人数 一味${s1.p.length}人 控え${s1.b.length}人　総数 ${s1.p.length+s1.b.length}（前 ${s0.p.length+s0.b.length}）${s1.p.length+s1.b.length===s0.p.length+s0.b.length?" ✓":" ✗ 人が消えた/増えた"}`);
+log.push(`入れ替え → パーティ ${s1.p.join("/")}　控え ${s1.b.join("/")}（前 パーティ ${s0.p.join("/")}／控え ${s0.b.join("/")}）`);
+log.push(`　人数 パーティ${s1.p.length}人 控え${s1.b.length}人　総数 ${s1.p.length+s1.b.length}（前 ${s0.p.length+s0.b.length}）${s1.p.length+s1.b.length===s0.p.length+s0.b.length?" ✓":" ✗ 人が消えた/増えた"}`);
 /* 控えへ外す */
 const who2=await pg.$$('#mbox [data-who]');
 if(who2[1])await who2[1].click({force:true});
@@ -88,12 +88,12 @@ await pg.waitForTimeout(250);
 s0=await st();
 await tap('#mbox [data-out]'); await pg.waitForTimeout(350);
 s1=await st();
-log.push(`控えへ → 一味 ${s1.p.join("/")}　控え ${s1.b.join("/")}（前 ${s0.p.join("/")}）${s1.p.length===s0.p.length-1?" ✓":" ✗"}`);
-/* 空いたので「一味に入れる」になるはず */
+log.push(`控えへ → パーティ ${s1.p.join("/")}　控え ${s1.b.join("/")}（前 ${s0.p.join("/")}）${s1.p.length===s0.p.length-1?" ✓":" ✗"}`);
+/* 空いたので「パーティに入れる」になるはず */
 log.push(`空きあり → 札の字「${await pg.evaluate(()=>{const b=document.querySelector('#mbox [data-in]');return b?b.textContent.trim():"なし";})}」`);
 await tap('#mbox [data-in]'); await pg.waitForTimeout(350);
 s1=await st();
-log.push(`入れた → 一味 ${s1.p.join("/")}　控え ${s1.b.join("/")}`);
+log.push(`入れた → パーティ ${s1.p.join("/")}　控え ${s1.b.join("/")}`);
 await tap('#mClose');
 /* 保存と読み直し */
 await pg.evaluate(()=>runSave());
@@ -104,7 +104,7 @@ await tap("#tStart");
 const sl2=await pg.$$('#slotList [data-sl]'); if(sl2.length)await sl2[0].click({force:true});
 await pg.waitForTimeout(800);
 const b2=await pg.evaluate(()=>({s:curScreen,p:(party||[]).map(u=>u.short||u.name),b:(bench||[]).map(u=>u.short||u.name),g:me?me.gold:-1}));
-log.push(`読み直し → ${b2.s}　一味 ${b2.p.join("/")}　控え ${b2.b.join("/")}　金貨 ${b2.g}`);
+log.push(`読み直し → ${b2.s}　パーティ ${b2.p.join("/")}　控え ${b2.b.join("/")}　金貨 ${b2.g}`);
 log.push(`保存の一致 ${JSON.stringify(b1.p)===JSON.stringify(b2.p)&&JSON.stringify(b1.b)===JSON.stringify(b2.b)&&b1.g===b2.g?"✓":"✗ "+JSON.stringify(b1)+" / "+JSON.stringify(b2)}`);
 console.log(log.join("\n"));
 console.log(errs.length?"⚠ "+[...new Set(errs)].slice(0,8).join("\n⚠ "):"例外なし");

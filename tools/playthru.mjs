@@ -118,7 +118,7 @@ for(let i=0;i<10;i++){
 }
 await pg.waitForTimeout(300);
 log.push(`④ 支度と学びのあと → ${await scr()}`);
-log.push(`   一味 ${await pg.evaluate(()=>party.length?party.map(u=>`${u.short}Lv${u.lv}技${u.sk.length}特${u.pass.length}`).join(" / "):"まだ居ない")}`);
+log.push(`   パーティ ${await pg.evaluate(()=>party.length?party.map(u=>`${u.short}Lv${u.lv}技${u.sk.length}特${u.pass.length}`).join(" / "):"まだ居ない")}`);
 /* ===== 決着まで押し切る =====
    前は `for(let t=0;t<80;t++)` の中で **busy 待ちも1回として数えて**いた。
    攻撃ひとつの演出が 2秒ほどあるので、待つだけで 30回ぶん食う。
@@ -160,7 +160,7 @@ const fightOut=async(maxActs,maxMs)=>{
   }));
   log.push(`   決着せず　押した ${acts} 手・${Math.round((Date.now()-t0)/1000)}秒`+
     `　ラウンド ${st.r}　busy=${st.busy}`);
-  log.push(`   一味 ${st.me}`);
+  log.push(`   パーティ ${st.me}`);
   log.push(`   敵 ${st.foe||"（居ない）"}`);
   log.push(`   札 ${st.acts||"（無い）"}`);
   return false;
@@ -168,7 +168,7 @@ const fightOut=async(maxActs,maxMs)=>{
 
 /* ===== 戦いのあとの窓を 押し切る =====
    勝つと 戦利品 → レベルアップ（題が無い）→ 覚えるものを選ぶ →
-   仲間のぶん … と **数珠つなぎ**で窓が続く。一味3人なら軽く10枚を超える。
+   仲間のぶん … と **数珠つなぎ**で窓が続く。パーティ3人なら軽く10枚を超える。
    前は 8回・10回で打ち切っていたので、途中で budget が尽きて
    「窓は閉じたが nextStage() に届いていない」状態（画面 fight・札なし）で
    止まっていた。**回数ではなく 画面が fight を出るまで**押す。 */

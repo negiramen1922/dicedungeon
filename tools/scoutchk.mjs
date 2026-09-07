@@ -1,5 +1,5 @@
 /* 索敵が d6 の振り合いになったか（α1.0.017）
-     ・一味でいちばん探索の高い者が振るか
+     ・パーティでいちばん探索の高い者が振るか
      ・成功の数の差が 先制のダイスになるか
      ・気配がダイスに直っているか                                */
 import {chromium} from '/opt/node22/lib/node_modules/playwright/index.mjs';
@@ -20,10 +20,10 @@ const r=await pg.evaluate(async()=>{
      嘘の失敗が出る（α1.0.020 で踏んだ） */
   o.push(["そのダイス",skillDice("search",me),
     Math.max(1,Math.floor(skillOf("search",me)/SKDIESTEP))]);
-  /* スカウトの仲間を入れると 一味の目が上がる */
+  /* スカウトの仲間を入れると パーティの目が上がる */
   const sc=makeMate("scout","elf",me.lv);
   setParty([me,sc]);
-  o.push(["一味でいちばん勘のいい者",bestScout()===sc?"仲間のスカウト":"主人公","仲間のスカウト"]);
+  o.push(["パーティでいちばん勘のいい者",bestScout()===sc?"仲間のスカウト":"主人公","仲間のスカウト"]);
   o.push(["その者のダイス",skillDice("search",bestScout()),skillDice("search",sc)]);
   setParty([me]);
   o.push(["ひとりに戻すと",bestScout()===me?"主人公":"ちがう","主人公"]);
