@@ -166,6 +166,29 @@ const fightOut=async(maxActs,maxMs)=>{
   return false;
 };
 
+/* ===== 戦いのあとの窓を 押し切る =====
+   勝つと 戦利品 → レベルアップ（題が無い）→ 覚えるものを選ぶ →
+   仲間のぶん … と **数珠つなぎ**で窓が続く。一味3人なら軽く10枚を超える。
+   前は 8回・10回で打ち切っていたので、途中で budget が尽きて
+   「窓は閉じたが nextStage() に届いていない」状態（画面 fight・札なし）で
+   止まっていた。**回数ではなく 画面が fight を出るまで**押す。 */
+const drainOut=async(maxMs=40000)=>{
+  const t0=Date.now();
+  while(Date.now()-t0<maxMs){
+    const s=await scr();
+    if(!s.startsWith("fight"))return true;          /* 抜けた */
+    if(!await pg.evaluate(()=>modalOpen())&&!await chestOn()){
+      await pg.waitForTimeout(250);                 /* 次の窓が出るのを待つ */
+      if((await scr()).startsWith("fight")&&
+         !await pg.evaluate(()=>modalOpen())&&!await chestOn())return false;
+      continue;
+    }
+    if(!await once())return false;
+    await pg.waitForTimeout(150);
+  }
+  return false;
+};
+
 /* ⑤ 潜る */
 await tap("#hGo","潜る");
 log.push(`⑤ 潜る窓 → ${await scr()}`);
@@ -186,8 +209,8 @@ for(let step=0;step<60;step++){          /* 部屋が増えたので 40 → 60 *
     /* 攻撃を押し続けて 決着まで */
     await fightOut(60,70000);
     await pg.waitForTimeout(400);
-    for(let i=0;i<8;i++){ if(!await pg.evaluate(()=>modalOpen()))break; if(!await firstCard("戦利品"))break; }
-    await pg.waitForTimeout(300);
+    await drainOut();
+    await pg.waitForTimeout(200);
     continue;
   }
   wasFight=false;
@@ -217,7 +240,7 @@ if((await scr()).startsWith("fight")){
   log.push("   戦いの最中で歩数が尽きた → 決着まで押す");
   await fightOut(90,110000);
   await pg.waitForTimeout(400);
-  for(let i=0;i<10;i++){ if(!await pg.evaluate(()=>modalOpen())&&!await chestOn())break; if(!await once())break; }
+  await drainOut();
 }
 /* まだ戦闘の画面なら **なぜ抜けられないのか**を残す。
    決着（over）はしていても 戦利品の窓が閉じきれないと画面は fight のままで、

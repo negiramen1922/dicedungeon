@@ -1156,7 +1156,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.033";
+const VERSION="α1.0.034";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1169,6 +1169,15 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1034",tag:"up",v:"α1.0.034",d:"2026-09-07",n:"得物に個性が戻りました。技の必要成功数と威力を配り直しました",b:[
+   "<b>得物の違いが「何が起きるか」で出るようになりました。</b>ダイスの数は技能で決まるので、得物ごとの手数の差は もう出せません",
+   "<b>槍・ハルバード</b>　<b>縦に貫く</b>。狙った相手と その1つ奥に入ります",
+   "<b>短剣・双短剣・狼牙・レイピア・シャドウ</b>　<b>同じ相手に 2回</b>。スティングは <b>3回</b>",
+   "<b>剣</b>　単体にひと突き。そのぶん一撃が重い。<b>暗殺刀</b>も単体（一突きで終わらせる刃）",
+   "<b>短剣は 硬い相手に弱く、柔らかい相手に強い</b>です。VIT は <b>1回ごとに</b>引かれるので、割るほど削られます",
+   "〔不具合〕<b>「攻撃ダイス N」を 5か所で出していましたが、もう何もしていませんでした。</b>装備画面・宝箱・行商・図鑑。得物の個性を出すように直しました",
+   "<b>当て技 46件の 必要成功数と威力を配り直しました。</b>必要数は <b>スキルの性格</b>で決めています（MP とは別の軸）。デバフや布石は 必要1、職の主力は 必要2、決め技は 必要3",
+   "威力は 通常攻撃を 1.0 として 必要1 ×1.8 ／ 必要2 ×3.2 ／ 必要3 ×6.2 を基準に、効果を持つ技は そのぶん控えめにしてあります"]},
  {id:"v1033",tag:"up",v:"α1.0.033",d:"2026-09-07",n:"二段突きは 2回、連撃は 散らして 5回になりました",b:[
    "<b>二段突き</b>　必要1。<b>同じ相手を 2回 突きます</b>（1回につき 威力 ×1.15）",
    "<b>連 撃</b>　必要2。<b>生きている相手に 散らして 5回</b>（1回につき 威力 ×0.75）。誰に何回入るかは そのつど変わります",
@@ -2961,9 +2970,9 @@ const WEP={
   /* ---- ナイト：受けて叩く。近接のみ ---- */
   longsword:{snd:"slash",el:"slash",n:"銅の両手剣",hands:3,mul:1.2,stat:"STR",type:"melee",d:"扱いやすい銅の剣。両手で振る"},
   greatsword:{snd:"slash",el:"blunt",n:"騎士の大剣",hands:2,mul:1.72,stat:"STR",type:"melee",d:"一撃は重いが手数は出ない"},
-  spear:{snd:"slash",el:"pierce",n:"ロングスピア",hands:3,mul:1.3,stat:"STR",type:"melee",d:"間合いの長い穂先"},
+  spear:{snd:"slash",el:"pierce",n:"ロングスピア",hands:3,mul:0.95,pierce:true,stat:"STR",type:"melee",d:"間合いの長い穂先"},
   finesword:{snd:"slash",el:"slash",n:"鉄の片手剣",hands:4,mul:1.0,stat:"STR",type:"melee",d:"軽く速い。数で押す"},
-  halberd:{snd:"slash",el:"slash",n:"ハルバード",hands:3,mul:1.35,stat:"STR",type:"melee",d:"斧と槍を兼ねる"},
+  halberd:{snd:"slash",el:"slash",n:"ハルバード",hands:3,mul:1,pierce:true,stat:"STR",type:"melee",d:"斧と槍を兼ねる"},
   kingblade:{snd:"slash",el:"slash",n:"ガラハッド",hands:4,mul:1.12,stat:"STR",type:"melee",d:"古い王が佩いていたという剣"},
   doomblade:{snd:"slash",el:"blunt",n:"ジャッジメントブレード",hands:2,mul:1.95,stat:"STR",type:"melee",d:"振れば必ず何かが折れる"},
 
@@ -2977,13 +2986,13 @@ const WEP={
   piercebow:{snd:"bow",el:"pierce",n:"雷 弓",hands:2,mul:2.42,stat:"STR",type:"ranged",d:"岩をも貫く。放った音は雷のような轟音"},
 
   /* ---- スカウト：手数で削る ---- */
-  dagger:{snd:"slash",el:"pierce",n:"短 剣",hands:5,mul:0.92,stat:"STR",type:"melee",d:"素早く何度も刺す"},
-  twindagger:{snd:"slash",el:"slash",n:"双 短 剣",hands:6,mul:0.8,stat:"STR",type:"melee",d:"両手で刻む"},
-  fang:{snd:"slash",el:"slash",n:"狼 牙",hands:5,mul:0.99,stat:"STR",type:"melee",d:"狼の牙を削り出した刃"},
-  rapier:{snd:"slash",el:"pierce",n:"レイピア",hands:4,mul:1.15,stat:"STR",type:"melee",d:"細く鋭い突き"},
-  clawblade:{snd:"slash",el:"slash",n:"スティング",hands:7,mul:0.71,stat:"STR",type:"melee",d:"刺し続ける。手数だけならこの世で一番"},
-  shadowfang:{snd:"slash",el:"slash",n:"シャドウ",hands:6,mul:0.9,stat:"STR",type:"melee",d:"闇に紛れて振るう"},
-  assassin:{snd:"slash",el:"pierce",n:"暗 殺 刀",hands:5,mul:1.06,stat:"STR",type:"melee",d:"一突きで終わらせるための刃"},
+  dagger:{snd:"slash",el:"pierce",n:"短 剣",hands:5,mul:0.5,hits:2,stat:"STR",type:"melee",d:"素早く何度も刺す"},
+  twindagger:{snd:"slash",el:"slash",n:"双 短 剣",hands:6,mul:0.46,hits:2,stat:"STR",type:"melee",d:"両手で刻む"},
+  fang:{snd:"slash",el:"slash",n:"狼 牙",hands:5,mul:0.54,hits:2,stat:"STR",type:"melee",d:"狼の牙を削り出した刃"},
+  rapier:{snd:"slash",el:"pierce",n:"レイピア",hands:4,mul:0.62,hits:2,stat:"STR",type:"melee",d:"細く鋭い突き"},
+  clawblade:{snd:"slash",el:"slash",n:"スティング",hands:7,mul:0.3,hits:3,stat:"STR",type:"melee",d:"刺し続ける。手数だけならこの世で一番"},
+  shadowfang:{snd:"slash",el:"slash",n:"シャドウ",hands:6,mul:0.49,hits:2,stat:"STR",type:"melee",d:"闇に紛れて振るう"},
+  assassin:{snd:"slash",el:"pierce",n:"暗 殺 刀",hands:5,mul:1.5,stat:"STR",type:"melee",d:"一突きで終わらせるための刃"},
 
   /* ---- ウィザード：INT頼み。遠隔 ---- */
   wand:{snd:"magic",el:"none",n:"見習いの杖",hands:3,mul:1.2,stat:"INT",type:"ranged",d:"扱いやすい入門の杖"},
@@ -3959,122 +3968,122 @@ const REW={
     d:"シールド 最大HPの 20%。守りに徹する"},
    {id:"ak3",n:"カウンター",kind:"guard",mp:4,cd:3,blockPct:10,counter:0.4,
     d:"シールド 最大HPの 10%　受けたダメージの 40% を返す"},
-   {id:"ak4",n:"渾 身",kind:"atk",mp:6,cd:4,suc:2,powMul:1.9,
-    d:"当てにくいが 通れば重い（威力 ×1.9）"},
-   {id:"ak5",n:"兜割り",kind:"atk",mp:4,cd:3,powMul:1.15,ail:[{k:"break",v:10,t:2}],
+   {id:"ak4",n:"渾 身",kind:"atk",mp:6,cd:4,suc:3,powMul:6.2,
+    d:"当てにくいが 通れば重い（威力 ×6.2）"},
+   {id:"ak5",n:"兜割り",kind:"atk",suc:1,mp:4,cd:3,powMul:1.3,ail:[{k:"break",v:10,t:2}],
     d:"威力 ×1.15　相手の VIT −10（3ターン）"},
-   {id:"ak6",n:"威 圧",kind:"atk",mp:3,cd:3,powMul:0.5,ail:[{k:"weak",v:12,t:2}],
+   {id:"ak6",n:"威 圧",kind:"atk",suc:1,mp:3,cd:3,powMul:1.3,ail:[{k:"weak",v:12,t:2}],
     d:"相手の威力 −12（3ターン）"},
-   {id:"ak7",n:"薙ぎ払い",kind:"atk",mp:5,cd:3,all:true,suc:2,powMul:1.15,front:true,
-    d:"手前の3体を巻き込む（1体につき 威力 ×1.15）"},
+   {id:"ak7",n:"薙ぎ払い",kind:"atk",mp:5,cd:3,all:true,suc:2,powMul:1.42,front:true,
+    d:"手前の3体を巻き込む（1体につき 威力 ×1.42）"},
   ],
   archer:[
-   {id:"aa1",n:"徹甲矢",kind:"atk",mp:6,cd:4,suc:2,powMul:1.75,pen:1,
-    d:"相手の VIT を 完全に 無視する　威力 ×1.75"},
-   {id:"aa2",n:"貫通矢",kind:"atk",mp:5,cd:3,column:true,
+   {id:"aa1",n:"徹甲矢",kind:"atk",mp:6,cd:4,suc:3,powMul:4.46,pen:1,
+    d:"相手の VIT を 完全に 無視する　威力 ×4.46"},
+   {id:"aa2",n:"貫通矢",kind:"atk",powMul:1.98,suc:2,mp:5,cd:3,column:true,
     d:"狙った相手と その1つ奥を 貫く"},
    {id:"aa3",n:"集 中",kind:"focus",mp:3,cd:3,thr:2,dur:1,
     d:"命中閾値 −2（2ターンのあいだ）"},
-   {id:"aa4",n:"狙 撃",kind:"atk",mp:5,cd:3,powMul:1.12,backOnly:true,
-    d:"先頭以外を狙う。手前を飛び越して撃つ　威力 ×1.12"},
-   {id:"aa5",n:"乱れ撃ち",kind:"atk",mp:5,cd:3,even:true,powMul:1.0,
+   {id:"aa4",n:"狙 撃",kind:"atk",suc:3,mp:5,cd:3,powMul:6.94,backOnly:true,
+    d:"先頭以外を狙う。手前を飛び越して撃つ　威力 ×6.94"},
+   {id:"aa5",n:"乱れ撃ち",kind:"atk",suc:1,mp:5,cd:3,even:true,powMul:1.53,
     d:"しきい値を見ない。<b>偶数の目が成功</b>　速い相手にも 数が落ちない"},
    /* もとは「退き撃ち」（撃って後衛へ下がる）。一列にして 隊列が戦闘中に
       動かなくなったので、その技は行き場を失った。同じ枠を 足止めに置き換えた。
       アーチャーに 弱体の手が1つも無かったのを ここで埋めている。 */
-   {id:"aa6",n:"足止めの矢",kind:"atk",mp:5,cd:3,ail:[{k:"slow",v:12,t:2}],
+   {id:"aa6",n:"足止めの矢",kind:"atk",powMul:1.3,suc:1,mp:5,cd:3,ail:[{k:"slow",v:12,t:2}],
     d:"足を射る　鈍足（DEX −12　3ターン）"},
-   {id:"aa7",n:"アローレイン",kind:"atk",mp:6,cd:3,all:true,suc:2,powMul:1.15,
-    d:"手前の3体を射る（1体につき 威力 ×1.15）"},
+   {id:"aa7",n:"アローレイン",kind:"atk",mp:6,cd:3,all:true,suc:2,powMul:1.34,
+    d:"手前の3体を射る（1体につき 威力 ×1.34）"},
   ],
   scout:[
-   {id:"as1",n:"二段突き",kind:"atk",mp:5,cd:3,suc:1,hits:2,powMul:1.15,
-    d:"同じ相手を 2回 突く（1回につき 威力 ×1.15）"},
-   {id:"as2",n:"連 撃",kind:"atk",mp:4,cd:3,suc:2,hits:5,spread:true,powMul:0.75,
-    d:"生きている相手に 散らして 5回（1回につき 威力 ×0.75）"},
-   {id:"as3",n:"急所突き",kind:"atk",mp:3,cd:2,suc:2,powMul:1.9,
-    d:"細い隙を突く（威力 ×1.9）"},
-   {id:"as4",n:"首 刈 り",kind:"atk",mp:5,cd:3,suc:3,powMul:3.2,
-    d:"狙いが定まれば 一撃で断つ（威力 ×3.2）"},
+   {id:"as1",n:"二段突き",kind:"atk",mp:5,cd:3,suc:1,hits:2,powMul:0.97,
+    d:"同じ相手を 2回 突く（1回につき 威力 ×0.97）"},
+   {id:"as2",n:"連 撃",kind:"atk",mp:4,cd:3,suc:2,hits:5,spread:true,powMul:0.77,
+    d:"生きている相手に 散らして 5回（1回につき 威力 ×0.77）"},
+   {id:"as3",n:"急所突き",kind:"atk",mp:3,cd:2,suc:2,powMul:3.2,
+    d:"細い隙を突く（威力 ×3.2）"},
+   {id:"as4",n:"首 刈 り",kind:"atk",mp:5,cd:3,suc:3,powMul:6.2,
+    d:"狙いが定まれば 一撃で断つ（威力 ×6.2）"},
    {id:"as5",n:"疾 走",kind:"focus",mp:3,cd:3,dex:12,dur:99,
     d:"この戦闘のあいだ DEX +12"},
-   {id:"as6",n:"追い討ち",kind:"atk",mp:6,cd:5,again:true,once:true,
+   {id:"as6",n:"追い討ち",kind:"atk",powMul:1.87,suc:2,mp:6,cd:5,again:true,once:true,
     d:"これで敵を倒したら もう一度 行動できる（1戦に 1 回）"},
-   {id:"as7",n:"シャドウステップ",kind:"atk",mp:3,cd:3,powMul:0.6,ail:[{k:"palsy",v:0,t:0}],
+   {id:"as7",n:"シャドウステップ",kind:"atk",suc:1,mp:3,cd:3,powMul:1.3,ail:[{k:"palsy",v:0,t:0}],
     d:"相手を 麻痺させ 次の行動を 1 回 奪う"},
   ],
   mage:[
-   {id:"am1",n:"マジックショット",kind:"atk",mp:1,cd:0,powMul:1.1,el:"none",
-    d:"魔力の玉を撃つ　威力 ×1.1　MP を ほとんど使わない"},
-   {id:"am2",n:"ファイヤーボール",kind:"atk",mp:4,cd:2,powMul:1.2,el:"fire",
+   {id:"am1",n:"マジックショット",kind:"atk",suc:1,mp:1,cd:0,powMul:1.66,el:"none",
+    d:"魔力の玉を撃つ　威力 ×1.66　MP を ほとんど使わない"},
+   {id:"am2",n:"ファイヤーボール",kind:"atk",suc:2,mp:4,cd:2,powMul:2.21,el:"fire",
     ail:[{k:"burn",v:10,t:2}],
     d:"火　威力 ×1.2　火傷（毎ターン 残HPの 10%　3ターン）"},
-   {id:"am3",n:"ストーンバレット",kind:"atk",mp:4,cd:2,powMul:1.22,el:"earth",
+   {id:"am3",n:"ストーンバレット",kind:"atk",suc:2,mp:4,cd:2,powMul:2.21,el:"earth",
     ail:[{k:"slow",v:10,t:2}],
     d:"土　威力 ×1.22　鈍足（DEX −10　3ターン）"},
-   {id:"am4",n:"サンダーボルト",kind:"atk",mp:5,cd:3,powMul:1.18,el:"bolt",
+   {id:"am4",n:"サンダーボルト",kind:"atk",suc:2,mp:5,cd:3,powMul:2.21,el:"bolt",
     ail:[{k:"palsy",v:0,t:0}],
     d:"雷　威力 ×1.18　麻痺（次の行動を 1 回 奪う）"},
-   {id:"am5",n:"アクアランス",kind:"atk",mp:4,cd:2,powMul:1.2,el:"water",
+   {id:"am5",n:"アクアランス",kind:"atk",suc:2,mp:4,cd:2,powMul:2.21,el:"water",
     ail:[{k:"break",v:10,t:2}],
     d:"水　威力 ×1.2　弱化（VIT −10　3ターン）"},
-   {id:"am6",n:"インフェルノ",kind:"atk",mp:7,cd:4,all:true,suc:2,powMul:1.15,el:"fire",
+   {id:"am6",n:"インフェルノ",kind:"atk",mp:7,cd:4,all:true,suc:3,powMul:2.15,el:"fire",
     ail:[{k:"burn",v:8,t:2}],
     d:"火　手前の3体（1体につき 威力 ×1.15）　火傷（残HPの 8%　3ターン）"},
-   {id:"am7",n:"アースクエイク",kind:"atk",mp:7,cd:4,all:true,suc:2,powMul:1.15,el:"earth",
+   {id:"am7",n:"アースクエイク",kind:"atk",mp:7,cd:4,all:true,suc:3,powMul:2.15,el:"earth",
     ail:[{k:"slow",v:8,t:2}],
     d:"土　手前の3体（1体につき 威力 ×1.15）　鈍足（DEX −8　3ターン）"},
   ],
   dwarf:[
-   {id:"akd1",n:"岩砕き",kind:"atk",mp:5,cd:3,powMul:1.25,el:"blunt",
-    d:"叩 属性　威力 ×1.25"},
-   {id:"akd2",n:"ロックスパイク",kind:"atk",mp:6,cd:4,suc:2,powMul:1.9,el:"earth",
-    d:"土 属性　足元から岩を突き上げる（威力 ×1.9）"},
+   {id:"akd1",n:"岩砕き",kind:"atk",suc:2,mp:5,cd:3,powMul:2.94,el:"blunt",
+    d:"叩 属性　威力 ×2.94"},
+   {id:"akd2",n:"ロックスパイク",kind:"atk",mp:6,cd:4,suc:3,powMul:5.7,el:"earth",
+    d:"土 属性　足元から岩を突き上げる（威力 ×5.7）"},
   ],
   elf:[
-   {id:"ake1",n:"精霊の矢",kind:"atk",mp:4,cd:2,powMul:1.22,el:"light",
-    d:"光 属性　威力 ×1.22"},
+   {id:"ake1",n:"精霊の矢",kind:"atk",suc:2,mp:4,cd:2,powMul:2.94,el:"light",
+    d:"光 属性　威力 ×2.94"},
    {id:"ake2",n:"精霊の宿り",kind:"focus",mp:5,cd:4,elCoat:"light",dur:2,
     d:"3ターンのあいだ 攻撃に 光 属性が乗る"},
   ],
   beast:[
    {id:"akb1",n:"獣 化",kind:"focus",mp:6,cd:5,beast:{pow:25,dex:15,def:0.5},dur:2,
     d:"3ターンのあいだ 威力 +25%　DEX +15　ただし VIT が半分になる"},
-   {id:"akb2",n:"ビーストハウル",kind:"atk",mp:4,cd:3,allFoes:true,powMul:0.4,
+   {id:"akb2",n:"ビーストハウル",kind:"atk",suc:1,mp:4,cd:3,allFoes:true,powMul:0.59,
     ail:[{k:"weakp",v:20,t:1}],
     d:"敵すべてを威嚇する　相手の威力 −20%（2ターン）"},
   ],
   hume:[
-   {id:"akh1",n:"火事場の力",kind:"atk",mp:4,cd:3,lostPow:true,
-    d:"失った HP のぶん 威力が上がる（最大 ×1.45）"},
-   {id:"akh2",n:"全 力",kind:"atk",mp:4,cd:3,dice:2,suc:3,powMul:3.2,selfDef:-8,
-    d:"攻撃ダイス +2　身を捨てて打つ（威力 ×3.2）　このターン 自分の VIT −8"},
+   {id:"akh1",n:"火事場の力",kind:"atk",powMul:2.56,suc:2,mp:4,cd:3,lostPow:true,
+    d:"失った HP のぶん 威力が上がる（最大 ×2.56）"},
+   {id:"akh2",n:"全 力",kind:"atk",mp:4,cd:3,dice:2,suc:3,powMul:3.58,selfDef:-8,
+    d:"攻撃ダイス +2　身を捨てて打つ（威力 ×3.58）　このターン 自分の VIT −8"},
   ],
   envy:[
-   {id:"aen1",n:"呪 詛",kind:"atk",mp:6,cd:3,powMul:0.5,
+   {id:"aen1",n:"呪 詛",kind:"atk",suc:1,mp:6,cd:3,powMul:1.3,
     ail:[{k:"weak",v:10,t:1},{k:"slow",v:8,t:1},{k:"break",v:8,t:1}],
     d:"衰弱・鈍足・弱化 を まとめて 与える（各 2ターン）"},
-   {id:"aen2",n:"簒 奪",kind:"atk",mp:5,cd:4,steal:true,
+   {id:"aen2",n:"簒 奪",kind:"atk",powMul:2.62,suc:2,mp:5,cd:4,steal:true,
     d:"攻撃し、相手の強化を 奪って 自分のものにする"},
-   {id:"aen3",n:"妬 心",kind:"atk",mp:4,cd:3,jealous:true,
-    d:"相手の HP が 自分より多いほど 威力が上がる（最大 ×1.6）"},
+   {id:"aen3",n:"妬 心",kind:"atk",powMul:2.56,suc:2,mp:4,cd:3,jealous:true,
+    d:"相手の HP が 自分より多いほど 威力が上がる（最大 ×2.56）"},
   ],
   greed:[
    {id:"agr1",n:"マネーイズパワー",kind:"focus",mp:2,cd:3,payGold:50,goldPow:50,dur:2,
     d:"金貨 50 を払い、3ターンのあいだ 威力 +50%"},
-   {id:"agr2",n:"エナジードレイン",kind:"atk",mp:3,cd:5,powMul:0.6,mpDrain:0.3,
+   {id:"agr2",n:"エナジードレイン",kind:"atk",suc:1,mp:3,cd:5,powMul:1.18,mpDrain:0.3,
     ail:[{k:"weakp",v:15,t:1}],
     d:"魔力を吸い取る　MP を最大の 30% 回復　相手の威力 −15%（2ターン）"},
-   {id:"agr3",n:"略 奪",kind:"atk",mp:4,cd:3,loot:0.1,
+   {id:"agr3",n:"略 奪",kind:"atk",powMul:1.48,suc:1,mp:4,cd:3,loot:0.1,
     d:"与えたダメージの 10% を 金貨に換える"},
   ],
   wrath:[
-   {id:"awr1",n:"血の契",kind:"atk",mp:0,cd:3,suc:2,powMul:1.9,
+   {id:"awr1",n:"血の契",kind:"atk",mp:0,cd:3,suc:3,powMul:6.82,
     selfBuff:{pow:10,t:1},
     d:"血を捧げて打つ（威力 ×1.9）　自分の威力 +10%（2ターン）"},
-   {id:"awr2",n:"逆 境",kind:"atk",mp:6,cd:4,rage:true,
-    d:"この戦闘で受けた ダメージが多いほど 威力が上がる（最大 ×1.6）"},
-   {id:"awr3",n:"復 讐",kind:"atk",mp:4,cd:3,lostDice:true,
+   {id:"awr2",n:"逆 境",kind:"atk",powMul:2.56,suc:2,mp:6,cd:4,rage:true,
+    d:"この戦闘で受けた ダメージが多いほど 威力が上がる（最大 ×2.56）"},
+   {id:"awr3",n:"復 讐",kind:"atk",powMul:2.56,suc:2,mp:4,cd:3,lostDice:true,
     d:"失った HP の割合ぶん 攻撃ダイスが増える（最大 +3）"},
   ],
   sloth:[
@@ -4082,31 +4091,31 @@ const REW={
     d:"このターンは休む　次のターンだけ 威力 +100%"},
    {id:"asl2",n:"明日やる",kind:"focus",mp:0,cd:4,rest:{dice:2},
     d:"このターンは休む　次のターンだけ 攻撃ダイス +2"},
-   {id:"asl3",n:"た め 息",kind:"atk",mp:3,cd:3,powMul:0.5,ail:[{k:"slow",v:10,t:2}],
+   {id:"asl3",n:"た め 息",kind:"atk",suc:1,mp:3,cd:3,powMul:1.3,ail:[{k:"slow",v:10,t:2}],
     d:"気だるげに息を吐く　相手の DEX −10（3ターン）"},
   ],
   gluttony:[
-   {id:"agl1",n:"捕 食",kind:"atk",mp:4,cd:3,lifeSteal:0.5,
+   {id:"agl1",n:"捕 食",kind:"atk",powMul:2.62,suc:2,mp:4,cd:3,lifeSteal:0.5,
     d:"喰らいつく　与えたダメージの 50% だけ HP が戻る"},
-   {id:"agl2",n:"丸 呑 み",kind:"atk",mp:5,cd:4,devour:0.3,
+   {id:"agl2",n:"丸 呑 み",kind:"atk",powMul:3.41,suc:3,mp:5,cd:4,devour:0.3,
     d:"HP が 30% 以下の相手を 丸ごと呑み込む（ボスには効かない）"},
-   {id:"agl3",n:"暴飲暴食",kind:"atk",mp:6,cd:5,allFoes:true,powMul:0.6,feast:0.15,
+   {id:"agl3",n:"暴飲暴食",kind:"atk",suc:2,mp:6,cd:5,allFoes:true,powMul:1.11,feast:0.15,
     d:"場のすべてに喰らいつく（威力 60%）　倒した数だけ 最大HPの 15% 回復"},
   ],
   pride:[
    {id:"apr1",n:"宣 言",kind:"declare",mp:0,cd:3,mpGain:2,powMul:2,
     d:"次に討つ相手を告げる　MP +2　次のターンは その相手しか狙えないが 威力 ×2"},
-   {id:"apr2",n:"見 下 す",kind:"atk",mp:4,cd:3,suc:2,powMul:2.2,slower:true,
-    d:"自分より DEX が低い相手にのみ　威力 ×2.2"},
-   {id:"apr3",n:"王の一撃",kind:"atk",mp:6,cd:4,suc:2,powMul:2.3,earlyOnly:3,
-    d:"第 1〜3 ラウンドのみ使える　威力 ×2.3"},
+   {id:"apr2",n:"見 下 す",kind:"atk",mp:4,cd:3,suc:2,powMul:3.58,slower:true,
+    d:"自分より DEX が低い相手にのみ　威力 ×3.58"},
+   {id:"apr3",n:"王の一撃",kind:"atk",mp:6,cd:4,suc:3,powMul:6.94,earlyOnly:3,
+    d:"第 1〜3 ラウンドのみ使える　威力 ×6.94"},
   ],
   lust:[
-   {id:"alu1",n:"魅 了",kind:"atk",mp:5,cd:5,powMul:0.3,charm:2,
+   {id:"alu1",n:"魅 了",kind:"atk",suc:2,mp:5,cd:5,powMul:1.76,charm:2,
     d:"相手を 2ターン 惑わせる　混乱した敵は 味方を襲う"},
-   {id:"alu2",n:"甘い囁き",kind:"atk",mp:3,cd:3,powMul:0.5,ail:[{k:"blur",v:1,t:2}],
+   {id:"alu2",n:"甘い囁き",kind:"atk",suc:1,mp:3,cd:3,powMul:1.3,ail:[{k:"blur",v:1,t:2}],
     d:"相手を 盲目にする　命中閾値 +1（3ターン）"},
-   {id:"alu3",n:"誘 惑",kind:"atk",mp:4,cd:3,powMul:0.5,
+   {id:"alu3",n:"誘 惑",kind:"atk",suc:1,mp:4,cd:3,powMul:1.3,
     ail:[{k:"weakp",v:20,t:1},{k:"slow",v:10,t:1}],
     d:"相手の 威力 −20%　DEX −10（各 2ターン）"},
   ],
@@ -5464,6 +5473,15 @@ function sucOk(v,thr,opt){ return (opt&&opt.even)?(v%2===0):(v>=thr); }
 const VITFLOOR=0.20;
 function perHit(rest,def){return Math.max(Math.ceil(rest*VITFLOOR),rest-def);}
 /* 武器ごとの威力倍率。手数の多い武器ほど低い */
+/* ===== 得物の個性を ひとことで（α1.0.034） =====
+   「攻撃ダイス N」は **もう何もしていない**（ダイスは技能で決まる）のに
+   5か所で画面に出していた。得物の違いは いま `hits` と `pierce` にある。 */
+function wepTrait(w){
+  if(!w)return "";
+  if(w.hits>1)return `同じ相手に <b>${w.hits}回</b>`;
+  if(w.pierce)return `<b>縦に貫く</b>（奥の1体も）`;
+  return `<b>単体</b>に ひと突き`;
+}
 function statMul(w){return w.mul||1;}
 /* 来歴の倍率。欲望は主人公ひとりのものなので、仲間は必ず等倍になる */
 function orgMul(k,u){
@@ -6771,12 +6789,25 @@ async function resolvePlayer(a,target){
     A.lastSk=null;
     await playerAttack([target],{});
   }else if(a.kind==="rung"){
-    /* 技の階段（α1.0.020）。覚える技ではなく はじめから持っている手 */
+    /* ===== 基本攻撃は **得物の個性**で出る（α1.0.034） =====
+       ダイスの数はもう技能で決まるので、得物の違いは「何が起きるか」で出す。
+         剣   … 単体で重い（何も足さない）
+         槍   … 狙った相手と その1つ奥（`pierce`）
+         短剣 … 同じ相手に 2回（`hits`）── VIT は1回ごとに引かれるので
+                 **硬い相手に弱く、柔らかい相手に強い**
+       覚える技は それぞれ自分の形を持つので、ここは基本攻撃だけ。 */
     const r=ladderOf(A)[a.i];
+    const w=A.wep||{};
     A.lastSk=null;
     if(r.mp){ A.MP-=r.mp;
       log(`<span class="a">${A.name}</span> が <span class="c">${r.n}</span>（MP −${r.mp}）`); }
-    await playerAttack([target],{suc:r.need,powMul:r.mul});
+    let ts=[target];
+    if(w.pierce){
+      const L=foeLine(), i=L.indexOf(target);
+      ts=i<0?[target]:L.slice(i,i+2);
+      if(ts.length>1)log(`<span class="a">貫 通</span> ${ts.map(x=>x.name).join("・")} を貫く`);
+    }
+    await playerAttack(ts,{suc:r.need,powMul:r.mul,hits:w.hits});
   }else if(a.kind==="prep"){
     /* 仕込み。次の攻撃ひとつぶん。重ねがけはできない */
     const pz=PREP.find(x=>x.id===a.id);
@@ -9307,7 +9338,7 @@ function confirmBuy(it,nd){
   if(it.cat==="gear"&&r.slot==="wep"){
     const w=WEP[r.key];
     const nx=Math.round(me[w.stat]*statMul(w));
-    extra=`<div class="mitem">攻撃ダイス ${me.wep.hands} → <b>${w.hands}</b>　`+
+    extra=`<div class="mitem">${wepTrait(me.wep)} → <b>${wepTrait(w).replace(/<\/?b>/g,"")}</b>　`+
       `威力 ${Math.round(statMul(me.wep)*100)}% → <b>${Math.round(statMul(w)*100)}%</b>　`+
       `1ヒット ${powOf(me,{})} → <b>${nx}</b></div>`;
   }
@@ -10116,7 +10147,7 @@ function chBodyEq(){
     <span class="eqv">${tierTag(me.eq.wep?me.eq.wep.tier:0)}${
       w.el&&w.el!=="none"?elemTag(w.el):""}${madeTag(me.eq.wep)} <b>${
         me.eq.wep?me.eq.wep.n:w.n}</b>　${w.d||""}
-      <br><span style="color:var(--ink)">攻撃ダイス ${w.hands}　威力 ${
+      <br><span style="color:var(--ink)">${wepTrait(w)}　威力 ${
         Math.round(statMul(w)*100)}%（${w.stat} ×${statMul(w).toFixed(2)}）　${
         w.type==="melee"?"近接・奥は 遠さのぶん当てにくい":"遠隔・奥でも 遠さを払わない"}
         　→ 1ヒット <b>${powOf(me,{})}</b></span></span></div>`;
@@ -10411,7 +10442,7 @@ function catPool(cat){
       d:(()=>{const w=WEP[g.key];
         const now=powOf(me,{});
         const nx=Math.round(me[w.stat]*statMul(w));
-        return `攻撃ダイス ${w.hands}　威力 ${Math.round(statMul(w)*100)}% = ${nx}（いま ${now}）　${
+        return `${wepTrait(w)}　威力 ${Math.round(statMul(w)*100)}% = ${nx}（いま ${now}）　${
         w.type==="melee"?"近接":"遠隔"}<br><span style="color:var(--ink)">${w.d}</span>`;})()}));
     GEAR.armor.forEach(g=>list.push({...g,slot:"armor"}));
     GEAR.acc.forEach(g=>list.push({...g,slot:"acc"}));
@@ -10519,7 +10550,7 @@ function gearDesc(g){
   if(g.slot==="wep"&&WEP[g.key]){
     const w=WEP[g.key];
     const mul=g.mul||w.mul||1;
-    return `攻撃ダイス ${w.hands}　威力 ${Math.round(mul*100)}%${
+    return `${wepTrait(w)}　威力 ${Math.round(mul*100)}%${
       g.mul&&g.mul!==w.mul?`（並 ${Math.round(w.mul*100)}%）`:""}　${
       w.type==="melee"?"近接":"遠隔"}　${w.d||""}`;
   }
@@ -11897,7 +11928,7 @@ function cxBody(){
         if(!META.seen[g.id]){h+=`<div class="cxrow dim"><span class="cxn">？ ？ ？</span></div>`;return;}
         h+=`<div class="cxrow"><span class="cxfig">${itemIcon(wepIcon(g.key),26)}</span>
           <span class="cxn">${tierTag(g.tier)} ${w.n}</span>
-          <span class="cxd">${w.hands}D　威力 ${Math.round(statMul(w)*100)}%　${
+          <span class="cxd">${wepTrait(w)}　威力 ${Math.round(statMul(w)*100)}%　${
             elemTag(w.el)}${w.type==="melee"?"近接":"遠隔"}<br><span class="s">${w.d}</span></span></div>`;
       });
     });
