@@ -1,4 +1,4 @@
-/* 覚えたものは失わない ／ 入れ替えは町と焚き火だけ（α1.0.038） */
+/* 覚えたものは失わない ／ 入れ替えは戦っていないあいだ（α1.0.043） */
 import {chromium} from '/opt/node22/lib/node_modules/playwright/index.mjs';
 const file=process.argv[2]||'index.html';
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
@@ -65,22 +65,26 @@ const out=await pg.evaluate(async()=>{
   if(me.sk.some(x=>x.cdLeft===undefined))bad.push("持ち出した技の cdLeft が無い");
   closeModal();
 
-  /* ④ 潜行中。焚き火のそばだけ */
+  /* ④ 潜行中でも 戦っていなければ 入れ替えられる（α1.0.043） */
   dive("plain");
   RUN.cur={t:"fight",r:0,name:"—"};
-  L.push(`④ 潜行中の戦いの部屋 → 入れ替え可 ${canSwap()}`);
-  if(canSwap())bad.push("戦いの部屋で入れ替えられてしまう");
+  L.push(`④ 潜行中の戦いの部屋（戦闘には入っていない） → 入れ替え可 ${canSwap()}`);
+  if(!canSwap())bad.push("戦っていないのに 入れ替えられない");
   chNow="sk"; charModal(null);
-  const off2=document.querySelector("#mbox [data-skoff]");
-  L.push(`　 札が出ない=${!off2}　わけの一文=${/焚き火/.test($("#mbox").innerHTML)}`);
-  if(off2)bad.push("焚き火でないのに 入れ替えの札が出る");
+  if(!document.querySelector("#mbox [data-skoff]"))bad.push("道の途中で 入れ替えの札が出ない");
   closeModal();
   RUN.cur={t:"rest",r:1,name:"焚き火"};
   L.push(`　 焚き火の部屋 → 入れ替え可 ${canSwap()}`);
   if(!canSwap())bad.push("焚き火で入れ替えられない");
+  /* 戦いのあいだだけ 動かせない */
+  const scr0=curScreen, ov0=over;
+  curScreen="fight"; over=false;
+  L.push(`　 戦いのあいだ → 入れ替え可 ${canSwap()}　わけ「${swapWhy()}」`);
+  if(canSwap())bad.push("戦いのあいだに 入れ替えられてしまう");
   chNow="sk"; charModal(null);
-  if(!document.querySelector("#mbox [data-skoff]"))bad.push("焚き火なのに 札が無い");
+  if(document.querySelector("#mbox [data-skoff]"))bad.push("戦いのあいだ 入れ替えの札が出ている");
   closeModal();
+  curScreen=scr0; over=ov0;
 
   /* ⑤ 全滅しても 覚えたものは失わない */
   const skN=me.sk.length, bgN=bagOf(me,"act").length, psB=bagOf(me,"pass").length;
@@ -111,5 +115,5 @@ const out=await pg.evaluate(async()=>{
 console.log(out.L.join("\n"));
 if(errs.length)console.log(errs.join("\n"));
 if(out.bad.length){console.log("\n⚠ "+out.bad.join("\n⚠ "));process.exitCode=1;}
-else console.log("\n✓ 覚えたものは失わず、入れ替えは町と焚き火だけ");
+else console.log("\n✓ 覚えたものは失わず、入れ替えは戦っていないあいだだけ");
 await b.close();
