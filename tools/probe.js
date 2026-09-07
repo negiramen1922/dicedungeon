@@ -163,7 +163,9 @@ function check(api) {
   /* スキル：属性の参照先 */
   Object.entries(api.REW.act).forEach(([pool, list]) => {
     list.forEach(s => {
-      if (s.el && !api.ELEM[s.el]) add(`REW.act.${pool} ${s.n}: 属性 ${s.el} がない`);
+      /* el:"auto" は「狙った相手の弱点属性で撃つ」の合図（α1.0.044）。
+         決まった属性ではないので 表には無い */
+      if (s.el && s.el !== "auto" && !api.ELEM[s.el]) add(`REW.act.${pool} ${s.n}: 属性 ${s.el} がない`);
       (s.ail || []).forEach(a => { if (!api.AIL[a.k]) add(`REW.act.${pool} ${s.n}: 状態異常 ${a.k} がない`); });
     });
   });

@@ -66,7 +66,9 @@ window.expMineSkill=function(u,t,s){
   if(!s||s.kind!=="atk")return 0;
   const pow=Math.round((powOf(u,{})+(s.pow||0))*(s.powMul||1)*orgMul("outMul",u));
   const n=Math.max(1,skillDice(wepSkill(u,s),u)+(s.dice||0));
-  const def=Math.round(defOf(t)*(1-Math.min(1,(s.pen||0)/100)));
+  /* pen は **0〜1 の割合**（本体の playerAttack と同じ）。
+     /100 と書いていたので 徹甲矢（pen:1）が 1% しか抜いていなかった */
+  const def=Math.round(defOf(t)*(1-Math.min(1,s.pen||0)));
   const one=window.expDmg(n,threshold(u,t,{thr:s.thr||0}),Math.max(1,s.suc||1),pow,0,def);
   /* 何回入るか・何体に入るか */
   const hits=Math.max(1,s.hits||1);

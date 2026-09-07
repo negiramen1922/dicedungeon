@@ -1175,7 +1175,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
-const VERSION="α1.0.043";
+const VERSION="α1.0.044";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1188,6 +1188,19 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1044",tag:"up",v:"α1.0.044",d:"2026-09-07",n:"技を 90 件に配り直しました。種族と欲望が 5つずつになります",b:[
+   "<b>種族の技が 2 → 5、欲望の技が 3 → 5 になりました。</b>職は 7 のまま。ひとりが選べる技は 19 → <b>24</b> です",
+   "<b>ナイトは 守りと 相手を弱らせる役に。</b>渾身（素の大技）を落とし、<b>シールドバッシュ</b>（張っている盾の量が威力に乗る）を足しました。<b>鉄壁</b>は シールド 25% を張り、<b>次の手番で残っていたぶんが HP に変わります</b>（MP8・再使用5）。威圧は 敵すべてに効くようになりました",
+   "<b>ヒュームは 器用さの役に。</b>間合い読み（ダイス+2）・合わせ打ち（<b>図鑑で知っている弱点属性で撃つ</b>）・隙を突く・全力・免疫（状態異常をすべて解く）",
+   "<b>憤怒は 痛みを力にする役に。</b>血の契は <b>最大HPの 10% を払って</b>撃つ形になりました（MP は要りません）。火事場の力がヒュームから移り、痛み返し（受けたダメージの 70% を返す）が増えました",
+   "<b>エルフ</b>　月光の矢（VIT を完全に無視）・木漏れ陽・精霊の加護（盾＋状態異常を1つ解く）",
+   "<b>ドワーフ</b>　ロックスパイクが <b>場のすべて</b>に。大槌打ち・地ならし・踏み締め（2ターン 鈍足・麻痺・萎縮を受けない）",
+   "<b>獣人</b>　ビーストハウルが <b>自分の威力 +40%</b>に。爪撃ち（3回）・飛びかかり・喰らいつき",
+   "<b>「遅い相手だけ狙える」をやめました。</b>隙を突く・飛びかかり・見下す は <b>誰にでも撃てて、自分より遅い相手には 威力 +20%</b>。狙える相手がいないと技が丸ごと腐っていました",
+   "<b>強欲の金貨は 所持金の割合になりました。</b>マネーイズパワーは 10%、守銭奴は 8%。定額（50・40）では 後半にただ同然になっていました",
+   "〔不具合〕<b>盲目・恐怖の値が 効く上限を大きく超えていました。</b>命中閾値は 2〜6 で頭打ち（素が 4）なのに +8 と書いていました。単体 +2 ／ 全体 +1 に直しました",
+   "傲慢に 威光・君臨、色欲に 流し目・ドレインタッチ、嫉妬に 道連れ・足引き、暴食に 齧りつく・咀嚼、怠惰に 惰眠・後回しが増えました",
+   "共通の「鉄壁」は ナイトのものと名前が丸かぶりだったので <b>「盾の心得」</b>に改めました"]},
  {id:"v1043",tag:"up",v:"α1.0.043",d:"2026-09-07",n:"装備と技の入れ替えが 戦闘中以外なら いつでもできます",b:[
    "<b>焚き火のそばだけ、という縛りを外しました。</b>拾った装備を 次の焚き火まで着けられないのは ただの足止めでした",
    "入れ替えられないのは <b>戦いのあいだだけ</b>です。組み替えて仕切り直せると、何を持って出るかを決める意味が無くなります",
@@ -3415,6 +3428,12 @@ function ailAdd(u,k,v,t){
     log(`<span class="c">頑 迷</span> ${AIL[k].n} を受け付けない`);
     return;
   }
+  /* 技で張った一時の耐性（踏み締め など・α1.0.044）。
+     頑迷（特性）と違って ターンで切れる */
+  if(u.resAil&&u.resAil.t>=0&&(u.resAil.k||[]).includes(k)){
+    log(`<span class="c">${u.resAil.n||"耐 性"}</span> <span class="a">${u.name}</span> は ${AIL[k].n} を受け付けない`);
+    return;
+  }
   u.ail=u.ail||[];
   const cur=u.ail.find(a=>a.k===k);
   if(cur){cur.v=Math.max(cur.v,v);cur.t=Math.max(cur.t,t);}
@@ -4115,7 +4134,7 @@ const REW={
     d:"倒れた仲間ひとりを 最大HPの 50% で起こす"},
    {id:"a2",n:"見切り",kind:"buff",mp:3,cd:3,half:true,ally:true,
     d:"仲間ひとりが 次に受けるダメージを 半分にする"},
-   {id:"a3",n:"鉄 壁",kind:"guard",mp:3,cd:2,blockPct:8,hold:1,ally:true,
+   {id:"a3",n:"盾 の 心 得",kind:"guard",mp:3,cd:2,blockPct:8,hold:1,ally:true,
     d:"仲間ひとりに シールド 最大HPの 8%（2ターンのあいだ 毎ターン）"},
    {id:"a4",n:"集 中",kind:"focus",mp:2,cd:3,thr:1,dur:1,ally:true,
     d:"仲間ひとりの 命中閾値 −1（2ターンのあいだ）"},
@@ -4123,20 +4142,26 @@ const REW={
     d:"仲間ひとりの 状態異常を 1 つ解く（いちばん長く残っているもの）"},
   ],
   knight:[
+   /* ===== 守りと 相手を弱らせる（α1.0.044） =====
+      渾身（素の大技）を落とした。首刈り・狙撃と同じ形で、
+      **受けて耐える者の手**ではなかった。
+      守りの3つは 厚さの違いではなく **形**で分けてある。 */
    {id:"ak1",n:"盾 構",kind:"guard",mp:3,cd:2,blockPct:12,ally:true,
     d:"仲間ひとりに シールド 最大HPの 12%（使い切るまで残る）"},
-   {id:"ak2",n:"鉄 壁",kind:"guard",mp:5,cd:3,blockPct:20,ally:true,
-    d:"仲間ひとりに シールド 最大HPの 20%。守りに徹する"},
+   {id:"ak2",n:"鉄 壁",kind:"guard",mp:8,cd:5,blockPct:25,spillHeal:1,ally:true,
+    d:"仲間ひとりに シールド 最大HPの 25%　次の手番で 残っていたぶんが HP に変わる"},
    {id:"ak3",n:"カウンター",kind:"guard",mp:4,cd:3,blockPct:10,counter:0.4,ally:true,
     d:"仲間ひとりに シールド 最大HPの 10%　受けたダメージの 40% を返す"},
-   {id:"ak4",n:"渾 身",kind:"atk",mp:6,cd:4,suc:3,powMul:6.2,
-    d:"当てにくいが 通れば重い（威力 ×6.2）"},
-   {id:"ak5",n:"兜割り",kind:"atk",suc:1,mp:4,cd:3,powMul:1.3,ail:[{k:"break",v:10,t:2}],
-    d:"威力 ×1.3　相手の VIT −10（3ターン）"},
-   {id:"ak6",n:"威 圧",kind:"atk",suc:1,mp:3,cd:3,powMul:1.3,ail:[{k:"weak",v:12,t:2}],
-    d:"相手の威力 −12（3ターン）"},
-   {id:"ak7",n:"薙ぎ払い",kind:"atk",mp:5,cd:3,all:true,suc:2,powMul:1.42,front:true,
-    d:"手前の3体を巻き込む（1体につき 威力 ×1.42）"},
+   {id:"ak8",n:"シールドバッシュ",kind:"atk",suc:1,mp:4,cd:3,powMul:1.2,shieldPow:1,
+    ail:[{k:"fear",v:2,t:1}],
+    d:"盾ごと殴る　いま張っているシールドの量を 威力に足す　恐怖（命中閾値 +2・2ターン）"},
+   {id:"ak5",n:"兜割り",kind:"atk",suc:1,mp:4,cd:3,powMul:1.3,ail:[{k:"break",v:12,t:2}],
+    d:"威力 ×1.3　相手の VIT −12（3ターン）"},
+   {id:"ak6",n:"威 圧",kind:"atk",suc:1,mp:4,cd:3,powMul:0.59,allFoes:true,
+    ail:[{k:"weakp",v:10,t:1}],
+    d:"場のすべてを睨む　敵すべての威力 −10%（2ターン）"},
+   {id:"ak7",n:"薙ぎ払い",kind:"atk",mp:5,cd:3,all:true,suc:2,powMul:1.34,front:true,
+    d:"手前の3体を巻き込む（1体につき 威力 ×1.34）"},
   ],
   archer:[
    {id:"aa1",n:"徹甲矢",kind:"atk",mp:6,cd:4,suc:3,powMul:4.46,pen:1,
@@ -4198,54 +4223,104 @@ const REW={
   dwarf:[
    {id:"akd1",n:"岩砕き",kind:"atk",suc:2,mp:5,cd:3,powMul:2.94,el:"blunt",
     d:"叩 属性　威力 ×2.94"},
-   {id:"akd2",n:"ロックスパイク",kind:"atk",mp:6,cd:4,suc:3,powMul:5.7,el:"earth",
-    d:"土 属性　足元から岩を突き上げる（威力 ×5.7）"},
+   {id:"akd2",n:"ロックスパイク",kind:"atk",mp:6,cd:4,suc:3,powMul:2.26,el:"earth",allFoes:true,
+    d:"土 属性　場のすべての足元から岩を突き上げる（1体につき 威力 ×2.26）"},
+   {id:"akd3",n:"大槌打ち",kind:"atk",suc:1,mp:4,cd:3,powMul:1.24,el:"blunt",
+    ail:[{k:"slow",v:12,t:2}],
+    d:"叩 属性　鈍足（DEX −12・3ターン）"},
+   {id:"akd4",n:"地ならし",kind:"atk",suc:2,mp:5,cd:3,powMul:2.12,el:"blunt",
+    ail:[{k:"break",v:12,t:2}],
+    d:"叩 属性　足場ごと崩す　相手の VIT −12（3ターン）"},
+   {id:"akd5",n:"踏み締め",kind:"guard",mp:3,cd:3,blockPct:15,dur:1,
+    resistAil:["slow","palsy","shrink"],
+    d:"シールド 最大HPの 15%　2ターンのあいだ 鈍足・麻痺・萎縮を受けない"},
   ],
   elf:[
    {id:"ake1",n:"精霊の矢",kind:"atk",suc:2,mp:4,cd:2,powMul:2.94,el:"light",
     d:"光 属性　威力 ×2.94"},
    {id:"ake2",n:"精霊の宿り",kind:"focus",mp:5,cd:4,elCoat:"light",dur:2,
     d:"3ターンのあいだ 攻撃に 光 属性が乗る"},
+   {id:"ake3",n:"月光の矢",kind:"atk",suc:3,mp:6,cd:4,powMul:4.29,el:"light",pen:1,
+    d:"光 属性　相手の VIT を 完全に無視する（威力 ×4.29）"},
+   {id:"ake4",n:"木漏れ陽",kind:"atk",suc:1,mp:3,cd:3,powMul:1.24,el:"light",
+    ail:[{k:"blur",v:2,t:1}],
+    d:"光 属性　目を眩ませる（命中閾値 +2・2ターン）"},
+   {id:"ake5",n:"精霊の加護",kind:"guard",mp:4,cd:3,blockPct:10,curePart:true,ally:true,
+    d:"仲間ひとりに シールド 最大HPの 10%　状態異常を 1つ解く"},
   ],
   beast:[
    {id:"akb1",n:"獣 化",kind:"focus",mp:6,cd:5,beast:{pow:25,dex:15,def:0.5},dur:2,
     d:"3ターンのあいだ 威力 +25%　DEX +15　ただし VIT が半分になる"},
-   {id:"akb2",n:"ビーストハウル",kind:"atk",suc:1,mp:4,cd:3,allFoes:true,powMul:0.59,
-    ail:[{k:"weakp",v:20,t:1}],
-    d:"敵すべてを威嚇する　相手の威力 −20%（2ターン）"},
+   {id:"akb2",n:"ビーストハウル",kind:"focus",mp:4,cd:4,powUp:40,dur:1,
+    d:"吼えて自分を昂ぶらせる　2ターンのあいだ 威力 +40%"},
+   {id:"akb3",n:"爪撃ち",kind:"atk",suc:1,mp:4,cd:3,powMul:0.70,hits:3,
+    d:"同じ相手を 3回 裂く（1回につき 威力 ×0.70）"},
+   {id:"akb4",n:"飛びかかり",kind:"atk",suc:2,mp:5,cd:3,powMul:2.56,slowBonus:20,
+    d:"誰にでも跳びかかれる　自分より遅い相手には 威力 +20%"},
+   {id:"akb5",n:"喰らいつき",kind:"atk",suc:2,mp:5,cd:3,powMul:2.62,lifeSteal:0.35,
+    d:"喰らいつく　与えたダメージの 35% だけ HP が戻る"},
   ],
   hume:[
-   {id:"akh1",n:"火事場の力",kind:"atk",powMul:2.56,suc:2,mp:4,cd:3,lostPow:true,
-    d:"失った HP のぶん 威力が上がる（最大 ×2.56）"},
+   /* ===== 器用さ・形を変える（α1.0.044） =====
+      火事場の力（失った HP で強くなる）は 憤怒へ移した。痛みの話であって
+      器用さの話ではない。ここに残すのは **その場に合わせる**手だけ。 */
+   {id:"akh3",n:"間合い読み",kind:"atk",suc:1,mp:3,cd:2,powMul:1.0,dice:2,
+    d:"間合いを計る　攻撃ダイス +2"},
+   {id:"akh4",n:"合わせ打ち",kind:"atk",suc:2,mp:4,cd:3,powMul:2.94,el:"auto",
+    d:"狙った相手の弱点属性で撃つ（図鑑で弱点を知っていれば）"},
+   {id:"akh5",n:"隙を突く",kind:"atk",suc:2,mp:4,cd:3,powMul:2.56,slowBonus:20,
+    d:"誰にでも撃てる　自分より DEX が低い相手には 威力 +20%"},
    {id:"akh2",n:"全 力",kind:"atk",mp:4,cd:3,dice:2,suc:3,powMul:3.58,selfDef:-8,
     d:"攻撃ダイス +2　身を捨てて打つ（威力 ×3.58）　このターン 自分の VIT −8"},
+   {id:"akh6",n:"免 疫",kind:"cure",mp:3,cd:3,cureAll:true,ally:true,
+    d:"仲間ひとりの 状態異常を すべて 解く"},
   ],
   envy:[
+   /* ===== 妬み（α1.0.044・作り直しの途中） =====
+      「奪う」手が 簒奪と横取りで重なり、デバフも 呪詛と僻みで重なっていた。
+      5つとも別の働きになるように置き直したが、**ここは決まっていない。** */
    {id:"aen1",n:"呪 詛",kind:"atk",suc:1,mp:6,cd:3,powMul:1.3,
     ail:[{k:"weak",v:10,t:1},{k:"slow",v:8,t:1},{k:"break",v:8,t:1}],
     d:"衰弱・鈍足・弱化 を まとめて 与える（各 2ターン）"},
    {id:"aen2",n:"簒 奪",kind:"atk",powMul:2.62,suc:2,mp:5,cd:4,steal:true,
     d:"攻撃し、相手の強化を 奪って 自分のものにする"},
    {id:"aen3",n:"妬 心",kind:"atk",powMul:2.56,suc:2,mp:4,cd:3,jealous:true,
-    d:"相手の HP が 自分より多いほど 威力が上がる（最大 ×2.56）"},
+    d:"相手の HP が 自分より多いほど 威力が上がる（最大で 1.6 倍まで）"},
+   {id:"aen4",n:"道 連 れ",kind:"atk",suc:1,mp:4,cd:3,powMul:1.30,passAil:true,
+    d:"自分が背負っている 状態異常を すべて 相手へ移す"},
+   {id:"aen5",n:"足 引 き",kind:"atk",suc:1,mp:5,cd:3,powMul:0.59,allFoes:true,
+    ail:[{k:"slow",v:10,t:1}],
+    d:"場のすべての足を引く　敵すべての DEX −10（2ターン）"},
   ],
   greed:[
-   {id:"agr1",n:"マネーイズパワー",kind:"focus",mp:2,cd:3,payGold:50,goldPow:50,dur:2,
-    d:"金貨 50 を払い、3ターンのあいだ 威力 +50%"},
+   {id:"agr1",n:"マネーイズパワー",kind:"focus",mp:2,cd:3,payGoldPct:10,goldPow:50,dur:2,
+    d:"所持金の 10% を撒き、3ターンのあいだ 威力 +50%"},
    {id:"agr2",n:"エナジードレイン",kind:"atk",suc:1,mp:3,cd:5,powMul:1.18,mpDrain:0.3,
     ail:[{k:"weakp",v:15,t:1}],
     d:"魔力を吸い取る　MP を最大の 30% 回復　相手の威力 −15%（2ターン）"},
    {id:"agr3",n:"略 奪",kind:"atk",powMul:1.48,suc:1,mp:4,cd:3,loot:0.1,
     d:"与えたダメージの 10% を 金貨に換える"},
+   {id:"agr4",n:"強請り",kind:"atk",suc:1,mp:4,cd:3,powMul:1.18,loot:0.25,
+    ail:[{k:"weakp",v:10,t:1}],
+    d:"脅して巻き上げる　与えたダメージの 25% を 金貨に　相手の威力 −10%（2ターン）"},
+   {id:"agr5",n:"守銭奴",kind:"guard",mp:2,cd:3,blockPct:25,payGoldPct:8,
+    d:"所持金の 8% を払って シールド 最大HPの 25%"},
   ],
   wrath:[
-   {id:"awr1",n:"血の契",kind:"atk",mp:0,cd:3,suc:3,powMul:6.82,
+   /* ===== 痛みを力に（α1.0.044） =====
+      5つとも「どれだけ痛んでいるか」を見る手。血の契は MP0 の代わりに
+      **HP を払う**形にした（前は 何も払わずに最大火力だった）。 */
+   {id:"awr1",n:"血の契",kind:"atk",mp:0,cd:3,suc:2,powMul:3.91,payHP:0.10,
     selfBuff:{pow:10,t:1},
-    d:"血を捧げて打つ（威力 ×6.82）　自分の威力 +10%（2ターン）"},
+    d:"最大HPの 10% を払って打つ（威力 ×3.91）　自分の威力 +10%（2ターン）"},
+   {id:"akh1",n:"火事場の力",kind:"atk",powMul:2.56,suc:2,mp:4,cd:3,lostPow:true,
+    d:"失った HP のぶん 威力が上がる（最大で 1.45 倍まで）"},
    {id:"awr2",n:"逆 境",kind:"atk",powMul:2.56,suc:2,mp:6,cd:4,rage:true,
-    d:"この戦闘で受けた ダメージが多いほど 威力が上がる（最大 ×2.56）"},
-   {id:"awr3",n:"復 讐",kind:"atk",powMul:2.56,suc:2,mp:4,cd:3,lostDice:true,
+    d:"この戦闘で受けた ダメージが多いほど 威力が上がる（最大で 1.6 倍まで）"},
+   {id:"awr3",n:"復 讐",kind:"atk",powMul:1.76,suc:2,mp:4,cd:3,lostDice:true,
     d:"失った HP の割合ぶん 攻撃ダイスが増える（最大 +3）"},
+   {id:"awr4",n:"痛み返し",kind:"guard",mp:3,cd:3,blockPct:0,counter:0.7,
+    d:"身を晒して構える　次の手番までに 受けたダメージの 70% を返す"},
   ],
   sloth:[
    {id:"asl1",n:"昼 寝",kind:"focus",mp:0,cd:4,rest:{pow:100},
@@ -4254,6 +4329,10 @@ const REW={
     d:"このターンは休む　次のターンだけ 攻撃ダイス +2"},
    {id:"asl3",n:"た め 息",kind:"atk",suc:1,mp:3,cd:3,powMul:1.3,ail:[{k:"slow",v:10,t:2}],
     d:"気だるげに息を吐く　相手の DEX −10（3ターン）"},
+   {id:"asl4",n:"惰 眠",kind:"heal",mp:0,cd:4,heal:0.35,suc:1,
+    d:"このターンは眠る　自分の HP が 最大の 35% 戻る"},
+   {id:"asl5",n:"後回し",kind:"guard",mp:0,cd:3,blockPct:15,cdCut:1,
+    d:"シールド 最大HPの 15%　持っている技の 再使用待ちが すべて 1 減る"},
   ],
   gluttony:[
    {id:"agl1",n:"捕 食",kind:"atk",powMul:2.62,suc:2,mp:4,cd:3,lifeSteal:0.5,
@@ -4261,24 +4340,39 @@ const REW={
    {id:"agl2",n:"丸 呑 み",kind:"atk",powMul:3.41,suc:3,mp:5,cd:4,devour:0.3,
     d:"HP が 30% 以下の相手を 丸ごと呑み込む（ボスには効かない）"},
    {id:"agl3",n:"暴飲暴食",kind:"atk",suc:2,mp:6,cd:5,allFoes:true,powMul:1.11,feast:0.15,
-    d:"場のすべてに喰らいつく（威力 60%）　倒した数だけ 最大HPの 15% 回復"},
+    d:"場のすべてに喰らいつく（1体につき 威力 ×1.11）　倒した数だけ 最大HPの 15% 回復"},
+   {id:"agl4",n:"齧りつく",kind:"atk",suc:1,mp:4,cd:3,powMul:0.88,hits:2,lifeSteal:0.3,
+    d:"同じ相手に 2回 齧りつく　与えたダメージの 30% だけ HP が戻る"},
+   {id:"agl5",n:"咀 嚼",kind:"atk",suc:2,mp:5,cd:3,powMul:2.30,pen:0.6,
+    d:"硬いものごと噛み砕く　相手の VIT の 60% を無視する"},
   ],
   pride:[
    {id:"apr1",n:"宣 言",kind:"declare",mp:0,cd:3,mpGain:2,powMul:2,
     d:"次に討つ相手を告げる　MP +2　次のターンは その相手しか狙えないが 威力 ×2"},
-   {id:"apr2",n:"見 下 す",kind:"atk",mp:4,cd:3,suc:2,powMul:3.58,slower:true,
-    d:"自分より DEX が低い相手にのみ　威力 ×3.58"},
+   {id:"apr2",n:"見 下 す",kind:"atk",mp:4,cd:3,suc:2,powMul:2.56,slowBonus:20,
+    d:"誰にでも撃てる　自分より DEX が低い相手には 威力 +20%"},
    {id:"apr3",n:"王の一撃",kind:"atk",mp:6,cd:4,suc:3,powMul:6.94,earlyOnly:3,
     d:"第 1〜3 ラウンドのみ使える　威力 ×6.94"},
+   {id:"apr4",n:"威 光",kind:"atk",suc:1,mp:4,cd:3,powMul:0.59,allFoes:true,
+    ail:[{k:"fear",v:1,t:1}],
+    d:"見下ろして竦ませる　敵すべてに 恐怖（命中閾値 +1・2ターン）"},
+   {id:"apr5",n:"君 臨",kind:"focus",mp:5,cd:4,powUp:20,defUp:8,dur:2,
+    d:"3ターンのあいだ 自分の 威力 +20%　VIT +8"},
   ],
   lust:[
    {id:"alu1",n:"魅 了",kind:"atk",suc:2,mp:5,cd:5,powMul:1.76,charm:2,
     d:"相手を 2ターン 惑わせる　混乱した敵は 味方を襲う"},
-   {id:"alu2",n:"甘い囁き",kind:"atk",suc:1,mp:3,cd:3,powMul:1.3,ail:[{k:"blur",v:1,t:2}],
-    d:"相手を 盲目にする　命中閾値 +1（3ターン）"},
+   {id:"alu2",n:"甘い囁き",kind:"atk",suc:1,mp:3,cd:3,powMul:1.3,ail:[{k:"blur",v:2,t:2}],
+    d:"相手を 盲目にする　命中閾値 +2（3ターン）"},
    {id:"alu3",n:"誘 惑",kind:"atk",suc:1,mp:4,cd:3,powMul:1.3,
     ail:[{k:"weakp",v:20,t:1},{k:"slow",v:10,t:1}],
     d:"相手の 威力 −20%　DEX −10（各 2ターン）"},
+   {id:"alu4",n:"流し目",kind:"atk",suc:1,mp:4,cd:3,powMul:0.59,allFoes:true,
+    ail:[{k:"blur",v:1,t:1}],
+    d:"場のすべてに 流し目　敵すべてが 盲目（命中閾値 +1・2ターン）"},
+   {id:"alu5",n:"ドレインタッチ",kind:"atk",suc:2,mp:5,cd:4,powMul:2.39,
+    lifeSteal:0.4,mpDrain:0.2,
+    d:"触れて奪う　与えたダメージの 40% を HP に　MP も最大の 20% 戻る"},
   ],
  },
  pass:{
@@ -5001,10 +5095,10 @@ function lvScale(t){ t=(t||areaTier()||1); return LVSCALE[t-1]||LVSCALE[LVSCALE.
 
    1体あたりを軽くしても 数が多いぶん 戦いは重いまま。
    精鋭は「用意が要る戦い」であって「勝てない戦い」ではない。 */
-const ELITETOUGH={plain:0.84,seed:1.03,wtree:0.77,cave:0.6,hall:0.99,city:0.96};
+const ELITETOUGH={plain:0.83,seed:1.03,wtree:0.77,cave:0.59,hall:0.99,city:0.97};
 function eliteTough(){ return ELITETOUGH[RUN&&RUN.area]||1; }
-const AREATOUGH={plain:1.03,seed:0.99,wtree:0.88,cave:1.35,hall:0.94,city:0.82};
-const BOSSTOUGH={plain:0.9,seed:0.93,wtree:0.98,cave:0.95,hall:1.05,city:0.67};
+const AREATOUGH={plain:1.03,seed:0.99,wtree:0.88,cave:1.36,hall:0.94,city:0.82};
+const BOSSTOUGH={plain:0.89,seed:0.93,wtree:0.98,cave:0.94,hall:1.05,city:0.67};
 function areaTough(){ return AREATOUGH[RUN&&RUN.area]||1; }
 function bossTough(){ return BOSSTOUGH[RUN&&RUN.area]||1; }
 /* 敵ひとりに掛かる合計の倍率 */
@@ -6293,7 +6387,8 @@ const GUARD_MP=4;
 
 /* 癒しの見込みを どの仲間で出すか。いちばん傷が深い者（蘇生なら倒れた者）。
    掛け先を選べるようになったので、自分の数字だけ出すのはもう嘘になる（α1.0.039） */
-function healPreviewOf(A,rev){
+function healPreviewOf(A,rev,s){
+  if(s&&!s.ally)return A;              /* 自分にしか掛からない手（惰眠）*/
   const pool=rev?party.filter(u=>u.HP<=0)
                 :party.filter(u=>u.HP>0).sort((a,b)=>(a.HP/a.maxHP)-(b.HP/b.maxHP));
   return pool[0]||A;
@@ -6525,7 +6620,7 @@ function drawActs(){
         const pk=C(hN,k)*Math.pow(p,k)*Math.pow(1-p,hN-k);
         e+=pk*healRate(k,sNeed)*xMulOf(Math.max(0,k-sNeed));
       }
-      const T=healPreviewOf(A,isRev);
+      const T=healPreviewOf(A,isRev,s);
       return Math.round(T.maxHP*s.heal*e);
     })():0;
     /* 威力は powMul（倍率）と pow（足し算）の2つ。
@@ -6548,7 +6643,7 @@ function drawActs(){
         dice:isHeal?hN:(s.kind==="atk"?sDice:0),
         thr:s.even?"偶数":sThr, ok:sOk,
         heal:(isHeal&&!noDown)?(()=>{
-          const T=healPreviewOf(A,isRev);
+          const T=healPreviewOf(A,isRev,s);
           return [Math.round(T.maxHP*s.heal),
                   Math.round(T.maxHP*s.heal*xMulOf(1)),hAvg];
         })():null,
@@ -7049,6 +7144,13 @@ async function playerAttack(targets,opt){
    for(const t of wave){
     if(t.HP<=0)continue;
     let pow=powOf(A,opt)+passOn("pow",A)+(A.tmpPow||0);
+    /* 盾で殴る（シールドバッシュ・α1.0.044）。**張っている厚さがそのまま重さ**。
+       盾を張ってから殴る、という順番が生まれる */
+    if(opt.shieldPow){
+      const sp=Math.round(shieldOf(A)*opt.shieldPow);
+      if(sp>0){ pow+=sp;
+        log(`<span class="c">盾 の 重 み</span> シールド <span class="m">${shieldOf(A)}</span> のぶん 威力 <span class="m">+${sp}</span>`); }
+    }
     if(passOn("fixate",A)>0){
       if(A.fixId===t.id)A.fixN=Math.min(3,(A.fixN||0)+1);
       else {A.fixId=t.id;A.fixN=0;}
@@ -7058,6 +7160,15 @@ async function playerAttack(targets,opt){
       +(A.selfPow?A.selfPow.v:0)+((A.rest&&A.rest.r===round&&A.rest.pow)||0))/100;
     if(passOn("blood",A)>0&&t.HP<=t.maxHP*0.5)pmul+=passOn("blood",A)/100;
     let skm=1;
+    /* 遅い相手には よく通る（α1.0.044）。
+       前は「自分より遅い相手だけ狙える」という **縛り**だったので、
+       速い相手ばかりの場では 技が丸ごと腐っていた。
+       **誰にでも撃てて、条件が合えば乗る**形にした。 */
+    if(opt.slowBonus){
+      const mine=dexOf(A), his=Math.max(1,t.DEX-ailSum(t,"slow"));
+      if(his<mine){ skm*=1+opt.slowBonus/100;
+        log(`<span class="c">隙</span> <span class="b">${t.name}</span> のほうが遅い　威力 <span class="m">+${opt.slowBonus}%</span>`); }
+    }
     if(A.vow&&A.vow.id===t.id&&A.vow.mul&&round>=A.vow.r){
       skm*=A.vow.mul;
       log(`<span class="c">誓 い</span> 討つと告げた相手　威力 <span class="m">×${A.vow.mul.toFixed(1)}</span>`);
@@ -7088,7 +7199,16 @@ async function playerAttack(targets,opt){
     const pen=Math.min(1,(opt.pen||0)+(passOn("pen",A)+(A.gearPen||0))/100);
     const tdef=Math.round(defOf(t)*(1-pen));
     const sh=shieldOf(t);
-    const atkEl=opt.el||(A.coat&&A.coat.el)||A.wep.el||"none";
+    /* 「合わせ打ち」（α1.0.044）。**図鑑で弱点を知っていれば** その属性で撃つ。
+       知らなければ ただの無属性 ── 調べた見返りが 技の形で返る */
+    let autoEl=null;
+    if(opt.el==="auto"){
+      autoEl=knownElem(t.key,"weak")||null;
+      log(autoEl
+        ?`<span class="c">見 切 っ た</span> <span class="b">${t.name}</span> の弱点 <span class="m">${ELEM[autoEl].n}</span> で撃つ`
+        :`<span class="s">弱点がまだ分からない　無属性のまま</span>`);
+    }
+    const atkEl=(opt.el==="auto"?(autoEl||"none"):opt.el)||(A.coat&&A.coat.el)||A.wep.el||"none";
     const em=elemMul(atkEl,t);
     /* ===== ダメージは **ひと振りで1つ**（α2） =====
        前は 当たった出目1つずつに威力を掛けて足していた（出目が高いほど
@@ -7156,6 +7276,22 @@ async function playerAttack(targets,opt){
       (em>1?`　<span class="m">${ELEM[atkEl].n} が弱点　×${em.toFixed(2)}</span>`
         :em<1?`　<span class="c">${ELEM[atkEl].n} に耐性　×${em.toFixed(2)}</span>`:"")+
       `　→ <span class="m">${dmg}</span>`+(t.HP<=0?`　<span class="b">撃破</span>`:""));
+    /* 道連れ（α1.0.044）。**自分の不幸を そのまま相手に渡す。**
+       移した ぶんだけ こちらは軽くなる ── 攻めと立て直しが一つになる */
+    if(opt.passAil&&t.HP>0){
+      const mine=(A.ail||[]).slice();
+      if(mine.length){
+        A.ail=[];
+        mine.forEach(a=>ailAdd(t,a.k,a.v,a.t));
+        popSelf("身 軽","heal",A,BEAT.late);
+        popOn(t,"移 っ た","blk",BEAT.late);
+        log(`　<span class="c">道 連 れ</span>　<span class="m">${
+          mine.map(a=>AIL[a.k].n).join("・")}</span> を <span class="b">${t.name}</span> へ移した`);
+      }else{
+        log(`　<span class="s">移すものが なかった</span>`);
+      }
+      draw();
+    }
     if(opt.charm&&t.HP>0){
       ailAdd(t,"charm",0,opt.charm);
       popOn(t,"混 乱","blk",BEAT.late);
@@ -7265,10 +7401,39 @@ async function resolvePlayer(a,target){
     A.MP-=s.mp;s.cdLeft=s.cd;
     log(`<span class="a">${A.name}</span> が <span class="c">${s.n}</span>（MP −${s.mp}）`+toName);
     if(s.kind==="guard"){
+      /* 金貨で買う守り（守銭奴・α1.0.044）。払えなければ 何も起きない */
+      if(s.payGoldPct){
+        const pay=Math.max(1,Math.round(me.gold*s.payGoldPct/100));
+        if(me.gold<pay){ log(`金貨が足りない（${pay} 要る）`);busy=false;drawActs();return; }
+        me.gold-=pay;
+        log(`<span class="c">金貨 −${pay}</span>　<span class="s">所持金の ${s.payGoldPct}%</span>`);
+      }
       /* 盾の厚さは **かけた者の技**で決まる（受ける者の最大HPでは測らない）。
          札に出ている数字と 実際に張られる数字を食い違わせないため。 */
       const amt=shieldAmount(A,s);
       RC.block+=amt;
+      /* 余ったシールドが HP に変わる（鉄壁・α1.0.044）。
+         次の自分の手番の頭で 残っているぶんを受け取る */
+      if(s.spillHeal)RC.spill={pct:s.spillHeal,r:round};
+      /* しばらく 決まった状態異常を受けない（踏み締め） */
+      if(s.resistAil){
+        RC.resAil={k:s.resistAil.slice(),t:s.dur||1,n:s.n};
+        log(`<span class="a">${RC.name}</span> は <span class="c">${
+          s.resistAil.map(k=>AIL[k].n).join("・")}</span> を受け付けなくなった（${(s.dur||1)+1}ターン）`);
+      }
+      /* 盾と一緒に 状態異常を解く（精霊の加護） */
+      if(s.curePart){
+        const one=(RC.ail||[]).slice().sort((a,b)=>b.t-a.t)[0];
+        if(one){ RC.ail=RC.ail.filter(a=>a!==one);
+          popSelf(AIL[one.k].n,"heal",RC);
+          log(`　<span class="m">${AIL[one.k].n}</span> が解けた`); }
+      }
+      /* 持っている技の再使用待ちを縮める（後回し） */
+      if(s.cdCut){
+        let n=0;
+        RC.sk.forEach(k=>{ if(k.cdLeft>0){k.cdLeft=Math.max(0,k.cdLeft-s.cdCut);n++;} });
+        if(n)log(`　<span class="c">${n} つの技</span> の再使用待ちが <span class="m">${s.cdCut}</span> 減った`);
+      }
       /* hold は「そのあと何ターン 毎ターン張り直すか」。
          書かれていたのに どこからも holdDef に入れていなかったので、
          鉄壁の「2ターンのあいだ」がずっと効いていなかった。 */
@@ -7279,13 +7444,18 @@ async function resolvePlayer(a,target){
         Math.round(s.counter*100)}% を返す）`);
       await wait(650);}
     else if(s.kind==="focus"&&s.goldPow){
-      if(me.gold<s.payGold){
-        log(`金貨が足りない`);busy=false;drawActs();return;
+      /* 払う額は **所持金の割合**（α1.0.044）。定額だと 後半は ただ同然になり、
+         序盤は払えない ── どちらの側でも 選ぶ意味が消えていた。 */
+      const pay=s.payGoldPct?Math.max(1,Math.round(me.gold*s.payGoldPct/100)):(s.payGold||0);
+      if(me.gold<pay){
+        log(`金貨が足りない（${pay} 要る）`);busy=false;drawActs();return;
       }
-      me.gold-=s.payGold;
+      me.gold-=pay;
       me.goldPow={v:s.goldPow,t:s.dur||2};
       draw();fxOn(A,"charge");popSelf("+"+s.goldPow+"%","blk");SFX.buff();
-      log(`<span class="a">${A.name}</span> は 金貨 ${s.payGold} を撒いた（威力 +${s.goldPow}%　${(s.dur||2)+1}ターン）`);
+      log(`<span class="a">${A.name}</span> は 金貨 ${pay} を撒いた`+
+        (s.payGoldPct?`<span class="s">（所持金の ${s.payGoldPct}%）</span>`:"")+
+        `（威力 +${s.goldPow}%　${(s.dur||2)+1}ターン）`);
       await wait(650);}
     else if(s.kind==="focus"&&s.beast){
       A.beast={...s.beast,t:s.dur||2};
@@ -7297,6 +7467,15 @@ async function resolvePlayer(a,target){
       A.coat={el:s.elCoat,t:s.dur||2};
       draw();fxOn(A,"charge");popSelf(ELEM[s.elCoat].n,"blk");SFX.buff();
       log(`<span class="a">${A.name}</span> に <span class="c">${ELEM[s.elCoat].n}</span> の力が宿った（${(s.dur||2)+1}ターン）`);
+      await wait(650);}
+    else if(s.kind==="focus"&&s.powUp){
+      /* 自分の威力だけを 何ターンか上げる（α1.0.044）。
+         獣化のような代償を持たないぶん、短く・強く。 */
+      RC.selfPow={v:s.powUp,t:s.dur||1};
+      if(s.defUp)addDefBuff(RC,s.defUp,s.dur||1);
+      draw();fxOn(RC,"charge");popSelf("+"+s.powUp+"%","blk",RC);SFX.buff();
+      log(`<span class="a">${RC.name}</span> の力が湧いた（威力 <span class="m">+${s.powUp}%</span>`+
+        (s.defUp?`　VIT +${s.defUp}`:"")+`　${(s.dur||1)+1}ターン）`);
       await wait(650);}
     else if(s.kind==="focus"&&s.dex){
       A.dexUp=(A.dexUp||0)+s.dex;
@@ -7332,6 +7511,16 @@ async function resolvePlayer(a,target){
         `　次のターンは この相手しか狙えないが 威力 <span class="m">×${(s.powMul||2).toFixed(1)}</span>`);
       await wait(700);}
     else if(s.kind==="buff"){RC.half=true;draw();fxOn(RC,"charge");popSelf("半減","blk",RC);SFX.buff();await wait(650);}
+    else if(s.kind==="cure"&&s.cureAll){
+      const had=(RC.ail||[]).slice();
+      RC.ail=[];
+      draw();fxOn(RC,"charge");
+      popSelf(had.length?"全 快":"変化なし","heal",RC);SFX.found();
+      log(`<span class="a">${RC.name}</span> の`+(had.length
+        ?` <span class="m">${had.map(a=>AIL[a.k].n).join("・")}</span> が すべて解けた`
+        :`　解くべきものはなかった`));
+      await wait(650);
+    }
     else if(s.kind==="cure"){
       const one=(RC.ail||[]).slice().sort((a,b)=>b.t-a.t)[0];
       if(one){
@@ -7413,13 +7602,23 @@ async function resolvePlayer(a,target){
         ts=mate?[target,mate]:[target];
         if(mate)log(`<span class="a">縦に貫く</span> ${ts.map(x=>x.name).join("・")}`);
       }
+      /* HP を払って撃つ（血の契・α1.0.044）。MP ではなく 自分の血が代価。
+         倒れる手前で止める ── これで自滅したら 技ではなく罠になる */
+      if(s.payHP){
+        const pay=Math.min(Math.max(1,Math.round(A.maxHP*s.payHP)),Math.max(0,A.HP-1));
+        if(pay>0){ A.HP-=pay; popSelf("−"+pay,"each",A); SFX.dmg();
+          log(`<span class="c">血 の 代 価</span> <span class="a">${A.name}</span> の HP `+
+            `<span class="m">−${pay}</span>　<span class="s">最大の ${Math.round(s.payHP*100)}%</span>`);
+          draw(); }
+      }
       await playerAttack(ts,{pow:s.pow||0,thr:s.thr||0,dice:s.dice||0,
         suc:s.suc||1,                       /* 必要成功数。名乗らなければ 1 */
         chain:s.chain,powMul:s.powMul,stun:s.stun,hits:s.hits,spread:s.spread,
         el:s.el,ail:s.ail,pen:s.pen,even:s.even,column:s.column,
         lostPow:s.lostPow,mpDrain:s.mpDrain,loot:s.loot,allFoes:s.allFoes,
         rage:s.rage,lostDice:s.lostDice,lifeSteal:s.lifeSteal,devour:s.devour,feast:s.feast,
-        steal:s.steal,jealous:s.jealous,charm:s.charm,
+        shieldPow:s.shieldPow,slowBonus:s.slowBonus,
+        steal:s.steal,jealous:s.jealous,charm:s.charm,passAil:s.passAil,
         again:s.again&&!s.usedAgain,killed:[]});
       if(s.selfDef)A.selfDef=(A.selfDef||0)+s.selfDef;
       if(s.selfBuff){
@@ -7546,8 +7745,18 @@ async function runQueue(){
          殴られれば落ちるので、安全な回に積み重ねても意味は無い（積むだけ無駄になる）。 */
       /* シールドは 削られたぶんだけ減る器。殴られただけでは消えない。
          使い切るまで残るので、ここでは何もしない。 */
+      /* 鉄壁（α1.0.044）。**守りきって余ったぶんが HP に変わる。**
+         張った回の手番では受け取らせない（張った直後に丸ごと回復してしまう） */
+      if(u.spill&&round>u.spill.r){
+        const back=Math.min(Math.round(u.block*u.spill.pct),u.maxHP-u.HP);
+        if(back>0){ u.HP+=back; popSelf("+"+back,"heal",u);
+          log(`<span class="c">鉄 壁</span> <span class="a">${u.name}</span> の残ったシールド `+
+            `<span class="m">${u.block}</span> が HP <span class="m">+${back}</span> に変わった`); }
+        u.block=0; u.spill=null;
+      }
       if(u.block>0)log(`<span class="a">${u.name}</span> のシールドが残っている　`+
         `<span class="c">${u.block}</span>`);
+      if(u.resAil){u.resAil.t--;if(u.resAil.t<0)u.resAil=null;}
       u.counter=0;u.selfDef=0;
       if(u.holdDef){
         u.holdDef.t--;
