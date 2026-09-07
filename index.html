@@ -190,6 +190,16 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .sw.on{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass) inset}
 .sw span{position:absolute;left:0;right:0;bottom:0;font-size:9px;letter-spacing:.02em;
   color:#f2eddc;background:rgba(10,12,8,.62);padding:1px 0;text-align:center}
+/* 役と狙い（α1.0.042） */
+.rolet{font-size:9px;letter-spacing:.04em;color:#8b9080;border:1px solid #3a3f30;
+  border-radius:2px;padding:0 3px}
+.k2{font-size:10px;color:#b1544a;letter-spacing:.04em;margin-left:6px}
+.crole{position:absolute;top:2px;left:3px;font-size:9px;letter-spacing:0;
+  color:#8b9080;border:1px solid #3a3f30;border-radius:2px;padding:0 2px;background:#1b1e15}
+.caimn{font-size:9px;color:#b1544a;letter-spacing:.02em;margin-top:1px}
+.caim{font-size:9px;letter-spacing:.06em;color:#8b9080;border:1px solid #3a3f30;
+  border-radius:2px;padding:0 3px;margin-top:2px;display:inline-block}
+.caim.bad{color:#e0705a;border-color:#7a3a30;background:#2a1c18}
 .pop{position:absolute;top:-30px;left:50%;transform:translateX(-50%);
   font-family:"DotFont",ui-monospace,monospace;font-weight:700;
   font-size:24px;letter-spacing:.04em;color:#ff6a5a;z-index:12;white-space:nowrap;
@@ -1165,7 +1175,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
-const VERSION="α1.0.041";
+const VERSION="α1.0.042";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1178,6 +1188,18 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1042",tag:"up",v:"α1.0.042",d:"2026-09-07",n:"敵に役ができました。もう先頭だけを殴ってきません",b:[
+   "〔不具合〕<b>これまで敵は 必ず先頭だけを殴っていました。</b>165 ある敵の手のすべてがそうで、<b>後ろの2人には傷ひとつ付きませんでした</b>。味方に盾を張る・癒すことにも意味がありませんでした",
+   "<b>敵に 4つの役ができました。</b>盤の敵のマスの左上に 役の印が出ます",
+   "　<b>タンク（盾）</b>　前・硬いが痛くない。つねに先頭を殴る",
+   "　<b>アタッカー（牙）</b>　前・痛い。先頭を殴るが、<b>弱っている味方がいれば そちらへ乗り換える</b>ことがある",
+   "　<b>シューター（射）</b>　後ろ・脆いが通ると重い。<b>こちらの後ろを狙う</b>",
+   "　<b>サポート（癒）</b>　後ろ・味方を癒し、こちらを弱らせる。呪いは誰か一人へ",
+   "<b>誰が狙われているかが 盤に出ます。</b>敵のマスに「→ 相手の名」、狙われている味方に「狙 n体」。予告と本番は同じ仕組みを通るので <b>ずれません</b>",
+   "<b>弱っている味方へ乗り換えるのは 手ごとに 1/2 です。</b>いつも寄ると 傷ついた者に場の全員が群がって 何もできずに落ちます",
+   "<b>役ごとに 数値の型が変わりました。</b>タンク HP×1.45 VIT×1.4 威力×0.8 ／ シューター HP×0.65 VIT×0.7 威力×1.15 ／ サポート HP×0.8 威力×0.85",
+   "<b>並ぶ順も 役で決まります。</b>手前から タンク → アタッカー → シューター → サポート",
+   "区画ごとの手応えを測り直しました。前提の人数で挑んで　<b>普通 ×1.8〜2.8／重い ×1.1〜1.6／精鋭 ×1.05〜1.25／ボス ×1.0〜1.15</b>"]},
  {id:"v1041",tag:"up",v:"α1.0.041",d:"2026-09-07",n:"キャラを作るときに 肌・服・目の色を選べます",b:[
    "<b>作成に「見た目」の段が増えました。</b>肌・服・目 それぞれ 8色。選んだそばから 上の立ち絵が変わります。<b>おまかせ</b>で振ることもできます",
    "16通り（4種族 × 4職）すべてで 3つの色が絵に出ます。兜や頭巾で肌がまるきり隠れていた姿には <b>首をひと筋</b>足しました",
@@ -4975,10 +4997,10 @@ function lvScale(t){ t=(t||areaTier()||1); return LVSCALE[t-1]||LVSCALE[LVSCALE.
 
    1体あたりを軽くしても 数が多いぶん 戦いは重いまま。
    精鋭は「用意が要る戦い」であって「勝てない戦い」ではない。 */
-const ELITETOUGH={plain:0.85,seed:1.01,wtree:0.81,cave:0.65,hall:0.98,city:0.98};
+const ELITETOUGH={plain:0.84,seed:1.03,wtree:0.77,cave:0.6,hall:0.99,city:0.96};
 function eliteTough(){ return ELITETOUGH[RUN&&RUN.area]||1; }
-const AREATOUGH={plain:1.07,seed:1.06,wtree:0.92,cave:1.4,hall:0.93,city:0.82};
-const BOSSTOUGH={plain:0.89,seed:0.87,wtree:0.91,cave:0.68,hall:1.08,city:0.72};
+const AREATOUGH={plain:1.03,seed:0.99,wtree:0.88,cave:1.35,hall:0.94,city:0.82};
+const BOSSTOUGH={plain:0.9,seed:0.93,wtree:0.98,cave:0.95,hall:1.05,city:0.67};
 function areaTough(){ return AREATOUGH[RUN&&RUN.area]||1; }
 function bossTough(){ return BOSSTOUGH[RUN&&RUN.area]||1; }
 /* 敵ひとりに掛かる合計の倍率 */
@@ -4991,6 +5013,74 @@ function depthMul(){
   const d=depthAt(areaTier());
   if(RUN&&RUN.boss)return 1.3*d;        /* ボスは その区画の最奥より重い */
   return (r<2?0.9:(r<5?1:(r<10?1.14:1.3)))*d;
+}
+/* ===== 敵の役（α1.0.042） =====
+   これまで敵は **必ず先頭だけ**を殴っていた（enemyAct が foeTarget を
+   一度引くだけで、それが partyLine()[0] を返していた）。
+   165 ある手のすべてがそうなので、**後ろの2人には傷ひとつ付かず**、
+   味方に盾を張る・癒すことに意味が無かった。
+
+   そこで敵に **役**を持たせる。役が決めるのは4つ。
+     ① 列のどこに並ぶか
+     ② 誰を狙うか
+     ③ 数値の型（硬い／痛い／脆い）
+     ④ 手の重さ（必要成功数の型。※これは次の段で配り直す）
+
+     タンク　　… 前　硬いが痛くない　　　つねに先頭を殴る
+     アタッカー… 前　痛い　　　　　　　　先頭。ただし **弱っている者がいればそちら**
+     シューター… 後　脆いが通ると重い　　**後ろを狙う**。弱っている者がいればそちら
+     サポート　… 後　味方を癒し こちらを弱らせる　呪いは 誰か一人
+     ボス　　　… 役の外。手ごとに狙いを書く
+     部位　　　… 本体の守り手。狙いは先頭 */
+const FROLE={
+  /* ---- タンク（前・硬い・痛くない） ---- */
+  slime:"tank", wslime:"tank", livingstone:"tank", golem:"tank", troll:"tank",
+  treant:"tank", spriggan:"tank", gant:"tank", kingslime:"tank",
+  maneater:"tank", sprout:"tank",
+  /* ---- アタッカー（前・痛い） ---- */
+  gslime:"atk", rat:"atk", goblin:"atk", hobgoblin:"atk", dropbat:"atk",
+  bigbat:"atk", rockworm:"atk", skeleton:"atk", sahagin:"atk", abyssfish:"atk",
+  bonefish:"atk", hrabbit:"atk", wolf:"atk", boar:"atk", orc:"atk",
+  bear:"atk", wisp:"atk", redcap:"atk", harpy:"atk",
+  /* ---- シューター（後・脆い・波がある） ---- */
+  garcher:"shoot", cspider:"shoot", skarcher:"shoot", killerbee:"shoot",
+  centaur:"shoot", gargoyle:"shoot",
+  /* ---- サポート（後・癒す／弱らせる） ---- */
+  shaman:"sup", mandragora:"sup", dryad:"sup", spriest:"sup", wraith:"sup",
+  hflower:"sup", qegg:"sup", alraune:"sup",
+  /* ---- ボス（役の外。手ごとに狙いを書く） ---- */
+  qspider:"boss", cyclops:"boss", bshaman:"boss", elder:"boss",
+  gate:"boss", deepone:"boss",
+  /* ---- 部位 ---- */
+  ghand:"part",
+};
+const ROLEN={tank:"盾",atk:"牙",shoot:"射",sup:"癒",boss:"主",part:"部"};
+const ROLEFULL={tank:"タンク",atk:"アタッカー",shoot:"シューター",sup:"サポート",
+  boss:"ボス",part:"部位"};
+/* 役ごとの数値の型。もとの値に掛ける。
+   タンクは硬いが痛くない／シューターは脆いが速い、を数字で出すため */
+const ROLEMUL={
+  tank: {HP:1.45,STR:0.80,VIT:1.40,DEX:0.85},
+  atk:  {HP:0.90,STR:1.20,VIT:0.90,DEX:1.00},
+  shoot:{HP:0.65,STR:1.15,VIT:0.70,DEX:1.15},
+  sup:  {HP:0.80,STR:0.85,VIT:0.90,DEX:1.05},
+  boss: {HP:1,STR:1,VIT:1,DEX:1},
+  part: {HP:1,STR:1,VIT:1,DEX:1},
+};
+/* 役ごとの 狙いの既定。手に aim が書いてあれば そちらが優先 */
+const ROLEAIM={tank:"front",atk:"hunt",shoot:"back",sup:"rand",boss:"front",part:"front"};
+/* 列の並び。手前から */
+const ROLEORDER={part:0,tank:1,atk:2,shoot:3,sup:4,boss:2};
+function roleOf(f){
+  if(!f)return "atk";
+  if(f.partOf!==null&&f.partOf!==undefined)return "part";
+  return f.role||FROLE[f.key]||((f.rank==="back")?"shoot":"atk");
+}
+/* 役ごとの倍率。鍵から引く（makeFoes は FOE を展開する前に要る） */
+function rmOf(k){
+  const f=FOE[k]||{};
+  const r=(f.partOf!==null&&f.partOf!==undefined)?"part":(f.role||FROLE[k]||((f.rank==="back")?"shoot":"atk"));
+  return ROLEMUL[r]||ROLEMUL.atk;
 }
 function makeFoes(){
   const dm=depthMul();
@@ -5012,13 +5102,14 @@ function makeFoes(){
          列の上限は LINEMAX(6) なので それまで用意し、
          万一あふれても 番号で名乗らせる。 */
       name:f.n+(same>1?" "+((f.nm&&f.nm[nth])||FOENAMES[nth]||String(nth+1)):""),
-      maxHP:Math.round(f.HP*dm*FOEHP*partyMul()*sc),
-      HP:Math.round(f.HP*dm*FOEHP*partyMul()*sc),
-      STR:Math.round(f.STR*(1+(dm-1)*0.6)*FOESTR*sc),
+      maxHP:Math.round(f.HP*dm*FOEHP*partyMul()*sc*rmOf(k).HP),
+      HP:Math.round(f.HP*dm*FOEHP*partyMul()*sc*rmOf(k).HP),
+      STR:Math.round(f.STR*(1+(dm-1)*0.6)*FOESTR*sc*rmOf(k).STR),
+      VIT:Math.round((f.VIT||0)*rmOf(k).VIT),
       /* DEX も深さで伸ばす。前は HP と STR だけ伸ばしていたので、
          こちらの DEX だけが青天井に育ち、スカウトは木漏れ日の森の時点で
          敵の命中閾値が全部 6 に張り付いていた（当たる率 17%）。 */
-      DEX:Math.round(f.DEX*(1+(dm-1)*0.6)),
+      DEX:Math.round(f.DEX*(1+(dm-1)*0.6)*rmOf(k).DEX),
       /* rank は もう立ち位置ではない。**列のどのあたりに並びたいか**の目安で、
          下の sortLine が これを見て 手前／奥 を決める。flex はその場で決まる */
       rank:(f.flex?(Math.random()<0.5?"front":"back"):f.rank),turn:0,
@@ -5051,7 +5142,13 @@ const pAlive=()=>party.filter(u=>u.HP>0);
      ③ 同じなら 遭遇に書かれた順
    並べ替えは戦闘に入る前の一度きり。戦闘中に列が動くことはない。 */
 function sortLine(list){
-  const key=f=>(f.partOf!==null&&f.partOf!==undefined)?0:(f.rank==="back"?2:1);
+  /* 役が並び順を決める（α1.0.042）。flex を持つ相手だけ その場で前後する */
+  const key=f=>{
+    const r=roleOf(f);
+    let k=ROLEORDER[r]!==undefined?ROLEORDER[r]:2;
+    if(f.flex&&f.rank==="back")k+=1;
+    return k;
+  };
   return list.map((f,i)=>({f,i}))
              .sort((a,b)=>(key(a.f)-key(b.f))||(a.i-b.i))
              .map(x=>x.f);
@@ -5129,8 +5226,47 @@ function vowGone(u){
    敵側が味方を指すところは 必ずこれを通すこと。 */
 /* 敵が狙う味方。列の先頭を狙う。
    奥を狙う敵を作るときは ここに枝を足すこと（狙えばそのぶん命中閾値を払う）。 */
-function foeTarget(f){
-  return partyLine()[0]||me;
+/* ===== 誰を狙うか（α1.0.042） =====
+   役ごとの既定を、手に書いた aim が上書きする。
+
+     front … 先頭。これまで唯一の形だった
+     hunt  … 先頭。ただし **弱っている者**（HP が AIMWEAK 以下）がいればそちら
+     back  … 先頭以外（いちばん奥）。弱っている者がいればそちら
+     weak  … つねに いちばん弱っている者
+     rand  … 生きている者から ひとり（予告のときに決めて 動かさない）
+
+   予告は本番と同じ関数を通すので、**盤に出る狙い先と 実際に殴られる者は一致する**。
+   rand だけは 引き直すと予告が嘘になるので、手を決めたときに凍らせる。 */
+const AIMWEAK=0.35;
+function hurtOne(){
+  const ls=pAlive();
+  if(!ls.length)return null;
+  const w=ls.slice().sort((a,b)=>(a.HP/a.maxHP)-(b.HP/b.maxHP))[0];
+  return (w&&w.HP/w.maxHP<=AIMWEAK)?w:null;
+}
+function aimOf(f,t){
+  return (t&&t.aim)||ROLEAIM[roleOf(f)]||"front";
+}
+function foeTarget(f,tt){
+  const L=partyLine();
+  if(!L.length)return me;
+  const t=tt||(f&&f.tele)||null;
+  const a=aimOf(f,t);
+  /* 乗り換えるかどうかは 手ごとの目（huntRoll）で決める。
+     つねに乗り換えると、傷ついた者に場の全員が群がる */
+  const hunts=(t&&t.huntRoll!==undefined)?(t.huntRoll<HUNTP):true;
+  if(a==="weak")return hurtOne()||L[0];
+  if(a==="hunt")return (hunts&&hurtOne())||L[0];
+  if(a==="back")return (hunts&&hurtOne())||L[L.length-1];
+  if(a==="rand"){
+    /* 予告を出したときに決めた相手。倒れていたら選び直す */
+    const pinned=L.find(u=>u.uid&&u.uid===(f&&f.aimUid));
+    if(pinned)return pinned;
+    const pick=L[Math.floor(Math.random()*L.length)];
+    if(f)f.aimUid=uidOf(pick);
+    return pick;
+  }
+  return L[0];
 }
 /* 狙えるか。一列なので **誰でも狙える**。奥ほど当てにくいだけ。
    技に付いた条件（狙撃は先頭以外・不意打ちは自分より遅い相手）だけが的を絞る。 */
@@ -5227,6 +5363,12 @@ async function checkPhase(f){
   }
   return true;
 }
+/* 手を1つ選ぶたびに、**その手ぶんの狙いのサイコロ**を持たせる（α1.0.042）。
+   弱っている者へ乗り換えるかどうかは 手ごとに 1/2。
+   毎回そちらへ寄ると、傷ついた者に 場の全員が群がって 何もできずに落ちる。
+   予告と本番で同じ値を見るために、手のほうに書いて凍らせる。 */
+const HUNTP=0.5;
+function teleOf(a){ a.huntRoll=Math.random(); return a; }
 function chooseTele(f){
   /* 決まった順番の行動（seq）。味方が絶えたら solo の行動だけを回す */
   /* ひとりきりか。一列になったので「前列に他がいるか」ではなく
@@ -5236,8 +5378,8 @@ function chooseTele(f){
     const sp=f.acts.filter(a=>a.solo);
     const st=sp.reduce((x,a)=>x+(a.w||1),0);
     let sr=Math.random()*st;
-    for(const a of sp){sr-=(a.w||1);if(sr<=0)return (f.prevPick={...a});}
-    return (f.prevPick={...sp[0]});
+    for(const a of sp){sr-=(a.w||1);if(sr<=0)return (f.prevPick=teleOf({...a}));}
+    return (f.prevPick=teleOf({...sp[0]}));
   }
   /* 決まった手番の行動。ひとりでいても出す。
      前は !alone を付けていたが、solo の手を持つ敵は上の枝で返ってしまうので
@@ -5249,11 +5391,11 @@ function chooseTele(f){
      turn が 1 から進まず、永久に出番が来なかった。 */
   f.turn=(f.turn||0)+1;
   const seq=f.acts.find(a=>a.seq===f.turn);
-  if(seq)return (f.prevPick={...seq});
+  if(seq)return (f.prevPick=teleOf({...seq}));
   if(f.forceNext){
     const fa=f.acts.find(a=>a.n===f.forceNext);
     f.forceNext=null;
-    if(fa)return (f.prevPick={...fa,dice:fa.diceRand?(1+Math.floor(Math.random()*fa.diceRand)):fa.dice});
+    if(fa)return (f.prevPick=teleOf({...fa,dice:fa.diceRand?(1+Math.floor(Math.random()*fa.diceRand)):fa.dice}));
   }
   const pool=f.acts.filter(a=>{
     if(a.hidden)return false;                       // 単体では選ばれない
@@ -5323,7 +5465,7 @@ function chooseTele(f){
     for(const a of list){rr-=(a.w||1);if(rr<=0)return remember(pick(a));}
     return remember(pick(list[0]));
   }
-  function remember(o){ f.prevPick=o; return o; }
+  function remember(o){ f.prevPick=teleOf(o); return f.prevPick; }
   function pick(a){
     const o={...a};
     if(a.diceRand)o.dice=1+Math.floor(Math.random()*a.diceRand);
@@ -5334,7 +5476,7 @@ function telePreview(f,tt){
   const t=tt||f.tele;
   if(!t)return {txt:"—",sub:"",danger:false};
   if(t.k==="atk"){
-    const tg=foeTarget(f);
+    const tg=foeTarget(f,t);
     const b0=(t.vsAil&&(tg.ail||[]).length)?t.vsAil:0;
     const fpow=powOf(f,{pct:(t.pct||0)+b0,pow:t.pow||0});
     const far=reachOf(f,tg,t);
@@ -5419,6 +5561,9 @@ function unitCell(u,isMine,fig){
   fig=fig||40;
   const st=isMine?null:shownTele(u);
   const p=isMine?null:telePreview(u,st.t);
+  /* 狙われている味方に印（α1.0.042）。狙いが先頭だけでなくなったので、
+     誰に来るかが見えないと 守りようがない */
+  const aimed=isMine?aimedBy(u):null;
   /* pending.self は「狙いを取らない手を 決める前」。相手は選ばせない（α1.0.027）。
      pending.ally は **味方を選ぶ手**。こちら側のマスが選べるようになる（α1.0.039） */
   const target=pending&&!pending.self&&(isMine
@@ -5436,16 +5581,33 @@ function unitCell(u,isMine,fig){
       <div class="bar mpb"><i style="width:${u.maxMP?u.MP/u.maxMP*100:0}%"></i></div>`:""}
     ${ailText(u)?`<div class="celrow">${ailText(u)}</div>`:""}
     ${isMine&&u.half?`<div class="cst">被弾 半減</div>`:""}
+    ${aimed&&aimed.n?`<div class="caim${aimed.bad?" bad":""}">狙 ${aimed.n}体</div>`:""}
     ${target&&isMine?`<div class="ctarget">${pending.rev?"起こす":"かける"}</div>`:""}
     ${target&&!isMine&&u.HP>0?(()=>{const A=actor();
        return `<div class="ctarget">${
          threshold(A,u,pending&&pending.kind==="skill"&&A.sk[pending.i]
            ?{thr:A.sk[pending.i].thr||0,even:A.sk[pending.i].even}:{})}以上</div>`;})():""}
+    ${!isMine?`<div class="crole">${ROLEN[roleOf(u)]||""}</div>`:""}
     ${!isMine?(u.HP>0?(()=>{const ic=actIcon(st.t);
-        return `<div class="cact ${p.danger?"bad":"ok"}" title="${p.txt}">${ic.g}</div>`;})()
+        const tg=foeTarget(u,st.t);
+        return `<div class="cact ${p.danger?"bad":"ok"}" title="${p.txt}">${ic.g}</div>
+          <div class="caimn">→ ${tg?tg.short:"—"}</div>`;})()
       /* 倒れても枠は空けておく。消すとセルが縮み、行動一覧が毎ターン動く */
       :`<div class="cact" style="visibility:hidden"></div>`):""}
   </div>`;
+}
+/* その味方が いま何体に狙われているか。予告と同じ関数を通すので 嘘にならない */
+function aimedBy(u){
+  if(!foes||u.HP<=0)return null;
+  let n=0,bad=false;
+  alive().forEach(f=>{
+    const t=shownTele(f).t;
+    if(!t)return;
+    if(foeTarget(f,t)!==u)return;
+    n++;
+    if(t.k==="atk")bad=true;
+  });
+  return n?{n,bad}:null;
 }
 function emptyCell(){return `<div class="cell"></div>`;}
 function slotRows(list){
@@ -5554,14 +5716,16 @@ function drawDetail(){
     const ail=ailText(f);
     return `<div class="drow">${foeFig(f.key,28)}
       <div style="flex:1;min-width:0">
-        <div class="dnm">${f.name}　<span style="color:#6f7a63;font-size:10px">${
+        <div class="dnm">${f.name}　<span class="rolet">${
+          ROLEFULL[roleOf(f)]||""}</span>　<span style="color:#6f7a63;font-size:10px">${
           lineMark(f).replace(/<[^>]*>/g,"")}　HP ${Math.max(0,f.HP)}/${f.maxHP}${
           c>=3?`　VIT ${defOf(f)}　速 ${Math.max(1,f.DEX-ailSum(f,"slow"))}`:""}</span>${
           w?` <span class="elw">弱 ${ELEM[w].n}</span>`:""}${
           r?` <span class="elr">耐 ${ELEM[r].n}</span>`:""}</div>
         ${ail?`<div class="dline"><span class="k">状 態</span>${ail}</div>`:""}
         <div class="dline ${now.danger?"now":"safe"}"><span class="k">${st.lbl}</span>
-          ${ni.g} <b>${now.txt.replace(/^[⚔◈▲]\s*/,"")}</b>　${now.sub}</div>
+          ${ni.g} <b>${now.txt.replace(/^[⚔◈▲]\s*/,"")}</b>　${now.sub}
+          <span class="k2">→ ${(foeTarget(f,st.t)||{}).short||"—"}</span></div>
         ${nx?`<div class="dline ${nx.danger?"now":"safe"}"><span class="k">次 の タ ー ン</span>
           ${xi.g} <b>${nx.txt.replace(/^[⚔◈▲]\s*/,"")}</b>　${nx.sub}</div>`:""}
       </div></div>`;
@@ -7424,7 +7588,7 @@ async function runQueue(){
 async function enemyAct(f){
   /* 誰を狙うか。味方が1人のうちは必ず主人公。
      ここから下の「こちら」は me ではなく tg（狙われている味方）。 */
-  const tg=foeTarget(f);
+  const tg=foeTarget(f,f.tele);
   f.block=0;tickBuffs(f);if(f.sumCd>0)f.sumCd--;if(f.mendCd>0)f.mendCd--;   // 構えとバフはここで切れる
   draw();
   await wait(260);
@@ -7778,7 +7942,10 @@ async function endRound(){
   /* 段が1つ下りた回だけ知らせる。黙って当たりやすくなると気づけない */
   if(dragEase()>de0)
     log(`<span class="c">長 引 き</span> 双方の命中閾値が <span class="m">−${dragEase()}</span>（${DRAGCAP}まで）`);
-  foes.forEach(f=>{if(f.HP>0){f.tele=f.next||chooseTele(f);f.next=chooseTele(f);}});
+  foes.forEach(f=>{if(f.HP>0){
+    f.tele=f.next||chooseTele(f);f.next=chooseTele(f);
+    f.aimUid=null;                      /* rand の狙いは 手ごとに引き直す */
+  }});
   buildQueue();
   draw();
   log(`ラウンド ${round}`,"rnd");

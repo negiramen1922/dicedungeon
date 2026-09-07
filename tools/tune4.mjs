@@ -48,9 +48,23 @@ const R=await pg.evaluate(()=>{
       sel.enc=enc;RUN.boss=!!boss;RUN.elite=!!elite;foes=makeFoes();
       RUN.boss=false;RUN.elite=false;
       let hp=0,dmg=0,our=0;
+      /* ===== 誰を殴るかで 受ける量が変わる（α1.0.042） =====
+         役ごとに狙いが違うので、**その役が狙いうる相手をならして**測る。
+         foeTarget をそのまま呼ぶと rand が毎回ちがう相手を返し、
+         測るたびに 手応えが 2倍近く動いてしまう。 */
+      const L=partyLine();
+      const aimTargets=f=>{
+        const a=(typeof aimOf==="function")?aimOf(f,null):"front";
+        if(a==="back")return [L[L.length-1]||L[0]];
+        if(a==="rand")return L.slice();
+        return [L[0]];
+      };
       foes.forEach(f=>{hp+=f.maxHP;
-        const tgt=foeTarget(f),tot=f.acts.reduce((x,a)=>x+(a.w||1),0);
-        f.acts.forEach(a=>{ if(a.k==="atk")dmg+=(a.w||1)/tot*expFoeAct(f,a,tgt); });});
+        const ts=aimTargets(f).filter(Boolean);
+        const tot=f.acts.reduce((x,a)=>x+(a.w||1),0);
+        f.acts.forEach(a=>{ if(a.k!=="atk")return;
+          const d=ts.reduce((x,t)=>x+expFoeAct(f,a,t),0)/Math.max(1,ts.length);
+          dmg+=(a.w||1)/tot*d; });});
       party.forEach(u=>{const t=foeLine()[0];if(t)our+=expMineAtk(u,t);});
       return (ourHP/Math.max(1,dmg))/(hp/Math.max(1,our));
     };
