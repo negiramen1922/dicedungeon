@@ -1176,7 +1176,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
-const VERSION="α1.0.047";
+const VERSION="α1.0.048";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1189,6 +1189,10 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1048",tag:"fix",v:"α1.0.048",d:"2026-09-07",n:"押せないままだった宿の札を 引っ込めました",b:[
+   "α1.0.024 で <b>町へ帰ると全快</b>になってから、町での傷はいつも 0 でした。宿の札は「押せないまま ずっと並んでいる」だけになっていました",
+   "<b>用があるときだけ出す</b>ようにしました。押せない札を置いておくのは 嘘です",
+   "仕組みは丸ごと残してあります。町の全快をやめれば その日から また出ます"]},
  {id:"v1047",tag:"up",v:"α1.0.047",d:"2026-09-07",n:"場のすべてに及ぶ敵の手。当たり方が 役ごとに変わります",b:[
    "<b>ひと振りで 全員に入る手ができました。</b>ゴーレム「地を割る」・マンドラゴラ「叫声」・エルダートレント「森を薙ぐ」・ゴブリンシャーマン「呪いの奔流」・ディープワン「大海」の5つ",
    "判定は <b>ひと振りきり</b>です。通れば全員に入り、外せば全員が避けます。そのぶん 1体あたりの重さは下げてあります",
@@ -12610,13 +12614,17 @@ function drawHome(){
     b.onclick=()=>{SFX.click();charModal(null,party[+b.dataset.tp]);};});
   $("#hChar").classList.toggle("hide",!started);
   $("#hHire").classList.toggle("hide",!started);
-  $("#hInn").classList.toggle("hide",!started);
-  if(started){
-    const c=innCost();
-    $("#hInn").textContent=c.hp+c.mp<=0
-      ? "宿 に 泊 ま る（傷は無い）"
-      : `宿 に 泊 ま る（${c.gold} 金貨）`;
-    $("#hInn").disabled=(c.hp+c.mp<=0);
+  /* ===== 宿は 用があるときだけ出す（α1.0.048） =====
+     α1.0.024 で **町へ帰ると全快**になったので、町での傷はいつも 0 ── 
+     宿の札は「押せないまま ずっと並んでいる」だけになっていた。
+     押せない札を置いておくのは 嘘なので、**用があるときだけ出す。**
+     仕組みは丸ごと残してある（innCost / innModal / tools/innchk.mjs）ので、
+     町の全快をやめれば その日から また出る。 */
+  const inn=started?innCost():{hp:0,mp:0,gold:0};
+  $("#hInn").classList.toggle("hide",!started||inn.hp+inn.mp<=0);
+  if(started&&inn.hp+inn.mp>0){
+    $("#hInn").textContent=`宿 に 泊 ま る（${inn.gold} 金貨）`;
+    $("#hInn").disabled=false;
   }
   if(started)$("#hHire").textContent=
     hireCost()?`仲 間 を 雇 う（${hireCost()} 金貨）`:"仲 間 を 雇 う（は じ め は た だ）";

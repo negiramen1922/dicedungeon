@@ -22,7 +22,9 @@ const setup=async(orig)=>pg.evaluate(o=>{
 const r=[];
 await setup("wrath");
 r.push(await pg.evaluate(()=>["傷が無いときの代金",innCost().gold,0]));
-r.push(await pg.evaluate(()=>["傷が無いときの札",$("#hInn").disabled?"押せない":"押せる","押せない"]));
+/* α1.0.048：押せない札を並べておくのをやめ、**用があるときだけ出す** */
+r.push(await pg.evaluate(()=>["傷が無いときの札",
+  $("#hInn").classList.contains("hide")?"出ていない":"出ている","出ていない"]));
 r.push(await pg.evaluate(()=>{
   party.forEach(u=>{u.HP=Math.round(u.maxHP*0.5);u.MP=Math.round(u.maxMP*0.5);});
   drawHome();
