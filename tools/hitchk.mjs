@@ -33,10 +33,18 @@ const T=await pg.evaluate(async()=>{
   for(let q=0,last=-1;q<40&&T.length!==last;q++){last=T.length;await settle();}
   T.length=0;
   const t0=alive().find(f=>canTarget(f))||alive()[0];
-  for(const i of [0,1,2]){        /* 通常攻撃・斬撃・強撃 を一度ずつ */
+  /* 基本攻撃（α1.0.032 で 階段は これ1つになった）と、
+     必要2 以上を持つ **覚える技**を一度ずつ。
+     〔前は rung の 1・2 を押していて、段を外した版で落ちた〕 */
+  keep();await settle();
+  over=false;busy=false;pending=null;cur=me;
+  await resolvePlayer({kind:"rung",i:0},t0);
+  await settle();
+  me.sk=REW.act.knight.filter(x=>x.kind==="atk").slice(0,2).map(x=>({...x,cdLeft:0}));
+  for(let i=0;i<me.sk.length;i++){
     keep();await settle();
-    over=false;busy=false;pending=null;cur=me;
-    await resolvePlayer({kind:"rung",i},t0);
+    over=false;busy=false;pending=null;cur=me;me.MP=999;
+    await resolvePlayer({kind:"skill",i},t0);
     await settle();
   }
   return T;

@@ -1156,7 +1156,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.031";
+const VERSION="α1.0.032";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1169,6 +1169,12 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1032",tag:"fix",v:"α1.0.032",d:"2026-09-07",n:"斬撃・強撃・大技を コマンド欄から外しました",b:[
+   "<b>タダで押せるのは 基本攻撃（必要1・MP0）だけ</b>になりました。必要2 以上は <b>覚える技</b>が受け持ちます",
+   "α1.0.020 で 斬撃・強撃・大技を <b>全員がタダで持つ常設の札</b>にしていましたが、<b>これは読み違いでした</b>。試作台では あれらは「必要2/3/4 のスキルがどう感じるか」を試すための仮置きで、名前にも（仮）が付いていました",
+   "タダの必要2 が並んでいたせいで、<b>覚える技のほうが弱くて高くて連発できない</b>という妙なことになっていました",
+   "<b>ヒュームのナイトの出だし</b>　基本攻撃は 2個のうちどちらか成功で 75%、渾身（必要2）は <b>両方成功しないと</b>通らず 25%、必要3 の技は そもそも振れません",
+   "<b>超過の上乗せを 一律 +30% にしました。</b>これまでは +25%／個・上限2個（1個で ×1.25、2個で ×1.50）でした。積み上がると <b>必要の少ない技を振り続けるのが得</b>になりやすかったので、平らにしています。重さは <b>必要成功数</b>が背負います"]},
  {id:"v1031",tag:"up",v:"α1.0.031",d:"2026-09-06",n:"町で MP も戻ります。大癒しは 蘇生になりました",b:[
    "<b>町へ帰ると HP も MP も全快します。</b>町は 立て直す場所です",
    "<b>宿は しばらく出てきません。</b>癒すものが無くなったので。役どころを決め直すまで 眠らせています",
@@ -3850,38 +3856,37 @@ const JOB={
     sk:[]},
 };
 
-/* ===== 技 の 階 段（α1.0.020・試作 lab/fight.html から） =====
+/* ===== 基 本 攻 撃 =====
 
-   **戦いの背骨。**覚える技ではなく、はじめから全部が札として並ぶ。
-   届かない段も **灰色で見えている** ── そこが「技能を伸ばす先」になる。
+   タダで押せるのは これだけ。必要成功 1・MP 0。
+   得物ではなく **技能**で名前が決まる（近接＝通常攻撃／射撃＝射る／魔術＝魔弾）。
+   振るダイスの数も 技能で決まる（`skillDice`）。
 
-     通常攻撃 ●     必要1  ×1.0   MP 0
-     斬 撃   ●●    必要2  ×2.0   MP 3
-     強 撃   ●●●   必要3  ×3.6   MP 6
-     大 技   ●●●●  必要4  ×5.6   MP 10
+   必要2 以上は **覚える技**（`REW.act`）が受け持つ。
+   ヒュームのナイトは 出だし 2個なので 基本攻撃は 75%、
+   必要2 の技は **両方成功しないと**通らず 25%、必要3 は そもそも振れない。
+   技能を伸ばすと 段が開いていく ── そこが「技能を伸ばす先」になる。
+   届かない技は 札に「ダイス N個 要る（いま M）」と灰色で並ぶ。 */
+/* ===== 基本攻撃だけ（α1.0.032・戻し） =====
+   〔読み違い〕試作台の `acts` を「コマンド欄がそのまま階段」と読んで、
+   α1.0.020 で 斬撃・強撃・大技 を **全員がタダで持つ常設の札**にしていた。
+   試作台は そう書いていない ──
 
-   ヒュームのナイトは 出だし **2個**なので、
-   通常攻撃は75%、斬撃は **両方成功しないと**通らず 25%、
-   強撃と大技は **そもそも振れない**。技能を伸ばすと 段が開いていく。
+       {n:"通常攻撃",  cls:"atk", need:1, mp:0}    ← 基本攻撃
+       {n:"斬 撃",    cls:"sk",  need:2, mp:3}    ← **スキル**
+       {n:"強 撃",    cls:"sk",  need:3, mp:6}    ← **スキル**
 
-   階段は **技能ごと**に持つ（得物ではなく）。近接・射撃・魔術。
-   覚える技（`REW.act` の62個）は そのまま「味つけ」── 状態異常・属性・
-   全体・条件つき ── として 階段の下に並ぶ。
+   `atk` と `sk` が分けてあり、名前には（仮）が付いていた。
+   **必要2/3/4 のスキルがどう感じるかを試すための仮置き**であって、
+   タダで配るものではない。遊ぶ人の最初の説明も
+   「**スキルの**斬撃は必要成功数2」「次の強い**スキル**強撃は」だった。
 
-   〔値は試作のまま・仮〕名前も（仮）。 */
+   タダなのは 基本攻撃（必要1・MP0）だけ。
+   必要2 以上は **覚える技**が受け持つ（`REW.act`）。 */
 const LADDER={
-  fight:[{n:"通常攻撃",need:1,mul:1.0, mp:0},
-         {n:"斬 撃",  need:2,mul:2.0, mp:3},
-         {n:"強 撃",  need:3,mul:3.6, mp:6},
-         {n:"大 技",  need:4,mul:5.6, mp:10}],
-  shoot:[{n:"射 る",  need:1,mul:1.0, mp:0},
-         {n:"二本射ち",need:2,mul:1.95,mp:3},
-         {n:"貫き撃ち",need:3,mul:3.5, mp:6},
-         {n:"雨 撃 ち",need:4,mul:5.4, mp:10}],
-  magic:[{n:"魔 弾",  need:1,mul:1.0, mp:0},
-         {n:"炎 掌",  need:2,mul:2.3, mp:4},
-         {n:"大 魔 弾",need:3,mul:3.65,mp:8},
-         {n:"大 呪 文",need:4,mul:5.6, mp:12}],
+  fight:[{n:"通常攻撃",need:1,mul:1.0, mp:0}],
+  shoot:[{n:"射 る",  need:1,mul:1.0, mp:0}],
+  magic:[{n:"魔 弾",  need:1,mul:1.0, mp:0}],
 };
 function ladderOf(u){ return LADDER[wepSkill(u)]||LADDER.fight; }
 /* 必要な成功の数を 玉で見せる。●が必要ぶん、○が余っているダイス */
@@ -5134,7 +5139,7 @@ function telePreview(f,tt){
       if(tg.half)d=Math.round(d/2);
       return perHit(d,mdef);
     };
-    const lo=one(1), hi=one(1+XGAIN*XCAP);
+    const lo=one(1), hi=one(xMulOf(1));
     return {txt:"⚔ "+t.n,
       sub:`${nd}d6・<b>${thr}以上</b>・必要 <b>${need}</b>・${lo}〜${hi}${
         mdef?`<span style="color:#8fd0ff">（VIT −${mdef}）</span>`:""}`+
@@ -5616,7 +5621,15 @@ function dragEase(){ return Math.min(DRAGCAP,Math.floor((Math.max(1,round||1)-1)
    ── 上限が無いと 通常攻撃が8個成功したとき 素の2.75倍になり、
    一段上の技の素の威力を追い越してしまう。
    **倍率（mul）を触ったら この条件を測り直すこと。** */
-const XGAIN=0.25, XCAP=2;
+/* ===== 超過の上乗せ（α1.0.032） =====
+   必要より多く成功したぶん（超過）は **1個でも2個でも同じ +30%**。
+   前は +25%／個・上限2個（1個で ×1.25、2個で ×1.50）だったが、
+   段が上がるほど超過が積み上がって、**必要の少ない技を振り続けるのが得**に
+   なりやすかった。上乗せを平らにして、重さは **必要成功数**が背負う。 */
+const XBONUS=0.30;
+function xMulOf(over){ return over>0?1+XBONUS:1; }
+/* 〔互換〕古い書き方が残っていないか探すための名残。使わないこと */
+const XGAIN=XBONUS, XCAP=1;
 function needOf(opt){ return Math.max(1,(opt&&opt.suc)||1); }
 /* 治療だけの決めごと ── **足りない1つにつき ×0.3**。0成功なら本当にゼロ。
    攻撃は空振りでゼロだが、治療で外して仲間が死ぬのは痛すぎる。 */
@@ -5647,7 +5660,7 @@ async function healRoll(A,s,top,T){
   const hits=countSuc(rolls,thr,{});
   ovHide();
   const over=Math.max(0,hits-need);
-  return {hits,need,thr,n,over,rate:healRate(hits,need),mul:1+XGAIN*Math.min(XCAP,over)};
+  return {hits,need,thr,n,over,rate:healRate(hits,need),mul:xMulOf(over)};
 }
 function healDice(u){ return Math.max(1,skillDice("heal",u)+passOn("dice",u)-ailSum(u,"shrink")); }
 function healThr(u,opt){ return threshold(u,u,{...(opt||{}),noReach:true}); }
@@ -5969,7 +5982,7 @@ function drawActs(){
     const noDice=r.need>nWith, noMp=r.mp>A.MP;
     const ok=atLeast(nWith,r.need,thrNow);
     const cls=ok>=.6?"":ok>=.3?" mid":" bad";
-    const lo=pOne(r.mul), hi=pOne(r.mul*(1+XGAIN*XCAP));
+    const lo=pOne(r.mul), hi=pOne(r.mul*xMulOf(1));
     /* 札の添え書きは ごく短く。通常攻撃は **得物の名**、上の段は MP。
        届かない段だけは「あと何個 要るか」を札に残す ── そこが
        技能を伸ばす先だから、帯を見なくても目に入ってほしい */
@@ -6086,7 +6099,7 @@ function drawActs(){
       let e=0;
       for(let k=0;k<=hN;k++){
         const pk=C(hN,k)*Math.pow(p,k)*Math.pow(1-p,hN-k);
-        e+=pk*healRate(k,sNeed)*(1+XGAIN*Math.min(XCAP,Math.max(0,k-sNeed)));
+        e+=pk*healRate(k,sNeed)*xMulOf(Math.max(0,k-sNeed));
       }
       const T=isRev?(party.find(u=>u.HP<=0)||A):A;
       return Math.round(T.maxHP*s.heal*e);
@@ -6113,9 +6126,9 @@ function drawActs(){
         heal:(isHeal&&!noDown)?(()=>{
           const T=isRev?(party.find(u=>u.HP<=0)||A):A;
           return [Math.round(T.maxHP*s.heal),
-                  Math.round(T.maxHP*s.heal*(1+XGAIN*XCAP)),hAvg];
+                  Math.round(T.maxHP*s.heal*xMulOf(1)),hAvg];
         })():null,
-        dmg:(s.kind==="atk"&&!blocked)?[pSk(sMul),pSk(sMul*(1+XGAIN*XCAP))]:null,
+        dmg:(s.kind==="atk"&&!blocked)?[pSk(sMul),pSk(sMul*xMulOf(1))]:null,
       }),
       pending&&pending.pickKey==="sk"+i);
   });
@@ -6358,7 +6371,7 @@ async function rollDice(rolls,thr,label,top,opt){
     else{
       run+=(opt.six2&&rolls[i]===6)?2:1;
       if(opt.six2&&rolls[i]===6){els[i].classList.add("six");SFX.crit();}
-      else if(opt.need&&run>needN&&run<=needN+XCAP){els[i].classList.add("over");SFX.crit();}
+      else if(opt.need&&run>needN){els[i].classList.add("over");SFX.crit();}
       else{els[i].classList.add("hit");SFX.tick();}
     }
     await wait(105);
@@ -6376,14 +6389,14 @@ async function rollDice(rolls,thr,label,top,opt){
      「ヒット／空振り」を言い切って、HIT・MISS と 超過は その下に小さく添える */
   const need=needN;
   const over=Math.max(0,hits-need);
-  const cut=Math.min(XCAP,over);
+  
   $("#dvRes").innerHTML=`<div class="dvRes">`+(!opt.need
     ? `成功 ${hits}`
     : (hits>=need
       ? `<span class="ok">成功 ${hits} ／ 必要 ${need}　ヒ ッ ト</span>`+
         (over>0
-          ? `<small>HIT　<span class="xs">超過 ${over}${cut<over?`（${XCAP}つまで数える）`:""}`+
-            ` → 威力 ×${(1+XGAIN*cut).toFixed(2)}</span></small>`
+          ? `<small>HIT　<span class="xs">超過 ${over}`+
+            ` → 威力 ×${xMulOf(over).toFixed(2)}</span></small>`
           : `<small>HIT　ちょうど</small>`)
       : `<span class="ng">成功 ${hits} ／ 必要 ${need}　空 振 り</span><small>MISS</small>`))+`</div>`;
   await wait(opt.need&&hits>=need&&over>0?680:430);
@@ -6549,7 +6562,7 @@ async function playerAttack(targets,opt){
      上限があるのは「必要成功1の技が 必要成功2の技を超えない」ため。 */
   const need=needOf(opt);
   const over=Math.max(0,hits-need);
-  const xMul=1+XGAIN*Math.min(XCAP,over);
+  const xMul=xMulOf(over);
   if(hits<need){
     SFX.miss();
     log(`<span class="a">${A.name}</span> ${n}d6・${thr}以上 → `+
@@ -6661,7 +6674,7 @@ async function playerAttack(targets,opt){
     draw();SFX.dmg();
     log(`<span class="a">${A.name}</span> → <span class="b">${t.name}</span>　`+
       `${n}d6・${thr}以上 <span class="m">成功 ${hits}</span>／必要 ${need}　`+
-      (over?`<span class="c">超過 ${Math.min(XCAP,over)}（×${xMul.toFixed(2)}）</span>　`:"")+
+      (over?`<span class="c">超過 ${over}（×${xMul.toFixed(2)}）</span>　`:"")+
       `威力 ${pow}${xMul!==1?`<span class="c">→${Math.round(pow*xMul)}</span>`:""}`+
       (shUsed?`　<span class="c">シールド −${shUsed}</span>${shLeft?`<span class="s">（残り ${shLeft}）</span>`:""}`:"")+
       (tdef?`　<span class="s">（VIT −${tdef}）</span>`:"")+
@@ -6858,7 +6871,7 @@ async function resolvePlayer(a,target){
           (rev?` → <span class="a">${T.name}</span>`:"")+`　`+
           `${R.n}d6・${R.thr}以上 <span class="m">成功 ${R.hits}</span>／必要 ${R.need}　`+
           (R.rate<1?`<span class="c">${Math.round(R.rate*100)}% だけ効いた</span>　`
-            :R.over?`<span class="c">超過 ${Math.min(XCAP,R.over)}（×${R.mul.toFixed(2)}）</span>　`:"")+
+            :R.over?`<span class="c">超過 ${R.over}（×${R.mul.toFixed(2)}）</span>　`:"")+
           (rev?`<span class="a">起き上がった</span>　`:"")+`HP <span class="m">+${h}</span>`);
       }else{
         draw();pop(R.hits<=0?"効かず":"満 身","miss");SFX.miss();
@@ -7126,7 +7139,7 @@ async function enemyAct(f){
        超えたぶんは 威力の上乗せ（+25%／個・上限2）。 */
     const fneed=Math.max(1,t.suc||1);
     const fover=Math.max(0,hits-fneed);
-    const fxMul=1+XGAIN*Math.min(XCAP,fover);
+    const fxMul=xMulOf(fover);
     if(hits<fneed){
       log(`<span class="b">${f.name}</span> の ${t.n}　${nd}d6・${thr}以上 → `+
         `<span class="m">成功 ${hits}</span>／必要 <span class="m">${fneed}</span>　`+
@@ -7210,7 +7223,7 @@ async function enemyAct(f){
     }
     log(`<span class="b">${f.name}</span> → <span class="a">${tg.name}</span>　`+
       `${nd}d6・${thr}以上 <span class="m">成功 ${hits}</span>／必要 ${fneed}　`+
-      (fover?`<span class="c">超過 ${Math.min(XCAP,fover)}（×${fxMul.toFixed(2)}）</span>　`:"")+
+      (fover?`<span class="c">超過 ${fover}（×${fxMul.toFixed(2)}）</span>　`:"")+
       `威力 ${fpow}${fxMul!==1?`<span class="c">→${Math.round(fpow*fxMul)}</span>`:""}`+
       (halved?`　<span class="s">（見切りで半分）</span>`:"")+
       (soaked?`　<span class="c">シールド −${soaked}</span>${shLeft?`<span class="s">（残り ${shLeft}）</span>`:""}`:"")+
