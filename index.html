@@ -1175,7 +1175,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
-const VERSION="α1.0.045";
+const VERSION="α1.0.046";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1188,6 +1188,14 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1046",tag:"fix",v:"α1.0.046",d:"2026-09-07",n:"遭遇ひとつずつの手応えを揃えました",b:[
+   "<b>顔ぶれの偏りが そのまま手応えの差になっていました。</b>同じ区画でも <b>×0.56 〜 ×5.03</b> と 9倍の開きがありました",
+   "　<b>盾を3体並べた顔ぶれ</b>（歩く苗・石の守り手）は HP の山になって いつまでも終わらない",
+   "　<b>牙を3体並べた顔ぶれ</b>（灯と赤帽・骨魚の群れ）は 削りが重なって こちらが先に落ちる",
+   "　<b>2体だけの顔ぶれ</b>（オーク二人・ふたつの岩）は 数が足りず 手応えが出ない",
+   "区画ごとの摘みは <b>普通と重いをならして</b>掛かるので、区画の中の偏りは直せません。<b>顔ぶれそのものに摘みを持たせました</b>",
+   "<b>60 の遭遇すべてが 目標に ±0.05 で乗りました。</b>普通は快勝、重いは用意が要る、精鋭とボスは拮抗",
+   "<b>「猪と粘体」と「重装の壁」を 普通 → 重い に移しました。</b>摘みでは直せないほど重く、名前のとおりの顔ぶれでした"]},
  {id:"v1045",tag:"fix",v:"α1.0.045",d:"2026-09-07",n:"敵の硬さを 技込みで測り直しました。全体に手強くなります",b:[
    "〔不具合〕<b>難度を決めていた物差しが 通常攻撃しか測っていませんでした。</b>技を何件配り直しても数字が動かず、<b>実際の遊びは 表の数字よりずっと楽</b>でした",
    "<b>技を込みで測るようにしました。</b>そのレベルで何回覚えているか（主人公は5レベルごと・仲間は決まったレベル）、覚えたものが技か特性か、<b>攻撃技とは限らない</b>こと、<b>MP と 再使用待ちで 撃てる回数が決まる</b>ことまで見ています",
@@ -5108,9 +5116,24 @@ const BOSSTOUGH={plain:0.87,seed:0.93,wtree:1.1,cave:0.94,hall:1.11,city:0.67};
 function areaTough(){ return AREATOUGH[RUN&&RUN.area]||1; }
 function bossTough(){ return BOSSTOUGH[RUN&&RUN.area]||1; }
 /* 敵ひとりに掛かる合計の倍率 */
+/* ===== 遭遇ごとの摘み（α1.0.046） =====
+   区画の摘み（AREATOUGH）は **普通と重いをならして**掛かるので、
+   区画の中の偏りは直せない。同じ区画でも
+     ・盾を3体並べた顔ぶれ … HP の山になって いつまでも終わらない
+     ・牙を3体並べた顔ぶれ … 削りが重なって こちらが先に落ちる
+     ・2体だけの顔ぶれ　　 … 数が足りず 手応えが出ない
+   と まるで違う手応えになる。**顔ぶれそのものに 摘みを持たせる。**
+
+   ここは tools/encchk.mjs が測って書き込む値で、0.6〜1.6 に収めてある。
+   その外に振り切れる顔ぶれは 摘みでは直せない ── **編成を直すこと。** */
+const ENCTOUGH={p_wr:1.13,p_rb3:1.19,p_gw2:0.8,p_be3:1.23,p_wf2:1.09,p_wr2:0.98,p_bo2:0.85,p_bo3:0.91,p_bs:0.81,p_fang:1.09,p_hard:0.88,pb1:1.05,f_og:0.86,f_to:0.81,f_be:0.85,f_or2:1.34,f_bm:1.27,f_gb:0.9,f_tb:0.76,f_ob:1.02,f_hard:0.85,f_be2:1.13,pb2:1.03,w_sp2:1.46,w_ss:0.82,w_sd:0.94,w_wi2:1.03,w_sa:0.93,w_wr:0.82,w_al:0.84,w_ce:0.85,w_rc2:1.1,w_hard:0.7,w_el:1.08,w_dh:0.91,sh2:0.83,gb1:1.35,gc1:1.06,gb2:0.94,hb1:0.76,db2:0.89,gc3:1.1,gr1:1.09,rt1:1.1,hb2:0.77,c_bs1:1.08,c_bs2:0.91,b1:1.02,h_bg:0.9,ls2:0.82,h_gg:1.05,gl1:0.72,rw1:1.25,rw2:0.75,bt1:1.01,h_gt:1.32,gl2:1.21,tr1:0.95,rw3:0.9,gg2:0.92,gl3:0.9,rw4:1.16,c_ar2:1.16,c_sw:0.9,sk1:0.93,c_bf2:0.76,sg2:1.17,sg1:1.08,c_afb:1.08,c_spw:1.15,sg3:1.3,wr2:0.95,c_af3:0.92,c_spa:0.72,b3:0.98};
+function encTough(){
+  const e=(RUN&&RUN.boss)?null:sel.enc;
+  return (e&&ENCTOUGH[e])||1;
+}
 function foeScale(boss){
   const ex=boss?bossTough():((RUN&&RUN.elite)?eliteTough():1);
-  return lvScale()*areaTough()*ex;
+  return lvScale()*areaTough()*ex*encTough();
 }
 function depthMul(){
   const r=(RUN&&RUN.cur)?RUN.cur.r:0;
@@ -8896,8 +8919,8 @@ const AREAS={
    to:["seed","cave"],
    solo:["p_sl","p_gs","p_rb","p_wf","p_be"],
    easy:["p_rb2","p_sl2","p_gsr","p_gs2","p_rbe","p_bo"],
-   norm:["p_wr","p_rb3","p_gw2","p_bs","p_be3","p_wf2","p_wr2"],
-   hard:["p_bo2","p_bbe","p_bo3"],
+   norm:["p_wr","p_rb3","p_gw2","p_be3","p_wf2","p_wr2"],
+   hard:["p_bo2","p_bbe","p_bo3","p_bs"],
    elite:["p_fang","p_hard"], boss:"pb1"},
  /* 鍵は seed のまま。BGM の割り当てと、控えてある潜行の RUN.area が
     これを見ているので、名前だけ変える */
@@ -8933,8 +8956,8 @@ const AREAS={
    to:["hall"],
    solo:["s_cs","s_gc","s_gb","s_rt","s_ga","s_db"],
    easy:["cs2","rc1","gc2","dc1"],
-   norm:["sh2","gb1","gc1","gb2","hb1","hb2","db2"],
-   hard:["gc3","sh1","gr1","rt1"],
+   norm:["sh2","gb1","gc1","gb2","hb1","db2"],
+   hard:["gc3","sh1","gr1","rt1","hb2"],
    elite:["c_bs1","c_bs2"], boss:"b1"},
  hall:{n:"水 没 し た 回 廊",tier:3,art:"atlantis",
    x:72,y:59,land:"water",
