@@ -39,6 +39,11 @@ async function newSave(){
     const c=await pg.$$('#mkBody [data-k], #mkBody [data-w]'); if(!c.length)break;
     await c[0].click(); await pg.waitForTimeout(160);
   }
+  /* 見た目の段（α1.0.041）。おまかせで振って そのまま進む */
+  if(await pg.$("#mkRnd")){
+    await pg.click("#mkRnd");await pg.waitForTimeout(120);
+    await pg.click("#mkLookGo");await pg.waitForTimeout(200);
+  }
   await pg.waitForSelector("#mkNext",{timeout:8000});
   await tap("#mkNext"); await pg.waitForTimeout(300);
   await firstCard(); await pg.waitForTimeout(600);

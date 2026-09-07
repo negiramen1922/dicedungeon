@@ -1088,7 +1088,6 @@ body.attitle #brand{display:none}
   <div class="townparty" id="townParty"></div>
   <div class="homemenu">
     <button class="go" id="hGo">潜 る</button>
-    <button class="topbtn hide" id="hInn">宿 に 泊 ま る</button>
     <button class="topbtn hide" id="hHire">仲 間 を 雇 う</button>
     <button class="topbtn hide" id="hChar">パ ー テ ィ を 見 る</button>
     <button class="topbtn" id="hWorld">世 界 地 図</button>
@@ -1176,7 +1175,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
-const VERSION="α1.0.048";
+const VERSION="α1.0.049";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1189,6 +1188,9 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1049",tag:"fix",v:"α1.0.049",d:"2026-09-07",n:"宿を無くしました",b:[
+   "<b>町へ帰ると全快する</b>いま、宿には売るものが何もありませんでした。α1.0.024 からずっと 押せない札のままでした",
+   "町の札から外し、仕組みも消しました。傷を癒やすのは <b>町（ただで全快）</b>と <b>焚き火</b>と <b>道具</b>です"]},
  {id:"v1048",tag:"fix",v:"α1.0.048",d:"2026-09-07",n:"押せないままだった宿の札を 引っ込めました",b:[
    "α1.0.024 で <b>町へ帰ると全快</b>になってから、町での傷はいつも 0 でした。宿の札は「押せないまま ずっと並んでいる」だけになっていました",
    "<b>用があるときだけ出す</b>ようにしました。押せない札を置いておくのは 嘘です",
@@ -9499,16 +9501,15 @@ function goTown(why){
   RUN=null;
   /* ===== 町へ帰れば 傷は癒える（α1.0.030） =====
      前は **傷が残った**（HP・MP はそのまま）ので、帰るたびに
-     宿代を払うか 道具を割くかしないと 次に潜れなかった。
+     次に潜る前に 道具を割くしかなかった。
      町は 立て直す場所であって、罰を持ち帰る場所ではない。
 
-     **MP も戻る**（α1.0.031）。宿は `innCost` が 0 になるので
-     おのずと出なくなる ── 役どころを決め直すまで 眠らせておく。 */
+     **MP も戻る**（α1.0.031）。
+     〔宿は α1.0.049 で無くした。ここが全快なので 売るものが何も無い。〕 */
   const woke=party.filter(u=>u.HP<=0);
   party.forEach(u=>{u.HP=u.maxHP;u.MP=u.maxMP;
     u.ail=[];u.block=0;u.buffs=[];u.dbuffs=[];});
   /* 控えは潜っていないので、町に戻ったところで **ただで癒えている**。
-     宿代を払うのは 連れて行った者のぶんだけ（α1.0.018）。
      ここで癒やさないと、傷ついた者を控えに回して 別の者を入れる、という
      ふつうの動きが「控えの傷が永久に残る」罠になる。 */
   bench.forEach(u=>{u.HP=u.maxHP;u.MP=u.maxMP;u.ail=[];u.block=0;u.buffs=[];u.dbuffs=[];});
@@ -12614,18 +12615,6 @@ function drawHome(){
     b.onclick=()=>{SFX.click();charModal(null,party[+b.dataset.tp]);};});
   $("#hChar").classList.toggle("hide",!started);
   $("#hHire").classList.toggle("hide",!started);
-  /* ===== 宿は 用があるときだけ出す（α1.0.048） =====
-     α1.0.024 で **町へ帰ると全快**になったので、町での傷はいつも 0 ── 
-     宿の札は「押せないまま ずっと並んでいる」だけになっていた。
-     押せない札を置いておくのは 嘘なので、**用があるときだけ出す。**
-     仕組みは丸ごと残してある（innCost / innModal / tools/innchk.mjs）ので、
-     町の全快をやめれば その日から また出る。 */
-  const inn=started?innCost():{hp:0,mp:0,gold:0};
-  $("#hInn").classList.toggle("hide",!started||inn.hp+inn.mp<=0);
-  if(started&&inn.hp+inn.mp>0){
-    $("#hInn").textContent=`宿 に 泊 ま る（${inn.gold} 金貨）`;
-    $("#hInn").disabled=false;
-  }
   if(started)$("#hHire").textContent=
     hireCost()?`仲 間 を 雇 う（${hireCost()} 金貨）`:"仲 間 を 雇 う（は じ め は た だ）";
   $("#hGo").textContent=started?"潜 る":"は じ め る";
@@ -12862,7 +12851,6 @@ $("#hGo").onclick=()=>{
 };
 $("#hChar").onclick=()=>{SFX.click();charModal();};
 $("#hHire").onclick=()=>{SFX.click();hireModal();};
-$("#hInn").onclick=()=>{SFX.click();innModal();};
 /* どこへ潜るかを 世界地図で選ぶ。**光っている場所だけ押せる。**
    開くのは 抜けた区画と その先（diveTargets）。最初は 原始の草原だけ。 */
 function diveModal(){
@@ -12896,68 +12884,6 @@ function diveModal(){
   $("#mbox").querySelectorAll("[data-w]").forEach(g=>{g.onclick=()=>go(g.dataset.w);});
   $("#mbox").querySelectorAll("[data-d]").forEach(g=>{g.onclick=()=>go(g.dataset.d);});
   $("#dvX").onclick=closeModal;
-}
-/* ===== 宿（α1.0.018） =====
-   町で パーティの HP と MP を全快させる場所。**傷のぶんだけ払う。**
-
-   値づけの目安は 道具から取った。フルポーション（ひとり全快）は 88金貨で、
-   段1のナイトの最大HP 383 に対して **1 HP あたり 0.23 金貨**。
-   宿は持ち歩けない（町でしか使えない）ぶん **その3分の1**にしてある。
-   MP も同じ考えで マナポーション（12 MP／30金貨 ＝ 2.5）の3分の1。
-
-   1潜行の実入りは 段1で 300金貨ほど。ひとりの全快が 50金貨前後、
-   3人のパーティを段4で全快させて 450金貨ほど ── **痛いが払える**あたり。
-
-   〔決めごと〕強欲の `restHalf`（休息の効きは半分）は **宿には効かない。**
-   あれは野で火にあたる話で、宿は金を払って買う手当て。
-   傲慢の `shopHalf`（店の値段が半分）は **効く。**宿も店のうち。 */
-const INNHP=0.08, INNMP=0.70;
-function innCost(){
-  let hp=0,mp=0;
-  (party||[]).forEach(u=>{ hp+=Math.max(0,u.maxHP-Math.max(0,u.HP));
-                           mp+=Math.max(0,u.maxMP-Math.max(0,u.MP)); });
-  const half=(ORIG[sel.orig]&&ORIG[sel.orig].shopHalf)?0.5:1;
-  return {hp,mp,gold:Math.ceil((hp*INNHP+mp*INNMP)*half)};
-}
-function innModal(){
-  const c=innCost();
-  if(c.hp+c.mp<=0){
-    resultModal("宿",[ "パーティに 傷は無い",
-      `<span class="s">泊まる用はない。金貨は取っておこう</span>`],[{n:"閉じる"}]);
-    return;
-  }
-  const short=Math.max(0,c.gold-me.gold);
-  const rows=party.map(u=>{
-    const dh=u.maxHP-Math.max(0,u.HP), dm=u.maxMP-Math.max(0,u.MP);
-    return `<div class="mitem eqrow">
-      <span class="eqk" style="white-space:nowrap">${meFig(20,u)} ${rosterName(u)}</span>
-      <span class="eqv">HP <b>${Math.max(0,u.HP)}</b>/${u.maxHP}${
-        dh?`　<span style="color:#8fa261">→ ${u.maxHP}（+${dh}）</span>`:`　<span class="s">満ちている</span>`}
-        <br>MP <b>${u.MP}</b>/${u.maxMP}${
-        dm?`　<span style="color:#8fd0ff">→ ${u.maxMP}（+${dm}）</span>`:`　<span class="s">満ちている</span>`}</span></div>`;
-  }).join("");
-  const h=`<div class="mtitle">宿 に 泊 ま る</div>
-    <div class="mgrow">代金 <b style="color:#c9a227">${c.gold}</b> 金貨　
-      <span class="s">所持 ${me.gold}${short?`　<span style="color:var(--blood)">あと ${short} 足りない</span>`:""}</span></div>
-    <div class="msub">傷のぶんだけ払う。HP ${c.hp} と MP ${c.mp} が戻る${
-      (ORIG[sel.orig]&&ORIG[sel.orig].shopHalf)?"　<span class=\"s\">（傲慢：宿代も半分）</span>":""}</div>
-    ${rows}
-    <div class="ndbtn" style="margin-top:10px">
-      <button class="no2" id="innX">やめる</button>
-      <button class="go2" id="innGo"${short?" disabled":""}>${short?"金貨が足りない":"泊 ま る"}</button>
-    </div>`;
-  openModal(h,true);
-  $("#innX").onclick=closeModal;
-  if(!short)$("#innGo").onclick=()=>{
-    me.gold-=c.gold;
-    party.forEach(u=>{u.HP=u.maxHP;u.MP=u.maxMP;});
-    SFX.found();runSave();closeModal();
-    resultModal("ひ と 晩 が 明 け た",
-      [`<span class="gain">パーティは すっかり癒えた</span>`,
-       `<span class="s">代金 ${c.gold} 金貨　残り ${me.gold}</span>`],
-      [{n:"確 認",cb:()=>drawHome()}]);
-    drawHome();
-  };
 }
 /* 仲間を雇う窓 */
 function hireModal(){

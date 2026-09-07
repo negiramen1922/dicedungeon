@@ -26,8 +26,8 @@ const out=await pg.evaluate(async()=>{
      消されてしまう。**使った直後の姿**を見たいので、手番送りだけ止める */
   const realQueue=window.runQueue;
   window.runQueue=async()=>{};
-  const use=async(id,tg)=>{ const r=find(id); if(!r){bad.push("技が無い "+id);return;}
-    me.sk=[{...r,cdLeft:0}]; me.MP=me.maxMP; busy=false;cur=me;over=false;
+  const use=async(id,tg,over)=>{ const r=find(id); if(!r){bad.push("技が無い "+id);return;}
+    me.sk=[{...r,...(over||{}),cdLeft:0}]; me.MP=me.maxMP; busy=false;cur=me;over=false;
     await resolvePlayer({kind:"skill",i:0}, tg===undefined?alive()[0]:tg); };
   /* 出目は本物なので、当たるまで繰り返す。見たいのは「当たったら何が起きるか」 */
   const useTill=async(id,tg,ok)=>{ for(let i=0;i<20;i++){ await use(id,tg); if(ok())return i+1; } return 0; };
@@ -72,19 +72,23 @@ const out=await pg.evaluate(async()=>{
   L.push(`③ 合わせ打ち（24回振って いちばん重い一撃）　弱点を知らない ${unknown} → 知っている ${known}（弱点 ${ELEM[FOE[t3.key].weak].n}）`);
   if(!(known>unknown))bad.push("弱点を知っていても 属性が乗っていない");
 
-  /* ④ 隙を突く：遅い相手には +20%。誰にでも撃てること も見る */
+  /* ④ 隙を突く：遅い相手には +20%。誰にでも撃てること も見る。
+     出目の揺れを消すために **ダイスを 14 個**にする（必要2 はほぼ必ず通り、
+     超過も必ず出るので 倍率が一定になる ＝ ダメージが決まる）。
+     DEX の差は ±1 にして しきい値を揃える（dexStep は 25 きざみ）。
+     こうすると 乗るのは slowBonus の +20% だけになる。 */
   await setup();
-  const t4=alive()[0]; t4.maxHP=999999;
+  const t4=alive()[0]; t4.maxHP=9999999;
   const swing=async(dex)=>{ let best=0;
-    for(let i=0;i<24;i++){ t4.HP=t4.maxHP; t4.DEX=dex;
-      await use("akh5",t4); best=Math.max(best,t4.maxHP-t4.HP); }
+    for(let i=0;i<6;i++){ t4.HP=t4.maxHP; t4.DEX=dex;
+      await use("akh5",t4,{dice:14}); best=Math.max(best,t4.maxHP-t4.HP); }
     return best; };
-  /* DEX 999 だと しきい値が 6 に張り付き、24回振っても当たらない回が出る。
-     **少し速い相手**で測る（比べたいのは +20% が乗るかどうか） */
-  const fast=await swing(dexOf(me)+30), slow=await swing(1);
-  L.push(`④ 隙を突く（24回振って いちばん重い一撃）　速い相手 ${fast} → 遅い相手 ${slow}`);
+  const mine=dexOf(me);
+  const fast=await swing(mine+1), slow=await swing(Math.max(1,mine-1));
+  const gap=fast?Math.round((slow/fast-1)*100):0;
+  L.push(`④ 隙を突く　少し速い相手 ${fast} → 少し遅い相手 ${slow}　差 ${gap}%（狙い +20%）`);
   if(fast<=0)bad.push("速い相手には まったく撃てない（腐っている）");
-  if(!(slow>fast))bad.push("遅い相手に 威力が乗っていない");
+  if(gap<12||gap>30)bad.push(`遅い相手への上乗せが 狙いと違う: ${gap}%`);
 
   /* ⑤ 免疫：状態異常を すべて解く */
   await setup();
