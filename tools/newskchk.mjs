@@ -79,7 +79,9 @@ const out=await pg.evaluate(async()=>{
     for(let i=0;i<24;i++){ t4.HP=t4.maxHP; t4.DEX=dex;
       await use("akh5",t4); best=Math.max(best,t4.maxHP-t4.HP); }
     return best; };
-  const fast=await swing(999), slow=await swing(1);
+  /* DEX 999 だと しきい値が 6 に張り付き、24回振っても当たらない回が出る。
+     **少し速い相手**で測る（比べたいのは +20% が乗るかどうか） */
+  const fast=await swing(dexOf(me)+30), slow=await swing(1);
   L.push(`④ 隙を突く（24回振って いちばん重い一撃）　速い相手 ${fast} → 遅い相手 ${slow}`);
   if(fast<=0)bad.push("速い相手には まったく撃てない（腐っている）");
   if(!(slow>fast))bad.push("遅い相手に 威力が乗っていない");
