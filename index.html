@@ -1156,7 +1156,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（一味を育てて 何度でも潜る） */
-const VERSION="α1.0.035";
+const VERSION="α1.0.036";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1169,6 +1169,12 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1036",tag:"up",v:"α1.0.036",d:"2026-09-07",n:"敵もダイスが増えます。複数体への攻撃が同時に入ります",b:[
+   "<b>敵の振るダイスが 階層で増えます。</b>第1階層 3個 → 第2・3階層 4個 → 第4階層 5個。これまでは 89手のうち 61手が <b>3個で固定</b>で、深く潜っても当たりやすさが変わりませんでした",
+   "<b>「手数のわりに軽い」敵の手を 回数に置き換えました。</b>トライデントの乱撃は 10個・威力−70% → <b>3個・3回・−15%</b>。連撃・コアビーム・疾走槍・水の奔流も 2回に。新しい仕組みではダイスは <b>当たりやすさ</b>にしか効かないので、多く振るだけの弱い攻撃になっていました",
+   "<b>複数の相手に入る攻撃が 同時に入るようになりました。</b>槍の貫通・薙ぎ払い・アローレイン・インフェルノなど。これまでは1体ずつ順に殴っているように見えていました",
+   "「同じ相手に2回」「散らして5回」は 本当に複数回なので、これまでどおり順に入ります",
+   "〔不具合〕<b>4体並ぶ遭遇の4体目が「キラービー undefined」と名乗っていました。</b>ラット・ホーンラビットも同じでした"]},
  {id:"v1035",tag:"fix",v:"α1.0.035",d:"2026-09-07",n:"手練れ（精鋭）が どの区画でも勝てない戦いになっていました",b:[
    "<b>精鋭は 4体、普通は 2〜3体。</b>こちらは最大3人なので 4対3 は構造的に重く、前提の人数では <b>どこでも勝てません</b>でした（余裕 ×0.35〜0.92）",
    "普通には区画ごとの摘み、ボスにも区画ごとの摘みがあったのに、<b>精鋭にだけありませんでした</b>。足しました",
@@ -4531,7 +4537,7 @@ const FOE={
    HP:130,STR:40,VIT:10,DEX:38,rank:"front",scout:4,
    acts:[{n:"駆け抜ける",k:"atk",suc:2,dice:3,pct:90,w:5},
          {n:"帽子を絞る",k:"regen",heal:26,w:2},
-         {n:"疾 走 槍",k:"atk",dice:5,pct:-35,w:2}]},
+         {n:"疾 走 槍",k:"atk",dice:3,hits:2,pct:-10,w:2}]},
  alraune:{n:"アルラウネ",d:"大輪の花の中央に人の上半身を持つ植物。根を張ったまま動かない。花粉には強い痺れがあり、近づいた獣がそのまま養分になる。",mat:"petal",weak:"fire",resist:"water",elem:"earth",art:"alraune",snd:"magic",
    HP:180,STR:36,VIT:14,DEX:12,rank:"back",scout:2,
    acts:[{n:"ツタのムチ",k:"atk",dice:3,w:6},
@@ -4607,26 +4613,26 @@ const FOE={
    acts:[{n:"拳を振り下ろす",k:"atk",suc:3,dice:4,pct:220,w:5},
          {n:"突 進",k:"atk",dice:3,w:4},
          {n:"ハンドガード",k:"guard",block:20,w:4},
-         {n:"連 撃",k:"atk",dice:6,pct:-60,seq:3}],
+         {n:"連 撃",k:"atk",dice:3,hits:2,pct:-20,seq:3}],
    phases:[{noParts:true,n:"拳 が 砕 け る",d:"支えを失い、胸の守護核がむき出しになった",
      acts:[{n:"突 進",k:"atk",dice:3,w:4},
-           {n:"コアビーム",k:"atk",dice:6,pct:-40,w:3},
+           {n:"コアビーム",k:"atk",dice:3,hits:2,pct:-10,w:3},
            {n:"プロテクション",k:"guard",block:30,w:2}]}]},
  ghand:{n:"ガーディアンハンド",d:"ゲートガーディアンの拳。腕から離れて宙に浮き、本体が狙われるたびに割って入る。自分から殴ることはない。砕けば本体の手が三つ死ぬ。",weak:"blunt",resist:"slash",elem:"earth",art:"ghand",snd:"blunt",
    HP:200,STR:1,VIT:20,DEX:1,rank:"front",scout:1,noAct:true,partOf:"gate",nm:["右","左"],
    acts:[{n:"動 か な い",k:"idle",d:"ただ そこに在る",w:1}]},
  deepone:{n:"ディープワン",d:"深みから現れ、魚人たちの王を名乗ったもの。魚人よりひと回り大きく、鱗の下に別の何かが透けて見える。守護核を持つが、それをどこで得たのかは誰も知らない。",mat:"core",weak:"bolt",resist:"water",elem:"water",art:"deepone",snd:"blunt",HP:820,STR:78,VIT:30,DEX:24,rank:"front",scout:6,
    acts:[{n:"トライデント",k:"atk",suc:2,dice:3,pct:90,w:5},
-         {n:"水 の 奔 流",k:"atk",dice:5,pct:-50,ail:{curse:15,t:2},w:3},
+         {n:"水 の 奔 流",k:"atk",dice:3,hits:2,pct:-15,ail:{curse:15,t:2},w:3},
          {n:"水 の 膜",k:"guard",block:20,w:3},
          {n:"大 海",k:"atk",dice:4,pct:-30,ail:{slow:10,curse:8,t:2},w:1}],
    phases:[{at:.5,n:"深 き 者 の 呼 び 声",d:"鱗が青黒く染まり、禍々しくなる",
      str:18,def:10,dex:10,
      acts:[{n:"トライデント",k:"atk",suc:2,dice:3,pct:90,w:5},
-           {n:"水 の 奔 流",k:"atk",dice:5,pct:-50,ail:{curse:15,t:2},w:3},
+           {n:"水 の 奔 流",k:"atk",dice:3,hits:2,pct:-15,ail:{curse:15,t:2},w:3},
            {n:"水 の 膜",k:"guard",block:20,w:3},
            {n:"大 海",k:"atk",dice:4,pct:-30,ail:{slow:10,curse:8,t:2},w:1},
-           {n:"トライデントの乱撃",k:"atk",dice:10,pct:-70,seq:3}]}]},
+           {n:"トライデントの乱撃",k:"atk",dice:3,hits:3,pct:-15,seq:3}]}]},
 };
 
 
@@ -4865,7 +4871,14 @@ function makeFoes(){
     const same=list.filter(x=>x===k).length;
     const nth=list.slice(0,i).filter(x=>x===k).length;
     return {...f,id:i,key:k,
-      name:f.n+(same>1?" "+((f.nm&&f.nm[nth])||"ABC"[nth]):""),
+      /* 同じ敵が並ぶときの呼び名。**"ABC"[3] は undefined**。
+         4体並ぶ遭遇（蜂の群れ・牙の群れ・森の奥 など 14件）の4体目が
+         「キラービー undefined」と名乗っていた。
+         呼ばれた敵のほうは α1.0.00x で "ABCDEF" に直してあったのに、
+         **最初から並んでいるほうが直っていなかった。**
+         列の上限は LINEMAX(6) なので それまで用意し、
+         万一あふれても 番号で名乗らせる。 */
+      name:f.n+(same>1?" "+((f.nm&&f.nm[nth])||FOENAMES[nth]||String(nth+1)):""),
       maxHP:Math.round(f.HP*dm*FOEHP*partyMul()*sc),
       HP:Math.round(f.HP*dm*FOEHP*partyMul()*sc),
       STR:Math.round(f.STR*(1+(dm-1)*0.6)*FOESTR*sc),
@@ -4930,7 +4943,24 @@ const onBoard=()=>foes.filter(f=>f.HP>0);
    届く／届かない という決まりは無くなった。**誰でも狙える。奥ほど当てにくいだけ。** */
 const DEPTHCAP=2;      /* 3番目より奥は みな +2 */
 const AOEMAX=3;        /* 範囲攻撃が巻き込む数（手前から） */
-const LINEMAX=6;       /* 1本の列に並べられる上限（呼ばれた仲間もここまで） */
+const LINEMAX=6;
+/* 同じ敵が並ぶときの呼び名。列の上限（LINEMAX）ぶん用意する */
+const FOENAMES=["A","B","C","D","E","F"];
+/* ===== 敵の振るダイス（α1.0.036） =====
+   味方は技能で 1個 → 5個 と伸びるのに、敵は 89手のうち 61手が **3個で固定**
+   だった。深く潜っても 当たりやすさが変わらず、階層の重みが HP と威力に
+   しか出ていなかった。**階層で伸ばす。**
+
+   伸ばすのは当たりやすさだけ。重さは 必要成功数と威力が背負う。 */
+const FOEDICEUP=[0,1,1,2];              /* 段1→+0　段2・3→+1　段4→+2 */
+function foeDice(f,t){
+  /* 〔罠〕`FOEDICEUP[i]||最後` と書いていた。段1 の値は **0** なので
+     偽と見なされ、いつも最後の 2 が採られて 段1 で 5個 振っていた。
+     0 を正しい値として扱うこと。 */
+  const i=Math.max(0,(areaTier()||1)-1);
+  const up=(i<FOEDICEUP.length)?FOEDICEUP[i]:FOEDICEUP[FOEDICEUP.length-1];
+  return Math.max(1,(t.dice||1)+up+(f&&f.scoutDice||0));
+}       /* 1本の列に並べられる上限（呼ばれた仲間もここまで） */
 const foeLine  =()=>alive();
 const partyLine=()=>pAlive();
 function lineOf(u){ return u.isFoe?foeLine():partyLine(); }
@@ -5162,8 +5192,7 @@ function telePreview(f,tt){
     const b0=(t.vsAil&&(tg.ail||[]).length)?t.vsAil:0;
     const fpow=powOf(f,{pct:(t.pct||0)+b0,pow:t.pow||0});
     const far=reachOf(f,tg,t);
-    const sd=f.scoutDice||0;
-    const nd=t.dice+sd;
+    const nd=foeDice(f,t);
     const thr=threshold(f,tg,{act:t});
     /* 予告の数字も 本番と同じ順で出す（威力×超過 → 見切り → シールド → VIT）。
        **ひと振りで1つ**（α2・段3）なので「1ヒット×ダイス数」ではない。
@@ -5181,7 +5210,7 @@ function telePreview(f,tt){
       sub:`${nd}d6・<b>${thr}以上</b>・必要 <b>${need}</b>・${lo}〜${hi}${
         mdef?`<span style="color:#8fd0ff">（VIT −${mdef}）</span>`:""}`+
         (sh?`　／　<span style="color:#8fd0ff">シールド ${sh} を先に削る</span>`:"")+
-        (sd?`　／　<span style="color:#b1544a">先に気づいていた ダイス +${sd}</span>`:"")+
+        ((f.scoutDice||0)?`　／　<span style="color:#b1544a">先に気づいていた ダイス +${f.scoutDice}</span>`:"")+
         (t.drain?`　／　与えた分の ${Math.round(t.drain*100)}% を吸う`:"")+
         (t.open?`　／　<span style="color:#e0b83a">振ったあと 隙ができる</span>`:"")+
         (t.vsAil?`　／　<span style="color:#e0b83a">弱っている相手には 威力 +${t.vsAil}%</span>`:"")+
@@ -6622,19 +6651,30 @@ async function playerAttack(targets,opt){
        二段突き … 同じ相手に 2回
        連 撃   … 生きている相手に 散らして 5回（`opt.spread`）
      判定は1回きり ── 振り直しではない。空振りなら 1回も入らない。 */
+  /* ===== 何回・誰に 入るか（α1.0.036） =====
+     **波**にまとめる。ひと波は「同じ瞬間に入るぶん」。
+       ふつうの複数体（貫通・範囲）… 1波に的が全部 ＝ **同時**
+       同じ相手に2回          … 2波（本当に2度突くので 順番でよい）
+       散らして5回            … 5波（1体ずつ）
+     前は的ごとに 踏み込み・効果音・待ちが入っていたので、
+     槍で2体を貫いても **1体ずつ順に**殴っているように見えていた。 */
   const HITS=Math.max(1,opt.hits||1);
-  const seq=[];
+  const waves=[];
   for(let h=0;h<HITS;h++){
     if(opt.spread){
-      /* 散らす技は **盤に生きている相手ぜんぶ**から選ぶ。
-         選んだ相手だけを候補にしていたので 1体も入らなかった */
+      /* 散らす技は **盤に生きている相手ぜんぶ**から選ぶ */
       const pool=alive().filter(x=>x.HP>0);
       if(!pool.length)break;
-      seq.push(pool[Math.floor(Math.random()*pool.length)]);
-    }else targets.forEach(t=>seq.push(t));
+      waves.push([pool[Math.floor(Math.random()*pool.length)]]);
+    }else waves.push(targets.slice());
   }
   if(HITS>1)log(`<span class="c">${opt.spread?"散らして":"重ねて"} ${HITS} 回</span>`);
-  for(const t of seq){
+  for(const wave of waves){
+   if(!wave.some(x=>x.HP>0))continue;
+   /* 踏み込みと効果音は **波にひとつ**。的の数だけ鳴らさない */
+   await lungeUnit(A);
+   SFX.atk(A.wep.snd);
+   for(const t of wave){
     if(t.HP<=0)continue;
     let pow=powOf(A,opt)+passOn("pow",A)+(A.tmpPow||0);
     if(passOn("fixate",A)>0){
@@ -6693,16 +6733,12 @@ async function playerAttack(targets,opt){
     const rate=base?dmg/base-1:0;
     const startHP=t.HP, endHP=Math.max(0,t.HP-dmg);
     /* ===== ひと振りは **一撃**（α1.0.021） =====
-       段3 で「超過があったら 踏み込みを重ねて 大きく入ったことを見せる」と
-       書いて `1+超過` 回まわしていた。ダメージは1回ぶんなのに
-       **踏み込みと効果音が2〜3回鳴る**ので、遊ぶ人からは
-       「必要1で2つ成功したら 2回攻撃した」と見えていた。
-       仕組みと真逆なので落とした。**重さは 出る数字で見せる。** */
-    await lungeUnit(A);
-    SFX.atk(A.wep.snd);
+       超過があったぶん 踏み込みを重ねていたが、ダメージは1回ぶん。
+       仕組みと真逆なので落とした。**重さは 出る数字で見せる。**
+       踏み込みと効果音は 波の頭で1回だけ鳴らしてある（α1.0.036）ので、
+       ここは **その的に何が起きたか**だけを出す ── 全部の的で同時に出る。 */
     fxOn(t,A.wep.snd);
     setHPBar(t,endHP);
-    await wait(170);
     popOn(t,"−"+dmg,(over>0?"big ":"")+"each"+(em>1?" weakhit":em<1?" resisthit":""));
     t.HP=endHP;
     await checkPhase(t);       /* しきい値を切ったらボスが段階を上げる */
@@ -6798,7 +6834,8 @@ async function playerAttack(targets,opt){
       }
     }
     if(sixes>0)sawSix=true;
-    await wait(420);
+   }
+   await wait(waves.length>1?300:470);   /* 待つのも 波にひとつ */
   }
   draw();
 }
@@ -7203,7 +7240,7 @@ async function enemyAct(f){
       f.scoutDice=0;
       log(`<span class="b">${f.name}</span> は先に気づいていた　攻撃ダイス <span class="c">+${sd}</span>`);
     }
-    const nd=t.dice+sd;
+    const nd=foeDice(f,t);
     const rolls=[];for(let i=0;i<nd;i++)rolls.push(r6());
     const thr=threshold(f,tg,{act:t});
     await rollDice(rolls,thr,`${f.name} → ${tg.name}　<em>${nd}d6 ・ ${thr}以上</em>`,
@@ -7225,18 +7262,30 @@ async function enemyAct(f){
       await wait(420);
       return;      /* この者の手番はここまで（麻痺のときと同じ抜け方） */
     }
+    /* ===== 敵も 何回か入る（α1.0.036） =====
+       前は「手数のわりに軽い」を **ダイスを増やして威力を削る**で表していた
+       （トライデントの乱撃 10個・−70%）。新しい仕組みではダイスは
+       **当たりやすさ**にしか効かないので、ただの「当たるだけの弱い攻撃」に
+       なっていた。**回数は hits で、当たりやすさは dice で。**
+       判定はひと振りきり ── 空振りなら 1回も入らない。 */
+    const FHITS=Math.max(1,t.hits||1);
+    if(FHITS>1)log(`<span class="c">重ねて ${FHITS} 回</span>`);
+    let fDealt=0;
+    /* あとのログが読む値。ループの中で宣言すると外から見えない */
+    let halved=false, soaked=0, shLeft=0, mdef=0, raw=0;
+    for(let fh=0;fh<FHITS;fh++){
+    if(tg.HP<=0)break;
     /* ①威力 ×超過（＋来歴の倍率）→ ②見切り → ③シールド → ④VIT */
     let inc=Math.round(fpow*fxMul*orgMul("inMul",tg));
-    const halved=tg.half;
-    if(tg.half){inc=Math.round(inc/2);tg.half=false;}
+    if(tg.half){inc=Math.round(inc/2);tg.half=false;halved=true;}
     /* 来た量。シールドで消したぶんも VIT で削ったぶんも含む。
        反撃（カウンター）が返す量の元になる。 */
-    const raw=inc;
+    raw+=inc;                 /* 反撃は 来た量の合計で返す（多段のぶんも） */
     const sh=shieldOf(tg);
-    const soaked=Math.min(sh,inc);
-    const shLeft=sh-soaked;
+    soaked=Math.min(sh,inc);
+    shLeft=sh-soaked;
     tg.block=shLeft;
-    const mdef=defOf(tg);
+    mdef=defOf(tg);
     let dmg=perHit(inc-soaked,mdef);
     let endHP0=tg.HP-dmg;
     if(endHP0<=0&&passOn("endure",tg)>0&&!tg.endured){
@@ -7259,10 +7308,13 @@ async function enemyAct(f){
       SFX.atk(f.snd);
       fxOn(tg,f.snd);
       setHPBar(tg,endHP);
-      await wait(170);
+      await wait(FHITS>1?110:170);
       popSelf("−"+dmg,(fover>0?"big ":"")+"each");
     }
     tg.HP=endHP;
+    fDealt+=Math.max(0,startHP-endHP);
+    }   /* ← 何回か入るぶんの締め（α1.0.036） */
+    const dmg=fDealt;                 /* このあとの吸収・反撃は 合計で見る */
     if(t.drain&&dmg>0){
       const hl=Math.min(Math.round(dmg*t.drain),f.maxHP-f.HP);
       if(hl>0){f.HP+=hl;fxOn(f,"charge");popOn(f,"+"+hl,"heal");
@@ -7360,7 +7412,7 @@ async function enemyAct(f){
         const base=FOE[t.who];
         const hp=Math.round(base.HP*dm*FOEHP*partyMul()*foeScale(RUN&&RUN.boss));
         const nf={...base,id:foes.length,key:t.who,
-          name:base.n+" "+"ABCDEF"[foes.filter(x=>x.key===t.who).length],
+          name:base.n+" "+(FOENAMES[foes.filter(x=>x.key===t.who).length]||"＋"),
           maxHP:hp,HP:hp,STR:Math.round(base.STR*(1+(dm-1)*0.6)*FOESTR*foeScale(RUN&&RUN.boss)),
           DEX:Math.round(base.DEX*(1+(dm-1)*0.6)),
           block:0,buffs:[],ail:[],stun:false,isFoe:true,owner:f.id,
@@ -7468,7 +7520,7 @@ async function enemyAct(f){
     const dm=depthMul(), base=FOE[t.who], sc=foeScale(RUN&&RUN.boss),
           hp=Math.round(base.HP*dm*FOEHP*partyMul()*sc);
     const nf={...base,id:foes.length,key:t.who,
-      name:base.n+" "+"ABCDEF"[foes.filter(x=>x.key===t.who).length],
+      name:base.n+" "+(FOENAMES[foes.filter(x=>x.key===t.who).length]||"＋"),
       maxHP:hp,HP:hp,STR:Math.round(base.STR*(1+(dm-1)*0.6)*FOESTR*sc),
       DEX:Math.round(base.DEX*(1+(dm-1)*0.6)),
       block:0,buffs:[],ail:[],stun:false,isFoe:true,
