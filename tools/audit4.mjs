@@ -9,15 +9,13 @@ import {chromium} from '/opt/node22/lib/node_modules/playwright/index.mjs';
 import {EXPECT_SRC} from './expect.mjs';
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
 const pg=await b.newPage();const errs=[];pg.on('pageerror',e=>errs.push(e.message));
-/* 1ラウンドのうち 技を撃てる割合。MP と再使用待ちがあるので 毎ターンではない */
-const SKSHARE=0.5;
 const FILE=(process.argv.find(a=>a.endsWith('.html'))||'index.html');
 await pg.goto('http://localhost:8765/'+FILE);await pg.waitForTimeout(800);
 await pg.evaluate(EXPECT_SRC);      /* expMineAtk / expBestSkill を持ち込む */
 const solo=process.argv.includes("solo");
 const raw=process.argv.includes("raw");   // 倍率をかけない（昔の敵）
 const grow=process.argv.includes("grow"); // 技能の点を全部 得物の技能へ
-const out=await pg.evaluate(({solo,raw,grow,SKSHARE})=>{
+const out=await pg.evaluate(({solo,raw,grow})=>{
   if(raw){FOEHP=1;FOESTR=1;}
   /* 測るレベルは **その版の TIERLV** から引く。版によって上限が違うので
      ここを決め打ちにすると 比べ物にならない（α1.0.014）。 */
@@ -78,17 +76,12 @@ const out=await pg.evaluate(({solo,raw,grow,SKSHARE})=>{
           }else if(a.k==="hex"&&a.poison)dmg+=(a.w||1)/tot*a.poison*1.5;
         });
       });
-      party.forEach(u=>{
-        const t=foeLine()[0]; if(!t)return;
-        /* ===== 通常攻撃だけでなく **持てるいちばん重い技**も見る（α1.0.044） =====
-           前は通常攻撃しか測っておらず、技を 27 件足しても
-           数字が 1 も動かなかった。「変わっていない」ではなく「測れていない」。
-           遊ぶ人は 使える手のうち重いほうを撃つので、そちらで測る。
-           MP と再使用待ちがあるので 毎ターンは撃てない ── SKSHARE ぶんだけ混ぜる。 */
-        const atk=window.expMineAtk(u,t);
-        const bs=window.expBestSkill(u,t);
-        our+=atk*(1-SKSHARE)+Math.max(atk,bs.v)*SKSHARE;
-      });
+      /* ===== 技も込みで（α1.0.045・tune4 と同じ物差し） =====
+         そのレベルで持っている技の数・攻撃技かどうか・MP・再使用待ちまで
+         expPartyRound が見る。二つの道具で 別の測り方をしないこと。 */
+      const t0=foeLine()[0];
+      if(!t0)return {hold:0,kill:0,ease:0,n:foes.length};
+      our=window.expPartyRound(party,t0,hp).our;
       return {hold:ourHP/dmg,kill:hp/our,ease:(ourHP/dmg)/(hp/our),n:foes.length};
     };
     const area={n:A.n.replace(/ /g,""),lv:me.lv,ourHP,g:{}};
@@ -100,7 +93,7 @@ const out=await pg.evaluate(({solo,raw,grow,SKSHARE})=>{
     R.push(area);
   });
   return R;
-}, {solo,raw,grow,SKSHARE});
+}, {solo,raw,grow});
 const GN={norm:"普通",hard:"重い",elite:"精鋭"};
 let all=[];
 console.log((solo?"味方1人（昔の形）":"その場所が前提にしている人数で組む")+(raw?"／敵は昔のまま":""));

@@ -25,8 +25,8 @@ const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
 const pg=await b.newPage();const errs=[];pg.on('pageerror',e=>errs.push(e.message));
 await pg.goto('http://localhost:8765/'+FILE);await pg.waitForTimeout(800);
 await pg.evaluate(EXPECT_SRC);
-const R=await pg.evaluate(()=>{
-  const out={};
+const {R,PLAN}=await pg.evaluate(()=>{
+  const out={};const plan=[];
   Object.entries(AREAS).forEach(([ak,A])=>{
     if(A.wip)return;
     sel.job="knight";sel.race="hume";sel.orig="greed";sel.area=ak;
@@ -65,8 +65,14 @@ const R=await pg.evaluate(()=>{
         f.acts.forEach(a=>{ if(a.k!=="atk")return;
           const d=ts.reduce((x,t)=>x+expFoeAct(f,a,t),0)/Math.max(1,ts.length);
           dmg+=(a.w||1)/tot*d; });});
-      party.forEach(u=>{const t=foeLine()[0];if(t)our+=expMineAtk(u,t);});
-      return (ourHP/Math.max(1,dmg))/(hp/Math.max(1,our));
+      /* ===== 技も込みで測る（α1.0.045） =====
+         前は **通常攻撃しか見ていなかった**。技を 27 件足しても
+         数字が 1 も動かないので「変わっていない」と読めてしまう。
+         expPartyRound が そのレベルで持っている技・MP・再使用待ちまで見る。 */
+      const t0=foeLine()[0];
+      if(!t0)return 0;
+      const R=expPartyRound(party,t0,hp);
+      return (ourHP/Math.max(1,dmg))/(hp/Math.max(1,R.our));
     };
     const avg=(k,elite)=>{const l2=(A[k]||[]).map(e=>meas(e,false,elite));
       return l2.length?l2.reduce((a,b)=>a+b,0)/l2.length:0;};
@@ -75,14 +81,25 @@ const R=await pg.evaluate(()=>{
       tough:(typeof AREATOUGH!=="undefined"&&AREATOUGH[ak])||1,
       btough:(typeof BOSSTOUGH!=="undefined"&&BOSSTOUGH[ak])||1,
       etough:(typeof ELITETOUGH!=="undefined"&&ELITETOUGH[ak])||1};
+    /* 何を前提に測ったかを 必ず出す。前提が見えないと 数字は読めない */
+    plan.push(`${A.n.replace(/ /g,"")} Lv${me.lv}　`+party.map(u=>{
+      const P=expSkillPlan(u,foeLine()[0]);
+      return `${u.short} 技${P.nSk}(攻${P.nAtk}) MP${u.maxMP}→${
+        P.avgMP>0?Math.floor(u.maxMP/P.avgMP):"∞"}発${
+        P.names&&P.names.length?" ["+P.names.map(n=>n.replace(/ /g,"")).join("/")+"]":""}`;
+    }).join("　"));
   });
-  return out;
+  return {R:out,PLAN:plan};
 });
 console.log("区画　　　　　　 段  普通   重い   精鋭   ボス │ いまの倍率");
 for(const k in R){const r=R[k];
   console.log(`  ${r.n.padEnd(12,"　")}${r.tier} `+
     ["norm","hard","elite","boss"].map(x=>("×"+r[x].toFixed(2)).padStart(7)).join("")+
     ` │ 区画 ${r.tough.toFixed(2)}　ボス ${r.btough.toFixed(2)}`);}
+if(PLAN.length){
+  console.log("\n測るときの前提（そのレベルで 持っている技）");
+  PLAN.forEach(x=>console.log("  "+x));
+}
 console.log("\n返すべき倍率（AREATOUGH / BOSSTOUGH に掛ける）");
 const A={},B={},E={};
 for(const k in R){const r=R[k], w=WANT[r.tier]||WANT[4];

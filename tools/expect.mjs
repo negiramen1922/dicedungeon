@@ -84,4 +84,78 @@ window.expBestSkill=function(u,t){
   pool.forEach(s=>{const v=window.expMineSkill(u,t,s);if(v>best){best=v;who=s;}});
   return {v:best,n:who?who.n:"—"};
 };
+
+/* ═══════════════════════════════════════════════════════════════
+   その場での **1ラウンドの与ダメ**（α1.0.045）
+
+   「いちばん重い技を毎ターン撃つ」で測ると 実戦より遥かに強く出る。
+   遊ぶ人が本当に持っているものだけで測るために、4つを守る。
+
+     ① そのレベルで **何回 覚えているか**（主人公は LEARNEVERY ごと、
+        仲間は MATELV。枠 SKMAX / MATESKMAX で頭打ち）
+     ② 覚えたぶんが 全部 技とは限らない（技か特かを選ばせている）
+     ③ 覚えた技が 全部 攻撃技とは限らない（守り・癒し・構えもある）
+     ④ **MP と 再使用待ち**で 撃てる回数が決まる。残りは通常攻撃
+
+   ①〜③ の見立ては 下の3つの数字だけで決まる。
+   実戦とずれたら ここを動かすこと。                             */
+const ACTSHARE=0.55;   /* 覚える機会のうち **技**に回す割合（残りは特性） */
+const ATKBIAS=1.25;    /* 攻撃技を選びたがる度合い（1.0 で 出た通り） */
+const PICKSPAN=3;      /* 1回の選択で 見せられる候補の数。良いものだけは取れない */
+
+/* そのレベルで 何回 覚えているか */
+window.expLearns=function(u){
+  const mate=(u!==me);
+  return mate ? MATELV.filter(x=>u.lv>=x).length
+              : Math.floor(u.lv/LEARNEVERY);
+};
+/* 持ち出せる技の顔ぶれを 組む。**上から順に取れるわけではない**ので、
+   良いものが並ぶ範囲（上位 PICKSPAN 倍）から 等間隔に取る */
+window.expSkillPlan=function(u,t){
+  const mate=(u!==me);
+  const pool=[].concat(REW.act.common||[],REW.act[u.job]||[],
+    REW.act[u.race]||[],REW.act[u.orig]||[]);
+  const cap=mate?MATESKMAX:SKMAX;
+  const learns=window.expLearns(u);
+  const nSk=Math.max(0,Math.min(cap,Math.round(learns*ACTSHARE)));
+  if(!nSk)return {nSk:0,nAtk:0,list:[],dmg:0,avgMP:0,cdRate:0};
+  /* ③ 覚えた技のうち 攻撃技はいくつか。出方に 選り好みぶんを掛ける */
+  const atkPool=pool.filter(s=>s.kind==="atk");
+  const rate=Math.min(1,(atkPool.length/Math.max(1,pool.length))*ATKBIAS);
+  const nAtk=Math.max(0,Math.round(nSk*rate));
+  if(!nAtk)return {nSk,nAtk:0,list:[],dmg:0,avgMP:0,cdRate:0};
+  const ranked=atkPool.map(s=>({s,v:window.expMineSkill(u,t,s)}))
+                      .sort((a,b)=>b.v-a.v);
+  const span=Math.min(ranked.length,Math.max(nAtk,nAtk*PICKSPAN));
+  const list=[];
+  for(let i=0;i<nAtk;i++)list.push(ranked[Math.min(ranked.length-1,Math.round(i*span/nAtk))]);
+  const dmg=list.reduce((a,x)=>a+x.v,0)/list.length;
+  const avgMP=list.reduce((a,x)=>a+(x.s.mp||0),0)/list.length;
+  /* ④ 再使用待ち。cd の技は (cd+1) ラウンドに 1 回。手番は1つなので 1 で頭打ち */
+  const cdRate=Math.min(1,list.reduce((a,x)=>a+1/((x.s.cd||0)+1),0));
+  return {nSk,nAtk,list,dmg,avgMP,cdRate,names:list.map(x=>x.s.n)};
+};
+/* ひとりぶんの 1ラウンド平均の与ダメ。T ラウンド戦う前提。
+   MP が尽きたら 通常攻撃に戻る ── ここを見ないと 長い戦いほど嘘になる */
+window.expRound=function(u,t,T){
+  const atk=window.expMineAtk(u,t);
+  const P=window.expSkillPlan(u,t);
+  if(!P.nAtk||P.dmg<=atk)return atk;
+  const byCd=T*P.cdRate;
+  const byMP=P.avgMP>0?Math.floor(u.maxMP/P.avgMP):T;
+  const casts=Math.max(0,Math.min(T,byCd,byMP));
+  return (casts*P.dmg+(T-casts)*atk)/T;
+};
+/* パーティ全体の 1ラウンドの与ダメ。T は「倒すのにかかるラウンド」なので
+   互いを決め合う ── 何度か回して落ち着かせる */
+window.expPartyRound=function(list,t,hp){
+  let T=6;
+  for(let i=0;i<6;i++){
+    const our=list.reduce((a,u)=>a+window.expRound(u,t,T),0);
+    const nT=hp/Math.max(1,our);
+    if(Math.abs(nT-T)<0.05){T=nT;break;}
+    T=(T+nT)/2;
+  }
+  return {our:list.reduce((a,u)=>a+window.expRound(u,t,T),0),T};
+};
 `;
