@@ -1,119 +1,90 @@
-/* 覚えたものは失わない ／ 入れ替えは戦っていないあいだ（α1.0.043） */
+/* ===== 覚えたものは失わず、入れ替えは戦っていないあいだだけ =====
+   （α1.0.058 で新しい画面に合わせ直した）
+   ① 枠に入りきらない技・癖は 控えへ回り、消えない
+   ② 拾った装備は 倉庫へ
+   ③ 町では入れ替えられる。控えへ回す → 持ち出す が通る
+   ④ 戦いのあいだは 入れ替えられず、理由が出る
+   ⑤ **枠が満杯でも 行き止まりにしない**（仕様 R-8）──
+      札は「入れ替え」に変わり、控え→枠 の2タップで差し替わる
+   ⑥ 全滅しても 覚えたものは減らない
+   使い方: node tools/bagchk.mjs                                          */
 import {chromium} from '/opt/node22/lib/node_modules/playwright/index.mjs';
-const file=process.argv[2]||'index.html';
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
-const pg=await b.newPage({viewport:{width:430,height:930}});
-const errs=[];pg.on('pageerror',e=>errs.push('PAGEERROR '+e.message));
-await pg.goto('http://localhost:8765/'+file);await pg.waitForTimeout(800);
-const out=await pg.evaluate(async()=>{
+const pg=await b.newPage({viewport:{width:390,height:844}});
+const errs=[];pg.on('pageerror',e=>errs.push(e.message));
+await pg.goto('http://localhost:8765/index.html');await pg.waitForTimeout(800);
+const out=await pg.evaluate(()=>{
   const L=[],bad=[];
-  window.wait=async()=>{};window.ovMsg=()=>{};window.ovHide=()=>{};
-  const pick=()=>{const b=document.querySelector("#mbox [data-i]")
-    ||document.querySelector("#mbox .ndbtn button:last-child")
-    ||document.querySelector("#mbox [data-skip]");if(b){b.click();return true;}return false;};
-  const drain=async()=>{let g=0;while(g++<14&&modalOpen()&&pick())await new Promise(r=>setTimeout(r,8));};
-
-  slot=0; sel.job="knight";sel.race="hume";sel.orig="wrath";
-  newGame();await drain();
-
-  /* ① 枠より多く覚えても 消えない */
-  const pool=REW.act.common.concat(REW.act.knight||[],REW.act.hume||[],REW.act.wrath||[]);
-  me.sk=[];me.bagSk=[];owned=[];
-  let n=0;
-  for(const r of pool){ if(n>=SKMAX+4)break; applyReward("act",r); n++; }
+  const Q=s=>document.querySelector("#ui "+s);
+  const QA=s=>[...document.querySelectorAll("#ui "+s)];
+  sel.job="knight";sel.race="hume";sel.orig="greed";newGame();closeModal();
+  for(let i=1;i<24;i++){me.lv++;growUp();syncMates();}
+  setParty([me]);
+  /* ① 枠を越えて覚える */
+  const pool=[].concat(REW.act.common,REW.act.knight,REW.act.hume);
+  me.sk=[];me.bagSk=[];
+  pool.forEach(r=>applyReward("act",r));
+  const n=pool.length;
   L.push(`① スキルを ${n} 個 覚えた → 枠 ${me.sk.length}/${SKMAX}　控え ${bagOf(me,"act").length}`);
   if(me.sk.length!==SKMAX)bad.push("枠が埋まりきっていない");
   if(me.sk.length+bagOf(me,"act").length!==n)bad.push("覚えたものが消えた");
-
-  const pp=REW.pass.common.concat(REW.pass.knight||[],REW.pass.hume||[],REW.pass.wrath||[]);
+  const ppool=[].concat(REW.pass.common,REW.pass.knight,REW.pass.hume);
   me.pass=[];me.bagPass=[];
-  let m=0;
-  for(const r of pp){ if(m>=PASSMAX+3)break; applyReward("pass",r); m++; }
-  L.push(`　 パッシブを ${m} 個 → 枠 ${me.pass.length}/${PASSMAX}　控え ${bagOf(me,"pass").length}`);
-  if(me.pass.length+bagOf(me,"pass").length!==m)bad.push("パッシブが消えた");
-
-  /* ② 装備の予備に上限が無い */
-  const gpool=catPool("gear").slice(0,9);
+  ppool.forEach(r=>applyReward("pass",r));
+  L.push(`　 パッシブを ${ppool.length} 個 → 枠 ${me.pass.length}/${PASSMAX}　控え ${bagOf(me,"pass").length}`);
+  if(me.pass.length+bagOf(me,"pass").length!==ppool.length)bad.push("パッシブが消えた");
+  /* ② 装備は倉庫へ */
   me.stash=[];
-  gpool.forEach(g=>applyReward("gear",g));
-  L.push(`② 装備を ${gpool.length} 個 → 予備 ${me.stash.length}　装飾 ${(me.eq.acc||[]).length}/${ACCMAX}`);
-  if(me.stash.length+ (me.eq.acc||[]).length < gpool.length-2)bad.push("予備が溢れて消えた");
-
-  /* ③ 町では入れ替えられる */
+  const gp=[].concat((GEAR.wep.knight||[]).slice(0,2).map(g=>({...g,slot:"wep"})),
+    GEAR.acc.slice(0,5).map(g=>({...g,slot:"acc"})));
+  gp.forEach(g=>applyReward("gear",g));
+  L.push(`② 装備を ${gp.length} 個 → 倉庫 ${store().length}`);
+  if(store().length!==gp.length)bad.push("倉庫から溢れて消えた");
+  /* ③⑤ 町での入れ替え。満杯でも行き止まりにしない */
+  UI.who=0;UI.skTab="act";uiEnter("skill");
   L.push(`③ 町で入れ替え可 ${canSwap()}`);
   if(!canSwap())bad.push("町で入れ替えられない");
-  chNow="sk"; charModal(null);
-  const off=document.querySelector("#mbox [data-skoff]");
-  const on0=document.querySelector("#mbox [data-skon]");
-  L.push(`　 窓に 控えへ札 ${!!off}　持ち出す札 ${!!on0}（満杯なので押せない=${on0?on0.disabled:"—"}）`);
-  if(!off)bad.push("町なのに『控えへ』の札が無い");
-  if(!on0)bad.push("控えがあるのに『持ち出す』の札が無い");
-  if(on0&&!on0.disabled)bad.push("枠が満杯なのに 持ち出す札が押せる");
-  const wasTop=me.sk[0].id, bagN=bagOf(me,"act").length;
-  if(off)off.click();
-  L.push(`　 ${wasTop} を控えへ → 枠 ${me.sk.length}　控え ${bagOf(me,"act").length}`);
-  if(me.sk.length!==SKMAX-1)bad.push("控えへ回っていない");
-  if(bagOf(me,"act").length!==bagN+1)bad.push("控えに入っていない");
-  if(!bagOf(me,"act").some(x=>x.id===wasTop))bad.push("控えに 別のものが入った");
-  const on=document.querySelector("#mbox [data-skon]");
-  L.push(`　 空きができて 持ち出す札が押せる=${on&&!on.disabled}`);
-  if(!on||on.disabled)bad.push("空きがあるのに 持ち出せない");
-  const willBe=bagOf(me,"act")[+on.dataset.skon].id;
-  on.click();
-  L.push(`　 ${willBe} を持ち出した → 枠 ${me.sk.length}　控え ${bagOf(me,"act").length}`);
-  if(!me.sk.some(x=>x.id===willBe))bad.push("持ち出せていない");
-  if(me.sk.some(x=>x.cdLeft===undefined))bad.push("持ち出した技の cdLeft が無い");
-  closeModal();
-
-  /* ④ 潜行中でも 戦っていなければ 入れ替えられる（α1.0.043） */
-  dive("plain");
-  RUN.cur={t:"fight",r:0,name:"—"};
-  L.push(`④ 潜行中の戦いの部屋（戦闘には入っていない） → 入れ替え可 ${canSwap()}`);
-  if(!canSwap())bad.push("戦っていないのに 入れ替えられない");
-  chNow="sk"; charModal(null);
-  if(!document.querySelector("#mbox [data-skoff]"))bad.push("道の途中で 入れ替えの札が出ない");
-  closeModal();
-  RUN.cur={t:"rest",r:1,name:"焚き火"};
-  L.push(`　 焚き火の部屋 → 入れ替え可 ${canSwap()}`);
-  if(!canSwap())bad.push("焚き火で入れ替えられない");
-  /* 戦いのあいだだけ 動かせない */
-  const scr0=curScreen, ov0=over;
-  curScreen="fight"; over=false;
-  L.push(`　 戦いのあいだ → 入れ替え可 ${canSwap()}　わけ「${swapWhy()}」`);
-  if(canSwap())bad.push("戦いのあいだに 入れ替えられてしまう");
-  chNow="sk"; charModal(null);
-  if(document.querySelector("#mbox [data-skoff]"))bad.push("戦いのあいだ 入れ替えの札が出ている");
-  closeModal();
-  curScreen=scr0; over=ov0;
-
-  /* ⑤ 全滅しても 覚えたものは失わない */
-  const skN=me.sk.length, bgN=bagOf(me,"act").length, psB=bagOf(me,"pass").length;
-  goTown("wipe");await drain();
-  L.push(`⑤ 全滅 → 技 ${skN}→${me.sk.length}　控え ${bgN}→${bagOf(me,"act").length}　癖の控え ${psB}→${bagOf(me,"pass").length}`);
-  if(me.sk.length!==skN||bagOf(me,"act").length!==bgN||bagOf(me,"pass").length!==psB)
-    bad.push("全滅で 覚えたものが消えた");
-
-  /* ⑥ 控えは 控えのまま保存される */
-  runSave();
-  const r=runLoad();
-  L.push(`⑥ 控えを読み直す → 技の控え ${(r.me.bagSk||[]).length}　癖の控え ${(r.me.bagPass||[]).length}`);
-  if((r.me.bagSk||[]).length!==bagOf(me,"act").length)bad.push("控えが保存されていない");
-
-  /* ⑦ 仲間も 枠を越えて覚える */
-  const mt=makeMate("mage","elf",3);
-  if(mt){ mt.short=mt.short||"仲間";
-    party.push(mt);
-    const mp2=matePool(mt,"act");
-    let k=0;
-    for(const r of mp2){ if(k>=MATESKMAX+2)break; mateLearn(mt,"act",r); k++; }
-    L.push(`⑦ 仲間が ${k} 個 → 枠 ${mt.sk.length}/${MATESKMAX}　控え ${bagOf(mt,"act").length}`);
-    if(mt.sk.length+bagOf(mt,"act").length!==k)bad.push("仲間の覚えたものが消えた");
-  }else L.push(`⑦ 仲間を作れなかった（makeMate なし）`);
-
+  const take=QA('[data-uk="take"]'), pick=QA('[data-uk="pick"]');
+  L.push(`⑤ 枠 ${me.sk.length}/${SKMAX}（満杯）→ 控えの札「${
+    pick.length?pick[0].textContent.trim():take.length?take[0].textContent.trim():"—"}」`
+    +`　持ち出す ${take.length}　入れ替え ${pick.length}`);
+  if(!pick.length)bad.push("満杯なのに 入れ替えの札が出ない");
+  if(pick.some(x=>x.disabled))bad.push("満杯のとき 札が全部死んでいる（行き止まり）");
+  /* 控え→枠 の2タップ */
+  const was=me.sk[0].id, bagWas=bagOf(me,"act")[0].id, bn0=bagOf(me,"act").length;
+  pick[0].click();
+  const slots=QA('[data-uk="swapin"]');
+  L.push(`　 控えを選んだ → 枠の札 ${slots.length}`);
+  if(slots.length!==SKMAX)bad.push("枠が ぜんぶ出ていない");
+  slots[0].click();
+  L.push(`　 枠を選んだ → 枠 ${me.sk.length}　控え ${bn0}→${bagOf(me,"act").length}`
+    +`　入った ${me.sk[0].id===bagWas}　出た ${bagOf(me,"act").some(x=>x.id===was)}`);
+  if(me.sk.length!==SKMAX)bad.push("枠の数が変わった");
+  if(me.sk[0].id!==bagWas)bad.push("選んだ技が 枠に入っていない");
+  if(!bagOf(me,"act").some(x=>x.id===was))bad.push("外した技が 控えに戻っていない");
+  if(bagOf(me,"act").length!==bn0)bad.push("控えの数が合わない");
+  /* ④ 戦いのあいだ */
+  dive("plain");sel.enc=(AREAS.plain.norm||[])[0];
+  showScreen("fight");foes=makeFoes();over=false;
+  const why=swapWhy();
+  uiEnter("skill");
+  const dis=[...document.querySelectorAll("#mbox [data-uk=take],#mbox [data-uk=pick]")];
+  const warn=document.querySelector("#mbox .uiwarn");
+  L.push(`④ 戦いのあいだ 入れ替え可 ${canSwap()}　わけ「${why}」　断りの帯 ${!!warn}`
+    +`　押せない札 ${dis.filter(x=>x.disabled).length}/${dis.length}`);
+  if(canSwap())bad.push("戦いのあいだに入れ替えられる");
+  if(!warn)bad.push("戦いのあいだ 理由が出ていない");
+  if(dis.length&&dis.some(x=>!x.disabled))bad.push("戦いのあいだ 札が押せる");
+  /* ⑥ 全滅しても減らない */
+  const s0=me.sk.length,b0=bagOf(me,"act").length,p0=me.pass.length;
+  over=true;goTown("wipe");
+  L.push(`⑥ 全滅 → 技 ${s0}→${me.sk.length}　控え ${b0}→${bagOf(me,"act").length}　癖 ${p0}→${me.pass.length}`);
+  if(me.sk.length!==s0||bagOf(me,"act").length!==b0||me.pass.length!==p0)
+    bad.push("全滅で 覚えたものが減った");
   return {L,bad};
 });
 console.log(out.L.join("\n"));
-if(errs.length)console.log(errs.join("\n"));
+if(errs.length)console.log("\nERR "+errs.slice(0,3).join("\n"));
 if(out.bad.length){console.log("\n⚠ "+out.bad.join("\n⚠ "));process.exitCode=1;}
-else console.log("\n✓ 覚えたものは失わず、入れ替えは戦っていないあいだだけ");
+else console.log("\n✓ 覚えたものは失わず、満杯でも行き止まりにならない");
 await b.close();

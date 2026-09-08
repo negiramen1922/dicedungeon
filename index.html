@@ -13,6 +13,8 @@
   --bg:#1b1d18; --panel:#232720; --panel2:#2b3028; --line:#3a3f34;
   --bone:#e9e4d4; --dim:#8b9080; --brass:#c9a227; --moss:#8fa261;
   --blood:#b1544a; --ink:#6f7a63; --blue:#6f92ab;
+  /* シールドが 最大HPを越えた2周目ぶん。blue を暗くした1色（§19-7-1） */
+  --blue2:#3f5c73;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
@@ -622,10 +624,28 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .fh1>span{min-width:0}
 .fh1 span{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:17px;letter-spacing:.12em}
 .fh1 em{font-style:normal;font-size:11px;letter-spacing:.16em;color:var(--brass)}
-.fstat{display:flex;flex-wrap:wrap;gap:0 14px;margin-top:8px;
-  font-family:"DotGothic16",ui-monospace,monospace;font-size:12px;color:var(--dim)}
-.fstat b{color:var(--bone);font-weight:600}
-.fstat .lowhp b{color:var(--blood)}
+/* ===== マップの頭（α1.0.058・4a） =====
+   残す数字は HP・MP・金貨・Lv だけ。件数はメニューの札の右へ移した。 */
+.fh1 .fn{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:16px;letter-spacing:.12em}
+.fh1 .flv{font-family:"DotGothic16",ui-monospace,monospace;font-size:12px;
+  color:var(--brass);margin-left:8px}
+.fsub{font-family:"DotGothic16",ui-monospace,monospace;font-size:10px;
+  color:var(--dim);letter-spacing:.04em;margin-top:2px}
+.fparty{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+.frow{display:grid;grid-template-columns:64px 1fr auto auto;align-items:center;gap:8px;
+  font-family:"DotGothic16",ui-monospace,monospace;font-size:11px;color:var(--dim)}
+.frow .fnm{color:var(--bone);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-family:inherit}
+.frow .fno{min-width:58px;text-align:right;white-space:nowrap}
+.frow .fno.mp{min-width:44px;color:var(--blue)}
+.frow.lo .fno{color:var(--blood)}
+.ffoot{display:flex;align-items:center;gap:10px;margin-top:10px}
+.ffoot .fleave{font-size:10px;color:var(--ink);letter-spacing:.08em;white-space:nowrap}
+.ffoot .fgold{margin-left:auto;font-family:"DotGothic16",ui-monospace,monospace;
+  font-size:11px;color:var(--dim);white-space:nowrap}
+.ffoot .fgold b{color:var(--brass);font-size:13px}
+/* 遊んでいるあいだ 右上の貼り付き札は出さない（メニューの中にある） */
+body.play .topicon{display:none}
 .room{background:var(--panel);border:1px solid var(--line);padding:12px 14px;margin-bottom:8px;
   cursor:pointer;transition:.12s;display:flex;gap:12px;align-items:flex-start}
 .room:hover{border-color:var(--brass)}
@@ -893,6 +913,217 @@ body.play .secbar{padding-right:78px}      /* 歯車と封筒のぶんを空け�
 .cxai{text-align:center;font-size:10px}
 .cxai.a{color:var(--blood)} .cxai.b{color:var(--blue)} .cxai.s{color:var(--ink)}
 .cxad{color:var(--ink);min-width:0}
+/* ===== 新しい画面（α1.0.058／§19 の design 仕様） =====
+   「装 備 ・ 状 態」の1枚に詰めていたものを、メニュー → パーティ →
+   個人の詳細 → スキル／装備 と 画面に分けた。
+   戦っているあいだは窓の中、それ以外は全画面（section）で同じ中身を描く。 */
+.uihd{position:sticky;top:0;z-index:5;background:var(--panel);
+  border-bottom:1px solid var(--line);padding:10px 12px;
+  display:flex;align-items:center;gap:8px}
+.uihd .uif{flex:0 0 auto;display:block}
+.uihd .uit{flex:1;min-width:0}
+.uihd .uin{font-size:15px;color:var(--bone);letter-spacing:.06em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.uihd .uis{font-family:"DotGothic16",ui-monospace,monospace;font-size:10px;
+  color:var(--dim);letter-spacing:.04em;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+/* 44px の当たり。見た目は小さくてよいが 押せる幅は必ず取る */
+.uib{width:44px;height:44px;flex:0 0 44px;display:grid;place-items:center;
+  background:none;border:1px solid var(--line);color:var(--dim);
+  font-family:inherit;font-size:15px;cursor:pointer;padding:0}
+.uib:hover:not(:disabled){border-color:var(--brass);color:var(--brass)}
+.uib:disabled{opacity:.3;cursor:default}
+.uibody{padding:9px 12px 72px}
+/* 札（タブ） */
+.uitabs{display:flex;gap:6px;margin-bottom:10px}
+.uitab{flex:1;min-height:44px;background:var(--panel);border:1px solid var(--line);
+  color:var(--dim);font-family:inherit;font-size:12px;letter-spacing:.04em;
+  cursor:pointer;padding:5px 4px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:2px;white-space:nowrap}
+.uitab.on{border-color:var(--brass);color:var(--brass);background:var(--panel2)}
+.uitab span{font-family:"DotGothic16",ui-monospace,monospace;font-size:10px;color:var(--ink)}
+.uitab.on span{color:var(--brass)}
+/* メニューの札 ── 縦1列・64px */
+.mrow{width:100%;min-height:64px;background:var(--panel);border:1px solid var(--line);
+  border-left:3px solid var(--line);color:var(--bone);font-family:inherit;
+  cursor:pointer;padding:10px 12px;margin-bottom:8px;text-align:left;
+  display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px}
+.mrow:hover{border-color:var(--brass)}
+.mrow .mn{display:block;font-size:14px;letter-spacing:.08em}
+.mrow .md{display:block;font-family:"DotGothic16",ui-monospace,monospace;
+  font-size:10.5px;color:var(--dim);margin-top:3px}
+.mrow .mg{color:var(--ink);font-size:14px}
+.mrow.k-party{border-left-color:var(--moss)}
+.mrow.k-bag{border-left-color:var(--brass)}
+.mrow.k-map{border-left-color:var(--blue)}
+.mrow.k-news{border-left-color:var(--blood)}
+.mrow.k-set{border-left-color:var(--ink)}
+.mgold{display:flex;justify-content:space-between;align-items:center;
+  margin-top:12px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);
+  font-family:"DotGothic16",ui-monospace,monospace;font-size:12px;color:var(--dim)}
+.mgold b{color:var(--brass);font-size:14px}
+/* パーティの行 ＝ 隊列の枠そのもの */
+.prow{width:100%;background:var(--panel);border:1px solid var(--line);
+  border-left:3px solid var(--moss);margin-bottom:7px;padding:8px 6px 8px 8px;
+  display:grid;grid-template-columns:14px 44px 1fr 44px;align-items:center;gap:8px;
+  color:var(--bone);font-family:inherit;text-align:left;cursor:pointer}
+.prow:hover{border-color:var(--brass)}
+.prow.down{opacity:.45;border-left-color:var(--blood)}
+.prow .grip{color:var(--ink);font-size:13px;text-align:center;line-height:1;
+  cursor:grab;user-select:none}
+.prow.drag{opacity:.6;border-color:var(--brass)}
+.prow .pfig{position:relative}
+.prow .plane{position:absolute;left:50%;transform:translateX(-50%);bottom:-11px;
+  font-size:8.5px;letter-spacing:.1em;color:var(--ink);white-space:nowrap}
+.prow .pmid{min-width:0}
+.prow .pn{font-size:13px;letter-spacing:.04em;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.prow .pn em{font-style:normal;font-family:"DotGothic16",ui-monospace,monospace;
+  font-size:10px;color:var(--dim);margin-left:6px}
+.hpb{position:relative;height:7px;background:#14160f;border:1px solid #2b3028;
+  margin-top:4px;overflow:hidden}
+.hpb i{position:absolute;left:0;top:0;bottom:0;background:var(--moss);display:block}
+.hpb i.low{background:var(--blood)}
+.hpb u{position:absolute;left:0;top:0;bottom:0;background:var(--blue);
+  opacity:.85;display:block}
+.hpb u.rd2{background:var(--blue2)}
+.hpb.mp i{background:var(--blue)}
+.pnum{font-family:"DotGothic16",ui-monospace,monospace;font-size:10.5px;
+  color:var(--dim);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap}
+.pnum b{color:var(--bone)}
+.pnum .shv{color:var(--blue)}
+.pnum .lo b{color:var(--blood)}
+.pchip{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}
+/* 見出し */
+.uisec{font-size:10px;letter-spacing:.22em;color:var(--brass);margin:12px 0 6px;
+  border-bottom:1px solid var(--line);padding-bottom:4px;
+  display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.uisec em{font-style:normal;letter-spacing:.02em;color:var(--dim);
+  font-family:"DotGothic16",ui-monospace,monospace;font-size:10px}
+.uinote{font-size:11.5px;color:var(--ink);line-height:1.65;margin:6px 0}
+.uiempty{border:1px dashed var(--line);padding:14px 12px;text-align:center;
+  color:var(--ink);font-size:12px;line-height:1.7}
+.uiempty b{color:var(--dim)}
+/* 能力値のかたまり */
+.stgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.stbox{background:var(--panel);border:1px solid var(--line);padding:7px 9px}
+.stbox .k{font-size:9.5px;letter-spacing:.14em;color:var(--ink);display:block}
+.stbox .v{font-family:"DotGothic16",ui-monospace,monospace;font-size:15px;color:var(--bone)}
+.stbox.wide{grid-column:1/-1}
+.stbox.wide .v{font-size:13px}
+/* 技能の行 */
+.skl{display:grid;grid-template-columns:64px 1fr 44px;align-items:center;gap:8px;
+  padding:6px 0;border-bottom:1px solid #23261d}
+.skl:last-child{border-bottom:none}
+.skl .n{font-size:11.5px;letter-spacing:.06em;color:var(--dim)}
+.skl .n.use{color:var(--brass)}
+.skl .v{font-family:"DotGothic16",ui-monospace,monospace;font-size:11.5px;color:var(--dim)}
+.skl .v b{color:var(--bone);font-size:13px}
+/* 見た目より 押せる範囲を広く取る（仕様 §1-3・A-5）。
+   .hit44 は 上下に見えない余白を足して 当たりを 44px にする */
+.hit44{position:relative}
+.hit44::after{content:"";position:absolute;left:0;right:0;top:-6px;bottom:-6px}
+.skup{width:44px;height:44px;background:none;border:1px dashed var(--brass);
+  color:var(--brass);font-family:inherit;font-size:12px;cursor:pointer;padding:0}
+.skup:disabled{border-color:var(--line);color:var(--ink);opacity:.5;cursor:default}
+/* スキルの札（持ち出しているもの・2列） */
+.skgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.skcard{min-height:66px;background:var(--panel);border:1px solid var(--line);
+  border-left:3px solid var(--brass);padding:7px 8px;text-align:left;
+  color:var(--bone);font-family:inherit;cursor:pointer;
+  display:flex;flex-direction:column;gap:3px}
+.skcard:hover{border-color:var(--brass)}
+.skcard.pass{border-left-color:var(--blue)}
+.skcard.hole{border:1px dashed var(--line);cursor:default;
+  align-items:center;justify-content:center;color:var(--ink);font-size:11px}
+.skcard.sel2{border-color:var(--brass);background:var(--panel2)}
+.skcard .itn{font-size:12.5px;letter-spacing:.03em;line-height:1.3}
+.skcard .itd{font-family:"DotGothic16",ui-monospace,monospace;font-size:9.5px;color:var(--ink)}
+/* 控えの行（1列） */
+.skrow{width:100%;min-height:56px;background:var(--panel);border:1px solid var(--line);
+  border-left:3px solid var(--ink);padding:7px 8px;margin-bottom:6px;
+  display:grid;grid-template-columns:1fr 48px 72px;align-items:center;gap:8px;
+  color:var(--bone);font-family:inherit;text-align:left}
+.skrow .itn{font-size:12.5px;letter-spacing:.03em}
+.skrow .itd{font-family:"DotGothic16",ui-monospace,monospace;font-size:9.5px;
+  color:var(--ink);margin-top:2px}
+.skrow.pass{border-left-color:var(--blue)}
+.mini{min-height:44px;background:none;border:1px solid var(--line);color:var(--dim);
+  font-family:inherit;font-size:11px;letter-spacing:.04em;cursor:pointer;
+  padding:4px 6px;white-space:nowrap}
+.mini:hover:not(:disabled){border-color:var(--brass);color:var(--brass)}
+.mini:disabled{opacity:.35;cursor:default}
+.mini.go{border-color:#4a5730;color:var(--moss)}
+.mini.go:hover{border-color:var(--moss)}
+.mini.bad{color:var(--blood);border-color:#5e2f2a}
+/* 絞り込みのチップ ── 見た目 30px・当たり 44px */
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin:5px 0}
+.chip{position:relative;height:30px;padding:0 11px;background:var(--panel);
+  border:1px solid var(--line);color:var(--dim);font-family:inherit;font-size:11px;
+  letter-spacing:.04em;cursor:pointer;white-space:nowrap}
+.chip::after{content:"";position:absolute;left:0;right:0;top:-7px;bottom:-7px}
+.chip.on{border-color:var(--brass);color:var(--brass);background:var(--panel2)}
+/* 装備の枠 */
+.eqs{background:var(--panel);border:1px solid var(--line);
+  border-left:3px solid var(--brass);padding:7px 10px;margin-bottom:4px;
+  display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:9px}
+.eqs.none{border:1px dashed var(--line);border-left:3px dashed var(--line)}
+.eqs .ek{font-size:10px;letter-spacing:.1em;color:var(--brass)}
+.eqs.none .ek{color:var(--ink)}
+.eqs .ev{min-width:0}
+.eqs .en{display:block;font-size:13px;color:var(--bone);letter-spacing:.03em}
+.eqs.none .en{color:var(--ink);font-size:12px}
+.eqs .ed{display:block;font-family:"DotGothic16",ui-monospace,monospace;font-size:10px;
+  color:var(--dim);margin-top:2px}
+.accs{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.accs .ac{font-size:11px;padding:3px 8px;border:1px solid var(--line);color:var(--dim)}
+.accs .ac.hole{border-style:dashed;color:var(--ink)}
+/* 倉庫の行 */
+.itrow{background:var(--panel);border:1px solid var(--line);padding:7px 9px;margin-bottom:5px}
+.itrow .itl{display:grid;grid-template-columns:minmax(0,1fr) 44px;
+  align-items:center;gap:8px}
+.itrow .itl>div{min-width:0}
+.itrow .itn{font-size:12.5px;color:var(--bone);letter-spacing:.03em}
+.itrow .itd{font-family:"DotGothic16",ui-monospace,monospace;font-size:9.5px;
+  color:var(--ink);margin-top:2px}
+.diffs{display:flex;gap:5px;margin-top:5px}
+.diff{flex:1 1 0;min-width:0;min-height:44px;background:none;border:1px solid var(--line);
+  color:var(--dim);font-family:inherit;font-size:10.5px;cursor:pointer;
+  padding:4px 2px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:1px;overflow:hidden}
+.diff em{font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  max-width:100%;display:block}
+.diff b{font-family:"DotGothic16",ui-monospace,monospace;font-size:11px;
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.diff.up{border-color:#4a5730} .diff.up b{color:var(--moss)}
+.diff.dn{border-color:#5e2f2a} .diff.dn b{color:var(--blood)}
+.diff:disabled{opacity:.35;cursor:default}
+/* 一覧の続き */
+.more{width:100%;min-height:44px;background:none;border:1px dashed var(--line);
+  color:var(--dim);font-family:inherit;font-size:11.5px;letter-spacing:.06em;
+  cursor:pointer;margin-top:2px;white-space:nowrap}
+.more:hover{border-color:var(--brass);color:var(--brass)}
+/* 数字の表（技・装備の詳細） */
+.numt{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);
+  border:1px solid var(--line);margin:8px 0}
+.numt div{background:var(--panel);padding:6px 9px}
+.numt .k{font-size:9.5px;letter-spacing:.12em;color:var(--ink);display:block}
+.numt .v{font-family:"DotGothic16",ui-monospace,monospace;font-size:13px;color:var(--bone)}
+/* 下に貼り付く帯（装備する など） */
+.uifoot{position:sticky;bottom:0;background:linear-gradient(transparent,var(--bg) 22%);
+  padding:12px 0 4px;margin-top:14px}
+.uifoot .go{width:100%}
+/* 畳んだ説明 */
+.fold{border:1px solid var(--line);margin-top:12px}
+.fold>summary{list-style:none;cursor:pointer;padding:11px 12px;min-height:44px;
+  display:flex;align-items:center;font-size:11.5px;color:var(--dim);letter-spacing:.06em}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary::after{content:"▾";margin-left:auto;color:var(--ink)}
+.fold[open]>summary::after{content:"▴"}
+.fold .fb{padding:0 12px 12px;font-size:11.5px;color:var(--ink);line-height:1.75}
+/* 戦っているあいだの断り */
+.uiwarn{border:1px solid #5e2f2a;background:#2a1c18;color:var(--blood);
+  font-size:11.5px;padding:8px 10px;margin-bottom:10px;line-height:1.6}
 /* 詳細の行に並ぶ 行動の絵（α1.0.056） */
 .dact{display:inline-block;vertical-align:-2px;margin-right:2px}
 .dact svg{display:block}
@@ -1162,13 +1393,24 @@ body.attitle #brand{display:none}
   <div id="mkBody"></div>
 </section>
 
+<!-- メニュー／パーティ／個人／スキル／装備／持ち物。中身は uiDraw が入れる。
+     戦っているあいだは 同じ中身を窓（.mbox）に描く（α1.0.058） -->
+<section id="ui" class="hide"></section>
+
 <section id="floor" class="hide">
+  <!-- 4a（α1.0.058）。残す数字は HP・MP・金貨・Lv だけ。
+       装備名・道具・素材・技・パッシブの件数は メニューの札の右へ移した。
+       右上は ≡ ひとつ。お知らせと設定も メニューの中に入れた。 -->
   <div class="fhead">
-    <div class="fh1"><span id="fName">—</span><em id="fSub"></em></div>
-    <div class="fstat" id="fStat"></div>
-    <div style="margin-top:9px"><button class="topbtn" id="charBtn2">装備・状態を見る</button>
-      <button class="topbtn" id="worldBtn">世 界 地 図</button>
-      <button class="topbtn" id="leaveBtn">町 へ 帰 る</button></div>
+    <div class="fh1"><span id="fName">—</span>
+      <button class="uib" id="menuBtn" aria-label="メニュー">≡</button></div>
+    <div class="fsub" id="fSub"></div>
+    <div class="fparty" id="fParty"></div>
+    <div class="ffoot">
+      <button class="topbtn" id="leaveBtn">町 へ 帰 る</button>
+      <span class="fleave">潜行を終える</span>
+      <span class="fgold" id="fGold"></span>
+    </div>
   </div>
   <div class="mapwrap"><div id="mapbox"></div><div class="actTtl" id="actTtl"></div></div>
   <div id="mapinfo"></div>
@@ -1215,7 +1457,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
-const VERSION="α1.0.057";
+const VERSION="α1.0.058";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1228,6 +1470,17 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1058",tag:"up",v:"α1.0.058",d:"2026-09-08",n:"装備・スキル・持ち物の画面を 作り直しました",b:[
+   "<b>「装 備 ・ 状 態」の1枚に詰め込むのをやめました。</b>1つの札がスマホ2画面ぶんまで伸び、押せる札が26個並ぶこともありました",
+   "<b>メニュー → パーティ → 個人の詳細 → スキル／装備</b> と 画面に分けました。持ち物は主人公のものなので メニューから直接入ります",
+   "<b>パーティの行が そのまま隊列の枠</b>になりました。行を上下にドラッグすると 前後が入れ替わります。3人ぶんの HP・MP・状態が 一度に読めます",
+   "<b>シールドは HP バーの先に青で継ぎ足します。</b>最大HPを越えた2周目ぶんは 濃い青で帯ぜんたいを塗ります",
+   "<b>技の入れ替えが 2タップになりました。</b>枠が満杯でも 札は死にません ── 控えを選ぶ → 入れ替える枠を選ぶ、で差し替わります",
+   "<b>倉庫は 装備の画面の中</b>にあります。種類と等級で絞り込め、<b>3人ぶんの「着けたときの差」</b>が並びます。着けられない相手には その理由が出ます",
+   "<b>装備中の品は 倉庫の一覧に出ません。</b>同じものを二度書かないためです",
+   "<b>マップの頭は HP・MP・金貨・Lv だけ</b>にしました。装備名・道具・素材・技・パッシブの件数は メニューの札の右へ移してあります（数は消していません）",
+   "<b>右上は ≡ ひとつ</b>になりました。お知らせと設定は メニューの中です。「町へ帰る」は行を分けて左下に置き、≡ と隣り合わせないようにしました",
+   "押せるものは <b>見た目が小さくても 押せる範囲は 44px</b> あります。どの画面も 幅 320px で横に溢れません"]},
  {id:"v1057",tag:"bal",v:"α1.0.057",d:"2026-09-08",n:"適正レベルが 1階層ごとに 15 になりました",b:[
    "<b>「ちょうどよい Lv 12」→「適正レベル Lv 1〜15」</b>。呼び方を変え、<b>幅</b>で出すようにしました",
    "<b>どの階層も 15 ずつ</b>です。<b>1階層 Lv1〜15／2階層 Lv16〜30／3階層 Lv31〜45／4階層 Lv46 以上</b>。前は 12・16・22・18 とまちまちでした",
@@ -9530,7 +9783,7 @@ function bgmKey(id){
   return "home";                        /* home・make・tut・quiz */
 }
 function showScreen(id){
-  ["title","slots","tut","quiz","home","hall","codex","make","floor","fight"].forEach(k=>{
+  ["title","slots","tut","quiz","home","hall","codex","make","ui","floor","fight"].forEach(k=>{
     const el=$("#"+k);if(el)el.classList.toggle("hide",k!==id);});
   curScreen=id;
   /* 表題を出すのはホームと遊び方だけ。遊んでいる間は盤面に縦を回す */
@@ -9982,19 +10235,19 @@ function drawFloor(){
   if(!RUN)return;                 /* 町にいる（潜っていない） */
   const A=areaOf();
   const cur=RUN.curKey?RUN.M.node[RUN.curKey]:null;
-  $("#fName").innerHTML=`${A.n}　<em>第 ${A.tier} 階層 ・ 適正レベル ${tierBand(A.tier)}</em>`;
-  $("#fSub").textContent=cur?`${cur.r+1} / ${ROWS} 段目`:"入口";
-  const low=me.HP<=me.maxHP*0.35?"lowhp":"";
-  $("#fStat").innerHTML=
-    `<span style="color:#c9a227">Lv <b style="color:#c9a227">${me.lv}</b></span>`+
-    `<span class="${low}">HP <b>${me.HP}</b>/${me.maxHP}</span>`+
-    `<span>MP <b>${me.MP}</b>/${me.maxMP}</span>`+
-    `<span>${me.wep.n}</span>`+
-    `<span style="color:#c9a227">金貨 <b style="color:#c9a227">${me.gold}</b></span>`+
-    `<span>道具 <b>${bagLabel()}</b></span>`+
-    `<span>素材 <b>${matCount()}</b></span>`+
-    `<span>技 <b>${me.sk.length}/${SKMAX}</b></span>`+
-    `<span>パッシブ <b>${me.pass.length}/${PASSMAX}</b></span>`;
+  $("#fName").innerHTML=`<span class="fn">${A.n}</span>
+    <span class="flv">Lv ${me.lv}</span>`;
+  $("#fSub").textContent=`第 ${A.tier} 階層 ・ 適正 ${tierBand(A.tier)} ・ ${
+    cur?`${cur.r+1} / ${ROWS} 段目`:"入口"}`;
+  /* HP と MP は **パーティ全員ぶん**。1行ずつ */
+  $("#fParty").innerHTML=party.map(u=>{
+    const low=u.HP<=u.maxHP*0.35;
+    return `<div class="frow${low?" lo":""}">
+      <span class="fnm">${rosterName(u)}</span>
+      ${hpBar(u)}
+      <span class="fno">${Math.max(0,u.HP)}/${u.maxHP}</span>
+      <span class="fno mp">${u.MP}/${u.maxMP}</span></div>`;}).join("");
+  $("#fGold").innerHTML=`金貨 <b>${me.gold}</b>`;
   drawMap();
   const rb=$("#resbox");if(rb)rb.classList.add("hide");
 }
@@ -11201,233 +11454,6 @@ function pickList(cats,n){
 }
 
 /* 装備・状態の窓 */
-/* ---------- 装 備 ・ 状 態 ----------
-   前は 技能→レシピ→素材→道具→武器→装備→予備→スキル→パッシブ を
-   ひと続きに並べていて、2000px を超える一本のスクロールだった。
-   名前は「装備・状態」なのに、装備を見るまでに 5 つの節を通り抜けねばならず、
-   武器の節と装備の節で同じ武器を二度書いてもいた。
-   4 つの札に分けて、頭の行（職・種族・欲望・Lv・HP・MP・金貨）だけは常に出す。 */
-const CHTABS=[
-  {k:"st", n:"ステータス"},
-  /* 日本語は好きな所で折れるので、札の中では「スキルと／パッシブ」で
-     折れるように <wbr> を入れておく（何もしないと「スキルとパッシ／ブ」になる） */
-  {k:"sk", n:"スキル/<wbr>パッシブ"},
-  {k:"eq", n:"装備"},
-  {k:"bag",n:"持ち物"},
-];
-let chNow=CHTABS[0].k;
-function chCount(k,U){
-  U=U||me;
-  if(k==="eq") return `倉庫 ${(me.stash||[]).length}`;
-  if(k==="st") return (U===me&&(U.skp|0))?`Lv ${U.lv}　技能 +${U.skp}`:`Lv ${U.lv}`;
-  if(k==="bag")return `道具 ${bagLabel()}`;
-  const b=bagOf(U,"act").length+bagOf(U,"pass").length;
-  return `技${U.sk.length} 癖${U.pass.length}`+(b?`　控${b}`:"");
-}
-/* 装備の1行。武器・防具・装飾で作りが同じなので1つにまとめる */
-function eqRow(icon,label,g,extra){
-  return `<div class="mitem eqrow">
-    <span class="eqk">${icon} ${label}</span>
-    <span class="eqv">${g
-      ?`${tierTag(g.tier)}${madeTag(g)} <b>${g.n}</b>　${g.d||""}${wasteNote(g)}`
-      :`<span style="color:#4d5346">空 き</span>`}${extra||""}</span></div>`;
-}
-/* ===== 装備の欄は **誰の欄でもある**（α1.0.040） =====
-   前は必ず主人公を見ていたので、仲間には何も着けられなかった。
-   倉庫（store）はパーティ共有。着ける先は いま見ている者。 */
-function chBodyEq(U){
-  U=U||me;
-  const w=U.wep;
-  const cur=U.eq.wep;
-  let h=`<div class="msec">${U===me?"い ま の 装 備":rosterName(U)+" の 装 備"}</div>
-  <div class="mitem eqrow">
-    <span class="eqk">${itemIcon(wepIcon(cur?cur.key:U.baseWep),16)} 武 器</span>
-    <span class="eqv">${tierTag(cur?cur.tier:0)}${
-      w.el&&w.el!=="none"?elemTag(w.el):""}${madeTag(cur)} <b>${
-        cur?cur.n:w.n}</b>　${w.d||""}
-      <br><span style="color:var(--ink)">${wepTrait(w)}　威力 ${
-        Math.round(statMul(w)*100)}%（${w.stat} ×${statMul(w).toFixed(2)}）　${
-        w.type==="melee"?"近接・奥は 遠さのぶん当てにくい":"遠隔・奥でも 遠さを払わない"}
-        　→ 1ヒット <b>${powOf(U,{})}</b></span>${
-      cur&&canSwap()?`<br><button class="stbtn" data-off="wep">外 す</button>`:""}</span></div>`;
-  h+=eqRow(U.eq.armor?itemIcon(armorIcon(U.eq.armor),16):tagFig("armor",12),"防 具",U.eq.armor,
-    U.eq.armor&&canSwap()?`<br><button class="stbtn" data-off="armor">外 す</button>`:"");
-  for(let i=0;i<ACCMAX;i++){
-    const g=(U.eq.acc||[])[i];
-    h+=eqRow(g?itemIcon(accIcon(g),16):tagFig("acc",12),`装飾 ${i+1}`,g,
-      g&&canSwap()?`<br><button class="stbtn" data-offacc="${i}">外 す</button>`:"");
-  }
-  /* 上限に達して無駄になっているぶんは、装備の話なのでここに置く */
-  const gw=U.raw?Math.max(0,U.raw.DEX-STATMAX.DEX):0, pw=dexPassiveWaste(U);
-  if(gw||pw){
-    const a=[];
-    if(gw)a.push(`成長と装備で <b>+${gw}</b>`);
-    if(pw)a.push(`パッシブで <b>+${pw}</b>`);
-    h+=`<div class="mitem warn" style="color:var(--blood)">
-      DEX は上限 ${STATMAX.DEX} に達している　${a.join("　")} が無駄になっている
-      <br><span class="s" style="color:var(--ink)">上限を越えられるのは
-      スキルのバフだけ。装備とパッシブはここで止まる</span></div>`;
-  }
-  const sw=canSwap(), st=store();
-  h+=`<div class="msec">倉 庫　<span style="color:var(--dim);letter-spacing:0">${
-    st.length}　パーティ共有</span></div>`;
-  h+=st.length?st.map((g,i)=>{
-    const ok=canWear(U,g), why=wearWhy(U,g);
-    return `<div class="mitem eqrow">
-      <span class="eqk">${itemIcon(g.slot==="wep"?wepIcon(g.key)
-        :(g.slot==="armor"?armorIcon(g):accIcon(g)),16)} ${
-        g.slot==="wep"?"武 器":(g.slot==="armor"?"防 具":"装 飾")}</span>
-      <span class="eqv">${tierTag(g.tier)}${madeTag(g)} <b>${g.n}</b>　${gearDesc(g,U)}
-      ${sw?`<br><button class="stbtn" data-eq="${i}"${ok?"":" disabled"}>${
-        ok?`${U===me?"":rosterName(U)+" に "}着 け る`:why}</button>
-      <button class="stbtn drop" data-drop="${i}">捨 て る</button>`:""}</span></div>`;}).join("")
-    :`<div class="mitem" style="color:#4d5346">なし　<span class="s">買ったもの・拾ったものは まずここに入る。誰に着けるかは この欄で選ぶ。<b>いくつでも持てる</b></span></div>`;
-  if(!sw&&st.length)
-    h+=`<div class="mitem" style="color:#4d5346"><span class="s">${swapWhy()}</span></div>`;
-  return h;
-}
-/* ---------- 技 能 の 欄 ----------
-   技能ごとに「生まれ ＋ 育ち」と、そこから振れるダイスの数を出す。
-   まだ注いでいない点があれば ＋の札が出る。**戻せない**ので、
-   押したその場で確かめの札に変わる作りにはしていない ── 1点ずつしか動かない。 */
-function skDots(n){ return "●".repeat(n)+"○".repeat(Math.max(0,SKDIEMAX-n)); }
-function skRow(k,U,canEdit){
-  const born=skillBorn(k,U), got=((U.skg||{})[k]|0), now=skillOf(k,U);
-  const war=!!SK[k].war, use=war&&(k===wepSkill(U));
-  const col=use?' style="color:var(--brass)"':"";
-  const room=skRoom(k,U);
-  const btn=canEdit
-    ? `<button class="minib" data-skup="${k}"${(U.skp|0)>0&&room>0?"":" disabled"}>＋1</button>`
-    : "";
-  return `<div class="mitem eqrow">
-    <span class="eqk"${col}>${SK[k].n}</span>
-    <span class="eqv"><b${col}>${now}</b>${
-      got?`<span class="s">（生まれ ${born} ＋ 育ち ${got}）</span>`
-        :`<span class="s">（生まれ ${born}）</span>`}${
-      (war||SK[k].d6)?`　<span class="s">ダイス</span> <b${col}>${skillDice(k,U)}</b>
-           <span class="s">${skDots(skillDice(k,U))}</span>`
-         :`　<span class="s">1d100 が ${Math.min(now,SKROLLMAX)} 以下で成功</span>`}${
-      room?"":`　<span class="s">上限</span>`}
-      ${btn}</span></div>`;
-}
-function skGrowPanel(U){
-  U=U||me;
-  const canEdit=(U===me)&&!inBattle();
-  const pts=U.skp|0;
-  let h=`<div class="msec">戦 う 技 能　<span style="color:var(--dim);letter-spacing:0">${
-    SK[wepSkill(U)].n.replace(/ /g,"")} で当てる</span></div>`;
-  if(U===me)
-    h+=`<div class="mitem" style="color:${pts?"var(--brass)":"#4d5346"}">${
-      pts?`注げる点が <b style="color:var(--brass)">${pts}</b> つ ある`
-         :`注げる点は ない`}<span class="s">　レベルが1つ上がるごとに 1点。<b>戻せない</b>${
-      inBattle()?"　戦いのあいだは 注げない":""}</span></div>`;
-  else
-    h+=`<div class="mitem" style="color:#4d5346">仲間は 得物で使う技能から順に 自分で注ぐ</div>`;
-  h+=WARSK.map(k=>skRow(k,U,canEdit)).join("");
-  h+=`<div class="mitem"><span class="s">技能 20 ごとに ダイスが 1つ増える。
-    振ったダイスのうち <b>4以上</b>が成功。技には それぞれ 必要な成功の数がある</span></div>`;
-  h+=`<div class="msec">暮 ら し の 技 能</div>`;
-  h+=Object.keys(SK).filter(k=>!SK[k].war).map(k=>skRow(k,U,canEdit)).join("");
-  h+=`<div class="mitem"><span class="s">探索は戦いのはじめの先制で <b>d6 を振る</b>（戦う技能と同じ）。
-    鍛冶と料理は こしらえるときに 1d100 を振る（${SKROLLMAX} より上には効かない）</span></div>`;
-  return h;
-}
-function chBodySt(U){
-  U=U||me;
-  const c=lukCuts(U.LUK);
-  const cap=U.DEX>=STATMAX.DEX;
-  return `<div class="msec">効 い て い る も の</div>
-  ${ailList(U)}
-  ${thrPanel()}
-  <div class="msec">ス テ ー タ ス</div>
-  <div class="mstat">
-    ${U===me?`<span>経験 ${atLvMax()?`<b style="color:#c9a227">上限</b>`
-              :`<b>${U.exp}</b>/${expCap()}`}</span>`
-            :`<span style="color:var(--ink)">レベルは主人公に追う</span>`}
-    <span>STR <b>${U.STR}</b></span>
-    <span${cap?' style="color:#c9a227"':""}>DEX <b${cap?' style="color:#c9a227"':""}>${
-      U.DEX}</b>${cap?`<span class="s">/${STATMAX.DEX}</span>`:""}</span>
-    <span>INT <b>${U.INT}</b></span><span>VIT <b>${U.VIT}</b></span>
-    <span>シールド <b>${blockValue()}</b><span class="s">（最大HPの${guardPct()}%）</span></span>
-    <span style="color:#c9a227">幸運 <b style="color:#c9a227">${U.LUK}</b></span></div>
-  ${skGrowPanel(U)}
-  <div class="msec">幸 運</div>
-  <div class="mitem" style="color:var(--ink)">幸運 ${U.LUK}　＝　生まれ ${
-    U.base.LUK||0}${(U.LUK-(U.base.LUK||0))?`　＋ 装備 ${U.LUK-(U.base.LUK||0)}`:""}
-    <br><span class="s">1d100 を振って、出目が小さいほど良い段階になる</span>
-    <br><span style="color:${LUKRANK[3].c}">超あたり ${c.ext} 以下</span>　
-    <span style="color:${LUKRANK[2].c}">大あたり ${c.hard} 以下</span>　
-    <span style="color:${LUKRANK[1].c}">あたり ${c.hit} 以下</span>
-    <br><span class="s">空振りは段階のぶんだけ振り直す（1〜3つ）。
-    宝箱は 等級の上限 +1／+1・並ぶ数4・金貨1.5倍／等級 +2・並ぶ数5・金貨2倍</span></div>`;
-}
-function chBodyBag(){
-  let h=`<div class="msec">道 具　<span style="color:var(--dim);letter-spacing:0">${
-    bagLabel()}</span></div>`;
-  h+=bagCount()?Object.keys(me.bag).filter(k=>me.bag[k]).map(k=>
-    `<div class="mitem">${itemIcon(itemKindIcon(k),16)} ${tierTag(ITEMS[k].tier)} <b>${
-      ITEMS[k].n}</b> ×${me.bag[k]}　${ITEMS[k].d}</div>`).join("")
-    :`<div class="mitem" style="color:#4d5346">何も持っていない</div>`;
-  h+=`<div class="msec">素 材　<span style="color:var(--dim);letter-spacing:0">${
-    matCount()} 個　売値 ${matValue()}</span></div>`;
-  h+=matCount()?Object.keys(me.mats).filter(k=>me.mats[k]).map(k=>
-    `<div class="mitem">${itemIcon(k,16)} <b>${MATS[k].n}</b> ×${me.mats[k]}　${MATS[k].d}　`+
-    `<span style="color:var(--ink)">1つ ${MATS[k].v} 金貨</span></div>`).join("")
-    :`<div class="mitem" style="color:#4d5346">まだ何も持っていない</div>`;
-  h+=`<div class="msec">レ シ ピ　<span style="color:var(--dim);letter-spacing:0">${
-    me.recipes.length} 件</span></div>`;
-  h+=me.recipes.length?me.recipes.map(id=>{const R=RECIPES[id];
-    return `<div class="mitem"><b>${R.n}</b>　${R.d}　<span style="color:var(--ink)">${
-      Object.keys(R.need).map(k=>MATS[k].n+"×"+R.need[k]).join("　")}　加工賃 ${R.cost}</span></div>`;
-    }).join(""):`<div class="mitem" style="color:#4d5346">まだ覚えていない</div>`;
-  return h;
-}
-/* 控えの欄。覚えてはいるが 持ち出していないもの。
-   枠が空いていれば「持ち出す」、埋まっていれば まず何かを控えへ回してもらう */
-function bagSec(kind,U,sw){
-  const isAct=(kind==="act");
-  const list=bagOf(U,kind);
-  const max=isAct?((U===me)?SKMAX:MATESKMAX):((U===me)?PASSMAX:MATEPASSMAX);
-  const room=(isAct?U.sk.length:U.pass.length)<max;
-  let h=`<div class="msec">控 え の ${isAct?"ス キ ル":"パ ッ シ ブ"}　<span style="color:var(--dim);letter-spacing:0">${list.length}</span></div>`;
-  if(!list.length)
-    return h+`<div class="mitem" style="color:#4d5346">なし　<span class="s">枠に入らなかったものは ここに残る。<b>忘れることは もう無い</b></span></div>`;
-  h+=list.map((k,i)=>`<div class="mitem">
-    <span class="tagx" style="color:var(--dim);border-color:var(--dim)">${
-      tagFig(isAct?k.kind:(k.ef&&k.ef.k),12)}</span>
-    <b>${k.n}</b>　${k.d}${isAct?`　<span style="color:var(--ink)">MP ${k.mp}・再使用 ${k.cd}</span>`:""}
-    ${poolTag(kind,k.id)}${sw?`<br><button class="stbtn" data-${
-      isAct?"skon":"pson"}="${i}"${room?"":" disabled"}>${
-      room?"持 ち 出 す":"枠が満杯"}</button>`:""}</div>`).join("");
-  if(sw&&!room)
-    h+=`<div class="mitem" style="color:#4d5346"><span class="s">枠が満杯。まず 上のどれかを <b>控えへ</b>回す</span></div>`;
-  if(!sw)h+=`<div class="mitem" style="color:#4d5346"><span class="s">${swapWhy()}</span></div>`;
-  return h;
-}
-function chBodySk(U){
-  U=U||me;
-  const sw=canSwap();
-  const smax=(U===me)?SKMAX:MATESKMAX, pmax=(U===me)?PASSMAX:MATEPASSMAX;
-  let h=`<div class="msec">ス キ ル　<span style="color:var(--dim);letter-spacing:0">${
-    U.sk.length} / ${smax}</span></div>`;
-  h+=U.sk.length?U.sk.map((k,i)=>`<div class="mitem">
-    <span class="tagx" style="color:var(--brass);border-color:var(--brass)">${tagFig(k.kind,12)}</span>
-    <b>${k.n}</b>　${k.d}　<span style="color:var(--ink)">MP ${k.mp}・再使用 ${k.cd}</span>
-    ${poolTag("act",k.id)}${sw?`<br><button class="stbtn" data-skoff="${i}">控 え へ</button>`:""}</div>`).join("")
-    :`<div class="mitem" style="color:#4d5346">まだ無い</div>`;
-  h+=bagSec("act",U,sw);
-  h+=`<div class="msec">パ ッ シ ブ　<span style="color:var(--dim);letter-spacing:0">${
-    U.pass.length} / ${pmax}</span></div>`;
-  h+=U.pass.length?U.pass.map((pp,i)=>{
-    const on=(typeof round!=="undefined")&&PCOND[pp.ef.w]&&PCOND[pp.ef.w](U);
-    return `<div class="mitem">
-      <span class="tagx" style="color:var(--blue);border-color:var(--blue)">${tagFig(pp.ef.k,12)}</span>
-      <b>${pp.n}</b>　${pp.d}${on?`　<span style="color:var(--blue)">発動中</span>`:""}
-      ${poolTag("pass",pp.id)}${sw?`<br><button class="stbtn" data-psoff="${i}">控 え へ</button>`:""}</div>`;}).join("")
-    :`<div class="mitem" style="color:#4d5346">まだ無い</div>`;
-  h+=bagSec("pass",U,sw);
-  return h;
-}
 /* いま戦っているか。戦闘中は隊列を動かせない */
 function inBattle(){ return curScreen==="fight"&&!over; }
 /* ===== 持ち物の入れ替えができる場所（α1.0.038 → α1.0.043） =====
@@ -11461,161 +11487,689 @@ function rosterName(u){
 }
 /* 盤やログで使う短い呼び名。付けた名があれば そちら */
 function shortOf(u){ return (u&&u.pname)||(u&&u.short)||""; }
-/* パーティのうち いま見ている者。盤面や行動順から開いたときは その者になる */
-let chWho=0;
-function charModal(back,U){
-  if(typeof back!=="function")back=null;   /* onclick から出来事が来ることがある */
-  if(U)chWho=Math.max(0,party.indexOf(U));
-  if(chWho>=party.length)chWho=0;
-  U=party[chWho]||me;
-  /* 装備は **ひとりずつ**（α1.0.040）。倉庫はパーティ共有なので
-     どの者の欄からでも 同じ倉庫が見える。
-     持ち物（道具）はパーティ共有の袋なので 主人公の欄にだけ出す。 */
-  const tabs=(U===me)?CHTABS:CHTABS.filter(t=>t.k!=="bag");
-  if(!tabs.some(t=>t.k===chNow))chNow=tabs[0].k;
-  const low=U.HP<=U.maxHP*0.35;
-  let h=`<div class="mtitle">装 備 ・ 状 態</div>`;
-  if(party.length>1)
-    h+=`<div class="tabs chtabs">${party.map((u,i)=>
-      `<button class="tab${i===chWho?" on":""}" data-who="${i}">
-        <span class="tabn">${rosterName(u)}</span><span class="tabc">${
-          u.HP<=0?"倒れた":`${lineMark(u).replace(/<[^>]*>/g,"")}`}</span></button>`).join("")}</div>`;
-  const uJ=JOB[U.job]||JOB[sel.job]||{n:"—"}, uR=RACE[U.race]||RACE[sel.race]||{n:"—"};
-  h+=`<div class="msub">${tagFig(U.job,14)} ${uJ.n}　${
-    tagFig(U.race,14)} ${uR.n}${(ORIG[U.orig])?`　${tagFig(U.orig,14)} ${ORIG[U.orig].n}`:""}</div>
-  <div class="mstat chhead">
-    <span style="color:#c9a227">Lv <b style="color:#c9a227">${U.lv}</b></span>
-    <span${low?' style="color:#b1544a"':""}>HP <b${
-      low?' style="color:#b1544a"':""}>${Math.max(0,U.HP)}</b>/${U.maxHP}</span>
-    <span>MP <b>${U.MP}</b>/${U.maxMP}</span>
-    <span style="color:#c9a227">金貨 <b style="color:#c9a227">${me.gold}</b></span></div>
-  <div class="tabs chtabs">${tabs.map(t=>
-    `<button class="tab${t.k===chNow?" on":""}" data-ch="${t.k}">
-      <span class="tabn">${t.n}</span><span class="tabc">${chCount(t.k,U)}</span></button>`).join("")}</div>`;
-  /* 隊列の組み替え。**戦闘に入ったら動かせない。**火のそばでも道でも、
-     戦っていないあいだだけ並べ替えられる。 */
-  if(party.length>1&&chNow==="st"&&!inBattle()){
-    const i=chWho;
-    h+=`<div class="msec">隊 列</div>
-      <div class="mitem lineRow">
-        <span class="eqk">いまの並び</span>
-        <span class="eqv">${party.map((u,j)=>
-          `${j?" ▸ ":""}<b${j===i?' style="color:var(--brass)"':""}>${rosterName(u)}</b>`).join("")}
-          <span class="s">　先頭ほど狙われる。奥ほど狙いにくい</span></span></div>
-      <div class="ndbtn">
-        <button class="no2" data-mv="-1"${i===0?" disabled":""}>ひとつ前へ</button>
-        <button class="no2" data-mv="1"${i===party.length-1?" disabled":""}>ひとつ後ろへ</button>
-      </div>`;
-    /* 控えとの入れ替え。主人公は外せない */
-    if(bench.length||party.length<PARTYMAX){
-      h+=`<div class="msec">控 え</div>`;
-      if(!bench.length)h+=`<div class="mitem" style="color:#4d5346">控えは いない</div>`;
-      /* パーティがいっぱいなら「誰と入れ替えるか」が要る。主人公とは入れ替えられないので、
-         主人公を見ているあいだは押せない札にして、そのわけを添える。
-         （黙って効かない札だった。α1.0.007 で直した） */
-      const full=party.length>=PARTYMAX, noSwap=full&&U===me;
-      bench.forEach((u,j)=>{
-        h+=`<div class="mitem eqrow">
-          <span class="eqk">${meFig(20,u)} ${rosterName(u)}</span>
-          <span class="eqv">Lv ${u.lv}　HP ${u.HP}/${u.maxHP}　技${u.sk.length} 特${u.pass.length}
-            <button class="minib" style="margin:0 0 0 8px" data-in="${j}"${
-              noSwap?" disabled":""}>${
-              full?(noSwap?"入れ替える":rosterName(U)+" と 入れ替える"):"パーティに入れる"}</button>
-          </span></div>`;
-      });
-      if(noSwap&&bench.length)
-        h+=`<div class="mitem" style="color:#4d5346">上の札で 入れ替える者を選ぶ（主人公は外せない）</div>`;
-      if(party.length>1&&U!==me)
-        h+=`<div class="ndbtn"><button class="no2" data-out="1">${rosterName(U)} を 控えへ</button></div>`;
+/* ===================================================================
+   ===== 画 面（α1.0.058／§19 の design 仕様） =====
+
+   前は「装 備 ・ 状 態」の窓ひとつに ステータス・スキル・装備・持ち物を
+   4つの札で詰め込んでいた。1つの札が スマホ2画面ぶんまで伸び、
+   押せる札が 26 個並ぶこともあった（tools/uichk.mjs で実測）。
+
+   画面に分ける:
+     メニュー ─┬ パーティ ── 個人の詳細 ─┬ スキル／パッシブ ── 技の詳細
+               │                          └ 装備 ── 入れ替え先を選ぶ
+               └ 持ち物 ── 装備の詳細
+
+   **戦っているあいだは窓（.mbox）、それ以外は全画面（#ui）**に
+   同じ中身を描く。中身を作る関数は host を知らない。
+   =================================================================== */
+const UI={stack:[],who:0,ret:null,
+  skTab:"act", bagTab:"gear",
+  filt:"all", tiers:[], more:{}, pick:null};
+
+function uiUnit(){ return party[Math.min(UI.who,party.length-1)]||me; }
+function uiTop(){ return UI.stack[UI.stack.length-1]||{name:"menu"}; }
+function uiOpen(name,o){ UI.stack.push(Object.assign({name},o||{})); uiDraw(); }
+function uiSwap(name,o){ UI.stack.pop(); uiOpen(name,o); }
+function uiBack(){
+  UI.pick=null;
+  if(UI.stack.length>1){ UI.stack.pop(); uiDraw(); }
+  else uiClose();
+}
+function uiClose(){
+  const back=UI.ret; UI.ret=null; UI.stack=[]; UI.pick=null;
+  if(!$("#ui").classList.contains("hide")||curScreen==="ui"){
+    showScreen(UI.from||"home");
+    if(UI.from==="floor")drawFloor();
+    if(UI.from==="home")drawHome();
+  }
+  closeModal();
+  if(back)back();
+}
+/* 入口。旧 charModal(back,U) と同じ呼び方で受ける */
+function uiEnter(name,o,back,U){
+  UI.ret=back||null;
+  if(U){const i=party.indexOf(U); if(i>=0)UI.who=i;}
+  UI.stack=[Object.assign({name:name||"menu"},o||{})];
+  if(!inBattle())UI.from=curScreen;
+  uiDraw();
+}
+/* 戦闘中は窓、それ以外は全画面。中身は同じ */
+function uiDraw(){
+  const S=uiScreen(uiTop());
+  const head=`<div class="uihd">${S.head}</div>`;
+  const body=`<div class="uibody" id="uiBody">${S.body}</div>`;
+  if(inBattle()){
+    openModal(`<div class="uiwrap">${head}${body}</div>`,true);
+    uiBind($("#mbox"));
+  }else{
+    $("#ui").innerHTML=head+body;
+    if(curScreen!=="ui")showScreen("ui");
+    window.scrollTo(0,0);
+    uiBind($("#ui"));
+  }
+}
+/* 共通の頭。人に紐づく画面は 顔と ‹ › が付く */
+function uiHead(o){
+  const U=o.unit;
+  const nav=(a,k,dis)=>`<button class="uib" data-uk="${k}"${dis?" disabled":""}>${a}</button>`;
+  if(!U)return nav("‹","back")+
+    `<div class="uit"><div class="uin">${o.n}</div>${
+      o.s?`<div class="uis">${o.s}</div>`:""}</div>`+nav("✕","close");
+  const multi=party.length>1;
+  return nav("‹","back")+
+    `<div class="uif">${meFig(34,U)}</div>
+     <div class="uit"><div class="uin">${rosterName(U)}</div>
+       <div class="uis">${o.s}</div></div>`+
+    (multi?nav("‹","prev",UI.who<=0)+nav("›","next",UI.who>=party.length-1):"")+
+    nav("✕","close");
+}
+/* 隊列の呼び名。3人までは 前・中・後 */
+const LANEN=["前","中","後","4","5","6"];
+function laneOf(u){ const i=party.indexOf(u); return LANEN[i<0?0:i]||"—"; }
+/* HP の帯。シールドは上に重ね、最大を越えたぶん（2周目）は濃い青 */
+function hpBar(u){
+  const hp=Math.max(0,u.HP), mx=Math.max(1,u.maxHP), sh=shieldOf(u);
+  const p=Math.min(100,hp/mx*100), low=hp<=mx*0.35;
+  const s1=Math.min(100,sh/mx*100), s2=Math.max(0,Math.min(100,(sh-mx)/mx*100));
+  /* 上から覆うと HP が見えなくなるので、**HP の先へ継ぎ足す**。
+     最大を越えた2周目ぶんは 帯ぜんたいを濃い青で塗ってから その上に重ねる */
+  return `<div class="hpb">${
+    s2>0?`<u class="rd2" style="left:0;width:100%"></u>`:""}
+    <i class="${low?"low":""}" style="width:${p}%"></i>${
+    sh>0?`<u style="left:${p}%;width:${Math.min(100-p,s2>0?s2:s1)}%"></u>`:""}</div>`;
+}
+function mpBar(u){
+  const p=u.maxMP?Math.min(100,u.MP/u.maxMP*100):0;
+  return `<div class="hpb mp"><i style="width:${p}%"></i></div>`;
+}
+function hpNum(u){
+  const sh=shieldOf(u), low=u.HP<=u.maxHP*0.35;
+  return `<span class="${low?"lo":""}">HP <b>${Math.max(0,u.HP)}</b>/${u.maxHP}</span>`+
+    (sh?`<span class="shv">＋${sh}</span>`:"")+
+    `<span>MP <b>${u.MP}</b>/${u.maxMP}</span>`;
+}
+/* ---------- 画面の振り分け ---------- */
+function uiScreen(t){
+  if(t.name==="party")   return uiParty();
+  if(t.name==="char")    return uiChar();
+  if(t.name==="skill")   return uiSkill(t);
+  if(t.name==="skone")   return uiSkOne(t);
+  if(t.name==="gear")    return uiGear(t);
+  if(t.name==="gearone") return uiGearOne(t);
+  if(t.name==="bag")     return uiBag();
+  return uiMenu();
+}
+
+/* ===== 3d / 4c　メニュー ===== */
+function uiMenu(){
+  const inRun=!!RUN;
+  const row=(k,cls,n,d)=>`<button class="mrow k-${cls}" data-uk="${k}">
+    <span><span class="mn">${n}</span><span class="md">${d}</span></span>
+    <span class="mg">▸</span></button>`;
+  const skN=party.reduce((a,u)=>a+u.sk.length,0);
+  const gearN=store().length;
+  let h=row("party","party","パ ー テ ィ",
+    `${party.length}人　隊列・状態・装備・技　技 ${skN}`);
+  h+=row("bag","bag","持 ち 物",
+    `道具 ${bagCount()}/${bagMax()}　素材 ${matCount()}　装備 ${gearN}`);
+  if(inRun){
+    const opened=Object.keys(AREAS).filter(k=>!AREAS[k].wip&&(META.areas||{})[k]).length;
+    const all=Object.keys(AREAS).filter(k=>!AREAS[k].wip).length;
+    h+=row("world","map","世 界 地 図",`${all}区画　抜けた ${opened}`);
+  }
+  const un=newsUnread?newsUnread():0;
+  h+=row("news","news","お 知 ら せ",un?`未読 ${un}`:"新しい報せは ない");
+  h+=row("set","set","設 定","音・記録・雲");
+  h+=`<div class="mgold"><span>金 貨</span><b>${me?me.gold:0}</b></div>`;
+  return {head:uiHead({n:"メ ニ ュ ー",s:inRun?(areaOf()?areaOf().n:""):"町"}),body:h};
+}
+
+/* ===== 3a　パーティ一覧（行が隊列の枠） ===== */
+function uiParty(){
+  const sw=canSwap();
+  let h="";
+  if(!sw)h+=`<div class="uiwarn">${swapWhy()}。隊列は動かせない
+    <br><span style="color:var(--ink)">列を動かすのは 戦いの「下がる」の役目</span></div>`;
+  h+=party.map((u,i)=>{
+    const dead=u.HP<=0;
+    return `<button class="prow ${dead?"down":""}" data-uk="char" data-i="${i}"
+        ${sw?`draggable="true" data-drag="${i}"`:""}>
+      <span class="grip">${sw?"⣿":"・"}</span>
+      <span class="pfig">${meFig(44,u)}<span class="plane">${LANEN[i]}</span></span>
+      <span class="pmid">
+        <span class="pn">${rosterName(u)}<em>Lv ${u.lv}${dead?"　倒れた":""}</em></span>
+        ${hpBar(u)}
+        <span class="pnum">${hpNum(u)}</span>
+        ${mpBar(u)}
+        ${ailText(u)?`<span class="pchip">${ailText(u)}</span>`:""}
+      </span>
+      <span class="mg" style="text-align:center;color:var(--ink)">▸</span>
+    </button>`;}).join("");
+  if(bench.length){
+    h+=`<div class="uisec">控 え<em>${bench.length}</em></div>`;
+    h+=bench.map((u,j)=>`<div class="itrow"><div class="itl">
+      <div><div class="itn">${rosterName(u)}</div>
+        <div class="itd">Lv ${u.lv}　HP ${u.HP}/${u.maxHP}　技 ${u.sk.length}　癖 ${u.pass.length}</div></div>
+      <button class="mini" data-uk="bench" data-j="${j}"${sw?"":" disabled"}>入れる</button>
+    </div></div>`).join("");
+  }
+  if(party.length<PARTYMAX&&!bench.length)
+    h+=`<div class="uiempty">控えは いない<br><b>町で 仲間を雇える</b></div>`;
+  h+=`<div class="uinote">行を押すと その人の詳細へ。${
+    sw?"上下にドラッグすると 隊列が入れ替わる（先頭ほど狙われる）":""}</div>`;
+  return {head:uiHead({n:"パ ー テ ィ",s:`${party.length}/${PARTYMAX}　先頭ほど狙われる`}),body:h};
+}
+
+/* ===== 3c　個人の詳細（ステータス） ===== */
+function uiChar(){
+  const U=uiUnit(), mine=(U===me);
+  const cap=U.DEX>=STATMAX.DEX;
+  const pts=mine?(U.skp|0):0;
+  let h=`<div class="uitabs">
+    <button class="uitab on">ステータス<span>${pts?`技能 +${pts}`:`Lv ${U.lv}`}</span></button>
+    <button class="uitab" data-uk="skill">スキル<span>${skHoles(U)}</span></button>
+    <button class="uitab" data-uk="gear">装備<span>${eqCount(U)}</span></button>
+  </div>`;
+  h+=`<div class="uisec">能 力 値</div>
+    <div class="stgrid">
+      <div class="stbox wide"><span class="k">H P</span>
+        <span class="v">${Math.max(0,U.HP)}<span style="color:var(--ink)">/${U.maxHP}</span>${
+          shieldOf(U)?`<span style="color:var(--blue)">　＋${shieldOf(U)}</span>`:""}</span>
+        ${hpBar(U)}</div>
+      <div class="stbox wide"><span class="k">M P</span>
+        <span class="v">${U.MP}<span style="color:var(--ink)">/${U.maxMP}</span></span>
+        ${mpBar(U)}</div>
+      <div class="stbox"><span class="k">S T R</span><span class="v">${U.STR}</span></div>
+      <div class="stbox"><span class="k">D E X</span><span class="v"${
+        cap?' style="color:var(--brass)"':""}>${U.DEX}${
+        cap?`<span style="font-size:10px">/${STATMAX.DEX}</span>`:""}</span></div>
+      <div class="stbox"><span class="k">I N T</span><span class="v">${U.INT}</span></div>
+      <div class="stbox"><span class="k">V I T</span><span class="v">${U.VIT}</span></div>
+      <div class="stbox"><span class="k">シールド</span><span class="v">${blockValue()}</span></div>
+      <div class="stbox"><span class="k">幸 運</span>
+        <span class="v" style="color:var(--brass)">${U.LUK}</span></div>
+    </div>`;
+  /* 戦う技能 */
+  h+=`<div class="uisec">戦 う 技 能<em>${
+    mine?(pts?`技能ポイント ${pts}p`:"技能ポイント 0p"):"仲間は自分で注ぐ"}</em></div>`;
+  h+=WARSK.map(k=>uiSkLine(k,U,mine&&!inBattle())).join("");
+  h+=`<div class="uisec">暮 ら し の 技 能</div><div class="stgrid">`+
+    Object.keys(SK).filter(k=>!SK[k].war).map(k=>{
+      const now=skillOf(k,U), room=skRoom(k,U);
+      const on=mine&&!inBattle()&&(U.skp|0)>0&&room>0;
+      return `<div class="stbox"><span class="k">${SK[k].n}</span>
+        <span class="v">${now}<span style="font-size:9px;color:var(--ink)">${
+          SK[k].d6?`　${skillDice(k,U)}d6`:`　1d100`}</span></span>
+        ${mine&&!inBattle()?`<button class="skup hit44" data-uk="skup" data-k="${k}"${
+          on?"":" disabled"} style="width:100%;height:32px;margin-top:6px">＋1</button>`:""}</div>`;
+    }).join("")+`</div>`;
+  h+=`<details class="fold"><summary>技能と幸運の読み方</summary><div class="fb">
+    技能 20 ごとに ダイスが1つ増える（最大5つ、限界突破で6つ）。振ったダイスのうち
+    <b>4以上</b>が成功。技には それぞれ必要な成功の数がある。<br>
+    探索は 戦いのはじめの先制で d6 を振る。鍛冶と料理は こしらえるときに
+    1d100 を振り、${SKROLLMAX} より上には効かない。<br><br>
+    幸運 ${U.LUK}　＝　生まれ ${U.base.LUK||0}${
+      (U.LUK-(U.base.LUK||0))?`　＋ 装備 ${U.LUK-(U.base.LUK||0)}`:""}。
+    1d100 を振って 出目が小さいほど良い段になる。空振りは段のぶんだけ振り直す。
+  </div></details>`;
+  return {head:uiHead({unit:U,s:`Lv ${U.lv} ・ ${laneOf(U)} ・ ${party.indexOf(U)+1}/${party.length}`}),body:h};
+}
+function uiSkLine(k,U,canEdit){
+  const born=skillBorn(k,U), got=((U.skg||{})[k]|0), now=skillOf(k,U);
+  const war=!!SK[k].war, use=war&&(k===wepSkill(U));
+  const room=skRoom(k,U), on=canEdit&&(U.skp|0)>0&&room>0;
+  return `<div class="skl">
+    <span class="n ${use?"use":""}">${SK[k].n}</span>
+    <span class="v"><b>${now}</b>　生 ${born}${got?` ＋育 ${got}`:""}${
+      (war||SK[k].d6)?`　${skillDice(k,U)}d6`:`　1d100 ≦ ${Math.min(now,SKROLLMAX)}`}${
+      room?"":"　上限"}</span>
+    ${canEdit?`<button class="skup" data-uk="skup" data-k="${k}"${on?"":" disabled"}>＋1</button>`
+             :`<span></span>`}</div>`;
+}
+function skHoles(U){
+  const mx=(U===me)?SKMAX:MATESKMAX;
+  return "■".repeat(Math.min(mx,U.sk.length))+"□".repeat(Math.max(0,mx-U.sk.length));
+}
+function eqCount(U){
+  const n=(U.eq.wep?1:0)+(U.eq.armor?1:0)+((U.eq.acc||[]).length);
+  return `${n}/${2+ACCMAX}`;
+}
+/* ===== AB-2　スキル／パッシブ（AB-3 の差し替えも同じ画面） ===== */
+function uiSkill(t){
+  const U=uiUnit(), sw=canSwap(), isAct=(UI.skTab==="act");
+  const list=isAct?U.sk:U.pass;
+  const mx=isAct?((U===me)?SKMAX:MATESKMAX):((U===me)?PASSMAX:MATEPASSMAX);
+  const bench=bagOf(U,isAct?"act":"pass");
+  let h=`<div class="uitabs">
+    <button class="uitab${isAct?" on":""}" data-uk="sktab" data-v="act">スキル<span>${
+      U.sk.length}/${(U===me)?SKMAX:MATESKMAX}</span></button>
+    <button class="uitab${isAct?"":" on"}" data-uk="sktab" data-v="pass">パッシブ<span>${
+      U.pass.length}/${(U===me)?PASSMAX:MATEPASSMAX}</span></button>
+  </div>`;
+  if(!sw)h+=`<div class="uiwarn">${swapWhy()}</div>`;
+
+  /* AB-3 … 控えの1つを選んだあとは「どの枠と入れ替える？」 */
+  if(UI.pick){
+    const p=UI.pick;
+    h+=`<div class="uisec">選 ん だ ${isAct?"技":"癖"}<em>入れ替える枠を選ぶ</em></div>`;
+    h+=`<div class="skrow ${isAct?"":"pass"}" style="grid-template-columns:1fr 72px">
+      <div><div class="itn">${p.n}</div><div class="itd">${skSub(p,isAct)}</div></div>
+      <button class="mini" data-uk="unpick">や め る</button></div>`;
+    h+=`<div class="uisec">ど の 枠 と 入 れ 替 え る ？</div>`;
+    h+=`<div class="skgrid">${list.map((k,i)=>
+      `<button class="skcard ${isAct?"":"pass"} pick" data-uk="swapin" data-i="${i}">
+        <span class="itn">${k.n}</span><span class="itd">${skSub(k,isAct)}</span>
+        <span class="itd" style="color:var(--brass)">こ こ に 入 れ る</span></button>`).join("")}</div>`;
+    return {head:uiHead({unit:U,s:`入れ替え ・ ${isAct?"技":"癖"} ${list.length}/${mx}`}),body:h};
+  }
+
+  h+=`<div class="uisec">持 ち 出 し て い る<em>${skHoles2(list.length,mx)}　${list.length}/${mx}</em></div>`;
+  h+=`<div class="skgrid">`;
+  h+=list.map((k,i)=>`<button class="skcard ${isAct?"":"pass"}" data-uk="skone" data-i="${i}" data-on="1">
+      <span class="itn">${k.n}</span><span class="itd">${skSub(k,isAct)}</span></button>`).join("");
+  for(let i=list.length;i<mx;i++)h+=`<div class="skcard hole">空 き 枠</div>`;
+  h+=`</div>`;
+
+  h+=`<div class="uisec">控 え<em>${bench.length}</em></div>`;
+  if(!bench.length){
+    h+=`<div class="uiempty">控えに ${isAct?"技":"癖"}は ない
+      <br><b>戦いの戦利品と 宝物で 増える</b></div>`;
+  }else{
+    const pools=[...new Set(bench.map(k=>poolOf(isAct?"act":"pass",k.id)||"common"))];
+    if(pools.length>1){
+      h+=`<div class="chips">`+
+        [["all","すべて"]].concat(pools.map(p=>[p,POOLN2[p]||p]))
+        .map(([v,n])=>`<button class="chip${UI.filt===v?" on":""}"
+          data-uk="filt" data-v="${v}">${n}</button>`).join("")+`</div>`;
+    }
+    const show=bench.filter(k=>UI.filt==="all"||
+      (poolOf(isAct?"act":"pass",k.id)||"common")===UI.filt);
+    const lim=UI.more.sk?show.length:3;
+    h+=show.slice(0,lim).map((k,i)=>{
+      const idx=bench.indexOf(k);
+      const full=list.length>=mx;
+      return `<div class="skrow ${isAct?"":"pass"}">
+        <div><div class="itn">${k.n}</div><div class="itd">${skSub(k,isAct)}</div></div>
+        <button class="mini" data-uk="skone" data-i="${idx}" data-on="0">詳細</button>
+        <button class="mini go" data-uk="${full?"pick":"take"}" data-i="${idx}"${
+          sw?"":" disabled"}>${full?"入れ替え":"持ち出す"}</button></div>`;}).join("");
+    if(show.length>lim)
+      h+=`<button class="more" data-uk="more" data-v="sk">のこり ${show.length-lim} を見る ▾</button>`;
+  }
+  return {head:uiHead({unit:U,s:`${isAct?"スキル":"パッシブ"} ・ ${party.indexOf(U)+1}/${party.length}`}),body:h};
+}
+function skHoles2(n,mx){ return "■".repeat(Math.min(mx,n))+"□".repeat(Math.max(0,mx-n)); }
+function skSub(k,isAct){
+  if(isAct)return `MP ${k.mp}・再使用 ${k.cd}${k.suc?`・必要 ${k.suc}`:""}`;
+  return (k.d||"").replace(/<[^>]*>/g,"").slice(0,26);
+}
+
+/* ===== AB-2b　技の詳細 ===== */
+function uiSkOne(t){
+  const U=uiUnit(), isAct=(UI.skTab==="act");
+  const on=(t.on==="1"||t.on===1);
+  const list=on?(isAct?U.sk:U.pass):bagOf(U,isAct?"act":"pass");
+  const k=list[t.i]; if(!k)return uiSkill({});
+  const mx=isAct?((U===me)?SKMAX:MATESKMAX):((U===me)?PASSMAX:MATEPASSMAX);
+  const cur=isAct?U.sk:U.pass;
+  const full=cur.length>=mx;
+  let h=`<div class="uisec">${k.n}<em>${poolTag(isAct?"act":"pass",k.id).replace(/<[^>]*>/g,"")}</em></div>`;
+  if(isAct){
+    h+=`<div class="numt">
+      <div><span class="k">M P</span><span class="v">${k.mp}</span></div>
+      <div><span class="k">再 使 用</span><span class="v">${k.cd}</span></div>
+      <div><span class="k">必要な成功</span><span class="v">${k.suc||1}</span></div>
+      <div><span class="k">威 力</span><span class="v">${
+        k.powMul?`×${k.powMul}`:(k.heal?`回復 ${Math.round(k.heal*100)}%`:"—")}</span></div>
+      <div><span class="k">対 象</span><span class="v" style="font-size:11px">${
+        k.allFoes?"敵ぜんぶ":k.all?"手前3体":k.ally?"味方ひとり":k.hits>1?`同じ相手に ${k.hits}回`:"ひとり"}</span></div>
+      <div><span class="k">振れるダイス</span><span class="v">${
+        skillDice(wepSkill(U,k),U)+(k.dice||0)}</span></div>
+    </div>`;
+  }
+  h+=`<div class="uinote">${k.d||""}</div>`;
+  if(isAct&&(k.suc||1)>skillDice(wepSkill(U,k),U))
+    h+=`<div class="uiwarn">いまの ${SK[wepSkill(U,k)].n} では ダイスが
+      ${skillDice(wepSkill(U,k),U)} 個。必要 ${k.suc} には届かない
+      <br><span style="color:var(--ink)">技能を伸ばすと 撃てるようになる</span></div>`;
+  if(!isAct)
+    h+=`<div class="numt"><div style="grid-column:1/-1"><span class="k">条 件</span>
+      <span class="v" style="font-size:12px">${PCONDN[k.ef.w]||k.ef.w}</span></div></div>`;
+  h+=`<div class="uifoot">${
+    on?`<button class="go" data-uk="ret" data-i="${t.i}">控 え へ 戻 す</button>`
+      :`<button class="go" data-uk="${full?"pick":"take"}" data-i="${t.i}">${
+        full?"入 れ 替 え る":"持 ち 出 す"}</button>`}</div>`;
+  return {head:uiHead({n:isAct?"技 の 詳 細":"癖 の 詳 細",
+    s:on?`持ち出し中 ${cur.length}/${mx}`:`控え ${list.length}`}),body:h};
+}
+const PCONDN={always:"常に効く",r1:"第1ラウンド",r3:"3ターン目以降",
+  hp70:"HP 70% 以下",hp50:"HP 50% 以下",hp30:"HP 30% 以下",hp80:"HP 80% 以上",
+  front:"列の先頭にいる間",back:"先頭より後ろにいる間",def10:"VIT が 10 以上",
+  guarded:"防御を選んだターン",mp50:"MP が半分以上",mpfull:"MP が満タン",
+  hpfull:"HP が満タン",solo:"同じ列に味方がいない"};
+/* ===== AB-4 / AB-5　装備　＋ AB-4b　入れ替え先を選ぶ ===== */
+const SLOTN2={wep:"武 器",armor:"防 具",acc:"装 飾"};
+/* その品を着けたときの「1ヒットの差」。武器以外は VIT の差で見る */
+function gearDiff(U,g){
+  if(!U||!g||!canWear(U,g))return null;
+  const before=(g.slot==="wep")?powOf(U,{}):defOf(U);
+  const keep=(g.slot==="acc")?null:U.eq[g.slot];
+  if(g.slot==="acc"){
+    if((U.eq.acc||[]).length>=ACCMAX)return {n:0,full:true};
+    U.eq.acc=(U.eq.acc||[]).concat([g]);
+  }else U.eq[g.slot]=g;
+  recalcMe(U,false);
+  const after=(g.slot==="wep")?powOf(U,{}):defOf(U);
+  if(g.slot==="acc")U.eq.acc.pop(); else U.eq[g.slot]=keep;
+  recalcMe(U,false);
+  return {n:after-before,before,after};
+}
+function uiGear(t){
+  const U=uiUnit(), sw=canSwap(), st=store();
+  let h="";
+  if(!sw)h+=`<div class="uiwarn">${swapWhy()}</div>`;
+
+  /* AB-4b … 品を選んだあとは 枠だけを見せる */
+  if(UI.pick&&UI.pick.slot){
+    const g=UI.pick;
+    h+=`<div class="uisec">選 ん だ 品<em>入れ替える枠を選ぶ</em></div>`;
+    h+=`<div class="itrow"><div class="itl">
+      <div><div class="itn">${tierTag(g.tier)} ${g.n}</div>
+        <div class="itd">${SLOTN2[g.slot]}</div></div>
+      <button class="mini" data-uk="unpick">やめる</button></div></div>`;
+    h+=`<div class="uisec">ど の 枠 と 入 れ 替 え る ？</div>`;
+    ["wep","armor","acc"].forEach(sl=>{
+      const ok=(sl===g.slot)&&canWear(U,g);
+      if(sl==="acc"){
+        (U.eq.acc||[]).forEach((x,i)=>{
+          h+=uiSlotRow(U,`装飾 ${i+1}`,x,ok,`accin:${i}`,g);});
+        if((U.eq.acc||[]).length<ACCMAX)
+          h+=uiSlotRow(U,`装飾 空き`,null,ok,`accin:-1`,g);
+      }else h+=uiSlotRow(U,SLOTN2[sl],U.eq[sl],ok,`slotin:${sl}`,g);
+    });
+    return {head:uiHead({unit:U,s:`入れ替え ・ ${party.indexOf(U)+1}/${party.length}`}),body:h};
+  }
+
+  /* いま着けているもの ── 3行だけ */
+  h+=`<div class="uisec">い ま 着 け て い る<em>${eqCount(U)}</em></div>`;
+  const w=U.wep, cw=U.eq.wep;
+  h+=`<div class="eqs${cw?"":" none"}">
+    <span class="ek">${SLOTN2.wep}</span>
+    <span class="ev"><span class="en">${cw?`${tierTag(cw.tier)} ${cw.n}`:"素手で戦う"}</span>
+      <span class="ed">攻 ${powOf(U,{})}　${
+        SK[wepSkill(U)].n.replace(/ /g,"")}で当てる</span></span>
+    ${cw&&sw?`<button class="mini" data-uk="off" data-s="wep">外す</button>`:`<span></span>`}</div>`;
+  const ar=U.eq.armor;
+  h+=`<div class="eqs${ar?"":" none"}">
+    <span class="ek">${SLOTN2.armor}</span>
+    <span class="ev"><span class="en">${ar?`${tierTag(ar.tier)} ${ar.n}`:"空 き"}</span>
+      <span class="ed">守 ${defOf(U)}${ar&&ar.d?`　${ar.d}`:""}</span></span>
+    ${ar&&sw?`<button class="mini" data-uk="off" data-s="armor">外す</button>`:`<span></span>`}</div>`;
+  const ac=U.eq.acc||[];
+  h+=`<div class="eqs${ac.length?"":" none"}">
+    <span class="ek">${SLOTN2.acc}</span>
+    <span class="ev"><span class="accs">${ac.map((x,i)=>
+        `<span class="ac">${x.n}${sw?` <b data-uk="offacc" data-i="${i}"
+          style="color:var(--blood);cursor:pointer">✕</b>`:""}</span>`).join("")}${
+        Array.from({length:ACCMAX-ac.length},()=>`<span class="ac hole">空き</span>`).join("")}</span></span>
+    <span class="ed" style="font-family:DotGothic16,monospace;font-size:10px;color:var(--dim)">${ac.length}/${ACCMAX}</span></div>`;
+
+  /* 倉庫 */
+  const un=st.filter(g=>!isEquipped(g));
+  h+=`<div class="uisec">倉 庫<em>パーティ共有 ${un.length} ・ 数字は着けたときの差</em></div>`;
+  h+=`<div class="chips">`+[["all","すべて"],["wep","武器"],["armor","防具"],["acc","装飾"]]
+    .map(([v,n])=>`<button class="chip${UI.filt===v?" on":""}" data-uk="filt" data-v="${v}">${n}</button>`)
+    .join("")+`</div>`;
+  const tiers=[...new Set(un.map(g=>g.tier||1))].sort();
+  if(tiers.length>1)
+    h+=`<div class="chips">`+tiers.map(t2=>
+      `<button class="chip${UI.tiers.includes(t2)?" on":""}" data-uk="tier" data-v="${t2}">${
+        TIERN[t2]||t2}</button>`).join("")+`</div>`;
+  const show=un.filter(g=>(UI.filt==="all"||g.slot===UI.filt)
+    &&(!UI.tiers.length||UI.tiers.includes(g.tier||1)));
+  if(!un.length){
+    h+=`<div class="uiempty">倉庫に 何も入っていない
+      <br><b>戦いの戦利品・宝箱・行商・鍛冶</b> で増える</div>`;
+  }else if(!show.length){
+    h+=`<div class="uiempty">この絞り込みに 当てはまるものが ない</div>`;
+  }else{
+    const lim=UI.more.st?show.length:3;
+    h+=show.slice(0,lim).map(g=>{
+      const i=st.indexOf(g);
+      return `<div class="itrow"><div class="itl">
+        <div><div class="itn">${tierTag(g.tier)}${madeTag(g)} ${g.n}</div>
+          <div class="itd">${SLOTN2[g.slot]}　${(g.d||"").replace(/<[^>]*>/g,"").slice(0,30)}</div></div>
+        <button class="mini" data-uk="gearone" data-i="${i}">▸</button></div>
+        <div class="diffs">${party.map((u,j)=>{
+          const d=gearDiff(u,g);
+          const ok=canWear(u,g)&&sw;
+          const cls=!d?"":d.n>0?"up":d.n<0?"dn":"";
+          return `<button class="diff ${cls}" data-uk="pickgear" data-i="${i}" data-w="${j}"${
+            ok?"":" disabled"} title="${d?"":wearWhy(u,g)}"><em>${rosterName(u)}</em>
+            <b>${d?(d.full?"満杯":(d.n>0?"＋":"")+d.n):(wearWhy(u,g)||"—")}</b></button>`;}).join("")}</div>
+      </div>`;}).join("");
+    if(show.length>lim)
+      h+=`<button class="more" data-uk="more" data-v="st">のこり ${show.length-lim} を見る ▾</button>`;
+  }
+  return {head:uiHead({unit:U,s:`装備 ・ ${laneOf(U)} ・ ${party.indexOf(U)+1}/${party.length}`}),body:h};
+}
+function uiSlotRow(U,label,cur,ok,act,g){
+  const d=ok?gearDiff(U,g):null;
+  return `<div class="eqs${ok?"":" none"}">
+    <span class="ek">${label}</span>
+    <span class="ev"><span class="en">${cur?`${tierTag(cur.tier)} ${cur.n}`:"空 き"}</span>
+      <span class="ed">${ok?(d?`${d.before} → ${d.after}　${
+        d.n>0?"＋":""}${d.n}`:"入れられる"):`${SLOTN2[g.slot]}は 入らない枠`}</span></span>
+    ${ok?`<button class="mini go" data-uk="${act.split(":")[0]}" data-v="${act.split(":")[1]}"
+      >ここに入れる</button>`:`<span></span>`}</div>`;
+}
+function isEquipped(g){
+  return [...party,...bench].some(u=>u.eq&&(u.eq.wep===g||u.eq.armor===g
+    ||(u.eq.acc||[]).includes(g)));
+}
+/* ===== AB-7b　装備の詳細 ===== */
+function uiGearOne(t){
+  const st=store(), g=st[t.i];
+  if(!g)return uiGear({});
+  const w=(g.slot==="wep")?WEP[g.key]:null;
+  let h=`<div class="uisec">${tierTag(g.tier)}${madeTag(g)} ${g.n}<em>${SLOTN2[g.slot]}</em></div>`;
+  if(w){
+    const mul=g.mul||w.mul||1;
+    h+=`<div class="numt">
+      <div><span class="k">威 力</span><span class="v">${Math.round(mul*100)}%</span></div>
+      <div><span class="k">依存する値</span><span class="v">${w.stat}</span></div>
+      <div><span class="k">間 合 い</span><span class="v" style="font-size:12px">${
+        w.type==="melee"?"近接":"遠隔"}</span></div>
+      <div><span class="k">使う技能</span><span class="v" style="font-size:12px">${
+        SK[w.snd==="magic"?"magic":(w.type==="ranged"?"shoot":"fight")].n.replace(/ /g,"")}</span></div>
+    </div><div class="uinote">${wepTrait(w)}　${w.d||""}</div>`;
+  }else h+=`<div class="uinote">${g.d||""}</div>`;
+  h+=`<div class="uisec">誰 が 持 つ と 伸 び る か</div><div class="diffs">${
+    party.map((u,j)=>{
+      const d=gearDiff(u,g), ok=canWear(u,g)&&canSwap();
+      const cls=!d?"":d.n>0?"up":d.n<0?"dn":"";
+      return `<button class="diff ${cls}" data-uk="pickgear" data-i="${t.i}" data-w="${j}"${
+        ok?"":" disabled"} title="${d?"":wearWhy(u,g)}"><em>${rosterName(u)}</em>
+        <b>${d?(d.full?"満杯":(d.n>0?"＋":"")+d.n):(wearWhy(u,g)||"—")}</b></button>`;}).join("")}</div>`;
+  h+=`<div class="uifoot"><button class="go" data-uk="pickgear" data-i="${t.i}"
+    data-w="${UI.who}">装 備 す る</button>
+    <button class="no2" data-uk="drop" data-i="${t.i}"
+      style="width:100%;min-height:44px;margin-top:6px">捨 て る</button></div>`;
+  return {head:uiHead({n:"装 備 の 詳 細",s:isEquipped(g)?"装備中":"未装備"}),body:h};
+}
+/* ===== AB-7　持ち物（主人公のもの・人を選ばない） ===== */
+function uiBag(){
+  const T=UI.bagTab;
+  const st=store().filter(g=>!isEquipped(g));
+  const tabs=[["gear","装 備",st.length],["item","道 具",bagCount()],
+              ["mat","素 材",matCount()],["rec","レシピ",me.recipes.length]];
+  let h=`<div class="uitabs">`+tabs.map(([k,n,c])=>
+    `<button class="uitab${T===k?" on":""}" data-uk="bagtab" data-v="${k}">${n}<span>${c}</span></button>`)
+    .join("")+`</div>`;
+  if(T==="gear"){
+    if(!st.length)h+=`<div class="uiempty">未装備の 装備は ない
+      <br><b>戦いの戦利品・宝箱・行商・鍛冶</b> で増える</div>`;
+    else{
+      const lim=UI.more.bg?st.length:6;
+      h+=st.slice(0,lim).map(g=>{
+        const i=store().indexOf(g);
+        return `<button class="itrow" style="width:100%;text-align:left;color:var(--bone);font-family:inherit;cursor:pointer"
+          data-uk="gearone" data-i="${i}"><div class="itl">
+          <div><div class="itn">${tierTag(g.tier)}${madeTag(g)} ${g.n}</div>
+            <div class="itd">${SLOTN2[g.slot]}</div></div>
+          <div style="text-align:center;color:var(--ink)">▸</div></div></button>`;}).join("");
+      if(st.length>lim)h+=`<button class="more" data-uk="more" data-v="bg">のこり ${st.length-lim} を見る ▾</button>`;
     }
   }
-  h+= chNow==="eq" ?chBodyEq(U)
-    : chNow==="st" ?chBodySt(U)
-    : chNow==="bag"?chBodyBag()
-    :               chBodySk(U);
-  h+=`<button class="mclose" id="mClose">${back?"もどる":"閉じる"}</button>`;
-  openModal(h,true);
-  $("#mbox").querySelectorAll("[data-who]").forEach(b=>{
-    b.onclick=()=>{chWho=+b.dataset.who;SFX.click();charModal(back);};});
-  $("#mbox").querySelectorAll("[data-in]").forEach(b=>{
-    b.onclick=()=>{
-      const j=+b.dataset.in, m=bench[j];
-      if(party.length<PARTYMAX){ bench.splice(j,1); setParty([...party,m]); }
-      else{
-        if(U===me)return;                 /* 主人公とは入れ替えられない */
-        const l=party.slice(); l[l.indexOf(U)]=m;
-        bench.splice(j,1); bench.push(U);
-        setParty(l); chWho=Math.max(0,party.indexOf(m));
-      }
-      SFX.pick();runSave();charModal(back);
-    };});
-  $("#mbox").querySelectorAll("[data-out]").forEach(b=>{
-    b.onclick=()=>{
-      if(U===me||party.length<=1)return;
-      const l=party.filter(u=>u!==U); bench.push(U);
-      setParty(l); chWho=0;
-      SFX.click();runSave();charModal(back);
-    };});
-  $("#mbox").querySelectorAll("[data-mv]").forEach(b=>{
-    b.onclick=()=>{
-      const d=+b.dataset.mv, j=chWho+d;
-      if(j<0||j>=party.length)return;
-      const l=party.slice();
-      l[chWho]=l[j];l[j]=party[chWho];
-      setParty(l);chWho=j;
-      SFX.move();charModal(back);
-    };});
-  $("#mbox").querySelectorAll("[data-ch]").forEach(b=>{
-    b.onclick=()=>{chNow=b.dataset.ch;SFX.click();charModal(back);};});
-  /* 技能に1点注ぐ。主人公だけ・戦いの外だけ。注いだら控えを取り直す */
-  $("#mbox").querySelectorAll("[data-skup]").forEach(b=>{
-    b.onclick=()=>{
-      if(U!==me||inBattle())return;
-      if(!skUp(b.dataset.skup,me,1))return;
-      SFX.pick();runSave();charModal(back);
-    };});
-  $("#mbox").querySelectorAll("[data-eq]").forEach(b=>{
-    b.onclick=()=>{ if(!canSwap())return;
-      const i=+b.dataset.eq;
-      const g=store()[i];
-      if(!g||!canWear(U,g))return;
-      if(g.slot==="acc"&&(U.eq.acc||[]).length>=ACCMAX){closeModal();return accPickModal(g,i,U);}
-      stashEquip(i,U);closeModal();charModal(back);};});
-  $("#mbox").querySelectorAll("[data-off]").forEach(b=>{
-    b.onclick=()=>{ if(!canSwap())return;
-      stashOff(U,b.dataset.off);closeModal();charModal(back);};});
-  $("#mbox").querySelectorAll("[data-offacc]").forEach(b=>{
-    b.onclick=()=>{ if(!canSwap())return;
-      stashOff(U,"acc",+b.dataset.offacc);closeModal();charModal(back);};});
-  /* 覚えているものの出し入れ。**捨てる札は無い**（もう失わせない）。
-     押せるのは canSwap の場所だけ。窓は隠れるだけで消えないので、
-     開いたときの姿だけでなく 押した時点でも見る */
-  const reSk=()=>{recalcMe(U,false);SFX.pick();runSave();charModal(back);};
-  $("#mbox").querySelectorAll("[data-skoff]").forEach(b=>{
-    b.onclick=()=>{ if(!canSwap())return;
-      const k=U.sk.splice(+b.dataset.skoff,1)[0];
-      if(k)bagOf(U,"act").push(k); reSk();};});
-  $("#mbox").querySelectorAll("[data-skon]").forEach(b=>{
-    b.onclick=()=>{ if(!canSwap())return;
-      const max=(U===me)?SKMAX:MATESKMAX;
-      if(U.sk.length>=max)return;
-      const k=bagOf(U,"act").splice(+b.dataset.skon,1)[0];
-      if(k){k.cdLeft=0;U.sk.push(k);} reSk();};});
-  $("#mbox").querySelectorAll("[data-psoff]").forEach(b=>{
-    b.onclick=()=>{ if(!canSwap())return;
-      const k=U.pass.splice(+b.dataset.psoff,1)[0];
-      if(k)bagOf(U,"pass").push(k); reSk();};});
-  $("#mbox").querySelectorAll("[data-pson]").forEach(b=>{
-    b.onclick=()=>{ if(!canSwap())return;
-      const max=(U===me)?PASSMAX:MATEPASSMAX;
-      if(U.pass.length>=max)return;
-      const k=bagOf(U,"pass").splice(+b.dataset.pson,1)[0];
-      if(k)U.pass.push(k); reSk();};});
-  $("#mbox").querySelectorAll("[data-drop]").forEach(b=>{
-    b.onclick=()=>{
-      if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent="本当に捨てる";return;}
-      store().splice(+b.dataset.drop,1);SFX.click();closeModal();charModal(back);};});
-  $("#mClose").onclick=()=>{if(back){closeModal();back();}else closeModal();};
+  if(T==="item"){
+    const mx=bagMax(), n=bagCount();
+    h+=`<div class="uisec">道 具<em>${skHoles2(n,mx)}　残り ${Math.max(0,mx-n)} 枠</em></div>`;
+    const ks=Object.keys(me.bag).filter(k=>me.bag[k]);
+    if(!ks.length)h+=`<div class="uiempty">道具を 何も持っていない
+      <br><b>行商で買う</b>か <b>焚き火でこしらえる</b></div>`;
+    else h+=ks.map(k=>`<div class="itrow"><div class="itl">
+      <div><div class="itn">${tierTag(ITEMS[k].tier)} ${ITEMS[k].n} ×${me.bag[k]}</div>
+        <div class="itd">${ITEMS[k].d}</div></div>
+      <button class="mini go" data-uk="useitem" data-k="${k}"${
+        (ITEMS[k].anywhere&&!inBattle())?"":" disabled"}>使う</button></div></div>`).join("");
+    if(!inBattle())h+=`<div class="uinote">戦いの中でしか 使えない道具は 灰色のまま。
+      コマンドの「道具」から使う</div>`;
+  }
+  if(T==="mat"){
+    const ks=Object.keys(me.mats).filter(k=>me.mats[k]);
+    h+=`<div class="uisec">素 材<em>締めて ${matValue()} 金貨</em></div>`;
+    if(!ks.length)h+=`<div class="uiempty">素材を 何も持っていない
+      <br><b>敵を倒すと 落とす</b></div>`;
+    else h+=`<div class="numt" style="grid-template-columns:1fr auto auto">`+
+      ks.map(k=>`<div><span class="v" style="font-size:12px">${MATS[k].n}</span></div>
+        <div style="text-align:right"><span class="v">${me.mats[k]}</span></div>
+        <div style="text-align:right"><span class="v" style="color:var(--brass)">${
+          MATS[k].v*me.mats[k]}</span></div>`).join("")+`</div>`;
+  }
+  if(T==="rec"){
+    h+=`<div class="uisec">レ シ ピ<em>${me.recipes.length} 件</em></div>`;
+    if(!me.recipes.length)h+=`<div class="uiempty">レシピを まだ覚えていない
+      <br><b>戦利品と 行商</b> で覚える</div>`;
+    else h+=me.recipes.map(id=>{const R=RECIPES[id];
+      return `<div class="itrow" style="border-style:dashed"><div class="itl">
+        <div><div class="itn">${R.n}</div><div class="itd">${R.d}</div>
+          <div class="itd">${Object.keys(R.need).map(k=>MATS[k].n+"×"+R.need[k]).join("　")}　加工賃 ${R.cost}</div></div>
+        <div></div></div></div>`;}).join("");
+    h+=`<div class="uinote">こしらえるのは <b>焚き火</b>と<b>行商</b>のそば。ここでは読むだけ</div>`;
+  }
+  return {head:uiHead({n:"持 ち 物",s:`金貨 ${me.gold}`}),body:h};
+}
+
+/* ---------- 押したときの働き ---------- */
+function uiBind(host){
+  if(!host)return;
+  host.querySelectorAll("[data-uk]").forEach(b=>{
+    b.onclick=(ev)=>{
+      ev.stopPropagation();
+      const k=b.dataset.uk, i=+b.dataset.i, v=b.dataset.v, U=uiUnit();
+      const re=()=>{runSave();uiDraw();};
+      if(k==="back"){SFX.click();return uiBack();}
+      if(k==="close"){SFX.click();return uiClose();}
+      if(k==="prev"){UI.who=Math.max(0,UI.who-1);SFX.click();return uiDraw();}
+      if(k==="next"){UI.who=Math.min(party.length-1,UI.who+1);SFX.click();return uiDraw();}
+      if(k==="party"||k==="bag"){SFX.click();return uiOpen(k==="party"?"party":"bag");}
+      if(k==="char"){UI.who=i;SFX.click();return uiOpen("char");}
+      if(k==="skill"){UI.filt="all";UI.pick=null;SFX.click();return uiOpen("skill");}
+      if(k==="gear"){UI.filt="all";UI.tiers=[];UI.pick=null;SFX.click();return uiOpen("gear");}
+      if(k==="sktab"){UI.skTab=v;UI.filt="all";UI.pick=null;SFX.click();return uiDraw();}
+      if(k==="bagtab"){UI.bagTab=v;SFX.click();return uiDraw();}
+      if(k==="filt"){UI.filt=v;SFX.click();return uiDraw();}
+      if(k==="tier"){const t=+v;const j=UI.tiers.indexOf(t);
+        if(j<0)UI.tiers.push(t);else UI.tiers.splice(j,1);SFX.click();return uiDraw();}
+      if(k==="more"){UI.more[v]=true;SFX.click();return uiDraw();}
+      if(k==="skone"){SFX.click();return uiOpen("skone",{i,on:b.dataset.on});}
+      if(k==="gearone"){SFX.click();return uiOpen("gearone",{i});}
+      if(k==="world"){SFX.click();return worldModal();}
+      if(k==="news"){SFX.click();return openNews();}
+      if(k==="set"){SFX.click();return openSet();}
+      if(k==="skup"){
+        if(!skUp(b.dataset.k,U,1))return;
+        recalcMe(U,false);SFX.pick();return re();}
+      /* 技・癖の持ち出し */
+      if(k==="take"){
+        const isAct=(UI.skTab==="act"), bn=bagOf(U,isAct?"act":"pass");
+        const it=bn[i]; if(!it)return;
+        bn.splice(i,1);
+        if(isAct)U.sk.push({...it,cdLeft:0}); else U.pass.push(it);
+        recalcMe(U,false);SFX.pick();
+        if(uiTop().name==="skone")UI.stack.pop();
+        return re();}
+      if(k==="ret"){
+        const isAct=(UI.skTab==="act");
+        const cur=isAct?U.sk:U.pass, it=cur[i]; if(!it)return;
+        cur.splice(i,1); bagOf(U,isAct?"act":"pass").push(it);
+        recalcMe(U,false);SFX.click();
+        if(uiTop().name==="skone")UI.stack.pop();
+        return re();}
+      if(k==="pick"){
+        const isAct=(UI.skTab==="act");
+        UI.pick=bagOf(U,isAct?"act":"pass")[i]; UI.pick._i=i;
+        SFX.click();
+        if(uiTop().name==="skone")UI.stack.pop();
+        return uiDraw();}
+      if(k==="unpick"){UI.pick=null;SFX.click();return uiDraw();}
+      if(k==="swapin"){
+        const isAct=(UI.skTab==="act"), cur=isAct?U.sk:U.pass;
+        const bn=bagOf(U,isAct?"act":"pass"), it=UI.pick;
+        const j=bn.indexOf(it); if(j<0||!cur[i])return;
+        const outp=cur[i];
+        cur[i]=isAct?{...it,cdLeft:0}:it;
+        bn.splice(j,1); bn.push(outp);
+        UI.pick=null; recalcMe(U,false);SFX.pick();return re();}
+      /* 装備 */
+      if(k==="off"){stashOff(U,b.dataset.s);return re();}
+      if(k==="offacc"){stashOff(U,"acc",i);return re();}
+      if(k==="pickgear"){
+        const w=+(b.dataset.w||UI.who); UI.who=w;
+        UI.pick=store()[i]; SFX.click();
+        if(uiTop().name==="gearone")UI.stack.pop();
+        if(uiTop().name!=="gear")uiOpen("gear"); else uiDraw();
+        return;}
+      if(k==="slotin"){
+        const g=UI.pick, j=store().indexOf(g); if(j<0)return;
+        stashEquip(j,U); UI.pick=null; return re();}
+      if(k==="accin"){
+        const g=UI.pick, j=store().indexOf(g); if(j<0)return;
+        const idx=+v;
+        if(idx>=0){ stashOff(U,"acc",idx); }
+        const j2=store().indexOf(g);
+        stashEquip(j2,U); UI.pick=null; return re();}
+      if(k==="drop"){
+        if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent="本当に 捨てる？";
+          setTimeout(()=>{if(b.isConnected&&b.dataset.sure==="1"){
+            b.dataset.sure="";b.textContent="捨 て る";}},4000);return;}
+        store().splice(i,1);SFX.click();UI.stack.pop();return re();}
+      if(k==="bench"){
+        const j=+b.dataset.j, m=bench[j];
+        if(party.length<PARTYMAX){bench.splice(j,1);setParty([...party,m]);}
+        SFX.pick();return re();}
+      if(k==="useitem"){
+        if(typeof useItem==="function")useItem(b.dataset.k);
+        SFX.pick();return re();}
+    };
+  });
+  /* 隊列の入れ替え。掴んで上下 */
+  host.querySelectorAll("[data-drag]").forEach(el=>{
+    el.ondragstart=e=>{UI.drag=+el.dataset.drag;el.classList.add("drag");
+      e.dataTransfer.effectAllowed="move";};
+    el.ondragend=()=>{el.classList.remove("drag");UI.drag=null;};
+    el.ondragover=e=>e.preventDefault();
+    el.ondrop=e=>{e.preventDefault();
+      const to=+el.dataset.drag, from=UI.drag;
+      if(from===null||from===undefined||from===to)return;
+      const l=party.slice(), [m]=l.splice(from,1); l.splice(to,0,m);
+      setParty(l); UI.who=to; SFX.move(); runSave(); uiDraw();};
+  });
+}
+/* 旧 charModal の呼び方をそのまま受ける入口 */
+function charModal(back,U){
+  if(typeof back!=="function")back=null;
+  uiEnter("menu",null,back,U);
 }
 
 /* ---------- 報酬 ---------- */
@@ -13540,8 +14094,8 @@ slotMigrate();
 metaMigrate();                  /* 共通だった図鑑・殿堂を 枠へ配る（一度きり） */
 goTitle();
 $("#charBtn").onclick =()=>charModal();
-$("#charBtn2").onclick=()=>charModal();
-$("#worldBtn").onclick=()=>{SFX.click();worldModal();};
+/* マップの ≡（α1.0.058）。世界地図・お知らせ・設定も この中にある */
+$("#menuBtn").onclick=()=>{SFX.click();charModal();};
 /* 潜行の途中で 町へ引き返す。拾ったものは そのまま持ち帰れる */
 $("#leaveBtn").onclick=()=>{
   SFX.click();
