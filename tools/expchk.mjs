@@ -24,7 +24,7 @@ const r=await pg.evaluate(()=>{
       tot+=Math.round(dive*mul); lv=lvAt(tot);
       rows.push(lv);
     }
-    O.push({n:A.n.replace(/ /g,""),tier:A.tier,適正:TIERLV[(A.tier||1)-1],上限:tierCap(A.tier||1),
+    O.push({n:A.n.replace(/ /g,""),tier:A.tier,適正:tierBand(A.tier||1),上限:tierCap(A.tier||1),
       一回:dive,rows});
   });
   const tbl=[1,10,25,50,75,100].map(n=>[n,EXPNEED[n],cum(n)]);

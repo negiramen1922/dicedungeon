@@ -30,7 +30,7 @@ const out=await pg.evaluate(()=>{
   [["plain",1],["seed",2],["cave",2],["wtree",3],["hall",3],["city",4]].forEach(([ak,tier])=>{
     dive(ak);
     rows.push({ak,n:AREAS[ak].n.replace(/ /g,""),tier,
-      fit:TIERLV[tier-1],cap:tierCap(tier),
+      fit:tierBand(tier),cap:tierCap(tier),
       bat:expFor("battle"),eli:expFor("elite"),boss:expFor("boss"),
       gold:GOLD.battle[Math.min(2,worldStep())]});
   });
@@ -46,7 +46,7 @@ const out=await pg.evaluate(()=>{
   /* 始めるレベルは **その版の TIERLV**（前の段の上限＝この段のちょうどよい値）。
      決め打ちにすると 上限が違う版どうしを比べられない（α1.0.014）。 */
   [["plain",1],["seed",2],["cave",2],["wtree",3],["hall",3],["city",4]].forEach(([ak,tier])=>{
-    const from=tier===1?1:(TIERLV[tier-1]||1);
+    const from=tierLo(tier);
     dive(ak);
     const cap=tierCap(tier);
     let lv=from, exp=0, dives=0, guard=0;

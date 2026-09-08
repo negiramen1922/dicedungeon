@@ -615,7 +615,11 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .ndbtn button:hover{background:#343a28}
 /* 探索画面 */
 .fhead{background:var(--panel);border:1px solid var(--line);padding:12px 14px;margin-bottom:10px}
-.fh1{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+/* 狭い画面では 折り返させる。折り返さないと 区画の名に押されて
+   「入口」が 右上の札の下へ はみ出す（320px で起きていた・α1.0.057） */
+.fh1{display:flex;justify-content:space-between;align-items:baseline;gap:2px 10px;
+  flex-wrap:wrap}
+.fh1>span{min-width:0}
 .fh1 span{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:17px;letter-spacing:.12em}
 .fh1 em{font-style:normal;font-size:11px;letter-spacing:.16em;color:var(--brass)}
 .fstat{display:flex;flex-wrap:wrap;gap:0 14px;margin-top:8px;
@@ -941,11 +945,16 @@ body.play .secbar{padding-right:78px}      /* 歯車と封筒のぶんを空け�
    その間は歯車とぶつからないよう、上の行の右側だけ空ける。 */
 body.play #brand{display:none}
 body.play{padding-bottom:22px}
-/* 歯車を避けるぶんだけ空ける。歯車の左端は画面の右から 44px。
-   .fh1 は .fhead の内側（右から 26px）にあるので、必要なのは差の 18px+α。
-   一律に広く取ると見出しが折り返して縦を食う。 */
-body.play .stagerow{padding-right:78px}
-body.play .fh1{padding-right:62px}
+/* ===== 右上の札を避ける（α1.0.057 で引き直した） =====
+   **札は2つある**（お知らせ ✉ と 設定 ⚙）のに、この値は
+   歯車ひとつぶんで見積もられていた。封筒の左端は 画面の右から
+     10（余白）＋46（2つの間）＋34（札の幅）＝ 90px。
+   避ける側の右端は 画面の右から
+     .fh1     … 27px（body 12 ＋ .fhead 14 ＋ 枠 1）→ 90−27＋6 ＝ 69
+     .stagerow … 12px（body だけ）           → 90−12＋6 ＝ 84
+   一律に広く取ると見出しが折り返して縦を食うので、別々に置く。 */
+body.play .stagerow{padding-right:84px}
+body.play .fh1{padding-right:70px}
 
 /* ===== 設定（歯車） ===== */
 /* 右上の小さなボタン。歯車と封筒を並べる */
@@ -954,8 +963,10 @@ body.play .fh1{padding-right:62px}
   background:var(--panel);border:1px solid var(--line);color:var(--dim);
   font-family:inherit;font-size:17px;cursor:pointer}
 .topicon:hover{border-color:var(--brass);color:var(--brass)}
+/* 〔α1.0.057〕2つの間を 40px → 46px に広げた。未読の印（.dot）が
+   ✉ の右上に −4px はみ出すので、40px だと 設定の枠に触れていた。 */
 .gear{right:max(10px,calc(50vw - 360px + 10px))}
-.mail{right:calc(max(10px,calc(50vw - 360px + 10px)) + 40px)}
+.mail{right:calc(max(10px,calc(50vw - 360px + 10px)) + 46px)}
 /* 未読の印 */
 .mail .dot{position:absolute;top:-4px;right:-4px;min-width:15px;height:15px;
   padding:0 3px;display:grid;place-items:center;
@@ -1204,7 +1215,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
-const VERSION="α1.0.056";
+const VERSION="α1.0.057";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1217,6 +1228,15 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1057",tag:"bal",v:"α1.0.057",d:"2026-09-08",n:"適正レベルが 1階層ごとに 15 になりました",b:[
+   "<b>「ちょうどよい Lv 12」→「適正レベル Lv 1〜15」</b>。呼び方を変え、<b>幅</b>で出すようにしました",
+   "<b>どの階層も 15 ずつ</b>です。<b>1階層 Lv1〜15／2階層 Lv16〜30／3階層 Lv31〜45／4階層 Lv46 以上</b>。前は 12・16・22・18 とまちまちでした",
+   "<b>いちばん深い階層だけ 天井（Lv100）まで開いています。</b>そこで経験が止まると 先が無くなるためです。階層が増えれば 帯は自動でついてきます",
+   "帯を出ると経験が目減りするのは これまでどおりです。<b>1回潜ると 帯の中に着きます</b>（草原1回で Lv13、木漏れ日1回で Lv29、世界樹1回で Lv43）",
+   "レベルの帯が変わったので、<b>6区画 ぜんぶの手応えを測り直しました。</b>普通の戦いで ×2.60／2.41／2.42／2.19／2.22／2.00 に揃えてあります（前は最後の区画だけ ×1.85 と薄めでした）",
+   "遭遇 60 通りも測り直し、<b>ぜんぶ目標の ±0.5 倍に収まっています</b>",
+   "〔不具合〕<b>お知らせ ✉ と 設定 ⚙ の札が 近すぎました。</b>未読の印が ✉ の右上に はみ出すので、設定の枠に触れていました。間を 40px → 46px に広げました",
+   "〔不具合〕<b>その2つの下に 区画の名と「入口」が潜り込んでいました。</b>避けるための余白が <b>歯車ひとつぶん</b>で見積もられていて、封筒が増えたぶんが足りていませんでした。狭い画面では 折り返すようにもしました"]},
  {id:"v1056",tag:"up",v:"α1.0.056",d:"2026-09-08",n:"戦闘の行動アイコンも ドット絵になりました",b:[
    "盤も札も図鑑も ぜんぶドット絵なのに、<b>行動の予告だけ ⚔ ◈ ▲ ✚ ✦ ◦ の記号</b>でした。字の形も大きさも 端末まかせで揃いません",
    "<b>攻撃・防御・溜め・癒し・呪い・呼ぶ・祓い・待ち・移動・？</b> の10種を描きました。盤の予告（32px）・行動順の札（16px）・詳細の行（13px）で 同じ絵を使います",
@@ -5244,10 +5264,10 @@ function lvScale(t){ t=(t||areaTier()||1); return LVSCALE[t-1]||LVSCALE[LVSCALE.
 
    1体あたりを軽くしても 数が多いぶん 戦いは重いまま。
    精鋭は「用意が要る戦い」であって「勝てない戦い」ではない。 */
-const ELITETOUGH={plain:0.87,seed:1.04,wtree:0.75,cave:0.59,hall:0.98,city:0.96};
+const ELITETOUGH={"plain":0.87,"seed":1.03,"wtree":0.76,"cave":0.59,"hall":0.98,"city":0.9};
 function eliteTough(){ return ELITETOUGH[RUN&&RUN.area]||1; }
-const AREATOUGH={plain:1.12,seed:1.13,wtree:1.14,cave:1.54,hall:1.25,city:1.11};
-const BOSSTOUGH={plain:0.87,seed:0.92,wtree:1.04,cave:0.93,hall:1.06,city:0.61};
+const AREATOUGH={"plain":1.28,"seed":1.2,"wtree":1.01,"cave":1.62,"hall":1.08,"city":0.98};
+const BOSSTOUGH={"plain":0.87,"seed":0.91,"wtree":0.95,"cave":0.93,"hall":1.04,"city":0.62};
 function areaTough(){ return AREATOUGH[RUN&&RUN.area]||1; }
 function bossTough(){ return BOSSTOUGH[RUN&&RUN.area]||1; }
 /* 敵ひとりに掛かる合計の倍率 */
@@ -5261,7 +5281,7 @@ function bossTough(){ return BOSSTOUGH[RUN&&RUN.area]||1; }
 
    ここは tools/encchk.mjs が測って書き込む値で、0.6〜1.6 に収めてある。
    その外に振り切れる顔ぶれは 摘みでは直せない ── **編成を直すこと。** */
-const ENCTOUGH={p_wr:1.13,p_rb3:1.19,p_gw2:0.8,p_be3:1.44,p_wf2:1.09,p_wr2:0.98,p_bo2:0.85,p_bbe:1.09,p_bo3:0.91,p_bs:0.81,p_fang:1.14,p_hard:0.88,pb1:1.05,f_og:0.84,f_to:0.82,f_be:0.79,f_or2:1.34,f_bm:1.17,f_gb:0.82,f_tb:0.71,f_ob:0.99,f_hard:0.81,f_be2:1.04,w_sp2:1.3,w_ss:0.75,w_sd:0.89,w_wi2:1.03,w_sa:0.9,w_wr:0.79,w_al:0.78,w_ce:0.87,w_rc2:1.01,w_hard:0.73,w_el:1.06,w_dh:0.87,wb:0.95,sh2:0.77,gb1:1.35,gc1:1.06,gb2:1.01,hb1:0.86,db2:0.89,gc3:1.1,sh1:0.96,gr1:1.09,rt1:1.1,hb2:0.77,c_bs1:1.08,c_bs2:0.92,b1:1.02,h_bg:0.93,ls2:0.82,h_gg:1.22,gl1:0.72,rw1:1.45,rw2:0.73,bt1:1.01,h_gt:1.54,gl2:1.17,tr1:0.95,rw3:0.89,gg2:0.94,gl3:0.92,rw4:1.26,b2:0.97,c_ar2:1.51,sk2:1.19,c_sw:0.9,sk1:0.93,c_bf2:0.76,sg2:1.35,c_bwa:1.14,sg1:1.08,c_afb:1.03,c_spw:0.82,sg3:1.3,sk3:1.13,wr2:1.06,c_af3:0.89,c_spa:0.99,b3:0.92};
+const ENCTOUGH={"p_wr":1.12,"p_rb3":1.19,"p_gw2":0.81,"p_be3":1.43,"p_wf2":1.09,"p_wr2":0.98,"p_bo2":0.84,"p_bbe":1.09,"p_bo3":0.91,"p_bs":0.82,"p_fang":1.14,"p_hard":0.88,"pb1":1.07,"f_og":0.86,"f_to":0.81,"f_be":0.78,"f_or2":1.32,"f_bm":1.15,"f_gb":0.84,"f_tb":0.71,"f_ob":0.97,"f_hard":0.81,"f_be2":1.04,"pb2":1.02,"w_sp2":1.17,"w_ss":0.73,"w_sd":0.86,"w_wi2":1.07,"w_sa":0.87,"w_wr":0.82,"w_al":0.8,"w_ce":0.89,"w_rc2":1.04,"w_hard":0.75,"w_el":1.02,"w_dh":0.89,"sh2":0.77,"gb1":1.35,"gc1":1.05,"gb2":1.01,"hb1":0.86,"db2":0.88,"gc3":1.1,"sh1":0.96,"gr1":1.08,"rt1":1.09,"hb2":0.77,"c_bs1":1.08,"c_bs2":0.92,"b1":1.03,"h_bg":0.98,"ls2":0.81,"h_gg":1.2,"gl1":0.71,"rw1":1.34,"rw2":0.72,"bt1":1.06,"h_gt":1.52,"gl2":1.09,"tr1":0.94,"rw3":0.88,"gl3":0.91,"rw4":1.17,"c_ar2":1.48,"sk2":1.16,"c_sw":0.82,"sk1":0.92,"c_bf2":0.75,"sg2":1.24,"c_bwa":1.12,"sg1":1.06,"c_afb":0.97,"c_spw":0.84,"sg3":1.34,"sk3":1.23,"wr2":1.08,"c_af3":0.94,"c_spa":0.96,"b3":0.98};
 function encTough(){
   const e=(RUN&&RUN.boss)?null:sel.enc;
   return (e&&ENCTOUGH[e])||1;
@@ -9415,10 +9435,30 @@ function worldStep(){ return Math.max(0,(areaTier()||1)-1); }
    〔α1.0.014〕上限を Lv100 にしたので **同じ累積経験になるレベル**へ引き直した。
    旧 4/8/13/17（上限25）→ 新 12/28/50/68（上限100）。
    何回潜れば次の階層かは 変わっていない。 */
-const TIERLV=[12,28,50,68];
+/* ===== 適正レベルは **1階層ごとに 15**（α1.0.057） =====
+   前は [12,28,50,68] と 一つずつ置いた値で、階層の幅がまちまちだった
+   （1階層目 12、2階層目 16、3階層目 22、4階層目 18）。
+   遊ぶ人の決めごとで **どの階層も 15 ずつ**にする。
+
+     1階層 Lv 1〜15　2階層 Lv16〜30　3階層 Lv31〜45　4階層 Lv46〜60
+
+   **いちばん深い階層だけ 天井（Lv100）まで開ける。**そこで経験が
+   止まると 先が無くなるので。階層が増えれば 帯は自動でついてくる。 */
+const LVBAND=15;
+const TIERMAX=Math.max(...Object.values(AREAS).filter(a=>!a.wip).map(a=>a.tier||1));
+function tierLo(t){ return (t-1)*LVBAND+1; }
+function tierHi(t){ return t*LVBAND; }
+/* 帯を言葉にする。いちばん深い階層は 上が無い */
+function tierBand(t){
+  return t>=TIERMAX?`Lv ${tierLo(t)} 以上`:`Lv ${tierLo(t)}〜${tierHi(t)}`;
+}
+/* 難易度の測りと道具が読む「その階層を代表するレベル」＝ 帯の上。 */
+const TIERLV=Array.from({length:12},(_,i)=>tierHi(i+1));
 /* EXPNEED はここより下で作られるので、呼ばれたときに読む */
 function lvMax(){ return EXPNEED.length-1; }
-function tierCap(tier){ return TIERLV[tier]||lvMax(); }  /* 次の段の値。最後は上限 */
+/* 経験が満ちる上限＝その階層の帯の上。帯を出たら目減りする。
+   いちばん深い階層だけは 天井まで（そこで止まると先が無い） */
+function tierCap(tier){ return tier>=TIERMAX?lvMax():tierHi(tier); }
 function areaCap(){ return tierCap(areaTier()); }
 /* 経験の目減り。上限を1つ超えるごとに 3分の1ずつ減り、**3つ超えたら入らない**。
    下限を残すと わずかずつ入り続けて いつまでも稼げてしまう（0.05 で試したら
@@ -9942,7 +9982,7 @@ function drawFloor(){
   if(!RUN)return;                 /* 町にいる（潜っていない） */
   const A=areaOf();
   const cur=RUN.curKey?RUN.M.node[RUN.curKey]:null;
-  $("#fName").innerHTML=`${A.n}　<em>第 ${A.tier} 階層 ・ ちょうどよい Lv ${TIERLV[A.tier-1]||"—"}</em>`;
+  $("#fName").innerHTML=`${A.n}　<em>第 ${A.tier} 階層 ・ 適正レベル ${tierBand(A.tier)}</em>`;
   $("#fSub").textContent=cur?`${cur.r+1} / ${ROWS} 段目`:"入口";
   const low=me.HP<=me.maxHP*0.35?"lowhp":"";
   $("#fStat").innerHTML=
@@ -13270,12 +13310,12 @@ function diveModal(){
   /* 情景の札。作成画面の「始める場所」に在ったものを ここへ移した
      （α1.0.012）。町から始まるので、場所を選ぶのは この窓だけになった。 */
   const line=k=>{
-    const A=AREAS[k], fit=TIERLV[A.tier-1]||1, cap=tierCap(A.tier), m=expMul(me.lv,cap);
+    const A=AREAS[k], cap=tierCap(A.tier), m=expMul(me.lv,cap);
     return `<button class="duncard" data-d="${k}">
       <div class="dcart">${dunArt(A.art||"plains")}</div>
       <div class="dcbody">
         <div class="dcn">${areaCleared(k)?"":"<em>未踏</em> "}${A.n}</div>
-        <div class="dcm">第 ${A.tier} 階層　ちょうどよい Lv <b>${fit}</b>　`+
+        <div class="dcm">第 ${A.tier} 階層　適正レベル <b>${tierBand(A.tier)}</b>　`+
         (m<1?`<span style="color:#a0714f">いまの経験 ${Math.round(m*100)}%</span>`
             :`<span style="color:#8fa261">経験 100%</span>`)+
         `<span class="s">（Lv ${cap} まで満ちる）</span></div>
