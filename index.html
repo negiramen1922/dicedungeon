@@ -932,6 +932,14 @@ body.play .secbar{padding-right:78px}      /* 歯車と封筒のぶんを空け�
   background:none;border:1px solid var(--line);color:var(--dim);
   font-family:inherit;font-size:15px;cursor:pointer;padding:0}
 .uib:hover:not(:disabled){border-color:var(--brass);color:var(--brass)}
+/* 戻る（↩）は 少し目立たせ、人送り（‹ ›）は 引っ込める。
+   同じ形が3つ並ぶと どれが何か分からない（α1.0.059） */
+.uib.uback{color:var(--brass);border-color:#5c4a1a;font-size:17px}
+/* 人送りは **枠のまま 44px**。見えない余白で広げると、その分だけ
+   札が横に伸びたことになって「字がはみ出す」と測れてしまう。
+   小さく見せるのは 字と枠の濃さで足りる */
+.uib.unav{color:var(--ink);font-size:13px;background:transparent;border-color:#2b3028}
+.uib.unav:hover:not(:disabled){color:var(--dim);border-color:var(--dim)}
 .uib:disabled{opacity:.3;cursor:default}
 .uibody{padding:9px 12px 72px}
 /* 札（タブ） */
@@ -1080,8 +1088,13 @@ body.play .secbar{padding-right:78px}      /* 歯車と封筒のぶんを空け�
 .accs .ac.hole{border-style:dashed;color:var(--ink)}
 /* 倉庫の行 */
 .itrow{background:var(--panel);border:1px solid var(--line);padding:7px 9px;margin-bottom:5px}
+/* 行の頭に絵を置く（α1.0.059）。何の品かは 名を読むより 絵のほうが速い */
 .itrow .itl{display:grid;grid-template-columns:minmax(0,1fr) 44px;
   align-items:center;gap:8px}
+.itrow .itl.ico{grid-template-columns:28px minmax(0,1fr) 44px}
+.itico{display:grid;place-items:center;width:28px;height:28px;
+  background:#14160f;border:1px solid #2b3028}
+.itico svg{display:block}
 .itrow .itl>div{min-width:0}
 .itrow .itn{font-size:12.5px;color:var(--bone);letter-spacing:.03em}
 .itrow .itd{font-family:"DotGothic16",ui-monospace,monospace;font-size:9.5px;
@@ -1457,7 +1470,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
-const VERSION="α1.0.058";
+const VERSION="α1.0.059";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1470,6 +1483,13 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1059",tag:"fix",v:"α1.0.059",d:"2026-09-08",n:"戻る札を 分かる形にして、持ち物に絵を付けました",b:[
+   "<b>戻る札を ↩ に変えました。</b>左の「戻る」も 右の「前の人／次の人」も ぜんぶ <b>‹ ›</b> の同じ形で、どれが何なのか見分けが付きませんでした。<b>↩ は一つ前の画面へ、‹ › は同じ画面のまま見る人を変える</b>です。色と濃さでも分けてあります",
+   "<b>大きい ✕ を無くしました。</b>あれは <b>一気に閉じる</b>札で、「一つ戻る」のつもりで押すと 町まで飛ばされていました。いちばん奥からでも ↩ を押していけば閉じます",
+   "<b>持ち物の行に 品の絵が付きました。</b>装備・道具・素材・レシピ すべてです。名を読むより 絵のほうが速いので",
+   "素材は 表から <b>行</b>に変えました。1つあたりではなく <b>持っているぶんの締め</b>が右に出ます",
+   "レシピには <b>できあがる品の絵</b>が付きます",
+   "装備の画面の倉庫の行にも 同じ絵を付けました。<b>同じ一覧を 二通りに見せない</b>ためです"]},
  {id:"v1058",tag:"up",v:"α1.0.058",d:"2026-09-08",n:"装備・スキル・持ち物の画面を 作り直しました",b:[
    "<b>「装 備 ・ 状 態」の1枚に詰め込むのをやめました。</b>1つの札がスマホ2画面ぶんまで伸び、押せる札が26個並ぶこともありました",
    "<b>メニュー → パーティ → 個人の詳細 → スキル／装備</b> と 画面に分けました。持ち物は主人公のものなので メニューから直接入ります",
@@ -11549,19 +11569,27 @@ function uiDraw(){
   }
 }
 /* 共通の頭。人に紐づく画面は 顔と ‹ › が付く */
+/* ===== 頭の札（α1.0.059 で直した） =====
+   〔前〕左の「戻る」も 右の「前の人／次の人」も ぜんぶ ‹ › の同じ形で、
+   どれが何なのか見分けが付かなかった。そのうえ **✕ は一気に閉じる**ので、
+   「一つ戻る」のつもりで押すと 町まで飛ばされていた。
+     戻る … ↩（曲がった矢印）。**一つ前の画面へ**
+     人送り … ‹ ›（そのまま）。**同じ画面のまま 見る人を変える**
+     ✕ … 無くした。いちばん奥から戻るときは ↩ を押していけば閉じる */
 function uiHead(o){
   const U=o.unit;
-  const nav=(a,k,dis)=>`<button class="uib" data-uk="${k}"${dis?" disabled":""}>${a}</button>`;
-  if(!U)return nav("‹","back")+
+  const nav=(a,k,dis,cls)=>`<button class="uib${cls?" "+cls:""}" data-uk="${k}"${
+    dis?" disabled":""}>${a}</button>`;
+  const back=nav("↩","back",false,"uback");
+  if(!U)return back+
     `<div class="uit"><div class="uin">${o.n}</div>${
-      o.s?`<div class="uis">${o.s}</div>`:""}</div>`+nav("✕","close");
+      o.s?`<div class="uis">${o.s}</div>`:""}</div>`;
   const multi=party.length>1;
-  return nav("‹","back")+
+  return back+
     `<div class="uif">${meFig(34,U)}</div>
      <div class="uit"><div class="uin">${rosterName(U)}</div>
        <div class="uis">${o.s}</div></div>`+
-    (multi?nav("‹","prev",UI.who<=0)+nav("›","next",UI.who>=party.length-1):"")+
-    nav("✕","close");
+    (multi?nav("‹","prev",UI.who<=0,"unav")+nav("›","next",UI.who>=party.length-1,"unav"):"");
 }
 /* 隊列の呼び名。3人までは 前・中・後 */
 const LANEN=["前","中","後","4","5","6"];
@@ -11936,7 +11964,8 @@ function uiGear(t){
     const lim=UI.more.st?show.length:3;
     h+=show.slice(0,lim).map(g=>{
       const i=st.indexOf(g);
-      return `<div class="itrow"><div class="itl">
+      return `<div class="itrow"><div class="itl ico">
+        ${gearIcon(g)}
         <div><div class="itn">${tierTag(g.tier)}${madeTag(g)} ${g.n}</div>
           <div class="itd">${SLOTN2[g.slot]}　${(g.d||"").replace(/<[^>]*>/g,"").slice(0,30)}</div></div>
         <button class="mini" data-uk="gearone" data-i="${i}">▸</button></div>
@@ -11962,6 +11991,20 @@ function uiSlotRow(U,label,cur,ok,act,g){
         d.n>0?"＋":""}${d.n}`:"入れられる"):`${SLOTN2[g.slot]}は 入らない枠`}</span></span>
     ${ok?`<button class="mini go" data-uk="${act.split(":")[0]}" data-v="${act.split(":")[1]}"
       >ここに入れる</button>`:`<span></span>`}</div>`;
+}
+/* レシピが作る品の絵。cook は道具、forge は装備（防具か装飾）。
+   実体は「作ったとき」に組み立てるので、ここは印だけ引く（α1.0.059） */
+function recipeGearIcon(R){
+  if(R.kind!=="forge")return "i_food";
+  const g=[].concat(GEAR.armor,GEAR.acc).find(x=>x.id===R.make);
+  if(!g)return "i_buff";
+  return GEAR.armor.some(x=>x.id===R.make)?armorIcon(g):accIcon(g);
+}
+/* 装備の品の絵。枠ごとに引く先が違うので ひとつにまとめる（α1.0.059） */
+function gearIcon(g,size){
+  if(!g)return "";
+  const k=g.slot==="wep"?wepIcon(g.key):(g.slot==="armor"?armorIcon(g):accIcon(g));
+  return `<span class="itico">${itemIcon(k,size||18)}</span>`;
 }
 function isEquipped(g){
   return [...party,...bench].some(u=>u.eq&&(u.eq.wep===g||u.eq.armor===g
@@ -12014,7 +12057,8 @@ function uiBag(){
       h+=st.slice(0,lim).map(g=>{
         const i=store().indexOf(g);
         return `<button class="itrow" style="width:100%;text-align:left;color:var(--bone);font-family:inherit;cursor:pointer"
-          data-uk="gearone" data-i="${i}"><div class="itl">
+          data-uk="gearone" data-i="${i}"><div class="itl ico">
+          ${gearIcon(g)}
           <div><div class="itn">${tierTag(g.tier)}${madeTag(g)} ${g.n}</div>
             <div class="itd">${SLOTN2[g.slot]}</div></div>
           <div style="text-align:center;color:var(--ink)">▸</div></div></button>`;}).join("");
@@ -12027,7 +12071,8 @@ function uiBag(){
     const ks=Object.keys(me.bag).filter(k=>me.bag[k]);
     if(!ks.length)h+=`<div class="uiempty">道具を 何も持っていない
       <br><b>行商で買う</b>か <b>焚き火でこしらえる</b></div>`;
-    else h+=ks.map(k=>`<div class="itrow"><div class="itl">
+    else h+=ks.map(k=>`<div class="itrow"><div class="itl ico">
+      <span class="itico">${itemIcon(itemKindIcon(k),18)}</span>
       <div><div class="itn">${tierTag(ITEMS[k].tier)} ${ITEMS[k].n} ×${me.bag[k]}</div>
         <div class="itd">${ITEMS[k].d}</div></div>
       <button class="mini go" data-uk="useitem" data-k="${k}"${
@@ -12040,21 +12085,30 @@ function uiBag(){
     h+=`<div class="uisec">素 材<em>締めて ${matValue()} 金貨</em></div>`;
     if(!ks.length)h+=`<div class="uiempty">素材を 何も持っていない
       <br><b>敵を倒すと 落とす</b></div>`;
-    else h+=`<div class="numt" style="grid-template-columns:1fr auto auto">`+
-      ks.map(k=>`<div><span class="v" style="font-size:12px">${MATS[k].n}</span></div>
-        <div style="text-align:right"><span class="v">${me.mats[k]}</span></div>
-        <div style="text-align:right"><span class="v" style="color:var(--brass)">${
-          MATS[k].v*me.mats[k]}</span></div>`).join("")+`</div>`;
+    else h+=ks.map(k=>`<div class="itrow"><div class="itl ico"
+        style="grid-template-columns:28px minmax(0,1fr) auto">
+      <span class="itico">${itemIcon(k,18)}</span>
+      <div><div class="itn">${MATS[k].n} ×${me.mats[k]}</div>
+        <div class="itd">${MATS[k].d||""}</div></div>
+      <div style="text-align:right;font-family:DotGothic16,ui-monospace,monospace;
+        font-size:12px;color:var(--brass);white-space:nowrap">${
+        MATS[k].v*me.mats[k]}<span style="color:var(--ink);font-size:9.5px"> 金貨</span></div>
+    </div></div>`).join("");
   }
   if(T==="rec"){
     h+=`<div class="uisec">レ シ ピ<em>${me.recipes.length} 件</em></div>`;
     if(!me.recipes.length)h+=`<div class="uiempty">レシピを まだ覚えていない
       <br><b>戦利品と 行商</b> で覚える</div>`;
     else h+=me.recipes.map(id=>{const R=RECIPES[id];
-      return `<div class="itrow" style="border-style:dashed"><div class="itl">
+      /* できあがる品の絵。道具なら種類の絵、装備なら枠の絵 */
+      const mk=R.make?(ITEMS[R.make]?itemIcon(itemKindIcon(R.make),18)
+        :itemIcon(recipeGearIcon(R),18)):itemIcon("i_food",18);
+      return `<div class="itrow" style="border-style:dashed"><div class="itl ico"
+          style="grid-template-columns:28px minmax(0,1fr)">
+        <span class="itico">${mk}</span>
         <div><div class="itn">${R.n}</div><div class="itd">${R.d}</div>
           <div class="itd">${Object.keys(R.need).map(k=>MATS[k].n+"×"+R.need[k]).join("　")}　加工賃 ${R.cost}</div></div>
-        <div></div></div></div>`;}).join("");
+      </div></div>`;}).join("");
     h+=`<div class="uinote">こしらえるのは <b>焚き火</b>と<b>行商</b>のそば。ここでは読むだけ</div>`;
   }
   return {head:uiHead({n:"持 ち 物",s:`金貨 ${me.gold}`}),body:h};
