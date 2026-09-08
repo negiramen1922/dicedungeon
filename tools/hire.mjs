@@ -48,6 +48,8 @@ async function newSave(){
     await pg.click("#mkRnd");await pg.waitForTimeout(120);
     await pg.click("#mkLookGo");await pg.waitForTimeout(200);
   }
+  /* 名前の段（α1.0.063） */
+  if(await pg.$("#mkNameGo")){ await pg.click("#mkNameGo");await pg.waitForTimeout(200); }
   await pg.waitForSelector("#mkNext",{timeout:8000});
   await tap("#mkNext"); await pg.waitForTimeout(300);
   await firstCard(); await pg.waitForTimeout(600);

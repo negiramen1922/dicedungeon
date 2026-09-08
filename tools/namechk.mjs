@@ -24,9 +24,10 @@ const out=await pg.evaluate(async()=>{
 
   /* ② 名前を付けて 作る */
   slot=0;newChar();sel.job="knight";sel.race="hume";sel.orig="wrath";
-  mkStep=MKSTEPS.findIndex(x=>x.k==="__look");drawMake();showScreen("make");
+  /* 名前は α1.0.063 から **独立した段**（__name）。見た目の段の中には無い */
+  mkStep=MKSTEPS.findIndex(x=>x.k==="__name");drawMake();showScreen("make");
   const nm=$("#mkName");
-  L.push(`② 作成に 名前の欄 ${!!nm}`);
+  L.push(`② 作成に 名前の段 ${!!nm}（段 ${mkStep} ${MKSTEPS[mkStep].ttl}）`);
   if(!nm)bad.push("名前の欄が無い");
   else{
     nm.value="ロラン<script>"; nm.oninput();
@@ -35,6 +36,8 @@ const out=await pg.evaluate(async()=>{
     if(sel.pname.length>NAMEMAX)bad.push("文字数の上限が効いていない");
     nm.value="ロ ラ ン"; nm.oninput();
   }
+  /* 名前の段を抜けてから 見た目の段へ戻って 色を見る */
+  $("#mkPrev").click();
   const free=document.querySelector('#mkBody [data-free="cloth"]');
   L.push(`   自由な色のつまみ ${!!free}`);
   if(!free)bad.push("自由な色のつまみが無い");
@@ -43,6 +46,7 @@ const out=await pg.evaluate(async()=>{
     if(sel.col.cloth!=="#6a3f7a")bad.push("自由な色が入っていない"); }
   /* 「この姿で」を押しても 選んだ色が消えないこと */
   $("#mkLookGo").click();
+  if($("#mkNameGo"))$("#mkNameGo").click();
   L.push(`   「この姿で」のあと sel.col.cloth ${sel.col.cloth}`);
   if(sel.col.cloth!=="#6a3f7a")bad.push("「この姿で」で 自由な色が消えた");
   const m=makeMe();

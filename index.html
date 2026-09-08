@@ -184,11 +184,13 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 /* 見た目を選ぶ札（α1.0.041） */
 .nmrow{display:flex;gap:8px;margin:4px 0 12px}
 .nmrow input{flex:1;min-width:0;background:#1b1e15;border:1px solid #2e3325;border-radius:3px;
-  color:var(--ink);font-family:"DotGothic16",ui-monospace,monospace;font-size:17px;
+  color:var(--bone);font-family:"DotGothic16",ui-monospace,monospace;font-size:17px;
   letter-spacing:.08em;padding:8px 10px}
 .nmrow input:focus{outline:none;border-color:var(--brass)}
 .nmrow input::placeholder{color:#4d5346;letter-spacing:.04em}
 .nmrow .no2{flex:0 0 auto;padding:0 14px}
+.mkhint{font-size:11px;color:var(--ink);line-height:1.7;margin:2px 0 14px}
+.mkhint b{color:var(--dim);font-weight:400}
 .mkq2{font-size:12px;letter-spacing:.1em;color:var(--dim);margin:10px 0 5px}
 .mkq2 span{color:var(--brass);letter-spacing:.06em}
 .swrow{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
@@ -944,6 +946,10 @@ body.play .secbar{padding-right:78px}      /* 歯車と封筒のぶんを空け�
    縦は上から固定。**説明の帯だけは 78px から動かさない** ──
    ここが伸び縮みすると コマンド欄がまるごと上下して 押し間違える（A-2）。 */
 #fight{display:flex;flex-direction:column;height:calc(100vh - 54px);min-height:0}
+/* 〔不具合・α1.0.063〕id で display:flex と書いたので **.hide より重く**、
+   戦いの画面が 題名・キャラ作成・町の下に ずっと出たままだった（α1.0.061 から）。
+   ここで id ごと打ち消す。 */
+#fight.hide{display:none}
 .bhd{flex:0 0 auto;min-height:41px;display:flex;align-items:center;gap:6px;
   padding:3px 0;border-bottom:1px solid var(--line)}
 .bht{flex:1;min-width:0;font-size:12px;color:var(--dim);letter-spacing:.06em;
@@ -1021,6 +1027,19 @@ body.play .secbar{padding-right:78px}      /* 歯車と封筒のぶんを空け�
 .chp u{position:absolute;top:0;bottom:0;background:var(--blue);opacity:.9}
 .chp.mp{height:3px;margin-top:1px}
 .chp.mp i{background:var(--blue)}
+/* ===== 帯のすぐ下に 数字（α1.0.063） =====
+   帯だけでは 「あと何発 耐えられるか」が読めない。**いまの値を太く**、
+   最大は細く、シールドは 水色で右に足す（パーティ画面の hpNum と同じ形）。
+   マスは 320px で 30px 台まで細るので、「HP」「MP」の見出しは付けず
+   **帯の色**で どちらかを示す。＋は 半角にして 1文字ぶん詰める。 */
+.cnum{font-family:"DotGothic16",ui-monospace,monospace;font-size:8px;color:var(--dim);
+  line-height:1.25;font-variant-numeric:tabular-nums;letter-spacing:0;
+  white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:clip}
+.cnum b{font-weight:400;color:var(--bone)}
+.cnum s{text-decoration:none;color:var(--ink)}
+.cnum em{font-style:normal;color:var(--blue);margin-left:1px}
+.cnum.lo b{color:var(--blood)}
+.cnum.mp b{color:var(--blue)}
 .cmp{font-family:"DotGothic16",ui-monospace,monospace;font-size:8px;color:var(--ink);
   line-height:1.2}
 .cst{font-size:8px;color:var(--ink);line-height:1.2;max-width:100%;
@@ -1638,7 +1657,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
-const VERSION="α1.0.062";
+const VERSION="α1.0.063";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1651,6 +1670,12 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1063",tag:"up",v:"α1.0.063",d:"2026-09-08",n:"盤に HP の数字が出ます。名前を決める段を立てました",b:[
+   "<b>〔戦い〕帯の下に 数字を出しました。</b>いまの HP を太く、最大は細く。帯の長さだけでは <b>あと何発 耐えられるか</b>が読めませんでした。味方は MP も同じ形で出ます",
+   "<b>〔戦い〕シールドは HP の数字の隣に 水色で</b>足します（<b>219/219 +8</b>）。パーティ画面と同じ出し方です。HP が満タンのときは 帯に重ねる場所が無く、これまで盾の量が見えませんでした",
+   "　これまで盾を出していた <b>下の札</b>からは 外しました。同じ数字を マスの中に二度出さないためです",
+   "<b>キャラを作るときの「名 前」を ひとつの段にしました。</b>これまでは <b>見た目の段の中</b>に置いていて、下に色の札が長く続くので 読み飛ばされていました。姿を決めたあと、目の前の者に名を付けます",
+   "〔不具合〕<b>戦いの画面が 題名・キャラ作成・町の下に ずっと出たままでした。</b>α1.0.061 で <b>id</b> に「並べる」と書いたので、画面を隠す指示より重くなっていました"]},
  {id:"v1062",tag:"fix",v:"α1.0.062",d:"2026-09-08",n:"戦いの盤に MP が戻り、敵の予告が出るようになりました",b:[
    "〔不具合〕<b>敵の次の行動のアイコンが 出ていませんでした。</b>行動順の札の中でしか効かない見た目を そのまま使い回していたので、盤では枠も背景も付かず 消えたようになっていました。<b>間合いの数字の隣</b>に ちゃんとした札で出します",
    "〔不具合〕<b>味方の MP が どこにも出ていませんでした。</b>HPの帯の下に <b>MPの帯と数字</b>を戻しました。手番の者だけでなく <b>3人ぶん</b>見えます",
@@ -6326,9 +6351,10 @@ function unitCell(u,isMine,fig){
   const hp=Math.max(0,u.HP), low=hp<=mx*0.35;
   /* 効いているものは いちばん重い1つだけ。並べると 間合いより目立つ */
   const ail=(u.ail||[]).slice().sort((x,y)=>(y.t||0)-(x.t||0))[0];
+  /* 盾は α1.0.063 から **HPの数字の隣**に水色で出す（パーティ画面と同じ形）。
+     ここで「盾 8」も出すと 同じ数字が マスの中に二度出るので、チップからは外した */
   const stx=ail?`<span class="cst bad">${(AIL[ail.k]||{n:ail.k}).n}</span>`
-    :(sh?`<span class="cst good">盾 ${sh}</span>`
-      :(isMine&&u.half?`<span class="cst good">被弾半減</span>`:""));
+    :(isMine&&u.half?`<span class="cst good">被弾半減</span>`:"");
   return `<div class="cell ${u.HP<=0?"dead":""} ${target?"sel":""} ${acting?"acting":""} ${
       aimed?(aimed.bad?"aimed bad":"aimed"):""}"
       ${isMine?`data-me="${u.pid||0}"`:`data-id="${u.id}"`}>
@@ -6347,9 +6373,11 @@ function unitCell(u,isMine,fig){
     <span class="chp"><i class="${low?"low":""}" style="width:${hp/mx*100}%"></i>${
       sh?`<u style="left:${Math.min(100,hp/mx*100)}%;width:${
         Math.min(100-hp/mx*100,sh/mx*100)}%"></u>`:""}</span>
+    <span class="cnum ${low?"lo":""}"><b>${hp}</b><s>/${u.maxHP}</s>${
+      sh?`<em>+${sh}</em>`:""}</span>
     ${isMine?`<span class="chp mp"><i style="width:${
       u.maxMP?Math.min(100,u.MP/u.maxMP*100):0}%"></i></span>
-      <span class="cmp">MP ${u.MP}/${u.maxMP}</span>`:""}
+      <span class="cnum mp"><b>${u.MP}</b><s>/${u.maxMP}</s></span>`:""}
     ${stx}
   </div>`;
 }
@@ -7729,11 +7757,22 @@ function fxOn(u,kind){
   }
 }
 /* HPの帯を その場で減らす。マスの作りが変わったので 掴み先も変えた（α1.0.061）。
-   数値はマスに出さなくなった（帯だけ）ので、動かすのは帯の幅だけ。 */
+   α1.0.063 から 帯の下に数字も出しているので、**数字も一緒に動かす**。
+   ここを忘れると 帯だけ減って 数字が古いまま残る。 */
 function setHPBar(u,val){
   const c=cellOf(u);if(!c)return;
+  const v=Math.max(0,Math.round(val)), mx=Math.max(1,u.maxHP);
   const bar=c.querySelector(".chp i");
-  if(bar)bar.style.width=Math.max(0,Math.min(100,val/u.maxHP*100))+"%";
+  if(bar){
+    bar.style.width=Math.max(0,Math.min(100,v/mx*100))+"%";
+    bar.classList.toggle("low",v<=mx*0.35);
+  }
+  const n=c.querySelector(".cnum:not(.mp)");
+  if(n){
+    const b=n.querySelector("b");
+    if(b)b.textContent=v;
+    n.classList.toggle("lo",v<=mx*0.35);
+  }
 }
 /* ms を渡すと そのぶん遅れて浮く。攻撃の拍に合わせるために使う（α1.0.039） */
 function popOn(f,text,cls,ms){
@@ -13581,6 +13620,10 @@ const MKSTEPS=[
   {k:"race",ttl:"種 族", data:()=>RACE, sub:"どんな体か"},
   {k:"orig",ttl:"欲 望", data:()=>ORIG, sub:"何を求めるか"},
   {k:"__look",ttl:"見 た 目", sub:"肌・服・目の色"},
+  /* 名前は α1.0.050 から在ったが **見た目の段の中**に置いていたので
+     見落とされていた（「名前を決められない」）。α1.0.063 で 独立した段にした。
+     姿を決めたあとに名を付ける ── 目の前にいる者に名を付ける順にしている。 */
+  {k:"__name",ttl:"名 前", sub:"呼び名を決める"},
   {k:"__ok",ttl:"確 認", sub:""},
   /* 「始める場所」の段はここに在った。α1 では 作ったあと **町から始まる**ので、
      どこへ潜るかは町の窓（diveModal）が受け持つ。作成で選ばせても
@@ -13597,8 +13640,10 @@ function drawMake(){
     `<span class="mkdot${i===mkStep?" on":(i<mkStep?" done":"")}"></span>`).join("");
   $("#mkFig").innerHTML=mkFig();
   $("#mkTtl").textContent=S.k==="__ok"?"こ の 者 で 良 い か"
+    :S.k==="__name"?"名 前 を 決 め る"
     :S.k==="__look"?"見 た 目 を 決 め る":"キ ャ ラ を 作 る";
   if(S.k==="__ok")return drawMakeConfirm();
+  if(S.k==="__name")return drawMakeName();
   if(S.k==="__look")return drawMakeLook();
   const D=S.data();
   let h=`<div class="mkq">${S.ttl}　<span>${S.sub}</span></div><div class="acts">`;
@@ -13632,12 +13677,8 @@ function drawMakeLook(){
        <label class="sw free${isHex(now)?" on":""}" style="background:${hexOf(list,now)}">
          <input type="color" data-free="${key}" value="${hexOf(list,now)}">
          <span>自 由</span></label></div>`;
-  let h=`<div class="mkq">名 前　<span>${NAMEMAX} 文字まで　空でも良い</span></div>
-    <div class="nmrow">
-      <input id="mkName" type="text" maxlength="${NAMEMAX}" value="${sel.pname||""}"
-        placeholder="${RACE[sel.race]?RACE[sel.race].n:""}の${JOB[sel.job]?JOB[sel.job].n:""}">
-      <button class="no2" id="mkNmX">消 す</button></div>
-    <div class="mkq">見 た 目　<span>あとから変えることはできない</span></div>`;
+  /* 名前は 次の段（drawMakeName）へ移した（α1.0.063） */
+  let h=`<div class="mkq">見 た 目　<span>あとから変えることはできない</span></div>`;
   h+=row("肌 の 色",SKINS,"skin",c.skin);
   h+=row("服 の 色",CLOTHS,"cloth",c.cloth);
   h+=row("目 の 色",EYECOL,"eye",c.eye);
@@ -13650,11 +13691,6 @@ function drawMakeLook(){
     sel.col={...c,[key]:v};
     $("#mkFig").innerHTML=mkFig();      /* 立ち絵だけ先に差し替えて 手応えを出す */
   };
-  const nm=$("#mkName");
-  if(nm){
-    nm.oninput=()=>{sel.pname=cleanName(nm.value);};
-    $("#mkNmX").onclick=()=>{sel.pname="";nm.value="";nm.focus();};
-  }
   $("#mkBody").querySelectorAll("[data-col]").forEach(b=>{
     b.onclick=()=>{SFX.click();put(b.dataset.col,b.dataset.v);drawMakeLook();};});
   /* 好きな色。動かしているあいだ 立ち絵が追いかける（描き直すと つまみが閉じる） */
@@ -13676,8 +13712,33 @@ function drawMakeLook(){
     /* 〔罠〕c は 描き直したときの写し。自由な色で更新したあとに c を書き戻すと
        選んだ色が その場で消える。**いまの値**（sel.col）を読む */
     sel.col={...colOf({job:sel.job,race:sel.race,col:sel.col})};
-    if(nm)sel.pname=cleanName(nm.value);
     SFX.open();mkStep++;drawMake();window.scrollTo(0,0);};
+  $("#mkPrev").onclick=()=>{mkStep--;drawMake();window.scrollTo(0,0);};
+}
+/* ===== 名 前 を 決 め る 段（α1.0.063） =====
+   これまでは 見た目の段の上に小さく置いていた。色を選ぶ札が下に長く続くので
+   「見た目の段」として読み飛ばされ、**名前を付けられない**と言われていた。
+   段をひとつ立てて、上の立ち絵とあわせて「この者の名」を訊く形にした。
+   空のままでも進める ── そのときは これまでどおり「◯◯の◯◯」と呼ばれる。 */
+function drawMakeName(){
+  const auto=`${RACE[sel.race]?RACE[sel.race].n:""}の${JOB[sel.job]?JOB[sel.job].n:""}`;
+  $("#mkBody").innerHTML=`
+    <div class="mkq">名 前　<span>${NAMEMAX} 文字まで</span></div>
+    <div class="nmrow">
+      <input id="mkName" type="text" maxlength="${NAMEMAX}" value="${sel.pname||""}"
+        placeholder="${auto}" autocomplete="off">
+      <button class="no2" id="mkNmX">消 す</button></div>
+    <div class="mkhint">空のままなら <b>${auto}</b> と呼ばれます。
+      あとから変えることはできません。</div>
+    <div class="ndbtn"><button class="go2" id="mkNameGo">こ の 名 で</button></div>
+    <button class="mclose" id="mkPrev">ひとつ もどる</button>`;
+  const nm=$("#mkName");
+  const go=()=>{ sel.pname=cleanName(nm.value);
+    SFX.open();mkStep++;drawMake();window.scrollTo(0,0); };
+  nm.oninput=()=>{sel.pname=cleanName(nm.value);};
+  nm.onkeydown=e=>{ if(e.key==="Enter"){e.preventDefault();nm.blur();go();} };
+  $("#mkNmX").onclick=()=>{sel.pname="";nm.value="";nm.focus();};
+  $("#mkNameGo").onclick=go;
   $("#mkPrev").onclick=()=>{mkStep--;drawMake();window.scrollTo(0,0);};
 }
 /* 生まれつきの幸運を、目の前で振って見せる。

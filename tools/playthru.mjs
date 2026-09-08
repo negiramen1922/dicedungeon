@@ -115,6 +115,11 @@ if(await pg.$("#mkRnd")){
   await pg.click("#mkLookGo");await pg.waitForTimeout(200);
   log.push(`   見た目を決めた → ${await scr()}`);
 }
+/* 名前の段（α1.0.063）。空のまま進む */
+if(await pg.$("#mkNameGo")){
+  await pg.click("#mkNameGo");await pg.waitForTimeout(200);
+  log.push(`   名前の段を抜けた → ${await scr()}`);
+}
 /* 幸運を振る演出が終わって 確認の札が出るのを待つ */
 try{ await pg.waitForSelector("#mkNext",{timeout:8000}); }
 catch(e){ log.push("✗ 確認の札が出ない"); }

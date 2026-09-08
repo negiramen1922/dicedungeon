@@ -67,6 +67,8 @@ const out=await pg.evaluate(async()=>{
 
   /* ⑥ 作り終わると 出立の支度は出ない */
   $("#mkLookGo").click();
+  /* 名前の段（α1.0.063）。空のまま進む */
+  if($("#mkNameGo"))$("#mkNameGo").click();
   /* 幸運を振る演出が終わるまで待つ（cwait は wait とは別もの） */
   for(let i=0;i<200&&!$("#mkNext");i++)await new Promise(r=>setTimeout(r,30));
   if(!$("#mkNext"))bad.push("確認の札が出ない");
