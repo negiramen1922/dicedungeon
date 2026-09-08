@@ -986,7 +986,7 @@ body.play .secbar{padding-right:78px}      /* 歯車と封筒のぶんを空け�
   line-height:1.25;cursor:pointer;padding:0;white-space:nowrap}
 .obt:hover{border-color:var(--brass);color:var(--brass)}
 /* 盤 ── 横一列＝距離 */
-.field{flex:0 0 auto;height:170px;position:relative;
+.field{flex:0 0 auto;height:186px;position:relative;
   display:flex;flex-direction:column;justify-content:center;padding:4px 6px 6px}
 .bnote{font-size:10px;color:var(--ink);text-align:center;letter-spacing:.04em;
   margin-top:2px}
@@ -998,8 +998,15 @@ body.play .secbar{padding-right:78px}      /* 歯車と封筒のぶんを空け�
 .cell.acting{border-color:var(--brass);background:#1d2117;box-shadow:none}
 .cell.dead{opacity:.24;filter:grayscale(1)}
 /* 間合いの数字は **状態チップより 1段重い**（12px 対 8px） */
+/* 間合いと 敵の予告は 同じ行に。予告は .ocard の中でしか効かない
+   .oa を使い回していたので **スマホで出ていなかった**（α1.0.062 で直した） */
+.ctop{display:flex;align-items:center;justify-content:center;gap:3px;line-height:1}
 .creach{font-family:"DotGothic16",ui-monospace,monospace;font-size:12px;
   color:var(--dim);line-height:1.1}
+.cact2{flex:0 0 auto;width:15px;height:15px;display:grid;place-items:center;
+  background:var(--bg);border:1px solid var(--line)}
+.cact2.atk{border-color:#5e2f2a} .cact2.def{border-color:#33454f}
+.cact2 svg{display:block}
 .creach.on{color:var(--brass)}
 .cfig{line-height:0}
 .cfig svg{display:block}
@@ -1012,6 +1019,10 @@ body.play .secbar{padding-right:78px}      /* 歯車と封筒のぶんを空け�
 .chp i{position:absolute;left:0;top:0;bottom:0;background:var(--moss)}
 .chp i.low{background:var(--blood)}
 .chp u{position:absolute;top:0;bottom:0;background:var(--blue);opacity:.9}
+.chp.mp{height:3px;margin-top:1px}
+.chp.mp i{background:var(--blue)}
+.cmp{font-family:"DotGothic16",ui-monospace,monospace;font-size:8px;color:var(--ink);
+  line-height:1.2}
 .cst{font-size:8px;color:var(--ink);line-height:1.2;max-width:100%;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cst.bad{color:var(--blood)} .cst.good{color:var(--blue)}
@@ -1032,7 +1043,7 @@ body.play .secbar{padding-right:78px}      /* 歯車と封筒のぶんを空け�
 .thrx b{color:var(--blood)} .thrx b.free{color:var(--moss)}
 /* 説明の帯 ── **78px から動かさない** */
 .actinfo{flex:0 0 auto;height:78px;min-height:78px;max-height:78px;overflow:hidden;
-  background:var(--panel);border:1px solid var(--line);border-top:none;
+  background:var(--panel);border:1px solid var(--line);
   padding:6px 10px;position:relative}
 .actinfo .aimore{position:absolute;right:8px;bottom:4px;font-size:9px;color:var(--ink);
   background:var(--panel);padding-left:6px}
@@ -1603,11 +1614,9 @@ body.attitle #brand{display:none}
   </div>
   <!-- しきい値の帯（試作台から）。いくつ以上で成功か、なぜそうなのかを
        画面に出しっぱなしにする。前は「詳細」の窓を開かないと読めなかった -->
-  <div class="thrline">
-    <div class="thrn" id="thrN">4</div>
-    <div class="thrt">以上が<b>成功</b></div>
-    <div class="thrx" id="thrX"></div>
-  </div>
+  <!-- 〔しきい値の帯は α1.0.062 で無くした。
+       狙う相手を選ぶとき **敵のマスの上に「4以上」と出る**ので、
+       同じことを 帯でもう一度言っていた（R-6）。〕 -->
   <!-- 選んでいる手の見立て。**高さは 78px で動かさない** -->
   <div class="actinfo" id="actInfo"></div>
   <div class="cmdwrap"><div class="prompt hide" id="prompt"></div>
@@ -1629,7 +1638,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
-const VERSION="α1.0.061";
+const VERSION="α1.0.062";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1642,6 +1651,11 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1062",tag:"fix",v:"α1.0.062",d:"2026-09-08",n:"戦いの盤に MP が戻り、敵の予告が出るようになりました",b:[
+   "〔不具合〕<b>敵の次の行動のアイコンが 出ていませんでした。</b>行動順の札の中でしか効かない見た目を そのまま使い回していたので、盤では枠も背景も付かず 消えたようになっていました。<b>間合いの数字の隣</b>に ちゃんとした札で出します",
+   "〔不具合〕<b>味方の MP が どこにも出ていませんでした。</b>HPの帯の下に <b>MPの帯と数字</b>を戻しました。手番の者だけでなく <b>3人ぶん</b>見えます",
+   "<b>「4以上が成功」の帯を無くしました。</b>狙う相手を選ぶと <b>敵のマスの上に「4以上」</b>と出るので、同じことを画面の下でもう一度言っていました。内訳を読みたいときは「詳細」にあります",
+   "空いたぶんは 盤に回しました（170 → 186px）"]},
  {id:"v1061",tag:"up",v:"α1.0.061",d:"2026-09-08",n:"戦いの画面と 図鑑を 作り直しました",b:[
    "<b>〔戦い〕説明の帯の高さを 78px で固定しました。</b>これまでは 57〜94px で伸び縮みし、その下のコマンド欄が <b>手を選ぶたび 36px 上下</b>していました。指を滑らせた先で 押すつもりの無い手を押せてしまう作りでした。<b>いまは 1px も動きません</b>",
    "<b>〔戦い〕決めの札を 下の帯へ移しました。</b>「これで使う」「やめる」を コマンドの札の中に生やしていたので、選ぶたびに欄の高さが変わっていました",
@@ -6322,16 +6336,21 @@ function unitCell(u,isMine,fig){
       ? (pending.rev?"起こす":"かける")
       : threshold(actor(),u,pending&&pending.kind==="skill"&&actor().sk[pending.i]
           ?{thr:actor().sk[pending.i].thr||0,even:actor().sk[pending.i].even}:{})+"以上"}</span>`:""}
-    <span class="creach ${acting||target?"on":""}">${d?"+"+d:"0"}</span>
+    <span class="ctop">
+      <span class="creach ${acting||target?"on":""}">${d?"+"+d:"0"}</span>
+      ${!isMine&&u.HP>0?(()=>{const ic=actIcon(st.t);
+        return `<span class="cact2 ${p.danger?"atk":"def"}" title="${p.txt}">${
+          actFig(ic.k,13)}</span>`;})():""}
+    </span>
     <span class="cfig">${isMine?meFig(fig,u):foeFig(u.fig||u.key,fig)}</span>
     <span class="cn ${isMine?"mine":"foe"}">${isMine?shortOf(u):foeShort(u)}</span>
     <span class="chp"><i class="${low?"low":""}" style="width:${hp/mx*100}%"></i>${
       sh?`<u style="left:${Math.min(100,hp/mx*100)}%;width:${
         Math.min(100-hp/mx*100,sh/mx*100)}%"></u>`:""}</span>
+    ${isMine?`<span class="chp mp"><i style="width:${
+      u.maxMP?Math.min(100,u.MP/u.maxMP*100):0}%"></i></span>
+      <span class="cmp">MP ${u.MP}/${u.maxMP}</span>`:""}
     ${stx}
-    ${!isMine&&u.HP>0?(()=>{const ic=actIcon(st.t);
-        return `<span class="oa ${p.danger?"atk":"def"}" style="position:absolute;top:0;right:0"
-          title="${p.txt}">${actFig(ic.k,12)}</span>`;})():""}
   </div>`;
 }
 /* 盤に出す短い名。「ホーンラビット A」→「ホーンA」 */
@@ -6601,10 +6620,8 @@ function bindTargets(){
     const f0=foes.find(x=>x.id===+el.dataset.id);
     if(f0){
       const A=actor(), pr=A&&A.prep;
-      el.onmouseenter=()=>drawThr(A,f0,{thr:(pr&&pr.thr)||0});
       el.onmouseleave=()=>{
         const pv=alive().filter(x=>x!==A)[0]||null;
-        drawThr(A,pv,{thr:(pr&&pr.thr)||0});
       };
     }
     el.onclick=()=>{const id=+el.dataset.id;const f=foes.find(x=>x.id===id);
@@ -7005,29 +7022,10 @@ function thrWhy(tgt,opt,u){
   const raw=T.reduce((a,x)=>a+x.v,0);
   return {parts:T,raw,thr:Math.max(2,Math.min(6,raw))};
 }
-/* ===== しきい値の帯（α1.0.022） =====
-   試作台では これが盤面の下に**出しっぱなし**で、
-   「4以上が成功」「遠さ +1」「速さの差 −1」が いつも読めた。
-   本編では thrPanel が「詳細」の窓の中にしか無く、
-   遊ぶ人は **何が当たりやすさを動かしているのか** を見られなかった。
-   仮の相手（いちばん手前）で出す。狙いを決めると その相手で描き直る。 */
-function drawThr(u,tgt,opt){
-  /* #thrP は α1.0.061 で無くした（帯が42pxしかないので 1行にまとめた）。
-     ここで P を必須にしていたせいで **帯ぜんたいが出なくなっていた** */
-  const N=$("#thrN"), P=$("#thrP"), X=$("#thrX");
-  if(!N||!X)return;
-  if(!tgt){ N.textContent="—";if(P)P.innerHTML="";X.innerHTML="";return; }
-  const w=thrWhy(tgt,opt||{},u);
-  N.textContent=w.thr;
-  /* 帯は42pxしかないので **1個につき何%** と 内訳だけ。相手の名は出さない
-     （名は盤に出ている。同じものを二度書かない・R-6） */
-  const mv=w.parts.filter(x=>x.n!=="基 本"&&x.v!==0);
-  X.innerHTML=`1個につき <b class="free">${Math.round((7-w.thr)/6*100)}%</b>`
-    +(mv.length?`　${mv.map(x=>`${x.n.replace(/ /g,"")} <b class="${
-        x.v>0?"":"free"}">${x.v>0?"+":""}${x.v}</b>`).join("　")}`:`　<span>素の 4</span>`)
-    +(w.raw!==w.thr?`　<span style="color:var(--brass)">2〜6 に収めて ${w.thr}</span>`:"");
-}
-
+/* 〔しきい値の帯（drawThr）は α1.0.062 で無くした。
+   狙う相手を選ぶとき 敵のマスの上に「4以上」と出るので、
+   同じことを 画面の下でもう一度言っていた。
+   内訳を読みたいときは 「詳細」の thrPanel にある。〕 */
 /* 相手ごとの命中閾値を、内訳つきで大きく出す */
 function thrPanel(){
   if(typeof foes==="undefined"||!foes||!foes.length)return "";
@@ -7249,7 +7247,6 @@ function drawActs(){
   const prep=A.prep||null;
   const thrNow=pvT?threshold(A,pvT,{thr:(prep&&prep.thr)||0}):4;
   const nWith=nAtk+((prep&&prep.dice)||0);
-  drawThr(A,pvT,{thr:(prep&&prep.thr)||0});
   ladderOf(A).forEach((r,i)=>{
     const noDice=r.need>nWith, noMp=r.mp>A.MP;
     const ok=atLeast(nWith,r.need,thrNow);
