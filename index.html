@@ -951,6 +951,12 @@ body.play .secbar{padding-right:78px}      /* 歯車と封筒のぶんを空け�
 .uitab.on{border-color:var(--brass);color:var(--brass);background:var(--panel2)}
 .uitab span{font-family:"DotGothic16",ui-monospace,monospace;font-size:10px;color:var(--ink)}
 .uitab.on span{color:var(--brass)}
+/* 人ひとりの3札は 1行に詰める（α1.0.060）。当たりは 44px のまま */
+.uitabs.row3{margin-bottom:7px}
+.uitabs.row3 .uitab{flex-direction:row;gap:6px;min-height:44px;padding:2px 4px;
+  font-size:11.5px}
+.uitabs.row3 .uitab span{font-size:9.5px}
+.uitabs.sub2{margin-bottom:9px}
 /* メニューの札 ── 縦1列・64px */
 .mrow{width:100%;min-height:64px;background:var(--panel);border:1px solid var(--line);
   border-left:3px solid var(--line);color:var(--bone);font-family:inherit;
@@ -1470,7 +1476,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
-const VERSION="α1.0.059";
+const VERSION="α1.0.060";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1483,6 +1489,12 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1060",tag:"up",v:"α1.0.060",d:"2026-09-08",n:"ステータス・スキル・装備を 横に行き来できます",b:[
+   "<b>戦いの盤で 味方の顔を押すと その人の詳細</b>が開きます。これまでは メニューが出てきて、そこからパーティ → その人 と辿る必要がありました。町のパーティの札と 行動順の顔も 同じです",
+   "<b>スキルの画面にも 装備の画面にも 上の3札（ステータス・スキル・装備）が出ます。</b>前はスキルから装備へ行くのに 一度戻る必要があって煩わしいものでした",
+   "3札は <b>1行に詰めて</b>あるので 縦を食いません（押せる範囲は 44px のままです）",
+   "スキルの画面では その下に <b>スキル／パッシブ</b> の札が並びます",
+   "<b>3つは兄弟なので、横に移っても 戻り道は増えません。</b>どの画面からでも ↩ ひとつで パーティの一覧へ帰ります"]},
  {id:"v1059",tag:"fix",v:"α1.0.059",d:"2026-09-08",n:"戻る札を 分かる形にして、持ち物に絵を付けました",b:[
    "<b>戻る札を ↩ に変えました。</b>左の「戻る」も 右の「前の人／次の人」も ぜんぶ <b>‹ ›</b> の同じ形で、どれが何なのか見分けが付きませんでした。<b>↩ は一つ前の画面へ、‹ › は同じ画面のまま見る人を変える</b>です。色と濃さでも分けてあります",
    "<b>大きい ✕ を無くしました。</b>あれは <b>一気に閉じる</b>札で、「一つ戻る」のつもりで押すと 町まで飛ばされていました。いちばん奥からでも ↩ を押していけば閉じます",
@@ -11689,15 +11701,26 @@ function uiParty(){
 }
 
 /* ===== 3c　個人の詳細（ステータス） ===== */
+/* ===== 人ひとりの3画面は **兄弟**（α1.0.060） =====
+   ステータス・スキル・装備 は 上下の関係ではないので、
+   **どの画面にも同じ札を出して 横に移れる**ようにした。
+   前は スキルから装備へ行くのに 一度戻る必要があって煩わしかった。
+   札は1行に詰めて（.uitabs.row3）縦を食わない。当たりは 44px のまま。 */
+function uiPersonTabs(U,cur){
+  const pts=(U===me)?(U.skp|0):0;
+  const t=(k,n,sub)=>`<button class="uitab${cur===k?" on":""}"${
+    cur===k?"":` data-uk="totab" data-v="${k}"`}>${n}<span>${sub}</span></button>`;
+  return `<div class="uitabs row3">
+    ${t("char","ステータス",pts?`技能 +${pts}`:`Lv ${U.lv}`)}
+    ${t("skill","スキル",skHoles(U))}
+    ${t("gear","装備",eqCount(U))}
+  </div>`;
+}
 function uiChar(){
   const U=uiUnit(), mine=(U===me);
   const cap=U.DEX>=STATMAX.DEX;
   const pts=mine?(U.skp|0):0;
-  let h=`<div class="uitabs">
-    <button class="uitab on">ステータス<span>${pts?`技能 +${pts}`:`Lv ${U.lv}`}</span></button>
-    <button class="uitab" data-uk="skill">スキル<span>${skHoles(U)}</span></button>
-    <button class="uitab" data-uk="gear">装備<span>${eqCount(U)}</span></button>
-  </div>`;
+  let h=uiPersonTabs(U,"char");
   h+=`<div class="uisec">能 力 値</div>
     <div class="stgrid">
       <div class="stbox wide"><span class="k">H P</span>
@@ -11768,7 +11791,8 @@ function uiSkill(t){
   const list=isAct?U.sk:U.pass;
   const mx=isAct?((U===me)?SKMAX:MATESKMAX):((U===me)?PASSMAX:MATEPASSMAX);
   const bench=bagOf(U,isAct?"act":"pass");
-  let h=`<div class="uitabs">
+  let h=uiPersonTabs(U,"skill")+
+   `<div class="uitabs sub2">
     <button class="uitab${isAct?" on":""}" data-uk="sktab" data-v="act">スキル<span>${
       U.sk.length}/${(U===me)?SKMAX:MATESKMAX}</span></button>
     <button class="uitab${isAct?"":" on"}" data-uk="sktab" data-v="pass">パッシブ<span>${
@@ -11894,7 +11918,7 @@ function gearDiff(U,g){
 }
 function uiGear(t){
   const U=uiUnit(), sw=canSwap(), st=store();
-  let h="";
+  let h=UI.pick&&UI.pick.slot?"":uiPersonTabs(U,"gear");
   if(!sw)h+=`<div class="uiwarn">${swapWhy()}</div>`;
 
   /* AB-4b … 品を選んだあとは 枠だけを見せる */
@@ -12128,6 +12152,11 @@ function uiBind(host){
       if(k==="next"){UI.who=Math.min(party.length-1,UI.who+1);SFX.click();return uiDraw();}
       if(k==="party"||k==="bag"){SFX.click();return uiOpen(k==="party"?"party":"bag");}
       if(k==="char"){UI.who=i;SFX.click();return uiOpen("char");}
+      /* 3札は 兄弟なので **積まずに差し替える**。
+         ↩ を押したら パーティへ戻る（間に画面を挟まない） */
+      if(k==="totab"){
+        UI.filt="all";UI.tiers=[];UI.pick=null;UI.more={};SFX.click();
+        return uiSwap(v);}
       if(k==="skill"){UI.filt="all";UI.pick=null;SFX.click();return uiOpen("skill");}
       if(k==="gear"){UI.filt="all";UI.tiers=[];UI.pick=null;SFX.click();return uiOpen("gear");}
       if(k==="sktab"){UI.skTab=v;UI.filt="all";UI.pick=null;SFX.click();return uiDraw();}
@@ -12220,9 +12249,20 @@ function uiBind(host){
       setParty(l); UI.who=to; SFX.move(); runSave(); uiDraw();};
   });
 }
-/* 旧 charModal の呼び方をそのまま受ける入口 */
+/* 旧 charModal の呼び方をそのまま受ける入口。
+   **人を渡されたら その人の詳細へ直に飛ぶ**（α1.0.060）──
+   盤面や行動順や町で顔を押したのに メニューが出るのは遠回りだった。
+   人を渡されなければ これまでどおり メニューから。 */
 function charModal(back,U){
   if(typeof back!=="function")back=null;
+  if(U&&party.indexOf(U)>=0){
+    UI.ret=back||null;
+    UI.who=party.indexOf(U);
+    UI.filt="all";UI.tiers=[];UI.pick=null;UI.more={};
+    UI.stack=[{name:"party"},{name:"char"}];   /* ↩ で パーティ一覧へ */
+    if(!inBattle())UI.from=curScreen;
+    return uiDraw();
+  }
   uiEnter("menu",null,back,U);
 }
 
