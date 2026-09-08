@@ -1192,7 +1192,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
-const VERSION="α1.0.053";
+const VERSION="α1.0.054";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1205,6 +1205,14 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1054",tag:"fix",v:"α1.0.054",d:"2026-09-08",n:"眠っていたパッシブ 5 つが 働くようになりました",b:[
+   "効き目が書いてあるのに <b>それを読む場所がゲームの中に一つも無く、取っても何も起きない</b>札が 5 つありました。<b>怠惰は 3 つのうち 2 つ</b>がこれで、弱かったのはそのためです",
+   "<b>死 角</b>（スカウト）　6 の目 1 個につき ダメージ +10。振ったぶんだけ乗ります",
+   "<b>戦場慣れ</b>（憤怒）　3ターン目以降 攻撃ダイス +1。1〜2ターン目には効きません",
+   "<b>妬 み</b>（嫉妬）　相手が強化を持っているとき 威力 +20%。威力の強化・VITの強化・シールドのどれかを持っていれば乗ります",
+   "<b>省エネ</b>（怠惰）　スキルの MP 消費 −1",
+   "<b>惰 性</b>（怠惰）　直前と同じスキルを続けて使うと MP も 再使用待ちも 半分。<b>別の手を挟むと切れます</b>（攻撃・仕込み・防御のいずれでも）",
+   "〔前の版の説明の訂正〕<b>「知 識」と「鍛 錬」は 働いていました。</b>調べ方が悪く、死んでいると読み違えていました。ただし効くのは <b>得物が使う能力値のときだけ</b>です ── 杖なら知識（INT）、剣なら鍛錬（STR）。札には「常時」とあるので、<b>言い方は直す必要があります</b>"]},
  {id:"v1053",tag:"fix",v:"α1.0.053",d:"2026-09-08",n:"盤の文字を 3つ捨てました。狙われている者は 枠が赤くなります",b:[
    "<b>味方の「狙 n体」を無くしました。</b>敵のマスの「→ 相手の名」を数え直しただけのもので、しかも「狙」で始まるので <b>こちらが何体狙えるか</b>に読めていました",
    "<b>敵の「→ 相手の名」も無くしました。</b>誰を狙っているかは もう出しません。<b>狙われている味方の枠が赤くなる</b>だけです（攻撃なら赤、呪いなら鈍い赤）。「詳 細」の矢印も同じく外しました",
@@ -4533,7 +4541,10 @@ const REW={
          {id:"ppr2",n:"誇 り",ef:{k:"powp",v:15,w:"hp80"},d:"HP が 80% 以上 → 威力 +15%"},
          {id:"ppr3",n:"無 傷",ef:{k:"clean",v:10,w:"always"},
           d:"そのラウンド まだ傷を受けていなければ VIT +10"}],
-  wrath:[{id:"pwr1",n:"戦場慣れ",ef:{k:"vet",v:1,w:"always"},d:"3ターン目以降 → 攻撃ダイス +1"},
+  /* 〔α1.0.053〕ef.k は "vet" だったが、それを読む場所がどこにも無く
+     **取っても何も起きなかった**。効き目の文はそのままに、
+     すでに配線のある dice ＋ 新しい条件 r3 に乗せ替えた。 */
+  wrath:[{id:"pwr1",n:"戦場慣れ",ef:{k:"dice",v:1,w:"r3"},d:"3ターン目以降 → 攻撃ダイス +1"},
          {id:"pwr2",n:"背水の陣",ef:{k:"powp",v:20,w:"hp50"},d:"HP50%以下 → 威力 +20%"},
          {id:"pwr3",n:"激 昂",ef:{k:"rush",v:1,w:"always"},d:"常時 → <b>6 の目は 成功 2つぶん</b>に数える"}],
   envy:[{id:"pen1",n:"執 着",ef:{k:"fixate",v:10,w:"always"},
@@ -4581,6 +4592,10 @@ const PCOND={
   hp80:u=>u.HP>=u.maxHP*0.8,
   mpfull:u=>u.MP>=u.maxMP,
   solo:u=>pAlive().length<=1,   /* ひとりきりのとき */
+  /* 3ターン目以降（α1.0.053）。戦場慣れ（vet）が これを待っていた ──
+     効果キーは vet のままで どこも読んでおらず、働いていなかった。
+     dice の配線に乗せ替えたので、条件だけ足せば動く。 */
+  r3:u=>round>=3,
 };
 function passList(u){u=u||me;return (u&&u.pass)||[];}
 function passOn(k,u){
@@ -7284,6 +7299,12 @@ async function playerAttack(targets,opt){
       +(A.beast?A.beast.pow:0)+(me.goldPow?me.goldPow.v:0)
       +(A.selfPow?A.selfPow.v:0)+((A.rest&&A.rest.r===round&&A.rest.pow)||0))/100;
     if(passOn("blood",A)>0&&t.HP<=t.maxHP*0.5)pmul+=passOn("blood",A)/100;
+    /* 妬 み（α1.0.053 で配線）。相手が **自分を強くする何か**を持っていたら乗る。
+       強化は buffs（威力）・dbuffs（VIT）・block（シールド）の3通りで持っている。 */
+    if(passOn("envy",A)>0&&((t.buffs||[]).length||(t.dbuffs||[]).length||shieldOf(t)>0)){
+      pmul+=passOn("envy",A)/100;
+      log(`<span class="c">妬 み</span> <span class="b">${t.name}</span> は強化を持っている　威力 <span class="m">+${passOn("envy",A)}%</span>`);
+    }
     let skm=1;
     /* 遅い相手には よく通る（α1.0.044）。
        前は「自分より遅い相手だけ狙える」という **縛り**だったので、
@@ -7341,7 +7362,11 @@ async function playerAttack(targets,opt){
        出目そのものはもう見ない。`hitDmg` / `dieRate` は α1.0.013 で落とした。
 
        ①威力 ×超過 → ②来歴と属性 → ③シールド → ④VIT の順。 */
-    const raw=Math.round(pow*xMul*orgMul("outMul",A)*em);
+    /* 死 角（α1.0.053 で配線）。**6 の目 1 個につき** そのぶん足す。
+       倍率ではなく足し算なので、VIT を引く前・シールドの前に乗せる。 */
+    const sixAdd=passOn("six",A)*sixes;
+    if(sixAdd>0)log(`<span class="c">死 角</span> 6 の目 ${sixes} 個　ダメージ <span class="m">+${sixAdd}</span>`);
+    const raw=Math.round(pow*xMul*orgMul("outMul",A)*em)+sixAdd;
     const shUsed=Math.min(sh,raw);
     const shLeft=sh-shUsed;
     t.block=shLeft;
@@ -7507,6 +7532,7 @@ async function resolvePlayer(a,target){
     }
     await playerAttack(ts,{suc:r.need,powMul:r.mul,hits:w.hits});
   }else if(a.kind==="prep"){
+    A.lastSk=null;                 /* 別の手を挟んだら 惰性の鎖は切れる */
     /* 仕込み。次の攻撃ひとつぶん。重ねがけはできない */
     const pz=PREP.find(x=>x.id===a.id);
     if(pz&&!A.prep&&A.MP>=pz.mp){
@@ -7523,8 +7549,24 @@ async function resolvePlayer(a,target){
        MP と再使用は かけた側（A）が払う（α1.0.039） */
     const RC=(s.ally&&target&&!target.isFoe)?target:A;
     const toName=(RC===A)?"":` → <span class="a">${RC.name}</span>`;
-    A.MP-=s.mp;s.cdLeft=s.cd;
-    log(`<span class="a">${A.name}</span> が <span class="c">${s.n}</span>（MP −${s.mp}）`+toName);
+    /* ===== 技の代価（α1.0.053 で配線） =====
+       省エネ（eco）と惰性（lazy）は 効果が書いてあるだけで、
+       それを読む場所がどこにも無かった ── 怠惰は3つのうち2つが
+       **取っても何も起きない札**だった。
+         省エネ … MP 消費 −1（0 より下へは行かない）
+         惰 性 … 直前と同じ技なら MP も 再使用待ちも 半分（切り上げ）
+       惰性の「直前」は **その者の前の一手**。誰の手番かで別々に持つ。 */
+    const same=(A.lastSk===s.id)&&passOn("lazy",A)>0;
+    let mpCost=Math.max(0,s.mp-passOn("eco",A));
+    let cdSet=s.cd;
+    if(same){ mpCost=Math.ceil(mpCost/2); cdSet=Math.ceil(cdSet/2); }
+    A.lastSk=s.id;
+    A.MP-=mpCost;s.cdLeft=cdSet;
+    const cut=[];
+    if(passOn("eco",A)>0&&s.mp>0)cut.push("省 エ ネ");
+    if(same)cut.push("惰 性");
+    log(`<span class="a">${A.name}</span> が <span class="c">${s.n}</span>（MP −${mpCost}`+
+      (cut.length?`　<span class="c">${cut.join("・")}</span>`:"")+`）`+toName);
     if(s.kind==="guard"){
       /* 金貨で買う守り（守銭奴・α1.0.044）。払えなければ 何も起きない */
       if(s.payGoldPct){
@@ -7762,6 +7804,7 @@ async function resolvePlayer(a,target){
       }
     }
   }else if(a.kind==="guard"){
+    A.lastSk=null;                 /* 同上 */
     A.block+=a.block;
     A.idle=true;
     const gm=Math.min(GUARD_MP+passOn("medit",A),A.maxMP-A.MP);
