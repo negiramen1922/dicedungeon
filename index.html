@@ -880,6 +880,15 @@ body.play .secbar{padding-right:78px}      /* 歯車と封筒のぶんを空け�
 .tabc{font-size:9.5px;color:var(--ink);font-family:"DotGothic16",ui-monospace,monospace}
 .tab.on .tabc{color:var(--brass)}
 .tab.on{border-color:var(--brass);color:var(--brass);background:#1f2119}
+/* 図鑑に出す「使う手」の一覧（α1.0.055）。
+   名前だけだったので 何をしてくるのか分からなかった */
+.cxacts{margin-top:5px;display:flex;flex-direction:column;gap:2px}
+.cxact{display:grid;grid-template-columns:14px auto 1fr;gap:0 6px;align-items:baseline;
+  font-size:10.5px;line-height:1.55}
+.cxact b{color:var(--bone);font-weight:600;white-space:nowrap}
+.cxai{text-align:center;font-size:10px}
+.cxai.a{color:var(--blood)} .cxai.b{color:var(--blue)} .cxai.s{color:var(--ink)}
+.cxad{color:var(--ink);min-width:0}
 .cxlore{color:#8b9080;font-size:11.5px;line-height:1.75;letter-spacing:.01em}
 .cxall{font-family:"DotGothic16",ui-monospace,monospace;font-size:13px;color:var(--dim);
   text-align:center;letter-spacing:.08em;margin:-8px 0 14px}
@@ -1192,7 +1201,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
-const VERSION="α1.0.054";
+const VERSION="α1.0.055";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1205,6 +1214,14 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1055",tag:"bal",v:"α1.0.055",d:"2026-09-08",n:"レベルが上がりにくくなり、図鑑は埋まりにくくなりました",b:[
+   "<b>必要経験値を引き直しました。</b>これまでは <b>1回潜っただけで その区画の適正レベルを 30〜45% 追い越して</b>いました（草原1回で Lv1→16／適正12、木漏れ日1回で Lv41／適正28）。<b>1回潜ると 適正のあたりに着く</b>ようにしました（草原1回で Lv13）",
+   "上の段ほど重くなります。Lv28 で 72（前 50）、Lv50 で 131（前 81）、Lv100 で 318（前 151）。Lv100 までの総量は 8170 → <b>14455</b>",
+   "1つの区画を抜けるのに <b>3回 → 4回</b>、水没都市だけ <b>5回 → 9回</b> になります。同じ区画を回り続けても 上限で止まるのは これまでどおりです",
+   "<b>図鑑は 15戦 → 20戦で書き上がり</b>になりました。段は <b>1・4・8・13・20戦</b>です",
+   "〔不具合〕<b>一度会っただけで「埋まった」に数えていました。</b>だから会うそばから % が伸びて、埋める手応えがありませんでした。<b>書き上がった（20戦まで進めた）ものだけ</b>数えます",
+   "<b>13戦で「使う手」が 中身つきで出るようになりました。</b>これまでは名前が並ぶだけで、何をしてくるのか分かりませんでした。何ダイス振るか・必要成功数・威力・当たると何をされるか・味方を回復するのか まで出ます",
+   "<b>20戦まで進めると 弱点と耐性</b>が分かります（突いて覚えるのは これまでどおり）"]},
  {id:"v1054",tag:"fix",v:"α1.0.054",d:"2026-09-08",n:"眠っていたパッシブ 5 つが 働くようになりました",b:[
    "効き目が書いてあるのに <b>それを読む場所がゲームの中に一つも無く、取っても何も起きない</b>札が 5 つありました。<b>怠惰は 3 つのうち 2 つ</b>がこれで、弱かったのはそのためです",
    "<b>死 角</b>（スカウト）　6 の目 1 個につき ダメージ +10。振ったぶんだけ乗ります",
@@ -6207,6 +6224,54 @@ function powOf(u,opt){
   }
   return p;
 }
+/* ===== 図鑑に出す「その手が何をするか」（α1.0.055） =====
+   予告の帯（telePreview）は **その場の相手・その場の数字**が要るので、
+   図鑑では使えない。ここは FOE の書きつけだけから 一行にする。
+   言い回しは予告と揃える ── 同じものを二通りに呼ばない。 */
+function foeActLine(a){
+  const t=a, D=(t.dur||2)+1;
+  if(t.k==="atk"){
+    const x=[`${t.dice||2}d6・必要 ${t.suc||1}`];
+    if(t.pct)x.push(`威力 ${t.pct}%`);
+    if(t.drain)x.push(`与えた分の ${Math.round(t.drain*100)}% を吸う`);
+    if(t.open)x.push("振ったあと 隙ができる");
+    if(t.vsAil)x.push(`弱っている相手に +${t.vsAil}%`);
+    if(t.ail)x.push("当たると "+[t.ail.curse&&`VIT −${t.ail.curse}`,
+      t.ail.slow&&`DEX −${t.ail.slow}`,t.ail.weak&&`威力 −${t.ail.weak}%`,
+      t.ail.blind&&`命中 −${t.ail.blind}`,t.ail.fear&&`恐怖 命中 −${t.ail.fear}`,
+      t.ail.poison&&`毒 ${t.ail.poison}`].filter(Boolean).join("・"));
+    return {ic:"⚔",c:"a",d:x.join("　")};
+  }
+  if(t.k==="hex")return {ic:"✦",c:"a",d:[
+    t.curse&&`こちらの VIT −${t.curse}`, t.weak&&"こちらの威力 −15%",
+    t.weakPct&&`こちらの威力 −${t.weakPct}%`, t.slow&&`こちらの DEX −${t.slow}`,
+    t.blind&&`こちらの命中閾値 +${t.blind}`, t.fear&&`恐 怖　命中閾値 +${t.fear}`,
+    t.poison&&`毎ターン ${t.poison} の毒`].filter(Boolean).join("　")+`　${D}ターン`};
+  if(t.k==="guard")return {ic:"◈",c:"b",
+    d:t.defUp?`自分の VIT +${t.defUp}　${t.dur||1}ターン`
+             :`自分に シールド${t.blockPct?`（最大HPの ${t.blockPct}%）`:""}`};
+  if(t.k==="buff")return {ic:"▲",c:"b",
+    d:t.pctUp?`自分の威力 +${t.pctUp}%　${t.dur||1}ターン`
+     :t.pow?`自分の威力 +${t.pow}　${t.dur||1}ターン`
+           :`自分の速さ +${t.dex}　この戦闘のあいだ`};
+  if(t.k==="cheer")return {ic:"▲",c:"b",
+    d:`仲間ぜんぶの威力 ${t.pctUp?`+${t.pctUp}%　${t.dur||1}ターン`:`+${t.pow}`}`};
+  if(t.k==="veil")return {ic:"◈",c:"b",
+    d:`仲間ぜんぶに シールド ${t.block?t.block:`最大HPの ${t.blockPct}%`}`};
+  if(t.k==="summon")return {ic:"✚",c:"a",
+    d:`${(FOE[t.who]||{}).n||"何か"} を 1〜${t.num||3} 体 呼ぶ`};
+  if(t.k==="regen")return {ic:"✚",c:"b",d:`自分の HP を ${t.heal} 回復する`};
+  if(t.k==="mend")return {ic:"✚",c:"a",
+    d:(t.full?"味方ひとりの HP を すべて 戻す":`味方ひとりの HP を ${t.heal} 戻す`)+
+      (t.once?"　1戦に1回だけ":"")+(t.max?`　1戦に${t.max}回まで`:"")+
+      (t.cd?`　${t.cd}ターンおき`:"")};
+  if(t.k==="cleanse")return {ic:"✦",c:"a",d:"味方ひとりの 状態異常を すべて解く"};
+  if(t.k==="heal")return {ic:"✚",c:"a",
+    d:`呼んだ相手の HP を 最大の ${Math.round((t.pct||.1)*100)}% 戻す`};
+  if(t.k==="hatch")return {ic:"✚",c:"a",d:`${(FOE[t.who]||{}).n||"何か"} が出てくる`};
+  if(t.k==="grow")return {ic:"✚",c:"a",d:t.d||"育つ"};
+  return {ic:"◦",c:"s",d:t.d||"何もしない"};
+}
 /* 図鑑の段階。META.codex[k] は「その敵と戦った回数」。
    同じ敵が3体並ぶ遭遇でも1戦につき1しか増えない（数えるのは戦闘の回数）。
 
@@ -6214,13 +6279,20 @@ function powOf(u,opt){
    カンストし、草原1階層が終わる前に主要な敵が全部 5/5 になっていた。
 
      1段目  1戦   名前と列
-     2段目  3戦   HP・攻　＋命中閾値 −1
-     3段目  6戦   VIT・速　＋命中閾値 さらに −1
-     4段目 10戦   使う技の名前
-     5段目 15戦   弱点と耐性（突いていなくても分かる）
+     2段目  4戦   HP・攻　＋命中閾値 −1
+     3段目  8戦   VIT・速　＋命中閾値 さらに −1
+     4段目 13戦   使う手と その中身（何をしてくるか）
+     5段目 20戦   弱点と耐性（突いていなくても分かる）
+
+   〔α1.0.055〕15戦 → **20戦**で書き上がるようにした。あわせて
+   図鑑の「埋まった数」を **一度会っただけで 1 と数えていた**のをやめ、
+   **書き上がった（5段目まで進んだ）ものだけ**数えるようにした。
+   前は 会った瞬間に 100% に近づいていくので、埋める手応えが無かった。
 
    段階を増やしたい・遅くしたいときはこの表だけ触ればよい。 */
-const CODEXN=[1,3,6,10,15];
+const CODEXN=[1,4,8,13,20];
+/* 書き上がったか（図鑑の数え方はこれを見る） */
+function codexFull(k){ return codexLv(k)>=CODEXN.length; }
 function codexLv(k){
   const n=META.codex[k]||0;
   let lv=0;for(const t of CODEXN)if(n>=t)lv++;
@@ -11505,7 +11577,19 @@ const SKMAX=6;
 
    ここを触ったら 育ちの速さが変わる。`tools/pace.mjs` で測り直すこと。 */
 const LVMAX=100;
-const EXPNEED=(()=>{ const a=[0]; for(let n=1;n<=LVMAX;n++)a[n]=Math.round(11+1.4*n); return a; })();
+/* ===== 必要経験値（α1.0.055 で引き直した） =====
+   前は `11 + 1.4n` の **一次式**だった。上の段が安すぎて、
+   **1回潜っただけで その区画の適正レベルを 30〜45% 追い越して**いた
+   （草原1回で Lv1→16／適正12、木漏れ日1回で Lv41／適正28）。
+   Lv100 までの総量も 8170 しかなく、14回ほどで打ち止めだった。
+
+   二次の項を足して 上の段ほど重くする。
+     n=1 … 20（前 12）　n=28 … 72（前 50）　n=50 … 131（前 81）
+     n=100 … 318（前 151）　総量 14450（前 8170）
+   1回潜ると **適正レベルのあたりに着く**ようにしてある。
+   触ったら `tools/expchk.mjs` と `tools/pace.mjs` で測り直すこと。 */
+const EXPNEED=(()=>{ const a=[0];
+  for(let n=1;n<=LVMAX;n++)a[n]=Math.round(18+1.5*n+0.015*n*n); return a; })();
 function expCap(){return EXPNEED[Math.min(EXPNEED.length-1,me.lv)];}
 /* **上限に届いたら もう上がらない。**これまでは上限を見ておらず、
    EXPNEED の最後の値を払い続けて Lv25 より上へ行けてしまっていた。 */
@@ -12754,7 +12838,8 @@ function codexCount(){
   const all=Object.keys(FOE).length + P(REW.act) + P(REW.pass)
     + wepAll + GEAR.armor.length + GEAR.acc.length + Object.keys(ITEMS).length
     + Object.keys(MATS).length + Object.keys(RECIPES).length;
-  const got=Object.keys(META.codex).length + G(REW.act) + G(REW.pass)
+  /* 会っただけでは数えない。**書き上がったものだけ**（α1.0.055） */
+  const got=Object.keys(FOE).filter(codexFull).length + G(REW.act) + G(REW.pass)
     + wepGot
     + GEAR.armor.filter(g=>META.seen[g.id]).length
     + GEAR.acc.filter(g=>META.seen[g.id]).length
@@ -12979,7 +13064,8 @@ const POOLN2={common:"共通",knight:"ナイト",archer:"アーチャー",scout:
 function cxCount(k){
   const P=(o)=>({all:Object.values(o).reduce((a,b)=>a+b.length,0),
                  got:Object.values(o).reduce((a,b)=>a+b.filter(r=>META.seen[r.id]).length,0)});
-  if(k==="foe")return {all:Object.keys(FOE).length,got:Object.keys(META.codex).length};
+  if(k==="foe")return {all:Object.keys(FOE).length,
+                       got:Object.keys(FOE).filter(codexFull).length};
   if(k==="skill")return P(REW.act);
   if(k==="pass")return P(REW.pass);
   if(k==="gear"){
@@ -13011,9 +13097,10 @@ function drawCodex(){
 }
 function cxBody(){
   if(cxNow==="foe"){
-    return `<div class="cxnote">戦った回数で少しずつ見えてくる（${
-      CODEXN.join("・")} 戦）。弱点は 突いたときに書き込まれ、${
-      CODEXN[4]} 戦まで進めば突かなくても分かる。</div>`+
+    return `<div class="cxnote">戦った回数で少しずつ見えてくる ──
+      <b>${CODEXN[0]}戦</b> 名と列　<b>${CODEXN[1]}戦</b> HP・攻　<b>${CODEXN[2]}戦</b> VIT・速　
+      <b>${CODEXN[3]}戦</b> 使う手と その中身　<b>${CODEXN[4]}戦</b> 弱点と耐性。<br>
+      弱点は 突いたときにも書き込まれる。<b>${CODEXN[4]} 戦まで進めて はじめて「書き上がり」</b>として数える。</div>`+
       Object.keys(FOE).map(k=>{
         const c=codexLv(k),f=FOE[k],nx=codexNext(k);
         const ek={weak:knownElem(k,"weak"),resist:knownElem(k,"resist")};
@@ -13028,7 +13115,10 @@ function cxBody(){
             ek.weak?`　<b class="elw">弱 ${ELEM[ek.weak].n}</b>`:""}${
             ek.resist?`　<b class="elr">耐 ${ELEM[ek.resist].n}</b>`:""}${
             f.d?`<br><span class="cxlore">${f.d}</span>`:""}${
-            c>=4?`<br><span class="s">${f.acts.map(a=>a.n).join("・")}</span>`:""}</span></div>`;
+            c>=4?`<div class="cxacts">${f.acts.map(a=>{const L=foeActLine(a);
+              return `<div class="cxact"><span class="cxai ${L.c}">${L.ic}</span>
+                <b>${a.n}</b><span class="cxad">${L.d}</span></div>`;}).join("")}</div>`
+              :`<br><span class="s">あと ${CODEXN[3]-(META.codex[k]||0)} 戦で 使う手が分かる</span>`}</span></div>`;
       }).join("");
   }
   if(cxNow==="skill"||cxNow==="pass"){

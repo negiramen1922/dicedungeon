@@ -28,9 +28,10 @@ const r=await pg.evaluate(()=>{
       一回:dive,rows});
   });
   const tbl=[1,10,25,50,75,100].map(n=>[n,EXPNEED[n],cum(n)]);
-  return {O,tbl,総量:cum(100)};
+  return {O,tbl,総量:cum(100),
+    式:(EXPNEED.__src||"")};
 });
-console.log("経験の表　EXPNEED[n] = 11 + 1.4n（一次式）");
+console.log("経験の表（EXPNEED）");
 console.log("  Lv    次に要る   そこまでの累計");
 r.tbl.forEach(([n,e,c])=>console.log("  "+String(n).padStart(3)+String(e).padStart(9)+String(c).padStart(14)));
 console.log("  Lv100 までの総量 "+r.総量);
