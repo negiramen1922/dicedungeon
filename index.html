@@ -101,10 +101,8 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 
 /* ===== 戦場 ===== */
 .field{background:var(--panel);border:1px solid var(--line);padding:9px 6px 8px;position:relative}
-.hdr5,.board{display:grid;grid-template-columns:1fr 1fr 18px 1fr 1fr;gap:3px}
-.hdr5{margin-bottom:4px}
-.hdr5 div{font-size:9px;letter-spacing:.16em;color:var(--ink);text-align:center}
-.hdr5 .mine{color:var(--moss)} .hdr5 .theirs{color:var(--blood)}
+/* 〔.hdr5（間合いの見出しの行）は α1.0.061 で無くした。
+   間合いはマスの中に 12px で出すので 一段まるごと要らない。〕 */
 .gap{position:relative}
 .gap::before{content:"";position:absolute;left:50%;top:2px;bottom:2px;width:1px;
   background:#2f3429}
@@ -383,7 +381,7 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 @keyframes shield{0%{transform:translate(-50%,-50%) scale(.4);opacity:0}
   35%{transform:translate(-50%,-50%) scale(1.15);opacity:1}
   100%{transform:translate(-50%,-50%) scale(1);opacity:0}}
-.por{transition:transform .13s ease-out}
+.cfig{transition:transform .13s ease-out}
 .hitfx{animation:hitshake .26s}
 @keyframes hitshake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}
   55%{transform:translateX(5px)}80%{transform:translateX(-2px)}}
@@ -414,7 +412,6 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 .cmdwrap{position:sticky;bottom:0;background:var(--bg);
   padding:6px 0 4px;margin-top:8px;z-index:15;
   box-shadow:0 -10px 14px -8px var(--bg)}
-.prompt{font-size:12px;color:var(--brass);letter-spacing:.1em;margin:0 0 5px}
 .acts{display:grid;grid-template-columns:1fr 1fr;gap:5px}
 .act{background:var(--panel);border:1px solid var(--line);padding:7px 9px;cursor:pointer;
   text-align:left;font-family:inherit;color:var(--bone);
@@ -913,6 +910,154 @@ body.play .secbar{padding-right:78px}      /* 歯車と封筒のぶんを空け�
 .cxai{text-align:center;font-size:10px}
 .cxai.a{color:var(--blood)} .cxai.b{color:var(--blue)} .cxai.s{color:var(--ink)}
 .cxad{color:var(--ink);min-width:0}
+/* 敵の詳細（5c）と 図鑑の詳細（5e）で使う 頭のかたまり */
+.fdtop{display:grid;grid-template-columns:64px minmax(0,1fr);gap:10px;align-items:center}
+.fdfig{line-height:0}
+.fdfig svg{display:block}
+.fdb{min-width:0}
+.fdb>*{display:block}
+/* 図鑑の一覧の行 */
+.cxrow2{width:100%;display:grid;grid-template-columns:34px minmax(0,1fr) auto;
+  gap:9px;align-items:center;background:var(--panel);border:1px solid var(--line);
+  border-left:3px solid var(--line);padding:7px 9px;margin-bottom:5px;
+  color:var(--bone);font-family:inherit;text-align:left;cursor:pointer}
+.cxrow2:hover{border-color:var(--brass)}
+.cxrow2.full{border-left-color:var(--moss)}
+.cxrow2 .cf{line-height:0}
+.cxrow2 .cf svg{display:block}
+.cxrow2 .cnm{font-size:13px;letter-spacing:.03em;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.cxrow2 .cdd{font-family:"DotGothic16",ui-monospace,monospace;font-size:9.5px;
+  color:var(--ink);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cxrow2 .cst2{font-family:"DotGothic16",ui-monospace,monospace;font-size:10px;
+  color:var(--dim);white-space:nowrap;text-align:right}
+.cxrow2.full .cst2{color:var(--moss)}
+/* 解析の深さの表 */
+.dep{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:3px 9px;
+  font-size:11px;align-items:baseline;margin:6px 0}
+.dep .n{font-family:"DotGothic16",ui-monospace,monospace;font-size:10px;color:var(--ink)}
+.dep .w{color:var(--dim)}
+.dep .s{font-family:"DotGothic16",ui-monospace,monospace;font-size:10px;
+  color:var(--ink);white-space:nowrap}
+.dep .ok .w{color:var(--bone)} .dep .ok .s{color:var(--moss)}
+/* ===== 戦いの画面（α1.0.061・仕様その2 の 5a） =====
+   縦は上から固定。**説明の帯だけは 78px から動かさない** ──
+   ここが伸び縮みすると コマンド欄がまるごと上下して 押し間違える（A-2）。 */
+#fight{display:flex;flex-direction:column;height:calc(100vh - 54px);min-height:0}
+.bhd{flex:0 0 auto;min-height:41px;display:flex;align-items:center;gap:6px;
+  padding:3px 0;border-bottom:1px solid var(--line)}
+.bht{flex:1;min-width:0;font-size:12px;color:var(--dim);letter-spacing:.06em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bht b{color:var(--bone)} .bht .g{color:var(--brass)}
+.bspd{flex:0 0 44px;height:34px;background:var(--panel);border:1px solid var(--line);
+  color:var(--dim);font-family:"DotGothic16",ui-monospace,monospace;font-size:12px;
+  cursor:pointer;padding:0;position:relative}
+.bspd::after{content:"";position:absolute;left:0;right:0;top:-5px;bottom:-5px}
+.bspd.on{border-color:var(--brass);color:var(--brass)}
+#fight .uib{flex:0 0 40px;width:40px;height:38px}
+/* 行動順 ── 34px の絵札だけ。名前は出さない */
+.bord{flex:0 0 auto;height:65px;display:flex;align-items:center;gap:4px;
+  padding:4px 0;border-bottom:1px solid var(--line)}
+.bord .ol{flex:1;min-width:0;display:flex;align-items:center;gap:2px;overflow:hidden}
+.ocard{position:relative;flex:0 0 auto;width:34px;height:34px;
+  background:var(--panel);border:1px solid var(--line);cursor:pointer;padding:0}
+.ocard::after{content:"";position:absolute;left:-5px;right:-5px;top:-5px;bottom:-5px}
+.ocard.mine{border-color:#3f4a34} .ocard.foe{border-color:#4a3630}
+.ocard.now{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass)}
+.ocard.done{opacity:.3}
+.ocard.later{border-style:dashed;opacity:.7}
+.ocard svg{display:block;margin:auto}
+.ocard .oa{position:absolute;top:0;right:0;width:13px;height:13px;
+  background:var(--bg);border:1px solid var(--line);display:grid;place-items:center}
+.ocard .oa.atk{border-color:#5e2f2a} .ocard .oa.def{border-color:#33454f}
+.ocard .oa.q{border-style:dashed;color:var(--ink);font-size:8px;line-height:1}
+.ocard .oi{position:absolute;left:0;bottom:0;
+  font-family:"DotGothic16",ui-monospace,monospace;font-size:8px;
+  color:var(--ink);background:var(--bg);padding:0 2px;line-height:1.2}
+.ocard.now .oi{color:var(--brass)}
+.odiv{flex:0 0 auto;font-family:"DotGothic16",ui-monospace,monospace;font-size:8px;
+  color:var(--ink);text-align:center;line-height:1.2;padding:0 2px;
+  border-left:1px dashed var(--line);margin-left:2px}
+.odiv b{display:block;color:var(--dim);font-size:9px}
+.omore{flex:0 0 auto;font-family:"DotGothic16",ui-monospace,monospace;font-size:9px;
+  color:var(--ink);padding:0 3px}
+.obt{flex:0 0 40px;height:44px;background:none;border:1px solid var(--line);
+  color:var(--dim);font-family:inherit;font-size:9.5px;letter-spacing:.04em;
+  line-height:1.25;cursor:pointer;padding:0;white-space:nowrap}
+.obt:hover{border-color:var(--brass);color:var(--brass)}
+/* 盤 ── 横一列＝距離 */
+.field{flex:0 0 auto;height:170px;position:relative;
+  display:flex;flex-direction:column;justify-content:center;padding:4px 6px 6px}
+.bnote{font-size:10px;color:var(--ink);text-align:center;letter-spacing:.04em;
+  margin-top:2px}
+.board{display:grid;gap:3px;align-items:end}
+.cell{min-height:0;padding:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:flex-end;gap:1px;position:relative;background:none;border:1px solid transparent}
+.cell.aimed{outline:none;border-color:#7a4a42;background:#221a17}
+.cell.aimed.bad{border-color:var(--blood);background:#2a1c18}
+.cell.acting{border-color:var(--brass);background:#1d2117;box-shadow:none}
+.cell.dead{opacity:.24;filter:grayscale(1)}
+/* 間合いの数字は **状態チップより 1段重い**（12px 対 8px） */
+.creach{font-family:"DotGothic16",ui-monospace,monospace;font-size:12px;
+  color:var(--dim);line-height:1.1}
+.creach.on{color:var(--brass)}
+.cfig{line-height:0}
+.cfig svg{display:block}
+.cn{font-size:9px;letter-spacing:.02em;line-height:1.25;max-width:100%;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+.cn.mine{color:var(--moss)} .cn.foe{color:var(--blood)}
+.cell.acting .cn{color:var(--brass)}
+.chp{width:100%;height:4px;background:#14160f;border:1px solid #2b3028;position:relative;
+  overflow:hidden}
+.chp i{position:absolute;left:0;top:0;bottom:0;background:var(--moss)}
+.chp i.low{background:var(--blood)}
+.chp u{position:absolute;top:0;bottom:0;background:var(--blue);opacity:.9}
+.cst{font-size:8px;color:var(--ink);line-height:1.2;max-width:100%;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cst.bad{color:var(--blood)} .cst.good{color:var(--blue)}
+.cgap{align-self:stretch;border-left:1px dashed var(--line);margin:6px 0}
+.ctgt{position:absolute;top:-2px;left:50%;transform:translateX(-50%);
+  font-family:"DotGothic16",ui-monospace,monospace;font-size:11px;color:var(--brass);
+  background:var(--bg);border:1px solid var(--brass);padding:0 4px;line-height:1.4;
+  white-space:nowrap;z-index:3}
+/* しきい値の帯 */
+.thrline{flex:0 0 auto;height:42px;display:flex;align-items:center;gap:8px;
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:0 2px}
+.thrn{font-family:"DotGothic16",ui-monospace,monospace;font-size:26px;
+  color:var(--brass);line-height:1;flex:0 0 auto}
+.thrt{font-size:10px;color:var(--dim);line-height:1.2;flex:0 0 auto}
+.thrt b{color:var(--bone)}
+.thrx{flex:1;min-width:0;font-family:"DotGothic16",ui-monospace,monospace;
+  font-size:10px;color:var(--ink);text-align:right;line-height:1.35}
+.thrx b{color:var(--blood)} .thrx b.free{color:var(--moss)}
+/* 説明の帯 ── **78px から動かさない** */
+.actinfo{flex:0 0 auto;height:78px;min-height:78px;max-height:78px;overflow:hidden;
+  background:var(--panel);border:1px solid var(--line);border-top:none;
+  padding:6px 10px;position:relative}
+.actinfo .aimore{position:absolute;right:8px;bottom:4px;font-size:9px;color:var(--ink);
+  background:var(--panel);padding-left:6px}
+/* コマンド */
+/* コマンドは伸びるが **中でスクロール**する。
+   ログと畳みの札が 画面の外へ押し出されないため */
+.cmdwrap{flex:1 1 auto;min-height:112px;overflow-y:auto;padding:6px 0 0}
+.bdec{flex:0 0 auto;height:48px;display:flex;gap:5px;margin-top:5px}
+.bdec button{height:48px;background:var(--panel);border:1px solid var(--line);
+  color:var(--dim);font-family:inherit;font-size:12.5px;letter-spacing:.1em;
+  cursor:pointer;white-space:nowrap;padding:0 10px}
+.bdec .no{flex:0 0 96px}
+.bdec .yes{flex:1;border-color:var(--brass);color:var(--brass);background:#2f3327}
+.bdec .msg{flex:1;display:grid;place-items:center;font-size:11.5px;color:var(--brass);
+  border:1px dashed var(--line);letter-spacing:.08em}
+/* ログ ── **中だけ**スクロール。何行たまっても 上を押し出さない（A-9） */
+.logwrap{flex:0 0 116px;min-height:0;overflow-y:auto;margin-top:6px;
+  border-top:1px solid var(--line)}
+.logwrap.hide{display:none}
+.bfold{flex:0 0 auto;height:34px;display:flex;gap:5px;padding-top:3px}
+.fbt{flex:1;height:34px;background:none;border:1px solid var(--line);color:var(--ink);
+  font-family:inherit;font-size:10.5px;letter-spacing:.06em;cursor:pointer;
+  padding:0;white-space:nowrap;position:relative}
+.fbt::after{content:"";position:absolute;left:0;right:0;top:-5px;bottom:-5px}
+.fbt:hover{border-color:var(--brass);color:var(--brass)}
 /* ===== 新しい画面（α1.0.058／§19 の design 仕様） =====
    「装 備 ・ 状 態」の1枚に詰めていたものを、メニュー → パーティ →
    個人の詳細 → スキル／装備 と 画面に分けた。
@@ -994,7 +1139,7 @@ body.play .secbar{padding-right:78px}      /* 歯車と封筒のぶんを空け�
   overflow:hidden;text-overflow:ellipsis}
 .prow .pn em{font-style:normal;font-family:"DotGothic16",ui-monospace,monospace;
   font-size:10px;color:var(--dim);margin-left:6px}
-.hpb{position:relative;height:7px;background:#14160f;border:1px solid #2b3028;
+.hpb{display:block;position:relative;height:7px;background:#14160f;border:1px solid #2b3028;
   margin-top:4px;overflow:hidden}
 .hpb i{position:absolute;left:0;top:0;bottom:0;background:var(--moss);display:block}
 .hpb i.low{background:var(--blood)}
@@ -1436,37 +1581,45 @@ body.attitle #brand{display:none}
   <div class="resbox hide" id="resbox"></div>
 </section>
 
+<!-- ===== 戦いの画面（α1.0.061・design 仕様その2 の 5a） =====
+     上から 頭 41 / 行動順 65 / 盤 190 / しきい値 42 / 説明 78固定 /
+     コマンド / 決めの帯 48 / ログ（内側だけスクロール）/ 畳みの札 34。
+     **説明の帯は 78px で固定**。ここが伸び縮みすると その下の
+     コマンド欄がまるごと上下して 押し間違えるため（A-2）。 -->
 <section id="fight" class="hide">
-  <div class="stagerow"><div class="stagebar" id="stageLbl" style="flex:1;margin:0"></div>
-    <button class="topbtn" id="charBtn">装備・状態</button></div>
-  <div class="orderwrap">
-    <div class="orderbar">
-      <div class="ordList" id="ordList"></div>
-      <button class="detbtn" id="detBtn">詳 細</button>
-    </div>
-    <div class="detail hide" id="detail"></div>
+  <div class="bhd">
+    <div class="bht" id="stageLbl"></div>
+    <button class="bspd" id="spdBtn" title="速さ">×1</button>
+    <button class="uib" id="charBtn" aria-label="パーティ">☰</button>
+  </div>
+  <div class="bord">
+    <div class="ol" id="ordList"></div>
+    <button class="obt" id="detBtn">詳細<br>▸</button>
   </div>
   <div class="field">
-    <div class="hdr5" id="hdr"></div>
     <div class="board" id="board"></div>
+    <div class="bnote">間合いが 1つ遠いごとに 命中 −1</div>
     <div class="diceOv" id="diceOv"></div>
   </div>
   <!-- しきい値の帯（試作台から）。いくつ以上で成功か、なぜそうなのかを
        画面に出しっぱなしにする。前は「詳細」の窓を開かないと読めなかった -->
-  <div class="thrwrap">
-    <div class="thrline">
-      <div class="thrn" id="thrN">4</div>
-      <div class="thrt">以上が<b>成功</b><br><span id="thrP"></span></div>
-      <div class="thrx" id="thrX"></div>
-    </div>
-    <!-- 選んでいる手の見立て。札には名前しか出さないので、
-         必要な成功・成功率・通ったときのダメージ・効果は ここが受け持つ -->
-    <div class="actinfo" id="actInfo"></div>
+  <div class="thrline">
+    <div class="thrn" id="thrN">4</div>
+    <div class="thrt">以上が<b>成功</b></div>
+    <div class="thrx" id="thrX"></div>
   </div>
-  <div class="cmdwrap"><div class="prompt" id="prompt"></div>
-  <div class="acts" id="acts"></div></div>
-  <div class="log" id="log"></div>
-
+  <!-- 選んでいる手の見立て。**高さは 78px で動かさない** -->
+  <div class="actinfo" id="actInfo"></div>
+  <div class="cmdwrap"><div class="prompt hide" id="prompt"></div>
+    <div class="acts" id="acts"></div></div>
+  <!-- 手を選んだあとの決めの帯。**上は 1px も動かず、ここが生えるだけ**（5g） -->
+  <div class="bdec hide" id="bdec"></div>
+  <div class="logwrap" id="logwrap"><div class="log" id="log"></div></div>
+  <div class="bfold">
+    <button class="fbt" id="logFold">ログを畳む ▴</button>
+    <button class="fbt" id="detFold">詳細 ▾</button>
+  </div>
+  <div class="detail hide" id="detail"></div>
 </section>
 
 <script>
@@ -1476,7 +1629,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
-const VERSION="α1.0.060";
+const VERSION="α1.0.061";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1489,6 +1642,17 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1061",tag:"up",v:"α1.0.061",d:"2026-09-08",n:"戦いの画面と 図鑑を 作り直しました",b:[
+   "<b>〔戦い〕説明の帯の高さを 78px で固定しました。</b>これまでは 57〜94px で伸び縮みし、その下のコマンド欄が <b>手を選ぶたび 36px 上下</b>していました。指を滑らせた先で 押すつもりの無い手を押せてしまう作りでした。<b>いまは 1px も動きません</b>",
+   "<b>〔戦い〕決めの札を 下の帯へ移しました。</b>「これで使う」「やめる」を コマンドの札の中に生やしていたので、選ぶたびに欄の高さが変わっていました",
+   "<b>〔戦い〕行動順は 34px の絵札だけ</b>になりました。名前は出しません。右上に何をしてくるか、左下に順番。次のラウンドは破線の札です。<b>幅 320px でも横に溢れません</b>（入りきらないぶんは「＋n」で「詳細」へ）",
+   "<b>〔戦い〕盤のマスに 間合いの数字が付きました。</b>当たりやすさを決めているのは間合いなので、状態より <b>1段大きく</b>出します。名前は短くし、HPの帯と 効いているもの ひとつに絞りました",
+   "<b>〔戦い〕ログは 中だけスクロール</b>します。何行たまっても 盤とコマンドを押し出しません。<b>ログを畳む</b>札も付きました",
+   "<b>〔戦い〕×1 → ×2 → ×3 の速さ</b>を頭に置きました。出目にも順番にも一切さわりません。待ち時間だけが縮みます",
+   "<b>〔図鑑〕一覧と詳細に分けました。</b>これまでは 51種を一列に並べて <b>4.7画面ぶん</b>ありました。<b>いまは 0.95画面</b>です",
+   "<b>〔図鑑〕未発見は 1行にまとめます。</b>「？ ？ ？」を51行並べるのをやめました",
+   "<b>〔図鑑〕区画・書き上がりで絞り込めます。</b>行を押すと その1体の詳細へ。<b>あと何戦で 何が開くか</b>が表で見えます",
+   "<b>〔敵の詳細〕作り直しました。</b>幅 320px で横に溢れていたのも直っています。図鑑の深さ・このターンの手・効いているもの・分かっている値 が並びます"]},
  {id:"v1060",tag:"up",v:"α1.0.060",d:"2026-09-08",n:"ステータス・スキル・装備を 横に行き来できます",b:[
    "<b>戦いの盤で 味方の顔を押すと その人の詳細</b>が開きます。これまでは メニューが出てきて、そこからパーティ → その人 と辿る必要がありました。町のパーティの札と 行動順の顔も 同じです",
    "<b>スキルの画面にも 装備の画面にも 上の3札（ステータス・スキル・装備）が出ます。</b>前はスキルから装備へ行くのに 一度戻る必要があって煩わしいものでした",
@@ -2718,7 +2882,11 @@ audioLoad();audioApply();     /* 1曲目が既定の音量で鳴り出さない�
 
 const $=s=>document.querySelector(s);
 const r6=()=>1+Math.floor(Math.random()*6);
-const wait=ms=>new Promise(r=>setTimeout(r,ms));
+/* ===== 演出の速さ（α1.0.061） =====
+   戦いの待ちは ぜんぶ wait を通る。ここを割るだけで 倍速になる。
+   ゲームの中身（出目・ダメージ・順番）には一切さわらない。 */
+let SPD=1;
+const wait=ms=>new Promise(r=>setTimeout(r,ms/SPD));
 
 /* ============ ドット絵 ============
    16×20 のマス目に矩形を置いて描く。
@@ -6125,47 +6293,53 @@ function shownTele(u){
   return acted?{t:u.next||u.tele,lbl:"次のターン",nx:null}
               :{t:u.tele,lbl:"このターン",nx:u.next};
 }
+/* ===== 盤のマス（α1.0.061・仕様その2 の 5a） =====
+   上から **間合いの数字（12px）→ 絵（32px）→ 短い名（9px）→
+   HPの帯（4px）→ 効いているもの ひとつ（8px）**。
+   間合いは 状態チップより **必ず1段重く**する ── 当たりやすさを
+   決めているのは間合いなので、そちらが先に目に入らないといけない。
+   誰を狙っているかは出さない。狙われた味方の枠が赤くなるだけ（R-25）。 */
 function unitCell(u,isMine,fig){
-  fig=fig||40;
+  fig=fig||32;
   const st=isMine?null:shownTele(u);
   const p=isMine?null:telePreview(u,st.t);
-  /* 狙われている味方に印（α1.0.042）。狙いが先頭だけでなくなったので、
-     誰に来るかが見えないと 守りようがない */
   const aimed=isMine?aimedBy(u):null;
-  /* pending.self は「狙いを取らない手を 決める前」。相手は選ばせない（α1.0.027）。
-     pending.ally は **味方を選ぶ手**。こちら側のマスが選べるようになる（α1.0.039） */
   const target=pending&&!pending.self&&(isMine
     ? (!!pending.ally&&canAlly(u))
     : (!pending.ally&&canTarget(u)));
-  const col=isMine?"#8fa261":"#b1544a";
   const acting=isMine&&u===cur&&!busy&&!over;
+  const d=depthOf(u), mx=Math.max(1,u.maxHP), sh=shieldOf(u);
+  const hp=Math.max(0,u.HP), low=hp<=mx*0.35;
+  /* 効いているものは いちばん重い1つだけ。並べると 間合いより目立つ */
+  const ail=(u.ail||[]).slice().sort((x,y)=>(y.t||0)-(x.t||0))[0];
+  const stx=ail?`<span class="cst bad">${(AIL[ail.k]||{n:ail.k}).n}</span>`
+    :(sh?`<span class="cst good">盾 ${sh}</span>`
+      :(isMine&&u.half?`<span class="cst good">被弾半減</span>`:""));
   return `<div class="cell ${u.HP<=0?"dead":""} ${target?"sel":""} ${acting?"acting":""} ${
       aimed?(aimed.bad?"aimed bad":"aimed"):""}"
       ${isMine?`data-me="${u.pid||0}"`:`data-id="${u.id}"`}>
-    <div class="por">${isMine?meFig(fig,u):foeFig(u.fig||u.key,fig)}</div>
-    <div class="cn ${isMine?"mine":"foe"}">${isMine?rosterName(u):u.name}</div>
-    <div class="chp">${Math.max(0,u.HP)}/${u.maxHP}</div>
-    <div class="bar ${isMine?"me":""}"><i style="width:${Math.max(0,u.HP/u.maxHP*100)}%"></i></div>
-    ${isMine?`<div class="cmp">MP ${u.MP}/${u.maxMP}</div>
-      <div class="bar mpb"><i style="width:${u.maxMP?u.MP/u.maxMP*100:0}%"></i></div>`:""}
-    ${ailText(u)?`<div class="celrow">${ailText(u)}</div>`:""}
-    ${isMine&&u.half?`<div class="cst">被弾 半減</div>`:""}
-    ${target&&isMine?`<div class="ctarget">${pending.rev?"起こす":"かける"}</div>`:""}
-    ${target&&!isMine&&u.HP>0?(()=>{const A=actor();
-       return `<div class="ctarget">${
-         threshold(A,u,pending&&pending.kind==="skill"&&A.sk[pending.i]
-           ?{thr:A.sk[pending.i].thr||0,even:A.sk[pending.i].even}:{})}以上</div>`;})():""}
-    ${!isMine?(u.HP>0?(()=>{const ic=actIcon(st.t);
-        /* ===== 誰を狙っているかは 出さない（α1.0.053） =====
-           前は 敵のマスに「→ ナイト」、狙われた味方に「狙 n体」、
-           さらに敵の左上に 役の一文字（盾/牙/射/癒/主/部）を出していた。
-           三つとも **同じことの言い換え**で、しかも一文字の役は読めなかった。
-           いまは **狙われた味方の枠が赤くなる**だけ。役は「詳 細」に
-           「アタッカー」とフルで出ている。 */
-        return `<div class="cact ${p.danger?"bad":"ok"}" title="${p.txt}">${actFig(ic.k,22)}</div>`;})()
-      /* 倒れても枠は空けておく。消すとセルが縮み、行動一覧が毎ターン動く */
-      :`<div class="cact" style="visibility:hidden"></div>`):""}
+    ${target&&u.HP>0?`<span class="ctgt">${isMine
+      ? (pending.rev?"起こす":"かける")
+      : threshold(actor(),u,pending&&pending.kind==="skill"&&actor().sk[pending.i]
+          ?{thr:actor().sk[pending.i].thr||0,even:actor().sk[pending.i].even}:{})+"以上"}</span>`:""}
+    <span class="creach ${acting||target?"on":""}">${d?"+"+d:"0"}</span>
+    <span class="cfig">${isMine?meFig(fig,u):foeFig(u.fig||u.key,fig)}</span>
+    <span class="cn ${isMine?"mine":"foe"}">${isMine?shortOf(u):foeShort(u)}</span>
+    <span class="chp"><i class="${low?"low":""}" style="width:${hp/mx*100}%"></i>${
+      sh?`<u style="left:${Math.min(100,hp/mx*100)}%;width:${
+        Math.min(100-hp/mx*100,sh/mx*100)}%"></u>`:""}</span>
+    ${stx}
+    ${!isMine&&u.HP>0?(()=>{const ic=actIcon(st.t);
+        return `<span class="oa ${p.danger?"atk":"def"}" style="position:absolute;top:0;right:0"
+          title="${p.txt}">${actFig(ic.k,12)}</span>`;})():""}
   </div>`;
+}
+/* 盤に出す短い名。「ホーンラビット A」→「ホーンA」 */
+function foeShort(f){
+  const n=(f.name||"").replace(/\s+/g,"");
+  const m=n.match(/([A-Z])$/);
+  const base=m?n.slice(0,-1):n;
+  return (base.length>4?base.slice(0,4):base)+(m?m[1]:"");
 }
 /* その味方が いま何体に狙われているか。予告と同じ関数を通すので 嘘にならない */
 /* ===== こちらへ来る手だけ数える（α1.0.053） =====
@@ -6265,47 +6439,54 @@ function actIcon(t){
   if(t.k==="buff"||t.k==="cheer"||t.k==="grow")return R("buff","buf","溜め");
   return R("move","me","移動");
 }
+/* ===== 行動順（α1.0.061・仕様その2） =====
+   **34px の絵札だけ。名前は出さない。**
+     右上 … 何をしてくるか（13px・攻=blood／守=blue／未確定=破線の ？）
+     左下 … 順番の数字
+   いま動く札は brass。次のラウンドは R2 の区切りを挟んで 破線の札。
+   **溢れさせない**（A-4）── 入る枚数だけ出して、残りは「＋n」にして
+   「詳細」の窓へ送る。横スクロールは出さない。 */
+const ORDMAX=8;
 function drawOrder(){
   const host=$("#ordList");if(!host)return;
   const st=$("#stageLbl");
-  /* 所持金も戦闘中に出す。マネーイズパワー（強欲）は 金貨を払って効くのに、
-     戦闘画面のどこにも金貨が出ていなかった。 */
-  if(st&&RUN&&RUN.cur)
-    st.innerHTML=`${areaOf().n||""}　${RUN.cur.name}`+(RUN.elite?"　［手練れ］":RUN.boss?"　［ボス］":"")
-      +`　<span style="color:#c9a227">金貨 ${me?me.gold:0}</span>`;
-  /* 1枚のふだ。act に null を渡すと「？」になる（自分の手は自分で決めるので） */
+  if(st&&RUN)
+    st.innerHTML=`${areaOf().n||""} ・ <b>R${round}</b>${RUN.cur?" ・ "+RUN.cur.name:""}`
+      +(RUN.elite?" ［手練れ］":RUN.boss?" ［ボス］":"")
+      +`　<span class="g">金貨 ${me?me.gold:0}</span>`;
   const card=(u,{no,act,cls})=>{
     const mine=!u.isFoe;
-    const ic=mine?{k:"unknown",c:"me"}:actIcon(act);
-    return `<div class="ord ${mine?"mine":"foe"} ${cls}" title="${u.name}" ${
+    const ic=mine?null:actIcon(act);
+    return `<button class="ocard ${mine?"mine":"foe"} ${cls}" title="${u.name}" ${
       mine?`data-om="${u.pid||0}"`:`data-oid="${u.id}"`}>
-      <div class="oface">
-        ${mine?faceFig(u.job,u.race,34):foeFaceFig(u.fig||u.key,34)}
-        <div class="oact ${ic.c}">${actFig(ic.k,12)}</div>
-        <div class="oi">${no}</div>
-      </div></div>`;
+      ${mine?faceFig(u.job,u.race,32):foeFaceFig(u.fig||u.key,32)}
+      <span class="oa ${ic?ic.c:"q"}">${ic?actFig(ic.k,11):"？"}</span>
+      <span class="oi">${no}</span></button>`;
   };
-  /* いまのラウンド。済んだ者は薄くする */
-  let h=queue.map((u,i)=>{
-    if(u.isFoe&&u.HP<=0)return "";
-    const done=(i<qi||u.HP<=0);
-    return card(u,{no:i+1,
-      act:done?(u.next||u.tele):u.tele,
-      cls:(i===qi?"now ":"")+(done?"done":"")});
-  }).join("");
-  /* 次のラウンド。並びも技も いまの値から決まるので前もって出せる */
-  const later=orderOf().filter(u=>u.HP>0);
-  if(later.length){
-    h+=`<div class="orddiv"><b>R${round+1}</b><span>次</span></div>`;
-    h+=later.map((u,i)=>card(u,{no:i+1,act:u.next||u.tele,cls:"later"})).join("");
+  const now=queue.map((u,i)=>({u,no:i+1,done:(i<qi||u.HP<=0),
+      act:(i<qi||u.HP<=0)?(u.next||u.tele):u.tele,
+      cls:(i===qi?"now ":"")+((i<qi||u.HP<=0)?"done":"")}))
+    .filter(x=>!(x.u.isFoe&&x.u.HP<=0));
+  const later=orderOf().filter(u=>u.HP>0)
+    .map((u,i)=>({u,no:i+1,act:u.next||u.tele,cls:"later"}));
+  /* 入る枚数だけ。いま動く札は必ず入れる */
+  const cut=Math.max(0,now.findIndex(x=>x.cls.startsWith("now")));
+  const shown=now.slice(cut);
+  let left=ORDMAX-shown.length;
+  let h=shown.map(x=>card(x.u,x)).join("");
+  if(later.length&&left>0){
+    h+=`<div class="odiv"><b>R${round+1}</b>次</div>`;
+    h+=later.slice(0,left).map(x=>card(x.u,x)).join("");
+    const rest=(later.length-Math.max(0,left))+cut;
+    if(rest>0)h+=`<span class="omore">＋${rest}</span>`;
+  }else if(later.length||cut){
+    h+=`<span class="omore">＋${later.length+cut}</span>`;
   }
   host.innerHTML=h;
   host.querySelectorAll("[data-oid]").forEach(el=>{
     el.onclick=()=>{const f=foes.find(x=>x.id===+el.dataset.oid);if(f)foeModal(f);};});
   host.querySelectorAll("[data-om]").forEach(el=>{
     el.onclick=()=>charModal(null,party[+el.dataset.om]||me);});
-  const now=host.querySelector(".ord.now");
-  if(now&&now.scrollIntoView)now.scrollIntoView({block:"nearest",inline:"nearest"});
   if(!$("#detail").classList.contains("hide"))drawDetail();
 }
 function drawDetail(){
@@ -6379,24 +6560,15 @@ function draw(){
   const theirs=boardList(foes).slice(0,LINEMAX);
   /* 絵の大きさは 列が長いほど小さく。呼ばれた仲間で列が伸びても はみ出さない */
   const wide=mine.length+theirs.length;
-  const fig=wide>=8?30:wide>=7?34:40;
+  const fig=wide>=8?24:wide>=7?28:32;
+  /* 間合いはマスの中に出すので 見出しの行は要らなくなった（α1.0.061） */
   $("#board").style.gridTemplateColumns=
-    `repeat(${mine.length},1fr) 18px repeat(${theirs.length},1fr)`;
-  $("#hdr").style.gridTemplateColumns=
-    `repeat(${mine.length},1fr) 18px repeat(${theirs.length},1fr)`;
+    `repeat(${mine.length},1fr) 10px repeat(${theirs.length},1fr)`;
   let h="";
   mine.slice().reverse().forEach(u=>{h+=unitCell(u,true,fig);});   /* 先頭を隙間側へ */
-  h+=`<div class="gap"></div>`;
+  h+=`<div class="cgap"></div>`;
   theirs.forEach(f=>{h+=unitCell(f,false,fig);});
   $("#board").innerHTML=h;
-  /* 見出しは「何番目か」。遠さを払う相手がひと目で分かる */
-  let hh="";
-  mine.slice().reverse().forEach(u=>{
-    hh+=`<div class="${u.HP>0?"mine":""}">${u.HP>0?lineMark(u):"—"}</div>`;});
-  hh+=`<div></div>`;
-  theirs.forEach(f=>{
-    hh+=`<div class="${f.HP>0?"theirs":""}">${f.HP>0?lineMark(f):"—"}</div>`;});
-  $("#hdr").innerHTML=hh;
   drawOrder();
   bindCells();
   if(pending)bindTargets();   /* 的を選ぶ最中は、選べるマスだけそちらで上書きする */
@@ -6436,7 +6608,7 @@ function bindTargets(){
       };
     }
     el.onclick=()=>{const id=+el.dataset.id;const f=foes.find(x=>x.id===id);
-      const p=pending;pending=null;$("#prompt").textContent="";
+      const p=pending;pending=null;setDec(null);
       if(p&&p.item)return doItem(p.item,f);
       resolvePlayer(p,f);};
   });
@@ -6446,7 +6618,7 @@ function bindTargets(){
       const pid=+el.dataset.me;
       const u=party.find(x=>(x.pid||0)===pid);
       if(!u)return;
-      const p=pending;pending=null;$("#prompt").textContent="";
+      const p=pending;pending=null;setDec(null);
       resolvePlayer(p,u);
     };
   });
@@ -6840,18 +7012,20 @@ function thrWhy(tgt,opt,u){
    遊ぶ人は **何が当たりやすさを動かしているのか** を見られなかった。
    仮の相手（いちばん手前）で出す。狙いを決めると その相手で描き直る。 */
 function drawThr(u,tgt,opt){
+  /* #thrP は α1.0.061 で無くした（帯が42pxしかないので 1行にまとめた）。
+     ここで P を必須にしていたせいで **帯ぜんたいが出なくなっていた** */
   const N=$("#thrN"), P=$("#thrP"), X=$("#thrX");
-  if(!N||!P||!X)return;
-  if(!tgt){ N.textContent="—";P.innerHTML="";X.innerHTML="";return; }
+  if(!N||!X)return;
+  if(!tgt){ N.textContent="—";if(P)P.innerHTML="";X.innerHTML="";return; }
   const w=thrWhy(tgt,opt||{},u);
   N.textContent=w.thr;
-  P.innerHTML=`ダイス1個につき <b>${Math.round((7-w.thr)/6*100)}%</b>　対 ${tgt.name}`;
-  /* 基本の4は 言わなくても分かるので 動かしたものだけ並べる */
+  /* 帯は42pxしかないので **1個につき何%** と 内訳だけ。相手の名は出さない
+     （名は盤に出ている。同じものを二度書かない・R-6） */
   const mv=w.parts.filter(x=>x.n!=="基 本"&&x.v!==0);
-  X.innerHTML=(mv.length
-    ? mv.map(x=>`${x.n} <b class="${x.v>0?"":"free"}">${x.v>0?"+":""}${x.v}</b>`).join("　")
-    : `<span class="free">素の 4 のまま</span>`)
-    +(w.raw!==w.thr?`<br><span class="cap">2〜6 に収めて ${w.thr}</span>`:"");
+  X.innerHTML=`1個につき <b class="free">${Math.round((7-w.thr)/6*100)}%</b>`
+    +(mv.length?`　${mv.map(x=>`${x.n.replace(/ /g,"")} <b class="${
+        x.v>0?"":"free"}">${x.v>0?"+":""}${x.v}</b>`).join("　")}`:`　<span>素の 4</span>`)
+    +(w.raw!==w.thr?`　<span style="color:var(--brass)">2〜6 に収めて ${w.thr}</span>`:"");
 }
 
 /* 相手ごとの命中閾値を、内訳つきで大きく出す */
@@ -7022,7 +7196,7 @@ function wepName(u){ return ((u&&u.wep&&u.wep.n)||"素手").replace(/\s+/g,""); 
 function drawActs(){
   const A=actor();   /* 手番の主。仲間が動いているときは その者 */
   const host=$("#acts");host.innerHTML="";
-  $("#prompt").textContent="";
+  setDec(null);
   /* ===== 札は 名前だけ（α1.0.025） =====
      `sub` は ごく短い添え書き（得物の名・MP・再使用）。
      必要な成功・成功率・通ったときのダメージ・効果は
@@ -7116,7 +7290,7 @@ function drawActs(){
     add("bag","道 具 を 使 う",`${bagCount()} 個`,false,()=>bagPanel(),
       infoHtml({name:"道 具 を 使 う", d:`持ち物 ${bagLabel()}`}));
   }
-  if(vowGone())$("#prompt").textContent="▸ 討つと告げた相手は もういない";
+  if(vowGone())setDec({msg:"討つと告げた相手は もういない"});
   add("def","防 御 す る",`シールド ${blockValue()}`,false,
     ()=>askSelf({kind:"guard",block:blockValue()},"guard"),
     infoHtml({name:"防 御 す る",
@@ -7238,30 +7412,32 @@ function drawActs(){
   if(pending){
     /* 狙いを取らない手は 相手を選べないので、代わりに「これで使う」を出す。
        同じ札をもう一度押しても同じことが起きる（α1.0.027） */
-    if(pending.self){
-      const go=document.createElement("button");
-      go.className="act go2 wide";
-      go.innerHTML=`<span class="an">こ れ で 使 う</span>`;
-      go.onclick=()=>fireSelf();
-      host.appendChild(go);
-    }
-    const back=document.createElement("button");
-    back.className="act cancel wide";
-    back.innerHTML=`<span class="an">やめる</span>`;
-    back.onclick=()=>{pending=null;draw();drawActs();};
-    host.appendChild(back);
-    $("#prompt").textContent=pending.item
-      ? `▸ ${ITEMS[pending.item].n} を投げる相手を選ぶ`
-      : pending.self
-      ? "▸ 「これで使う」で決める　（同じ手をもう一度押すと やめる）"
-      : pending.ally
-      ? (pending.rev?"▸ 起こす仲間を選ぶ　（同じ手をもう一度押すと やめる）"
-                    :"▸ かける仲間を選ぶ　（同じ手をもう一度押すと やめる）")
-      : "▸ 狙う相手を選ぶ　（同じ手をもう一度押すと やめる）";
-  }
+    /* ===== 決めの帯（α1.0.061・5g） =====
+       前は「これで使う」「やめる」を **コマンドの札の中に生やして**いたので、
+       手を選ぶたびに コマンド欄の高さが変わっていた。
+       下に 48px の帯を出すだけにして、上は 1px も動かさない。 */
+    setDec(pending.self
+      ? {msg:null, yes:"こ の 手 を 使 う", go:()=>fireSelf()}
+      : {msg: pending.item ? `${ITEMS[pending.item].n} を投げる相手を選ぶ`
+          : pending.ally ? (pending.rev?"起こす仲間を選ぶ":"かける仲間を選ぶ")
+          : "狙う相手を選ぶ"});
+  }else setDec(null);
   /* まだ何も触っていないときは いちばん上の手（通常攻撃）を出しておく。
      帯が空のままだと「何を読む場所なのか」が伝わらない */
   if(firstInfo&&!pending)setActInfo(firstInfo);
+}
+/* 決めの帯。o が null なら畳む。
+   o … {msg:"狙う相手を選ぶ"} か {yes:"この手を使う", go:fn} */
+function setDec(o){
+  const el=$("#bdec");if(!el)return;
+  if(!o){ el.classList.add("hide"); el.innerHTML=""; return; }
+  el.classList.remove("hide");
+  el.innerHTML=`<button class="no" data-dec="no">や め る</button>`
+    +(o.yes?`<button class="yes" data-dec="yes">${o.yes}</button>`
+           :`<span class="msg">${o.msg}</span>`);
+  el.querySelector('[data-dec="no"]').onclick=()=>{pending=null;draw();drawActs();};
+  const y=el.querySelector('[data-dec="yes"]');
+  if(y)y.onclick=()=>o.go();
 }
 /* ---------- 逃 走 ----------
    1戦闘に1回だけ、1ターンを使って挑戦できる。
@@ -7536,7 +7712,7 @@ function cellOf(u){
    前は 130ms 待った直後に戻していたので、出きる前に引き返していた。 */
 async function lungeUnit(u){
   const c=cellOf(u);if(!c)return;
-  const p=c.querySelector(".por");if(!p)return;
+  const p=c.querySelector(".cfig");if(!p)return;   /* .por → .cfig（α1.0.061） */
   const dir=u.isFoe?-1:1;
   p.style.transition="transform .12s ease-out";
   p.style.transform=`translateX(${dir*20}px)`;
@@ -7550,16 +7726,17 @@ function fxOn(u,kind){
   d.className="fx "+kind;
   c.appendChild(d);
   setTimeout(()=>{if(d.parentNode)d.parentNode.removeChild(d);},760);
-  const sv=c.querySelector(".por svg");
+  const sv=c.querySelector(".cfig svg");
   if(sv&&(kind==="slash"||kind==="blunt"||kind==="bow"||kind==="magic")){
     sv.classList.remove("hitfx");void sv.offsetWidth;sv.classList.add("hitfx");
   }
 }
+/* HPの帯を その場で減らす。マスの作りが変わったので 掴み先も変えた（α1.0.061）。
+   数値はマスに出さなくなった（帯だけ）ので、動かすのは帯の幅だけ。 */
 function setHPBar(u,val){
   const c=cellOf(u);if(!c)return;
-  const bar=c.querySelector(".bar i"), num=c.querySelector(".chp");
-  if(bar)bar.style.width=Math.max(0,val/u.maxHP*100)+"%";
-  if(num)num.textContent=`${Math.max(0,Math.round(val))}/${u.maxHP}`;
+  const bar=c.querySelector(".chp i");
+  if(bar)bar.style.width=Math.max(0,Math.min(100,val/u.maxHP*100))+"%";
 }
 /* ms を渡すと そのぶん遅れて浮く。攻撃の拍に合わせるために使う（α1.0.039） */
 function popOn(f,text,cls,ms){
@@ -7946,7 +8123,7 @@ async function playerAttack(targets,opt){
 async function resolvePlayer(a,target){
   const A=actor();   /* 手番の主。仲間が動いているときは その者 */
   if(busy||over)return;
-  busy=true;$("#acts").innerHTML="";$("#prompt").textContent="";
+  busy=true;$("#acts").innerHTML="";setDec(null);
   if(a.kind==="atk"){
     A.lastSk=null;
     await playerAttack([target],{});
@@ -8262,7 +8439,7 @@ async function resolvePlayer(a,target){
     if(ok){
       over=true;busy=false;pending=null;
       A.ail=[];                    /* 状態異常は戦闘の中だけのもの（finish と同じ） */
-      $("#prompt").textContent="";$("#acts").innerHTML="";
+      setDec(null);$("#acts").innerHTML="";
       fleeBack();
       return;
     }
@@ -8274,37 +8451,77 @@ async function resolvePlayer(a,target){
 }
 
 /* 行動順から 敵の詳細を見る */
+/* ===== 敵の詳細（α1.0.061・仕様その2 の 5c） =====
+   盤のマスを押すと開く窓。**320px で横に溢れない**こと。
+   「あと何戦で 何が分かるか」を いつも見せる（C-7）。 */
 function foeModal(f){
-  const st=shownTele(f);
-  const p=telePreview(f,st.t);
-  const nxT=st.nx?telePreview(f,st.nx):null;
-  const ek={weak:knownElem(f.key,"weak"),resist:knownElem(f.key,"resist")};
-  const c=codexLv(f.key);
-  const nx=codexNext(f.key);
-  openModal(`
-    <div class="mtitle">${f.name}</div>
-    <div style="text-align:center;line-height:0;margin-bottom:8px">${foeFig(f.fig||f.key,64)}</div>
-    <div class="mgrow">
-      HP <b>${Math.max(0,f.HP)}</b>/${f.maxHP}　
-      ${lineMark(f).replace(/<[^>]*>/g,"")}　
-      図鑑 ${c}/5${nx?`<span class="s">（あと ${nx} 戦）</span>`:""}
-      ${ek.weak?`　<span class="elw">弱 ${ELEM[ek.weak].n}</span>`:""}
-      ${ek.resist?`　<span class="elr">耐 ${ELEM[ek.resist].n}</span>`:""}
-    </div>
-    ${FOE[f.key]&&FOE[f.key].d?`<div class="mitem cxlore">${FOE[f.key].d}</div>`:""}
-    <div class="msec">効 い て い る も の</div>
-    ${ailList(f)}
-    <div class="msec">こ の タ ー ン</div>
-    <div class="mitem ${p.danger?"warn":""}"><b>${p.txt}</b><br>
-      <span class="s">${p.sub}</span></div>
-    ${nxT?`<div class="msec">次 の タ ー ン</div>
-      <div class="mitem ${nxT.danger?"warn":""}"><b>${nxT.txt}</b><br>
-        <span class="s">${nxT.sub}</span></div>`:""}
-    ${c>=2?`<div class="msec">わ か っ て い る こ と</div>
-      <div class="mitem">攻 <b>${f.STR}</b>　VIT <b>${f.VIT}</b>　速 <b>${f.DEX}</b></div>`:""}
-    ${c>=4?`<div class="mitem"><span class="s">${f.acts.map(a=>a.n).join("・")}</span></div>`:""}
-    <button class="mclose" id="fmClose">閉じる</button>`,true);
-  $("#fmClose").onclick=closeModal;
+  if(!f)return;
+  const c=codexLv(f.key), nx=codexNext(f.key), n=META.codex[f.key]||0;
+  const w=knownElem(f.key,"weak"), r=knownElem(f.key,"resist");
+  const mx=Math.max(1,f.maxHP), hp=Math.max(0,f.HP), sh=shieldOf(f);
+  const st=shownTele(f), pv=st.t?telePreview(f,st.t):null;
+  const ail=ailText(f);
+  let h=`<div class="uihd" style="margin:-14px -14px 10px;padding:10px 12px">
+    <div class="uit"><div class="uin">${f.name}</div>
+      <div class="uis">${ROLEFULL[roleOf(f)]||""} ・ ${
+        f.rank==="back"?"奥に立つ":"手前に立つ"} ・ 間合い +${depthOf(f)}</div></div>
+    <button class="uib" data-fx="cx">図鑑</button>
+    <button class="uib" data-fx="x">✕</button></div>`;
+  h+=`<div class="fdtop">
+    <span class="fdfig">${foeFig(f.fig||f.key,64)}</span>
+    <span class="fdb">
+      <span class="hpb"><i class="${hp<=mx*.35?"low":""}" style="width:${hp/mx*100}%"></i>${
+        sh?`<u style="left:${hp/mx*100}%;width:${Math.min(100-hp/mx*100,sh/mx*100)}%"></u>`:""}</span>
+      <span class="pnum">HP <b>${hp}</b>/${f.maxHP}${sh?`<span class="shv">＋${sh}</span>`:""}</span>
+      <span class="chips" style="margin:5px 0 0">${
+        w?`<span class="chip on" style="height:24px;line-height:22px;padding:0 8px">弱 ${ELEM[w].n}</span>`
+         :`<span class="chip" style="height:24px;line-height:22px;padding:0 8px;border-style:dashed">弱 ？</span>`}${
+        r?`<span class="chip" style="height:24px;line-height:22px;padding:0 8px;color:var(--blue);border-color:#33454f">耐 ${ELEM[r].n}</span>`
+         :`<span class="chip" style="height:24px;line-height:22px;padding:0 8px;border-style:dashed">耐 ？</span>`}</span>
+    </span></div>`;
+  /* 図鑑の深さ */
+  h+=`<div class="uisec">図 鑑 の 深 さ<em>${c}/${CODEXN.length}　${
+    nx?`あと ${nx} 戦`:"書き上がり"}</em></div>
+    <span class="hpb" style="height:6px"><i style="width:${
+      Math.min(100,n/CODEXN[CODEXN.length-1]*100)}%"></i></span>
+    <div class="uinote" style="margin-top:4px">${n} / ${CODEXN[CODEXN.length-1]} 戦</div>`;
+  if(f.d)h+=`<div class="uinote">${f.d}</div>`;
+  /* このターン */
+  h+=`<div class="uisec">こ の タ ー ン</div>`;
+  h+=pv?`<div class="itrow"><div class="itl ico">
+      <span class="itico">${actFig(actIcon(st.t).k,18)}</span>
+      <div><div class="itn">${pv.txt.replace(ACTGLYPH,"")}</div>
+        <div class="itd">${pv.sub}</div></div>
+      <div></div></div></div>`
+    :`<div class="uiempty">まだ 何をするか 分からない</div>`;
+  /* 効いているもの */
+  h+=`<div class="uisec">効 い て い る も の</div>`;
+  h+=ail?`<div class="uinote">${ail}</div>`:`<div class="uiempty">効いているものは 無い</div>`;
+  /* わかっていること */
+  h+=`<div class="uisec">わ か っ て い る こ と</div>`;
+  h+=`<div class="stgrid">
+    ${c>=2?`<div class="stbox"><span class="k">攻</span><span class="v">${f.STR}</span></div>`
+          :`<div class="stbox" style="border-style:dashed"><span class="k">攻</span>
+             <span class="v" style="color:var(--ink);font-size:11px">あと ${CODEXN[1]-n} 戦</span></div>`}
+    ${c>=3?`<div class="stbox"><span class="k">VIT</span><span class="v">${f.VIT}</span></div>
+            <div class="stbox"><span class="k">速</span><span class="v">${f.DEX}</span></div>`
+          :`<div class="stbox" style="border-style:dashed"><span class="k">VIT</span>
+             <span class="v" style="color:var(--ink);font-size:11px">あと ${CODEXN[2]-n} 戦</span></div>
+            <div class="stbox" style="border-style:dashed"><span class="k">速</span>
+             <span class="v" style="color:var(--ink);font-size:11px">あと ${CODEXN[2]-n} 戦</span></div>`}
+  </div>`;
+  h+=c>=4?`<div class="cxacts" style="margin-top:8px">${(f.acts||[]).map(a=>{
+      const L=foeActLine(a);
+      return `<div class="cxact"><span class="cxai ${L.c}">${L.ic}</span>
+        <b>${a.n}</b><span class="cxad">${L.d}</span></div>`;}).join("")}</div>`
+    :`<div class="uiempty" style="margin-top:8px">使う手は まだ分からない
+       <br><b>あと ${CODEXN[3]-n} 戦</b></div>`;
+  h+=`<button class="mclose" id="fdX" style="width:100%;margin-top:12px">閉 じ る</button>`;
+  openModal(h,true);
+  $("#mbox").querySelectorAll("[data-fx]").forEach(b2=>{
+    b2.onclick=()=>{const k=b2.dataset.fx;closeModal();
+      if(k==="cx"){cxNow="foe";cxOne=f.key;drawCodex();showScreen("codex");}};});
+  $("#fdX").onclick=()=>closeModal();
 }
 
 /* ---------- 待ち行列 ---------- */
@@ -8792,7 +9009,7 @@ async function finish(win){
      手番の無い探索中に持ち越すと永久に減らない。戦闘が終わったら必ず落とす。
      （前は次の戦闘の開始時に消していたので、探索中だけ中途半端に残っていた） */
   party.forEach(u=>{u.ail=[];});
-  $("#prompt").textContent="";
+  setDec(null);
   if(!win){
     $("#acts").innerHTML=`<div class="end lose">戦 死</div>`;
     SFX.lose();
@@ -12908,7 +13125,7 @@ function bagLabel(){
 }
 function bagPanel(){
   const host=$("#acts");host.innerHTML="";
-  $("#prompt").textContent="▸ 使う道具を選ぶ";
+  setDec({msg:"使う道具を選ぶ"});
   Object.keys(me.bag).forEach(k=>{
     if(!me.bag[k])return;
     const it=ITEMS[k];
@@ -12940,7 +13157,7 @@ async function doItem(k,tgt){
   const it=ITEMS[k];
   busy=true;pending=null;
   me.bag[k]--;if(!me.bag[k])delete me.bag[k];
-  $("#acts").innerHTML="";$("#prompt").textContent="";
+  $("#acts").innerHTML="";setDec(null);
   /* 効き目は足し算。石蜜の焼き菓子や宴のように 2 つ以上を持つ品があるので、
      ここは else でつなげない（つないでいたので HP しか戻っていなかった）。 */
   if(it.heal||it.mp||it.mpr){
@@ -13187,7 +13404,7 @@ function prepareBattle(){
   draw();window.scrollTo(0,0);
 }
 async function engage(){
-  $("#acts").innerHTML="";$("#prompt").textContent="";
+  $("#acts").innerHTML="";setDec(null);
   await doScout();
   buildQueue();
   draw();
@@ -13840,37 +14057,133 @@ function drawCodex(){
       <span class="tabc">${c.got}/${c.all}（${Math.round(c.got/c.all*100)}%）</span>
     </button>`;}).join("");
   $("#cxTabs").querySelectorAll("[data-t]").forEach(b=>{
-    b.onclick=()=>{cxNow=b.dataset.t;drawCodex();};});
+    b.onclick=()=>{cxNow=b.dataset.t;cxOne=null;drawCodex();};});
   const c=codexCount();
-  $("#cxAll").innerHTML=`<b>${c.got}</b> / ${c.all}　（${c.pct}%）`;
+  $("#cxAll").innerHTML=`<b>${c.got}</b> / ${c.all}　（${c.pct}%）`
+    +`<span class="hpb" style="height:5px;margin-top:5px"><i style="width:${c.pct}%"></i></span>`;
   $("#cxBody").innerHTML=cxBody();
+  /* 絞り込みと 1体ぶんへの行き来（α1.0.061） */
+  $("#cxBody").querySelectorAll("[data-cx]").forEach(b=>{
+    b.onclick=()=>{
+      const k=b.dataset.cx, v=b.dataset.v;
+      if(k==="area"){cxArea=v;}
+      else if(k==="full"){cxFull=!cxFull;}
+      else if(k==="one"){cxOne=v;}
+      else if(k==="back"){cxOne=null;}
+      SFX.click();drawCodex();window.scrollTo(0,0);
+    };});
+}
+/* ===== 図鑑・モンスター（α1.0.061・仕様その2 の 5d / 5e） =====
+   前は 51種を一列に並べ、未見も「？ ？ ？」で場所だけ取っていた（3933px＝4.7画面）。
+     一覧（5d）… 1体1行。**未発見は 1行にまとめる**。区画・書き上がり・段で絞る
+     詳細（5e）… 行を押すと 1体ぶん。**あと何戦で 何が開くか**を必ず出す
+   cxOne に鍵が入っているあいだは 詳細を出す。 */
+let cxOne=null, cxArea="all", cxFull=false;
+const CXDEP=[["名 と 列"],["HP ・ 攻"],["VIT ・ 速"],["使う手と その中身"],["弱点と耐性"]];
+/* その敵が どの区画に出るか */
+function foeAreas(k){
+  const out=[];
+  for(const ak in AREAS){
+    const A=AREAS[ak]; if(A.wip)continue;
+    const encs=[].concat(A.norm||[],A.hard||[],A.elite||[],A.boss?[A.boss]:[]);
+    if(encs.some(e=>ENCS[e]&&ENCS[e].list.includes(k)))out.push(ak);
+  }
+  return out;
+}
+/* ---- 5d 一覧 ---- */
+function cxFoeList(){
+  const KS=Object.keys(FOE);
+  const seen=KS.filter(k=>codexLv(k)>0);
+  const full=KS.filter(codexFull);
+  const areas=Object.keys(AREAS).filter(k=>!AREAS[k].wip);
+  let h=`<div class="uinote">戦った回数で少しずつ見えてくる ──
+    ${CODEXN.map((n,i)=>`<b>${n}戦</b> ${CXDEP[i][0]}`).join("　")}。
+    弱点は 突いたときにも書き込まれる。</div>`;
+  h+=`<div class="chips">
+    <button class="chip${cxArea==="all"?" on":""}" data-cx="area" data-v="all">すべての区画</button>
+    ${areas.map(k=>`<button class="chip${cxArea===k?" on":""}" data-cx="area" data-v="${k}">${
+      AREAS[k].n.replace(/ /g,"")}</button>`).join("")}
+  </div>
+  <div class="chips">
+    <button class="chip${cxFull?" on":""}" data-cx="full">書き上がりだけ</button>
+    <span class="chip" style="border-style:dashed;cursor:default">書き上がり ${
+      full.length} / ${KS.length}</span>
+  </div>`;
+  const show=KS.filter(k=>codexLv(k)>0
+    &&(cxArea==="all"||foeAreas(k).includes(cxArea))
+    &&(!cxFull||codexFull(k)));
+  const hidden=KS.length-seen.length;
+  if(!show.length)h+=`<div class="uiempty">${
+    seen.length?"この絞り込みに 当てはまるものが ない":"まだ 何とも戦っていない"}</div>`;
+  else h+=show.map(k=>{
+    const f=FOE[k], c=codexLv(k), nx=codexNext(k), n=META.codex[k]||0;
+    const w=knownElem(k,"weak"), r=knownElem(k,"resist");
+    return `<button class="cxrow2 ${codexFull(k)?"full":""}" data-cx="one" data-v="${k}">
+      <span class="cf">${foeFig(k,34)}</span>
+      <span><span class="cnm">${f.n}</span>
+        <span class="cdd">${c>=2?`HP ${f.HP} 攻 ${f.STR}`:""}${
+          c>=3?`　VIT ${f.VIT} 速 ${f.DEX}`:""}${
+          w?`　弱 ${ELEM[w].n}`:""}${r?`　耐 ${ELEM[r].n}`:""}${
+          c<2?f.d.slice(0,20):""}</span></span>
+      <span class="cst2">${c}/${CODEXN.length}<br>${nx?`あと ${nx} 戦`:"書き上がり"}</span>
+    </button>`;}).join("");
+  if(hidden>0)
+    h+=`<div class="uiempty">未発見 <b>${hidden}</b> 種
+      <br>会ったものから 行が増える</div>`;
+  return h;
+}
+/* ---- 5e 詳細 ---- */
+function cxFoeOne(k){
+  const f=FOE[k]; if(!f)return cxFoeList();
+  const c=codexLv(k), nx=codexNext(k), n=META.codex[k]||0;
+  const mxN=CODEXN[CODEXN.length-1];
+  const w=knownElem(k,"weak"), r=knownElem(k,"resist");
+  let h=`<button class="mini" data-cx="back" style="margin-bottom:9px">↩ 一 覧 へ</button>`;
+  h+=`<div class="fdtop">
+    <span class="fdfig">${foeFig(k,72)}</span>
+    <span class="fdb">
+      <div class="itn" style="font-size:15px">${f.n}</div>
+      <div class="itd">${ROLEFULL[roleOf({key:k,rank:f.rank})]||""} ・ ${
+        f.rank==="back"?"奥に立つ":"手前に立つ"}</div>
+      <span class="hpb" style="height:6px;margin-top:5px"><i style="width:${
+        Math.min(100,n/mxN*100)}%"></i></span>
+      <div class="itd" style="margin-top:3px">${n} / ${mxN} 戦　${
+        nx?`あと ${nx} 戦`:"書き上がり"}</div>
+    </span></div>`;
+  h+=`<div class="uisec">解 析 の 深 さ<em>${c}/${CODEXN.length}</em></div><div class="dep">`;
+  CODEXN.forEach((need,i)=>{
+    const ok=n>=need;
+    h+=`<span class="n ${ok?"ok":""}">${need}戦</span>
+      <span class="w ${ok?"ok":""}" style="${ok?"color:var(--bone)":""}">${CXDEP[i][0]}</span>
+      <span class="s" style="${ok?"color:var(--moss)":""}">${ok?"済":`あと ${need-n}`}</span>`;
+  });
+  h+=`</div>`;
+  if(f.d)h+=`<div class="uinote">${f.d}</div>`;
+  h+=`<div class="uisec">使 う 手</div>`;
+  h+=c>=4?`<div class="cxacts">${(f.acts||[]).map(a=>{const L=foeActLine(a);
+      return `<div class="cxact"><span class="cxai ${L.c}">${L.ic}</span>
+        <b>${a.n}</b><span class="cxad">${L.d}</span></div>`;}).join("")}</div>`
+    :`<div class="uiempty">まだ 分からない<br><b>あと ${CODEXN[3]-n} 戦</b></div>`;
+  h+=`<div class="uisec">弱 点 と 耐 性</div><div class="chips">`;
+  h+=w?`<button class="chip on" style="cursor:default">弱 ${ELEM[w].n}</button>`
+      :`<button class="chip" style="border-style:dashed;cursor:default">弱 ？ ？</button>`;
+  h+=r?`<button class="chip" style="cursor:default;color:var(--blue);border-color:#33454f">耐 ${ELEM[r].n}</button>`
+      :`<button class="chip" style="border-style:dashed;cursor:default">耐 ？ ？</button>`;
+  h+=`</div>`;
+  if(!w||!r)h+=`<div class="uinote">突けば その場で書き込まれる。${
+    c>=5?"":`${CODEXN[4]} 戦まで進めば 突かなくても分かる（あと ${Math.max(0,CODEXN[4]-n)} 戦）`}</div>`;
+  h+=`<div class="uisec">落 と す も の</div>`;
+  h+=f.mat?(c>=5?`<div class="itrow"><div class="itl ico">
+      <span class="itico">${itemIcon(f.mat,18)}</span>
+      <div><div class="itn">${(MATS[f.mat]||{}).n||f.mat}</div>
+        <div class="itd">1つ ${(MATS[f.mat]||{}).v||0} 金貨</div></div><div></div></div></div>`
+    :`<div class="uiempty" style="border-style:dashed">まだ 分からない
+       <br><b>あと ${Math.max(0,CODEXN[4]-n)} 戦</b></div>`)
+    :`<div class="uiempty">何も落とさない</div>`;
+  return h;
 }
 function cxBody(){
-  if(cxNow==="foe"){
-    return `<div class="cxnote">戦った回数で少しずつ見えてくる ──
-      <b>${CODEXN[0]}戦</b> 名と列　<b>${CODEXN[1]}戦</b> HP・攻　<b>${CODEXN[2]}戦</b> VIT・速　
-      <b>${CODEXN[3]}戦</b> 使う手と その中身　<b>${CODEXN[4]}戦</b> 弱点と耐性。<br>
-      弱点は 突いたときにも書き込まれる。<b>${CODEXN[4]} 戦まで進めて はじめて「書き上がり」</b>として数える。</div>`+
-      Object.keys(FOE).map(k=>{
-        const c=codexLv(k),f=FOE[k],nx=codexNext(k);
-        const ek={weak:knownElem(k,"weak"),resist:knownElem(k,"resist")};
-        if(!c)return `<div class="cxrow dim"><span class="cxfig">${foeFig(k,30)}</span>
-          <span class="cxn">？ ？ ？</span></div>`;
-        return `<div class="cxrow"><span class="cxfig">${foeFig(k,30)}</span>
-          <span class="cxn">${f.n}<i>${c}/5</i>${
-            nx?`<em class="cxnx">あと ${nx} 戦</em>`:""}</span>
-          <span class="cxd">${f.rank==="back"?"奥に立つ":"手前に立つ"}${
-            c>=2?`　HP ${f.HP}　攻 ${f.STR}`:""}${
-            c>=3?`　VIT ${f.VIT}　速 ${f.DEX}`:""}${
-            ek.weak?`　<b class="elw">弱 ${ELEM[ek.weak].n}</b>`:""}${
-            ek.resist?`　<b class="elr">耐 ${ELEM[ek.resist].n}</b>`:""}${
-            f.d?`<br><span class="cxlore">${f.d}</span>`:""}${
-            c>=4?`<div class="cxacts">${f.acts.map(a=>{const L=foeActLine(a);
-              return `<div class="cxact"><span class="cxai ${L.c}">${L.ic}</span>
-                <b>${a.n}</b><span class="cxad">${L.d}</span></div>`;}).join("")}</div>`
-              :`<br><span class="s">あと ${CODEXN[3]-(META.codex[k]||0)} 戦で 使う手が分かる</span>`}</span></div>`;
-      }).join("");
-  }
+  if(cxNow==="foe")return cxOne?cxFoeOne(cxOne):cxFoeList();
   if(cxNow==="skill"||cxNow==="pass"){
     const P=cxNow==="skill"?REW.act:REW.pass;
     const all=Object.values(P).reduce((a,b)=>a+b.length,0);
@@ -14181,7 +14494,7 @@ $("#mkBack").onclick=()=>{
   drawSlots();showScreen("slots");window.scrollTo(0,0);
   if(slot!==null&&!me)startWayModal();       /* 作っている途中なら はじめかたへ */
 };
-$("#cxBack").onclick=()=>{ if(slot===null)goTitle(); else goHome(); };
+$("#cxBack").onclick=()=>{ cxOne=null; if(slot===null)goTitle(); else goHome(); };
 /* 起動。**まず表題。**記録を選ぶまで パーティは居ない。
    α1.0.005 までの控え（dd.run）は 1つ目の枠へ移す。 */
 slotMigrate();
@@ -14203,11 +14516,28 @@ $("#leaveBtn").onclick=()=>{
     [{n:"まだ潜る"},{n:"引き返す",cb:()=>goTown("leave")}]);
 };
 $("#modal").onclick=e=>{if(e.target.id==="modal"&&modalFree())closeModal();};
-$("#detBtn").onclick=()=>{
-  const d=$("#detail"),b=$("#detBtn");
+/* 詳細は 行動順の右の札からも 下の畳みの札からも開ける（α1.0.061） */
+function detToggle(){
+  const d=$("#detail");
   d.classList.toggle("hide");
-  b.classList.toggle("on",!d.classList.contains("hide"));
-  if(!d.classList.contains("hide"))drawDetail();
+  const open=!d.classList.contains("hide");
+  $("#detFold").textContent=open?"詳細を畳む ▴":"詳細 ▾";
+  if(open)drawDetail();
+}
+$("#detBtn").onclick=detToggle;
+$("#detFold").onclick=detToggle;
+/* ログの畳み。畳むと 盤とコマンドに縦が回る */
+$("#logFold").onclick=()=>{
+  const w=$("#logwrap"), on=w.classList.toggle("hide");
+  $("#logFold").textContent=on?"ログを出す ▾":"ログを畳む ▴";
+};
+/* 演出の速さ。×1 → ×2 → ×3 と回る。出目にも順番にもさわらない */
+const SPDS=[1,2,3];
+$("#spdBtn").onclick=()=>{
+  SPD=SPDS[(SPDS.indexOf(SPD)+1)%SPDS.length];
+  const b=$("#spdBtn");
+  b.textContent="×"+SPD; b.classList.toggle("on",SPD>1);
+  SFX.click();
 };
 /* 音のON/OFF。♪ のボタンは戦闘画面にしかないので、設定のつまみからも戻せる */
 function soundToggle(){

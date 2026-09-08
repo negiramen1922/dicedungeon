@@ -25,29 +25,43 @@ const out=await pg.evaluate(()=>{
   if(one.got!==0)bad.push(`1戦だけで ${one.got} 種が「埋まった」に数えられている`);
   if(full.got!==full.all)bad.push("20戦しても 埋まらない");
 
-  /* ③④ 見え方。同じ敵で 段を上げながら */
+  /* ③ 見え方。同じ敵で 段を上げながら。
+     α1.0.061 で **一覧（5d）と詳細（5e）**に分かれたので、
+     HP・攻・VIT・速 は一覧の行、使う手と弱点は詳細で見る。 */
   const rows={};
   [1,4,8,13,20].forEach(n=>{
     META.codex={};META.codex[K]=n;META.elem={};
-    cxNow="foe";
-    const h=cxBody();
-    const i=h.indexOf(FOE[K].n);
-    const seg=h.slice(Math.max(0,i-400),i+1400);
+    cxNow="foe";cxArea="all";cxFull=false;
+    cxOne=null;  const list=cxFoeList();
+    cxOne=K;     const one=cxFoeOne(K);
+    const seg=list.slice(Math.max(0,list.indexOf(FOE[K].n)-300),
+                         list.indexOf(FOE[K].n)+600);
     rows[n]={段:codexLv(K),
       HP:/HP \d/.test(seg), VIT:/VIT \d/.test(seg),
-      手:(seg.match(/class="cxact"/g)||[]).length,
-      中身:/class="cxad"/.test(seg),
-      弱:/弱 /.test(seg)||/elw/.test(seg)};
+      手:(one.match(/class="cxact"/g)||[]).length,
+      中身:/class="cxad"/.test(one),
+      弱:/class="chip on"[^>]*>弱/.test(one)};
   });
   L.push("③ 同じ敵を 何戦したら 何が見えるか（"+FOE[K].n+"）");
   [1,4,8,13,20].forEach(n=>{const r=rows[n];
-    L.push(`　 ${String(n).padStart(2)}戦 → 段 ${r.段}　HP ${r.HP?"○":"—"}　VIT ${r.VIT?"○":"—"}　`
-      +`使う手 ${r.手?r.手+"つ":"—"}　中身 ${r.中身?"○":"—"}　弱点 ${r.弱?"○":"—"}`);});
+    L.push(`　 ${String(n).padStart(2)}戦 → 段 ${r.段}　一覧に HP ${r.HP?"○":"—"}　VIT ${r.VIT?"○":"—"}　`
+      +`詳細に 使う手 ${r.手?r.手+"つ":"—"}　中身 ${r.中身?"○":"—"}　弱点 ${r.弱?"○":"—"}`);});
+  if(rows[1].HP)bad.push("1戦で HP が出ている（4戦のはず）");
+  if(!rows[4].HP)bad.push("4戦で HP が出ていない");
+  if(rows[4].VIT)bad.push("4戦で VIT が出ている（8戦のはず）");
+  if(!rows[8].VIT)bad.push("8戦で VIT が出ていない");
   if(rows[8].手)bad.push("8戦で 使う手が出ている（13戦のはず）");
   if(!rows[13].手)bad.push("13戦で 使う手が出ていない");
   if(!rows[13].中身)bad.push("使う手の 中身が出ていない（名前だけ）");
   if(rows[13].弱)bad.push("13戦で 弱点が出ている（20戦のはず）");
   if(!rows[20].弱)bad.push("20戦で 弱点が出ていない");
+  /* ⑤ 未発見は 1行にまとめる（51行 並べない） */
+  META.codex={};META.codex[K]=20;cxOne=null;
+  const lst=cxFoeList();
+  const rowN=(lst.match(/class="cxrow2/g)||[]).length;
+  L.push(`⑤ 1体だけ会った状態の 行 ${rowN} 本　未発見のまとめ ${/未発見/.test(lst)}`);
+  if(rowN!==1)bad.push(`会っていないものまで 行になっている（${rowN} 本）`);
+  if(!/未発見/.test(lst))bad.push("未発見のまとめが 出ていない");
 
   /* 使う手の一行が ぜんぶの敵・ぜんぶの種類で 空にならないか */
   let empty=[];

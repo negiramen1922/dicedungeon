@@ -27,8 +27,9 @@ const out=await pg.evaluate(async()=>{
       pop:bd.querySelectorAll(".pop").length,
       ptx:[...bd.querySelectorAll(".pop")].map(x=>x.className+":"+x.textContent).join("|"),
       fx:bd.querySelectorAll(".fx").length,
-      lunge:!!bd.querySelector('.por[style*="translateX(2"]'),
-      bar:(()=>{const i=cellOf(t)&&cellOf(t).querySelector(".bar i");
+      /* 盤のマスの作りが α1.0.061 で変わった（.por → .cfig） */
+      lunge:!!bd.querySelector('.cfig[style*="translateX(2"]'),
+      bar:(()=>{const i=cellOf(t)&&cellOf(t).querySelector(".chp i");
         return i?i.style.width:"";})()});
   },30);
   const t0=Date.now();

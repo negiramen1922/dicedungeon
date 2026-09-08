@@ -24,10 +24,13 @@ const r=await pg.evaluate(async()=>{
     me.mats={};Object.keys(MATS).slice(0,8).forEach(k=>me.mats[k]=4);
     me.recipes=Object.keys(RECIPES).slice(0,5);me.gold=500;
   };
-  const M=(name,kind,fn)=>{
+  const M=async(name,kind,fn)=>{
     document.querySelector("#newswrap").classList.add("hide");
     document.querySelector("#setwrap").classList.add("hide");
     try{ seed(); fn(); }catch(e){ out.push({name,kind,err:e.message}); return; }
+    /* 窓は pop2 で拡大しながら出るので、**終わってから測る**。
+       途中で測ると 44px の札が 35px に見える（α1.0.061 で気づいた） */
+    await new Promise(r=>setTimeout(r,280));
     const host=(!document.querySelector("#newswrap").classList.contains("hide")
         &&document.querySelector("#newswrap .setbox"))
       ||(!document.querySelector("#setwrap").classList.contains("hide")
@@ -36,41 +39,55 @@ const r=await pg.evaluate(async()=>{
       ||document.querySelector("#"+kind);
     if(!host){ out.push({name,kind,err:"見つからない"}); return; }
     const bs=[...host.querySelectorAll("button")].filter(x=>x.offsetParent!==null);
-    const small=bs.filter(e=>{const r=e.getBoundingClientRect();return r.height<44||r.width<24;}).length;
-    const wrap=bs.filter(e=>e.scrollWidth>e.clientWidth+1).length;
+    /* 当たりは **::after のはみ出しも数える**（見た目30px＋見えない余白で44px という作り） */
+    const hit=e=>{const r=e.getBoundingClientRect();
+      const a=getComputedStyle(e,"::after");
+      let h=r.height,w=r.width;
+      if(a.content&&a.content!=="none"&&a.position==="absolute"){
+        const t=parseFloat(a.top)||0,b2=parseFloat(a.bottom)||0;
+        const l=parseFloat(a.left)||0,r2=parseFloat(a.right)||0;
+        if(t<0)h+=-t; if(b2<0)h+=-b2; if(l<0)w+=-l; if(r2<0)w+=-r2;
+      }
+      return {w,h};};
+    const small=bs.map(hit).filter(x=>x.h<44||x.w<24).length;
+    /* 当たりを広げる ::after は はみ出して当然なので 折り返しの数えから外す */
+    const wrap=bs.filter(e=>{
+      const a=getComputedStyle(e,"::after");
+      if(a.content&&a.content!=="none"&&a.position==="absolute")return false;
+      return e.scrollWidth>e.clientWidth+1;}).length;
     out.push({name,h:Math.round(host.scrollHeight),btn:bs.length,small,wrap,
       ox:document.documentElement.scrollWidth>document.documentElement.clientWidth});
     closeModal();
   };
-  M("表題","title",()=>{goTitle();});
-  M("記録を選ぶ","slots",()=>{drawSlots();showScreen("slots");});
-  M("遊び方","tut",()=>{drawTut();showScreen("tut");});
-  M("見立て","quiz",()=>{qzStep=0;qzAns={};drawQuiz();showScreen("quiz");});
-  M("キャラ作成","make",()=>{newChar();mkStep=0;drawMake();showScreen("make");});
-  M("町（ホーム）","home",()=>{goHome();});
-  M("殿堂","hall",()=>{META.hall=[];dive("plain");for(let i=0;i<4;i++)logDive(i%2?"clear":"wipe");drawHall();showScreen("hall");});
-  M("図鑑","codex",()=>{Object.keys(FOE).slice(0,6).forEach(k=>META.codex[k]=20);
+  await M("表題","title",()=>{goTitle();});
+  await M("記録を選ぶ","slots",()=>{drawSlots();showScreen("slots");});
+  await M("遊び方","tut",()=>{drawTut();showScreen("tut");});
+  await M("見立て","quiz",()=>{qzStep=0;qzAns={};drawQuiz();showScreen("quiz");});
+  await M("キャラ作成","make",()=>{newChar();mkStep=0;drawMake();showScreen("make");});
+  await M("町（ホーム）","home",()=>{goHome();});
+  await M("殿堂","hall",()=>{META.hall=[];dive("plain");for(let i=0;i<4;i++)logDive(i%2?"clear":"wipe");drawHall();showScreen("hall");});
+  await M("図鑑","codex",()=>{Object.keys(FOE).slice(0,6).forEach(k=>META.codex[k]=20);
     drawCodex();showScreen("codex");});
-  M("地図（潜行中）","floor",()=>{dive("plain");showScreen("floor");drawFloor();});
-  M("戦闘","fight",()=>{dive("plain");sel.enc=(AREAS.plain.norm||[])[0];
+  await M("地図（潜行中）","floor",()=>{dive("plain");showScreen("floor");drawFloor();});
+  await M("戦闘","fight",()=>{dive("plain");sel.enc=(AREAS.plain.norm||[])[0];
     showScreen("fight");foes=makeFoes();cur=me;over=false;busy=false;draw();drawActs();});
-  M("戦闘・詳細","fight",()=>{dive("plain");sel.enc=(AREAS.plain.norm||[])[0];
+  await M("戦闘・詳細","fight",()=>{dive("plain");sel.enc=(AREAS.plain.norm||[])[0];
     showScreen("fight");foes=makeFoes();cur=me;over=false;busy=false;round=1;
     foes.forEach(f=>{f.tele=teleOf({...f.acts[0]});f.next=null;});draw();drawActs();
     document.querySelector("#detail").classList.remove("hide");drawDetail();});
-  M("どこへ潜るか","home",()=>{goHome();diveModal();});
-  M("世界地図","home",()=>{goHome();worldModal();});
-  M("仲間を雇う","home",()=>{goHome();hireModal();});
-  M("行商","floor",()=>{dive("plain");showScreen("floor");shopModal(null);});
-  M("こしらえる","floor",()=>{dive("plain");showScreen("floor");craftModal(null);});
-  M("戦利品","floor",()=>{dive("plain");showScreen("floor");
+  await M("どこへ潜るか","home",()=>{goHome();diveModal();});
+  await M("世界地図","home",()=>{goHome();worldModal();});
+  await M("仲間を雇う","home",()=>{goHome();hireModal();});
+  await M("行商","floor",()=>{dive("plain");showScreen("floor");shopModal(null);});
+  await M("こしらえる","floor",()=>{dive("plain");showScreen("floor");craftModal(null);});
+  await M("戦利品","floor",()=>{dive("plain");showScreen("floor");
     lootModal(catPool("act").slice(0,3).map(r=>({cat:"act",r})),()=>{});});
-  M("レベルアップ","floor",()=>{dive("plain");showScreen("floor");
+  await M("レベルアップ","floor",()=>{dive("plain");showScreen("floor");
     me.lv++;levelUpModal(()=>{});});
-  M("敵の詳細","fight",()=>{dive("plain");sel.enc=(AREAS.plain.norm||[])[0];
+  await M("敵の詳細","fight",()=>{dive("plain");sel.enc=(AREAS.plain.norm||[])[0];
     showScreen("fight");foes=makeFoes();foeModal(foes[0]);});
-  M("お知らせ","home",()=>{goHome();openNews();});
-  M("設定","home",()=>{goHome();openSet();});
+  await M("お知らせ","home",()=>{goHome();openNews();});
+  await M("設定","home",()=>{goHome();openSet();});
   return out;
 });
 rows.push([W,r]);

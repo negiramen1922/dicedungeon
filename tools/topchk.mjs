@@ -26,6 +26,11 @@ for(const W of [320,360,390,430,720,1100]){
       return b;};
     const M=icon("#mail"), G=icon("#gear");
     const out={両札:hit(M,G),隙間:Math.round(G.l-M.r),画面:[]};
+    /* 札は 遊んでいるあいだ隠れる（body.play .topicon{display:none}・α1.0.058）。
+       **画面を切り替えるたびに測り直す** ── 表題で測った位置を使い回すと、
+       隠れているはずの札と重なったことになる（α1.0.061 で気づいた） */
+    const live=()=>[icon("#mail"),icon("#gear")]
+      .filter(x=>x&&(x.r-x.l)>0&&(x.b-x.t)>0);
     /* 画面ごとに いちばん上の行を見る */
     const S=[["home",()=>{goHome&&goHome();},".hometitle,.homesub,.townnote"],
              ["floor",()=>{dive("plain");showScreen("floor");drawFloor();},"#fName,#fSub"],
@@ -37,8 +42,9 @@ for(const W of [320,360,390,430,720,1100]){
     for(const [n,go,sel2] of S){
       try{go();}catch(e){}
       const es=[...document.querySelectorAll("#"+n+" "+sel2.split(",").join(", #"+n+" "))];
+      const now=live();
       const over=es.filter(e=>e.offsetParent!==null&&e.textContent.trim())
-        .filter(e=>hit(box(e),M)||hit(box(e),G))
+        .filter(e=>now.some(c=>hit(box(e),c)))
         .map(e=>(e.id||e.className)+"「"+e.textContent.trim().slice(0,14)+"」");
       out.画面.push([n,es.length,over]);
     }

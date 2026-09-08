@@ -94,9 +94,12 @@ const out=await pg.evaluate(async()=>{
   me.sk=[{id:"zz",n:"獣 化",kind:"focus",mp:1,cd:1,beast:{pow:30,dex:10},dur:2,d:"—",cdLeft:0}];
   me.MP=me.maxMP;draw();drawActs();
   [...document.querySelectorAll("#acts .act")].find(b=>/獣/.test(b.textContent)).click();
-  const go=[...document.querySelectorAll("#acts .act")].some(b=>/こ\s*れ\s*で\s*使\s*う/.test(b.textContent));
-  L.push(`⑤ 自分だけの手 → 「これで使う」の札 ${go}　選べるマス ${sel2().length}`);
-  if(!go)bad.push("自分だけの手で「これで使う」が出ない");
+  /* α1.0.061 で 決めは **下の帯（#bdec）**へ移った。
+     札の中に生やすと コマンド欄の高さが変わってしまうため */
+  const go=[...document.querySelectorAll("#bdec button")].some(
+    b=>/こ\s*の\s*手\s*を\s*使\s*う/.test(b.textContent));
+  L.push(`⑤ 自分だけの手 → 決めの帯「この手を使う」 ${go}　選べるマス ${sel2().length}`);
+  if(!go)bad.push("自分だけの手で 決めの帯が出ない");
   if(sel2().length)bad.push("自分だけの手なのに マスが選べる");
 
   return {L,bad};
