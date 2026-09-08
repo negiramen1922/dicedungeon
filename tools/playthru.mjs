@@ -97,6 +97,11 @@ log.push(`   記録を選ぶ → ${await scr()}　枠 ${await pg.evaluate(()=>do
   if(sl.length)await sl[0].click({force:true}); else log.push("✗ 記録の枠が無い"); }
 await pg.waitForTimeout(300);
 log.push(`② キャラ作成へ → ${await scr()}`);
+/* はじめかたの窓（α1.0.052）。自分でつくる を選ぶ */
+if(await pg.$('#mbox [data-way="self"]')){
+  await pg.click('#mbox [data-way="self"]');await pg.waitForTimeout(250);
+  log.push(`   はじめかた「自分でつくる」→ ${await scr()}`);
+}
 /* 見立てから来ると mkStep=3（確認）に飛ぶ。自分で選ぶ道なら3つ選ぶ */
 for(const step of ["職業","種族","欲望"]){
   const cards=await pg.$$('#mkBody [data-k], #mkBody [data-w]');
@@ -226,6 +231,9 @@ for(let step=0;step<60;step++){          /* 部屋が増えたので 40 → 60 *
   /* SVG の部屋は 本物のマウスだと当たり判定が細いので、その者の onclick を呼ぶ。
      押したあとの「ここに進む」は 本物のクリックで押す。 */
   const picked=await pg.evaluate(()=>{
+    /* 町へ戻った直後は 地図の絵が残っているのに RUN が null。
+       そのまま押すと RUN.preview で落ちる（試験の側の取りこぼし） */
+    if(!RUN)return null;
     const g=document.querySelector("#mapbox .mnode.go");
     if(!g)return null; g.onclick(); return g.dataset.k;
   });

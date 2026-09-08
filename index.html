@@ -1062,9 +1062,11 @@ body.attitle #brand{display:none}
 </div></div>
 
 <section id="tut" class="hide">
+  <div class="secbar"><button class="backbtn" id="tutBack">← もどる</button>
+    <div class="secttl">遊 び 方</div></div>
   <div class="tuttl">ダ イ ス ダ ン ジ ョ ン<br><span>へ よ う こ そ</span></div>
   <div class="tutbody" id="tutBody"></div>
-  <button class="go" id="tutOK">キャラをつくって 原始の草原へ</button>
+  <button class="go" id="tutOK">閉 じ る</button>
 </section>
 
 <section id="quiz" class="hide">
@@ -1082,8 +1084,6 @@ body.attitle #brand{display:none}
     <div class="homemenu">
       <button class="go" id="tStart">ゲ ー ム を ス タ ー ト</button>
       <button class="topbtn" id="tTut">遊 び 方</button>
-      <button class="topbtn" id="tCodex">図 鑑</button>
-      <button class="topbtn" id="tQuiz">見 立 て</button>
     </div>
   </div>
 </section>
@@ -1190,7 +1190,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
-const VERSION="α1.0.051";
+const VERSION="α1.0.052";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1203,6 +1203,13 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1052",tag:"up",v:"α1.0.052",d:"2026-09-08",n:"はじめかたを選べます。表題も 遊び方も 整えました",b:[
+   "<b>空の記録を開くと はじめかたを訊きます。</b>「自分でつくる」は 職・種族・欲望をひとつずつ。「アンケートからつくる」は 3つの問いに答えると 向いていそうな組み合わせを出します",
+   "<b>アンケートで決まったら 見た目（色）の段へ続きます。</b>そこから「ひとつもどる」で 欲望・種族・職も 自分で選び直せます。どちらから入っても 行き着く先は同じです",
+   "〔不具合〕<b>遊び方から戻れませんでした。</b>下の札が「キャラをつくって 原始の草原へ」しか無く、町から見に来ると キャラ作成へ放り出されていました。<b>「← もどる」と「閉じる」</b>を付け、<b>来たところへ帰ります</b>",
+   "<b>表題の札は「ゲームをスタート」「遊び方」の2つ</b>にしました。図鑑と殿堂は 記録ごとのものになった（α1.0.051）ので、記録を選ぶ前の表題に置いておく意味が無くなっていました。町の名簿から見られます",
+   "<b>作った直後の「出立の支度」を 無くしました。</b>まだ何も分かっていない者に 装備を選ばせても 選びようがありませんでした。装備は 潜って拾い、行商で買います",
+   "これに伴い <b>傲慢</b>は「装備を2つ選んで発つ」が無くなりました。行商の代価が半分・所持金 90 はそのままです"]},
  {id:"v1051",tag:"up",v:"α1.0.051",d:"2026-09-08",n:"図鑑・殿堂・抜けた区画が 記録ごとになりました",b:[
    "これまで <b>どの記録でも共通</b>でした。別の記録で始めても 図鑑が最初から埋まっていて、殿堂に他の冒険者が並んでいました",
    "<b>記録ごとに持ちます。</b>図鑑・殿堂・抜けた区画・最も深く潜った階層・潜った回数",
@@ -4089,8 +4096,8 @@ const ORIG={
    d:"食えるだけ食う。道具を 3 つ多く持て、作った料理の効果が 1.3 倍。",
    bagPlus:3, cookMul:1.3},
  pride:{n:"傲 慢",st:{STR:4,INT:4,VIT:3,HP:8,MP:2},scout:0,
-   d:"見下している。良い装備を持たされて発つ。出発時に装備を 2 つ選び、行商の代価は半分。",
-   startGear:2, shopHalf:true, startGold:90},
+   d:"見下している。懐は温かく、行商の代価は半分。",
+   shopHalf:true, startGold:90},
  envy:{n:"嫉 妬",st:{INT:7,DEX:3,STR:-2,MP:4},scout:2,
    d:"他人の手の内が気になる。未踏の部屋でも中身が見え、索敵も鋭い。",
    foresight:true},
@@ -9592,8 +9599,10 @@ function newGame(){
   RUN=null; owned=[]; bench=[];
   META.runs++;touchMeta();
   $("#log").innerHTML="";
-  const n=(ORIG[sel.orig]&&ORIG[sel.orig].startGear)||1;
-  startPick(n);                  /* 支度が済んだら 仲間の学び → 町へ */
+  /* ===== 出立の支度は 無くした（α1.0.052） =====
+     作ったばかりの者に 装備を選ばせても、まだ何も分かっていないので
+     選びようがなかった。装備は 潜って拾い、行商で買う。 */
+  mateLearnQueue(()=>{runSave();townScreen("start");});
 }
 /* 区画へ降りる。地図は潜るたびに作り直す */
 function dive(ak){
@@ -9652,17 +9661,8 @@ function logDive(why){
   if(META.hall.length>HALLMAX)META.hall=META.hall.slice(-HALLMAX);
   touchMeta();
 }
-function startPick(left){
-  /* 1階層目は装備選びの窓が先に出るので、それが片づいてから名前を出す。
-     窓の下でぼわぁとやっても見えない。 */
-  if(left<=0){                                /* 支度が済んだら 町へ */
-    return mateLearnQueue(()=>{runSave();townScreen("start");});
-  }
-  choiceModal("出 立 の 支 度",
-    left>1?`装備を ${left} つ選べる（傲慢）`:"",
-    pickList(["gear"]),()=>{drawFloor();startPick(left-1);},
-    "取らない",()=>{drawFloor();startPick(left-1);});
-}
+/* 〔startPick（出立の支度）は α1.0.052 で無くした。
+   作ったばかりの者に装備を選ばせても、まだ何も分かっていない。〕 */
 /* 見つかった入口から行き先を選ぶ。
    同じ道の続きか、別の場所か。ここが「地図どうしが繋がっている」の入口。 */
 /* 世界地図だけを見せる窓。家からも探索中からも開く */
@@ -12850,7 +12850,38 @@ function openSlot(i){
   const r=runLoad(runRaw(i));
   if(r){ runResume(); return; }
   me=null;party=[];RUN=null;
-  newChar();mkStep=0;drawMake();showScreen("make");window.scrollTo(0,0);
+  startWayModal();
+}
+/* ===== はじめかたを選ぶ（α1.0.052） =====
+   空の枠を開いたら、いきなり職の一覧を出さずに どちらから入るかを訊く。
+   **どちらへ行っても 見た目の段は通る**ので、あとから直せる。 */
+function startWayModal(){
+  const h=`<div class="mtitle">は じ め か た</div>
+    <div class="msub">どちらでも 同じところに辿り着きます</div>
+    <div class="acts">
+      <button class="act rew cskill" data-way="self">
+        <span class="rcat">じ ぶ ん で</span>
+        <span class="an">自 分 で つ く る</span>
+        <span class="ad">職・種族・欲望を ひとつずつ選ぶ。<br>もう決まっている人はこちら</span></button>
+      <button class="act rew cpass" data-way="quiz">
+        <span class="rcat">お ま か せ</span>
+        <span class="an">アンケートから つくる</span>
+        <span class="ad">3つの問いに答えると 向いていそうな組み合わせを出します。<br>そのあと 自分で直すこともできます</span></button>
+    </div>
+    <button class="mclose" id="swX">記録を選び直す</button>`;
+  openModal(h,true);
+  $("#mbox").querySelectorAll("[data-way]").forEach(b=>{
+    b.onclick=()=>{
+      SFX.pick();closeModal();
+      newChar();
+      if(b.dataset.way==="quiz"){
+        qzStep=0;qzAns={};drawQuiz();showScreen("quiz");window.scrollTo(0,0);
+      }else{
+        mkStep=0;drawMake();showScreen("make");window.scrollTo(0,0);
+      }
+    };});
+  $("#swX").onclick=()=>{closeModal();slot=null;metaReset();
+    drawSlots();showScreen("slots");window.scrollTo(0,0);};
 }
 
 /* ---------- 殿堂 ---------- */
@@ -13227,20 +13258,31 @@ $("#hTitle").onclick=()=>{
   }
   goTitle();
 };
-$("#qzBack").onclick=()=>{ if(slot===null)goTitle(); else goHome(); };
-$("#tutOK").onclick=()=>{
+$("#qzBack").onclick=()=>{
+  if(me&&slot!==null){goHome();return;}      /* 町から見に来た */
+  if(slot!==null){                            /* 作っている途中。はじめかたへ */
+    drawSlots();showScreen("slots");window.scrollTo(0,0);startWayModal();return;}
+  goTitle();};
+/* 遊び方からは **来たところへ戻る**（α1.0.052）。
+   前は「キャラをつくって 原始の草原へ」しか無く、町から見に来ると
+   戻れずに キャラ作成へ放り出されていた。 */
+function tutLeave(){
   META.tutSeen=true;touchMeta();
-  /* 記録を選ぶ前なら 表題へ戻る。作っている途中なら 見立てへ進む */
-  if(slot===null){goTitle();return;}
-  qzStep=0;qzAns={};drawQuiz();showScreen("quiz");window.scrollTo(0,0);};
+  if(me&&slot!==null){goHome();return;}     /* 町から見に来た */
+  if(slot!==null){drawSlots();showScreen("slots");window.scrollTo(0,0);return;}
+  goTitle();
+}
+$("#tutOK").onclick=tutLeave;
+$("#tutBack").onclick=tutLeave;
 /* ---- 表題 ---- */
 $("#tStart").onclick=()=>{SFX.pick();drawSlots();showScreen("slots");window.scrollTo(0,0);};
 $("#tTut").onclick=()=>{drawTut();showScreen("tut");window.scrollTo(0,0);};
-$("#tCodex").onclick=()=>{drawCodex();showScreen("codex");window.scrollTo(0,0);};
-$("#tQuiz").onclick=()=>{qzStep=0;qzAns={};drawQuiz();showScreen("quiz");window.scrollTo(0,0);};
 $("#slBack").onclick=goTitle;
 $("#hallBack").onclick=()=>{ if(slot===null)goTitle(); else goHome(); };
-$("#mkBack").onclick=()=>{ drawSlots();showScreen("slots");window.scrollTo(0,0); };
+$("#mkBack").onclick=()=>{
+  drawSlots();showScreen("slots");window.scrollTo(0,0);
+  if(slot!==null&&!me)startWayModal();       /* 作っている途中なら はじめかたへ */
+};
 $("#cxBack").onclick=()=>{ if(slot===null)goTitle(); else goHome(); };
 /* 起動。**まず表題。**記録を選ぶまで パーティは居ない。
    α1.0.005 までの控え（dd.run）は 1つ目の枠へ移す。 */

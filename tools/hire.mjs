@@ -35,6 +35,10 @@ async function newSave(){
   await tap("#tStart");
   const sl=await pg.$$('#slotList [data-sl]'); if(sl.length)await sl[0].click({force:true});
   await pg.waitForTimeout(300);
+  /* はじめかたの二択（α1.0.052）。自分でつくる を選ぶ */
+  if(await pg.$('#mbox [data-way="self"]')){
+    await pg.click('#mbox [data-way="self"]');await pg.waitForTimeout(250);
+  }
   for(const s of ["職業","種族","欲望"]){
     const c=await pg.$$('#mkBody [data-k], #mkBody [data-w]'); if(!c.length)break;
     await c[0].click(); await pg.waitForTimeout(160);
