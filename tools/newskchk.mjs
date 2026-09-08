@@ -51,25 +51,29 @@ const out=await pg.evaluate(async()=>{
     if(back<=0)bad.push("余ったシールドが HP に変わっていない");
   }
 
-  /* ② シールドバッシュ：盾の量が威力に乗る */
+  /* ② シールドバッシュ：盾の量が威力に乗る。
+     ④ と同じく **ダイスを 14 個**にして 当たり外れを消す */
   await setup();
-  const t=alive()[0]; t.HP=t.maxHP=99999;
-  me.block=0; await use("ak8",t); const noSh=t.maxHP-t.HP;
-  t.HP=t.maxHP; me.block=200; await use("ak8",t); const withSh=t.maxHP-t.HP;
+  const t=alive()[0]; t.maxHP=999999;
+  const bash=async(sh)=>{ let best=0;
+    for(let i=0;i<4;i++){ t.HP=t.maxHP; me.block=sh;
+      await use("ak8",t,{dice:14}); best=Math.max(best,t.maxHP-t.HP); }
+    return best; };
+  const noSh=await bash(0), withSh=await bash(200);
   L.push(`② シールドバッシュ　盾なし ${noSh} → 盾200 ${withSh}`);
   if(!(withSh>noSh))bad.push("シールドの量が 威力に乗っていない");
 
-  /* ③ 合わせ打ち：弱点を知っていれば その属性 */
+  /* ③ 合わせ打ち：弱点を知っていれば その属性。ダイス14個で 当たり外れを消す */
   await setup();
   const t3=alive()[0]; t3.maxHP=999999;
   const swing3=async()=>{ let best=0;
-    for(let i=0;i<24;i++){ t3.HP=t3.maxHP; await use("akh4",t3); best=Math.max(best,t3.maxHP-t3.HP); }
+    for(let i=0;i<4;i++){ t3.HP=t3.maxHP; await use("akh4",t3,{dice:14}); best=Math.max(best,t3.maxHP-t3.HP); }
     return best; };
   META.elem[t3.key]=null;
   const unknown=await swing3();
   learnElem(t3.key,"weak",FOE[t3.key].weak||"fire");
   const known=await swing3();
-  L.push(`③ 合わせ打ち（24回振って いちばん重い一撃）　弱点を知らない ${unknown} → 知っている ${known}（弱点 ${ELEM[FOE[t3.key].weak].n}）`);
+  L.push(`③ 合わせ打ち　弱点を知らない ${unknown} → 知っている ${known}（弱点 ${ELEM[FOE[t3.key].weak].n}）`);
   if(!(known>unknown))bad.push("弱点を知っていても 属性が乗っていない");
 
   /* ④ 隙を突く：遅い相手には +20%。誰にでも撃てること も見る。
@@ -174,9 +178,9 @@ const out=await pg.evaluate(async()=>{
   await startBattle(); cur=me;busy=false;over=false;
   if(alive().length>=2){
     let hit=0,tries=0;
-    for(;tries<24&&!hit;tries++){
+    for(;tries<6&&!hit;tries++){
       alive().forEach(f=>{f.maxHP=999999;f.HP=f.maxHP;});
-      await use("akd2", alive()[0]);
+      await use("akd2", alive()[0], {dice:14});   /* 当たり外れを消す */
       hit=alive().filter(f=>f.HP<f.maxHP).length;
     }
     L.push(`⑭ ロックスパイク（${tries}回目で通った）→ ${alive().length} 体中 ${hit} 体に入った`);

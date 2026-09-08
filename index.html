@@ -765,6 +765,8 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
   font-family:"DotGothic16",ui-monospace,monospace;letter-spacing:.03em}
 .slot .sld b{color:var(--bone)}
 .slot.empty .slt{color:#4d5346}
+.slm{display:block;font-size:10.5px;color:#6f7a63;letter-spacing:.04em;margin-top:3px}
+.slm b{color:var(--brass);font-weight:400}
 .slotdel{background:transparent;border:1px solid var(--line);color:var(--dim);
   font-family:inherit;font-size:10px;padding:5px 10px;margin-top:8px;cursor:pointer}
 .slotdel:hover{border-color:var(--blood);color:var(--blood)}
@@ -1089,7 +1091,7 @@ body.attitle #brand{display:none}
 <section id="slots" class="hide">
   <div class="secbar"><button class="backbtn" id="slBack">← もどる</button>
     <div class="secttl">記 録 を 選 ぶ</div></div>
-  <div class="note">3つまで別々に遊べます。図鑑は どの記録でも共通です。</div>
+  <div class="note">3つまで別々に遊べます。<b>図鑑・殿堂・抜けた区画は 記録ごと</b>です。</div>
   <div id="slotList"></div>
 </section>
 
@@ -1188,7 +1190,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
-const VERSION="α1.0.050";
+const VERSION="α1.0.051";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1201,6 +1203,14 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1051",tag:"up",v:"α1.0.051",d:"2026-09-08",n:"図鑑・殿堂・抜けた区画が 記録ごとになりました",b:[
+   "これまで <b>どの記録でも共通</b>でした。別の記録で始めても 図鑑が最初から埋まっていて、殿堂に他の冒険者が並んでいました",
+   "<b>記録ごとに持ちます。</b>図鑑・殿堂・抜けた区画・最も深く潜った階層・潜った回数",
+   "<b>記録を選ぶ画面に 進み具合が出ます。</b>図鑑の% ・抜けた区画・最も深く・潜った回数。<b>付けた名</b>でも並びます",
+   "<b>記録を消すと その図鑑と殿堂も一緒に消えます。</b>これまでは残っていました",
+   "遊び方を見たか・お知らせを読んだかは <b>記録をまたいで残ります</b>（進み具合ではなく 画面の都合なので）",
+   "いまお持ちの共通の記録は、<b>中身のある記録すべてに写します</b>。どの記録のぶんだったかはもう分からないので、減らすより残すほうを選びました",
+   "クラウド保存も 記録ごとに見分けます。別の記録の図鑑が流れ込むことはありません"]},
  {id:"v1050",tag:"up",v:"α1.0.050",d:"2026-09-07",n:"名前と 好きな色。仲間も 自分で作れます",b:[
    "<b>キャラに 名前を付けられます</b>（8文字まで）。盤・行動順・ログ・名簿すべてで その名で呼ばれます。空のままなら これまでどおり「ヒュームのナイト」です",
    "<b>色は 見本のほかに 好きな色を選べます。</b>肌・服・目 それぞれ「自 由」の札から。つまみを動かすと 立ち絵がその場で追いかけます",
@@ -8320,7 +8330,16 @@ const META={codex:{},rooms:{},elem:{},mats:{},seen:{},hall:[],runs:0,best:0,
   areas:{},                 /* 踏み入れたことのある区画。世界地図の明るさに使う */
   ended:{},                 /* 終わった潜行の id。古い控えが生き返らないようにする */
   tutSeen:false,newsSeen:""};
-const MKEY="dd.meta";
+/* ===== 記録は 枠ごと（α1.0.051） =====
+   図鑑・殿堂・抜けた区画・到達階層は、これまで **どの枠でも共通**だった。
+   別の記録で始めても 図鑑が最初から埋まっていて、殿堂に他人が並んでいた。
+   **枠ごとに持つ。**鍵は dd.meta.0 / .1 / .2。
+
+   遊び方を見たか・お知らせを読んだかは 進み具合ではなく **画面の都合**なので
+   枠をまたいで残す（dd.pref）。枠ごとにすると 毎回チュートリアルに戻される。 */
+const MKEY="dd.meta";        /* α1.0.050 までの 共通の記録。移行にだけ使う */
+const PKEY="dd.pref";        /* 枠をまたぐもの（遊び方・お知らせ） */
+function mkey(i){ return MKEY+"."+(i===undefined?slot:i); }
 const MVER=1;                /* 中身の形を変えたら上げる。読み込み側で移行する */
 const HALLMAX=50;            /* 殿堂は増え続けるので上限を置く。古いものから捨てる */
 let metaTimer=null, metaBroken=false;
@@ -8329,9 +8348,30 @@ let metaTimer=null, metaBroken=false;
    ゲームはこれまでどおり端末内(localStorage)だけで動く。 */
 const CloudHook={mark(){},flush(){}};
 
-function metaLoad(){
+/* 中身を 既定に戻す。枠を替えるとき・表題に戻るときに使う */
+function metaReset(){
+  META.codex={};META.rooms={};META.elem={};META.mats={};META.seen={};
+  META.areas={};META.ended={};META.hall=[];META.runs=0;META.best=0;
+}
+/* 枠をまたぐもの。ここだけは共通 */
+function prefLoad(){
+  let o=null;
+  try{ o=JSON.parse(localStorage.getItem(PKEY)||"null"); }catch(e){}
+  if(!o||typeof o!=="object")return;
+  META.tutSeen=!!o.tutSeen;
+  META.newsSeen=typeof o.newsSeen==="string"?o.newsSeen:"";
+}
+function prefWrite(){
+  try{ localStorage.setItem(PKEY,JSON.stringify(
+    {tutSeen:META.tutSeen,newsSeen:META.newsSeen})); }catch(e){}
+}
+/* ひと枠ぶんを読む。i を省くと いまの枠 */
+function metaLoad(i){
+  metaReset();
+  if(i===undefined)i=slot;
+  if(i===null||i===undefined)return;       /* 枠を選ぶ前は 何も読まない */
   let raw;
-  try{ raw=localStorage.getItem(MKEY); }catch(e){ metaBroken=true; return; }
+  try{ raw=localStorage.getItem(mkey(i)); }catch(e){ metaBroken=true; return; }
   if(!raw)return;
   let o;
   try{ o=JSON.parse(raw); }catch(e){ return; }        /* 壊れていたら無かったことにする */
@@ -8345,19 +8385,40 @@ function metaLoad(){
   META.hall =Array.isArray(o.hall)?o.hall.slice(-HALLMAX):[];
   META.runs =Number.isFinite(o.runs)?o.runs:0;
   META.best =Number.isFinite(o.best)?o.best:0;
-  META.tutSeen=!!o.tutSeen;
-  META.newsSeen=typeof o.newsSeen==="string"?o.newsSeen:"";
+}
+/* ===== 共通だった記録を 枠へ配る（一度きり） =====
+   すでに遊んでいる人の図鑑と殿堂を消さないため、**中身のある枠ぜんぶ**に
+   同じものを写す。どの枠のぶんだったかはもう分からないので、
+   減らすより 残すほうを選ぶ。古い鍵は消さない。 */
+function metaMigrate(){
+  let done=false, raw=null;
+  try{
+    done=localStorage.getItem(PKEY+".moved")==="1";
+    raw=localStorage.getItem(MKEY);
+  }catch(e){ return; }
+  if(done||!raw)return;
+  try{
+    const has=[];
+    for(let i=0;i<SLOTS;i++){
+      if(localStorage.getItem(mkey(i)))continue;      /* もう持っている枠は触らない */
+      if(localStorage.getItem(rkey(i)))has.push(i);   /* 中身のある枠だけ */
+    }
+    if(!has.length&&!localStorage.getItem(mkey(0)))has.push(0);
+    has.forEach(i=>localStorage.setItem(mkey(i),raw));
+    localStorage.setItem(PKEY+".moved","1");
+  }catch(e){}
 }
 function metaWrite(){
   metaTimer=null;
   if(metaBroken)return;
+  prefWrite();                    /* 遊び方・お知らせは 枠をまたいで残す */
+  if(slot===null||slot===undefined)return;   /* 枠を選ぶ前は 進み具合を書かない */
   try{
     if(META.hall.length>HALLMAX)META.hall=META.hall.slice(-HALLMAX);
-    localStorage.setItem(MKEY,JSON.stringify({v:MVER,
+    localStorage.setItem(mkey(),JSON.stringify({v:MVER,
       codex:META.codex,rooms:META.rooms,elem:META.elem,mats:META.mats,
       seen:META.seen,areas:META.areas,ended:META.ended,
-      hall:META.hall,runs:META.runs,best:META.best,
-      tutSeen:META.tutSeen,newsSeen:META.newsSeen}));
+      hall:META.hall,runs:META.runs,best:META.best}));
   }catch(e){ metaBroken=true; }   /* 容量切れなど。以降は諦めて遊べるようにする */
   CloudHook.mark();               /* クラウドへは間を置いてまとめて送る */
 }
@@ -8369,11 +8430,8 @@ function touchMeta(){
 /* 書く前に閉じられても落とさない */
 function metaFlush(){ if(metaTimer){clearTimeout(metaTimer);metaWrite();} CloudHook.flush(); }
 function metaClear(){
-  META.codex={};META.rooms={};META.elem={};META.mats={};META.seen={};META.areas={};
-  META.ended={};
-  META.hall=[];META.runs=0;META.best=0;
-  /* 遊び方を見たか・お知らせを読んだかは残す。
-     消すと毎回チュートリアルに戻され、読んだお知らせがまた未読になって煩わしい */
+  /* いまの枠の記録だけを消す。遊び方を見たか・お知らせを読んだかは残す */
+  metaReset();
   metaTimer&&clearTimeout(metaTimer);metaTimer=null;
   metaWrite();
   CloudHook.flush();              /* 消したことはすぐクラウドにも伝える */
@@ -8576,13 +8634,29 @@ function metaNewerNews(a,b){           /* NEWS は先頭が新しい。番号が
   return ix(a)<=ix(b)?a:b;
 }
 function metaSnapshot(){
-  return {codex:META.codex,rooms:META.rooms,elem:META.elem,mats:META.mats,
+  /* どの枠のものかを 添える。別の枠の記録と混ぜないため（α1.0.051） */
+  return {slot:slot,
+    codex:META.codex,rooms:META.rooms,elem:META.elem,mats:META.mats,
     seen:META.seen,areas:META.areas,ended:META.ended,
     hall:META.hall,runs:META.runs,best:META.best,
     tutSeen:META.tutSeen,newsSeen:META.newsSeen};
 }
 function metaMerge(r){
   if(!r||typeof r!=="object")return;
+  /* 枠が違えば 進み具合は混ぜない。**別の記録の図鑑が流れ込む**のを防ぐ。
+     枠をまたぐもの（遊び方・お知らせ）だけは受け取る（α1.0.051） */
+  if(r.slot!==undefined&&r.slot!==null&&r.slot!==slot){
+    META.tutSeen =META.tutSeen||!!r.tutSeen;
+    META.newsSeen=metaNewerNews(META.newsSeen,r.newsSeen);
+    prefWrite();
+    return;
+  }
+  if(slot===null||slot===undefined){
+    META.tutSeen =META.tutSeen||!!r.tutSeen;
+    META.newsSeen=metaNewerNews(META.newsSeen,r.newsSeen);
+    prefWrite();
+    return;
+  }
   META.codex=metaMergeCount(META.codex,r.codex);
   META.rooms=metaMergeCount(META.rooms,r.rooms);
   META.elem =metaMergeElem (META.elem ,r.elem);
@@ -8812,7 +8886,7 @@ const Cloud=(()=>{
       uid:user?user.uid:""}),
   };
 })();
-metaLoad();
+prefLoad();                     /* 枠をまたぐもの（遊び方・お知らせ）だけ 先に */
 let RUN=null, curScreen="home";
 
 /* 敵の組み合わせ */
@@ -12592,6 +12666,26 @@ function drawMakeConfirm(){
 
 /* ---------- ホーム ---------- */
 /* 図鑑の総数と、書き込まれた数 */
+/* ===== 枠の一覧に出す 進み具合（α1.0.051） =====
+   記録が枠ごとになったので、**開く前に どこまで進んでいるか**が見えないと
+   選びようがない。いまの META を一時的に入れ替えて codexCount を借りる
+   ── 数え方をもう1か所に写すと 必ずずれる（HANDOVER の同じ轍）。 */
+function slotMeta(i){
+  let raw=null;
+  try{ raw=localStorage.getItem(mkey(i)); }catch(e){ return null; }
+  if(!raw)return null;
+  let o; try{ o=JSON.parse(raw); }catch(e){ return null; }
+  if(!o||o.v!==MVER)return null;
+  const keep={codex:META.codex,seen:META.seen,mats:META.mats,areas:META.areas};
+  META.codex=o.codex||{}; META.seen=o.seen||{}; META.mats=o.mats||{};
+  let pct=0;
+  try{ pct=codexCount().pct; }catch(e){}
+  META.codex=keep.codex; META.seen=keep.seen; META.mats=keep.mats;
+  return {pct,
+    cleared:Array.isArray(o.hall)?o.hall.filter(h=>h.cleared).length:0,
+    best:Number.isFinite(o.best)?o.best:0,
+    dives:Array.isArray(o.hall)?o.hall.length:0};
+}
 function codexCount(){
   const P=(o)=>Object.values(o).reduce((a,b)=>a+b.length,0);
   const G=(o)=>Object.values(o).reduce((a,b)=>a+b.filter(r=>META.seen[r.id]).length,0);
@@ -12690,6 +12784,8 @@ function drawHome(){
 function goHome(){drawHome();showScreen("home");window.scrollTo(0,0);}
 /* ===== 表題 と 記録の選択（α1.0.006） ===== */
 function goTitle(){
+  metaFlush();                  /* 書きかけを落とさない */
+  metaReset();                  /* 枠の記録は 枠を開くまで持たない */
   slot=null;me=null;party=[];RUN=null;bench=[];hireSel=null;
   drawTitle();showScreen("title");window.scrollTo(0,0);
 }
@@ -12704,7 +12800,8 @@ function slotInfo(i){
   const A=AREAS[r.run?r.run.area:r.sel.area]||{};
   const d=Math.round((Date.now()-(r.t||0))/60000);
   return {
-    name:`${RACE[r.sel.race].n}の${JOB[r.sel.job].n}`,
+    /* 付けた名があれば その名で並べる（α1.0.051） */
+    name:(r.me&&r.me.pname)||`${RACE[r.sel.race].n}の${JOB[r.sel.job].n}`,
     job:r.sel.job, race:r.sel.race,
     lv:r.me.lv, gold:r.me.gold,
     party:1+((r.mates||[]).length),
@@ -12723,6 +12820,9 @@ function drawSlots(){
       <span class="sld">${o
         ?`Lv <b>${o.lv}</b>　パーティ <b>${o.party}</b>人　金貨 <b>${o.gold}</b>　${o.where}　<span style="color:#4d5346">${o.ago}</span>`
         :"押すと 新しく始める"}</span>
+      ${(()=>{const m=slotMeta(i);return m
+        ?`<span class="slm">図鑑 <b>${m.pct}%</b>　抜けた区画 <b>${m.cleared}</b>　最も深く <b>${m.best}</b> 階層　潜った <b>${m.dives}</b> 回</span>`
+        :"";})()}
     </button>`;
     if(o)h+=`<button class="slotdel" data-del="${i}">この記録を消す</button>`;
   }
@@ -12735,15 +12835,18 @@ function drawSlots(){
       resultModal("記 録 を 消 す",
         [`記録 ${i+1}　${o?o.name:""}　Lv ${o?o.lv:"-"}`,
          `<span class="loss">消すと 元には戻せない</span>`,
-         `<span class="s">図鑑と 潜行の記録は 残ります</span>`],
+         `<span class="s">この記録の 図鑑と殿堂も 一緒に消えます</span>`],
         [{n:"やめる"},{n:"消す",cb:()=>{
           try{localStorage.removeItem(rkey(i));}catch(e){}
+          /* 図鑑・殿堂も その枠のものなので 一緒に消す（α1.0.051） */
+          try{localStorage.removeItem(mkey(i));}catch(e){}
           SFX.click();drawSlots();}}]);
     };});
 }
 /* 枠を開く。中身があれば町（か潜行の途中）へ、空ならキャラを作る */
 function openSlot(i){
   slot=i;
+  metaLoad(i);                  /* 図鑑・殿堂・抜けた区画は 枠ごと（α1.0.051） */
   const r=runLoad(runRaw(i));
   if(r){ runResume(); return; }
   me=null;party=[];RUN=null;
@@ -13142,6 +13245,7 @@ $("#cxBack").onclick=()=>{ if(slot===null)goTitle(); else goHome(); };
 /* 起動。**まず表題。**記録を選ぶまで パーティは居ない。
    α1.0.005 までの控え（dd.run）は 1つ目の枠へ移す。 */
 slotMigrate();
+metaMigrate();                  /* 共通だった図鑑・殿堂を 枠へ配る（一度きり） */
 goTitle();
 $("#charBtn").onclick =()=>charModal();
 $("#charBtn2").onclick=()=>charModal();
