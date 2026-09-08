@@ -889,6 +889,9 @@ body.play .secbar{padding-right:78px}      /* 歯車と封筒のぶんを空け�
 .cxai{text-align:center;font-size:10px}
 .cxai.a{color:var(--blood)} .cxai.b{color:var(--blue)} .cxai.s{color:var(--ink)}
 .cxad{color:var(--ink);min-width:0}
+/* 詳細の行に並ぶ 行動の絵（α1.0.056） */
+.dact{display:inline-block;vertical-align:-2px;margin-right:2px}
+.dact svg{display:block}
 .cxlore{color:#8b9080;font-size:11.5px;line-height:1.75;letter-spacing:.01em}
 .cxall{font-family:"DotGothic16",ui-monospace,monospace;font-size:13px;color:var(--dim);
   text-align:center;letter-spacing:.08em;margin:-8px 0 14px}
@@ -1201,7 +1204,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
-const VERSION="α1.0.055";
+const VERSION="α1.0.056";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1214,6 +1217,12 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1056",tag:"up",v:"α1.0.056",d:"2026-09-08",n:"戦闘の行動アイコンも ドット絵になりました",b:[
+   "盤も札も図鑑も ぜんぶドット絵なのに、<b>行動の予告だけ ⚔ ◈ ▲ ✚ ✦ ◦ の記号</b>でした。字の形も大きさも 端末まかせで揃いません",
+   "<b>攻撃・防御・溜め・癒し・呪い・呼ぶ・祓い・待ち・移動・？</b> の10種を描きました。盤の予告（32px）・行動順の札（16px）・詳細の行（13px）で 同じ絵を使います",
+   "攻撃・防御・溜め・癒しは <b>技の種別タグと同じ絵</b>です。同じものを二通りに描かないためです",
+   "<b>攻撃の絵を描き直しました。</b>これまでは赤い線が3本ずつ並ぶだけで、大きくすると刃に見えませんでした。交差した二振りにしています",
+   "〔不具合〕詳細の行で、頭についた記号を落とす仕掛けが <b>⚔ ◈ ▲ の3つしか見ていません</b>でした。✦ ✚ ◦ は文字のまま残っていました"]},
  {id:"v1055",tag:"bal",v:"α1.0.055",d:"2026-09-08",n:"レベルが上がりにくくなり、図鑑は埋まりにくくなりました",b:[
    "<b>必要経験値を引き直しました。</b>これまでは <b>1回潜っただけで その区画の適正レベルを 30〜45% 追い越して</b>いました（草原1回で Lv1→16／適正12、木漏れ日1回で Lv41／適正28）。<b>1回潜ると 適正のあたりに着く</b>ようにしました（草原1回で Lv13）",
    "上の段ほど重くなります。Lv28 で 72（前 50）、Lv50 で 131（前 81）、Lv100 で 318（前 151）。Lv100 までの総量は 8170 → <b>14455</b>",
@@ -3141,9 +3150,16 @@ const PXTAG={
        [1,3,2,2,"#c96e8a"],[7,3,2,2,"#c96e8a"],
        [3,5,4,3,"#a8506b"],[4,8,2,2,"#c96e8a"]],
  /* 行動の種類 */
- atk:[[2,1,1,2,"#b1544a"],[3,3,1,2,"#b1544a"],[4,5,2,2,"#b1544a"],
-      [7,1,1,2,"#b1544a"],[6,3,1,2,"#b1544a"],
-      [1,8,3,1,"#8a3a32"],[6,8,3,1,"#8a3a32"]],
+ /* 交差した二振り。α1.0.056 で描き直した ── 前は赤い線が3本ずつ
+    並ぶだけで、32px まで大きくすると 刃に見えなかった */
+ atk:[[1,1,1,1,"#e6e0cc"],[8,1,1,1,"#e6e0cc"],
+      [2,2,1,1,"#c9c3b2"],[7,2,1,1,"#c9c3b2"],
+      [3,3,1,1,"#c9c3b2"],[6,3,1,1,"#c9c3b2"],
+      [4,4,1,1,"#c9c3b2"],[5,4,1,1,"#c9c3b2"],
+      [4,5,1,1,"#c9c3b2"],[5,5,1,1,"#c9c3b2"],
+      [3,6,1,1,"#c9c3b2"],[6,6,1,1,"#c9c3b2"],
+      [2,7,1,1,"#8a6f2a"],[7,7,1,1,"#8a6f2a"],
+      [1,8,2,1,"#b1544a"],[7,8,2,1,"#b1544a"]],
  guard:[[2,1,6,1,"#6f92ab"],[1,2,8,3,"#6f92ab"],[2,5,6,2,"#4f6c85"],
         [3,7,4,1,"#4f6c85"],[4,8,2,1,"#4f6c85"]],
  buff:[[4,0,2,2,"#c9a227"],[3,2,4,2,"#c9a227"],[2,4,6,2,"#a88a52"],
@@ -5841,7 +5857,7 @@ function unitCell(u,isMine,fig){
            三つとも **同じことの言い換え**で、しかも一文字の役は読めなかった。
            いまは **狙われた味方の枠が赤くなる**だけ。役は「詳 細」に
            「アタッカー」とフルで出ている。 */
-        return `<div class="cact ${p.danger?"bad":"ok"}" title="${p.txt}">${ic.g}</div>`;})()
+        return `<div class="cact ${p.danger?"bad":"ok"}" title="${p.txt}">${actFig(ic.k,22)}</div>`;})()
       /* 倒れても枠は空けておく。消すとセルが縮み、行動一覧が毎ターン動く */
       :`<div class="cact" style="visibility:hidden"></div>`):""}
   </div>`;
@@ -5883,20 +5899,66 @@ function boardList(list){
   return list.filter(f=>keep.has(f));
 }
 /* 行動の種類をアイコンに */
+/* ===== 行動のアイコンも ドット絵に（α1.0.056） =====
+   ⚔ ◈ ▲ ✚ ✦ ◦ の記号を並べていたが、盤も札も図鑑も
+   ぜんぶドット絵なのに ここだけ端末のフォント任せだった。
+   字の形も大きさも 端末ごとに違って揃わない。
+
+   組み方は PXTAG と同じ 10×10 の [x,y,幅,高さ,色]。
+   攻撃・防御・溜め・癒し は PXTAG に在るものを借りる ──
+   技の種別タグと **同じ絵**でないと、同じものが二通りに見える。 */
+/* 予告の文（telePreview.txt）の頭に付いている記号。
+   絵を別に描くようになったので ここで落とす。前は ⚔◈▲ の3つしか
+   落としておらず、✦ ✚ ◦ は文字のまま残っていた。 */
+const ACTGLYPH=/^[⚔◈▲✦✚◦→…]\s*/;
+const PXACT={
+  /* 呪い … 溜め（buff）の上向きの矢を 逆さにしたもの。下げる手 */
+  hex:[[4,0,2,4,"#a081c4"],[2,4,6,2,"#8f6fae"],
+       [3,6,4,2,"#8f6fae"],[4,8,2,2,"#7a5a94"]],
+  /* 呼ぶ … 大きい影のとなりに 小さい影が増える */
+  /* 呼ぶ … 真ん中の一体が 両脇に仲間を呼んだ形。
+     背の順に並べると 棒グラフに見えてしまったので、
+     **同じ背の小さいのを左右**に置いて 影の並びにした */
+  summon:[[4,1,2,2,"#c96e5a"],[3,3,4,6,"#c96e5a"],
+          [0,4,2,1,"#8a3a32"],[0,5,2,4,"#8a3a32"],
+          [8,4,2,1,"#8a3a32"],[8,5,2,4,"#8a3a32"]],
+  /* 祓い … 四方に伸びる煌めき */
+  cleanse:[[4,1,2,8,"#9dc0d6"],[1,4,8,2,"#9dc0d6"],
+           [2,2,1,1,"#6f92ab"],[7,2,1,1,"#6f92ab"],
+           [2,7,1,1,"#6f92ab"],[7,7,1,1,"#6f92ab"]],
+  /* 待ち … 何もしない */
+  idle:[[1,4,2,2,"#6f7a63"],[4,4,2,2,"#6f7a63"],[7,4,2,2,"#6f7a63"]],
+  /* 動く */
+  move:[[1,4,4,2,"#6f7a63"],[5,3,2,4,"#8b9080"],[7,4,2,2,"#8b9080"]],
+  /* まだ決めていない（こちらの手番） */
+  unknown:[[3,1,4,2,"#6f7a63"],[6,2,2,2,"#6f7a63"],
+           [4,4,3,2,"#6f7a63"],[4,6,2,1,"#6f7a63"],[4,8,2,2,"#8b9080"]],
+};
+function actFig(k,size){
+  const parts=PXACT[k]||PXTAG[k];
+  if(!parts)return "";
+  const r=parts.map(p=>
+    `<rect x="${p[0]}" y="${p[1]}" width="${p[2]}" height="${p[3]}" fill="${p[4]}"/>`).join("");
+  return `<svg viewBox="0 0 10 10" width="${size||18}" height="${size||18}"
+    shape-rendering="crispEdges" style="display:block" aria-hidden="true">${r}</svg>`;
+}
+/* k は 絵の鍵、c は枠の色、n は短い呼び名。
+   g は 既定の大きさの絵（呼ぶ側が大きさを決めたいときは actFig を使う） */
 function actIcon(t){
-  if(t&&t.k==="hex")return {g:"✦",c:"hex"};
-  if(t&&t.k==="regen")return {g:"✚",c:"buf"};
-  if(t&&t.k==="summon")return {g:"✚",c:"hex"};
-  if(t&&t.k==="hatch")return {g:"✚",c:"hex",n:"孵る"};
-  if(t&&t.k==="heal")return {g:"✚",c:"buf",n:"癒し"};
-  if(t&&t.k==="mend")return {g:"✚",c:"buf",n:"癒し"};
-  if(t&&t.k==="cleanse")return {g:"✦",c:"buf",n:"祓い"};
-  if(t&&t.k==="idle")return {g:"◦",c:"me",n:"待ち"};
-  if(!t)return {g:"…",c:"me",n:"—"};
-  if(t.k==="atk")return {g:"⚔",c:"atk",n:"攻撃"};
-  if(t.k==="guard"||t.k==="veil")return {g:"◈",c:"def",n:"防御"};
-  if(t.k==="buff"||t.k==="cheer"||t.k==="grow")return {g:"▲",c:"buf",n:"溜め"};
-  return {g:"→",c:"me",n:"移動"};
+  const R=(k,c,n)=>({k,c,n,g:actFig(k,18)});
+  if(t&&t.k==="hex")return R("hex","hex","呪い");
+  if(t&&t.k==="regen")return R("heal","buf","癒し");
+  if(t&&t.k==="summon")return R("summon","hex","呼ぶ");
+  if(t&&t.k==="hatch")return R("summon","hex","孵る");
+  if(t&&t.k==="heal")return R("heal","buf","癒し");
+  if(t&&t.k==="mend")return R("heal","buf","癒し");
+  if(t&&t.k==="cleanse")return R("cleanse","buf","祓い");
+  if(t&&t.k==="idle")return R("idle","me","待ち");
+  if(!t)return R("unknown","me","—");
+  if(t.k==="atk")return R("atk","atk","攻撃");
+  if(t.k==="guard"||t.k==="veil")return R("guard","def","防御");
+  if(t.k==="buff"||t.k==="cheer"||t.k==="grow")return R("buff","buf","溜め");
+  return R("move","me","移動");
 }
 function drawOrder(){
   const host=$("#ordList");if(!host)return;
@@ -5909,12 +5971,12 @@ function drawOrder(){
   /* 1枚のふだ。act に null を渡すと「？」になる（自分の手は自分で決めるので） */
   const card=(u,{no,act,cls})=>{
     const mine=!u.isFoe;
-    const ic=mine?{g:"？",c:"me"}:actIcon(act);
+    const ic=mine?{k:"unknown",c:"me"}:actIcon(act);
     return `<div class="ord ${mine?"mine":"foe"} ${cls}" title="${u.name}" ${
       mine?`data-om="${u.pid||0}"`:`data-oid="${u.id}"`}>
       <div class="oface">
         ${mine?faceFig(u.job,u.race,34):foeFaceFig(u.fig||u.key,34)}
-        <div class="oact ${ic.c}">${ic.g}</div>
+        <div class="oact ${ic.c}">${actFig(ic.k,12)}</div>
         <div class="oi">${no}</div>
       </div></div>`;
   };
@@ -5980,9 +6042,9 @@ function drawDetail(){
           r?` <span class="elr">耐 ${ELEM[r].n}</span>`:""}</div>
         ${ail?`<div class="dline"><span class="k">状 態</span>${ail}</div>`:""}
         <div class="dline ${now.danger?"now":"safe"}"><span class="k">${st.lbl}</span>
-          ${ni.g} <b>${now.txt.replace(/^[⚔◈▲]\s*/,"")}</b>　${now.sub}</div>
+          <span class="dact">${actFig(ni.k,13)}</span> <b>${now.txt.replace(ACTGLYPH,"")}</b>　${now.sub}</div>
         ${nx?`<div class="dline ${nx.danger?"now":"safe"}"><span class="k">次 の タ ー ン</span>
-          ${xi.g} <b>${nx.txt.replace(/^[⚔◈▲]\s*/,"")}</b>　${nx.sub}</div>`:""}
+          <span class="dact">${actFig(xi.k,13)}</span> <b>${nx.txt.replace(ACTGLYPH,"")}</b>　${nx.sub}</div>`:""}
       </div></div>`;
   }).join("");
 }
