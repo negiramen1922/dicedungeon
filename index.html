@@ -206,14 +206,16 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
 /* 役と狙い（α1.0.042） */
 .rolet{font-size:9px;letter-spacing:.04em;color:#8b9080;border:1px solid #3a3f30;
   border-radius:2px;padding:0 3px}
-.k2{font-size:10px;color:#b1544a;letter-spacing:.04em;margin-left:6px}
-.crole{position:absolute;top:2px;left:3px;font-size:9px;letter-spacing:0;
-  color:#8b9080;border:1px solid #3a3f30;border-radius:2px;padding:0 2px;background:#1b1e15}
-.caimn{font-size:9px;color:#b1544a;letter-spacing:.02em;margin-top:1px}
-.caimn.all{color:#e0705a;font-weight:700;letter-spacing:.06em}
-.caim{font-size:9px;letter-spacing:.06em;color:#8b9080;border:1px solid #3a3f30;
-  border-radius:2px;padding:0 3px;margin-top:2px;display:inline-block}
-.caim.bad{color:#e0705a;border-color:#7a3a30;background:#2a1c18}
+/* ===== 狙われている味方は 枠の色で示す（α1.0.053） =====
+   前は 味方に「狙 n体」・敵に「→ 相手の名」・敵の左上に 役の一文字 と
+   三つ並べていた。三つとも同じことを言っていて、しかも
+   9px の一文字（盾/牙/射/癒/主/部）は読めなかった。
+   **文字をぜんぶ捨てて、枠ひとつにした。**
+     赤 … 攻撃が来る　／　鈍い赤 … 攻撃ではない何かが来る
+   誰が誰を狙っているかは **もう出さない**（遊ぶ人の決めごと）。
+   役は「詳 細」に「アタッカー」とフルで出ている。 */
+.cell.aimed{outline:2px solid #7a4a42;outline-offset:-1px}
+.cell.aimed.bad{outline-color:#e0705a;background:#2a1c18}
 .pop{position:absolute;top:-30px;left:50%;transform:translateX(-50%);
   font-family:"DotFont",ui-monospace,monospace;font-weight:700;
   font-size:24px;letter-spacing:.04em;color:#ff6a5a;z-index:12;white-space:nowrap;
@@ -1190,7 +1192,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
-const VERSION="α1.0.052";
+const VERSION="α1.0.053";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1203,6 +1205,11 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1053",tag:"fix",v:"α1.0.053",d:"2026-09-08",n:"盤の文字を 3つ捨てました。狙われている者は 枠が赤くなります",b:[
+   "<b>味方の「狙 n体」を無くしました。</b>敵のマスの「→ 相手の名」を数え直しただけのもので、しかも「狙」で始まるので <b>こちらが何体狙えるか</b>に読めていました",
+   "<b>敵の「→ 相手の名」も無くしました。</b>誰を狙っているかは もう出しません。<b>狙われている味方の枠が赤くなる</b>だけです（攻撃なら赤、呪いなら鈍い赤）。「詳 細」の矢印も同じく外しました",
+   "<b>敵の左上にあった 一文字の役（盾・牙・射・癒・主・部）を無くしました。</b>9px の一文字では読めず、同じことが <b>「詳 細」に「アタッカー」とフルで</b>出ていました",
+   "〔不具合〕<b>こちらへ来ない手でも 印が付いていました。</b>力をためる・身を固める・仲間を呼ぶ・傷を癒す ── 敵が自分側で完結させる手でも、味方が狙われている扱いになっていました。<b>殴る（atk）と 呪う（hex）だけ</b>を数えます"]},
  {id:"v1052",tag:"up",v:"α1.0.052",d:"2026-09-08",n:"はじめかたを選べます。表題も 遊び方も 整えました",b:[
    "<b>空の記録を開くと はじめかたを訊きます。</b>「自分でつくる」は 職・種族・欲望をひとつずつ。「アンケートからつくる」は 3つの問いに答えると 向いていそうな組み合わせを出します",
    "<b>アンケートで決まったら 見た目（色）の段へ続きます。</b>そこから「ひとつもどる」で 欲望・種族・職も 自分で選び直せます。どちらから入っても 行き着く先は同じです",
@@ -5261,7 +5268,8 @@ const FROLE={
   /* ---- 部位 ---- */
   ghand:"part",
 };
-const ROLEN={tank:"盾",atk:"牙",shoot:"射",sup:"癒",boss:"主",part:"部"};
+/* 〔ROLEN（盾/牙/射/癒/主/部 の一文字）は α1.0.053 で無くした。
+   9px の一文字では読めず、同じことが ROLEFULL で「詳 細」に出ている。〕 */
 const ROLEFULL={tank:"タンク",atk:"アタッカー",shoot:"シューター",sup:"サポート",
   boss:"ボス",part:"部位"};
 /* 役ごとの数値の型。もとの値に掛ける。
@@ -5778,7 +5786,8 @@ function unitCell(u,isMine,fig){
     : (!pending.ally&&canTarget(u)));
   const col=isMine?"#8fa261":"#b1544a";
   const acting=isMine&&u===cur&&!busy&&!over;
-  return `<div class="cell ${u.HP<=0?"dead":""} ${target?"sel":""} ${acting?"acting":""}"
+  return `<div class="cell ${u.HP<=0?"dead":""} ${target?"sel":""} ${acting?"acting":""} ${
+      aimed?(aimed.bad?"aimed bad":"aimed"):""}"
       ${isMine?`data-me="${u.pid||0}"`:`data-id="${u.id}"`}>
     <div class="por">${isMine?meFig(fig,u):foeFig(u.fig||u.key,fig)}</div>
     <div class="cn ${isMine?"mine":"foe"}">${isMine?rosterName(u):u.name}</div>
@@ -5788,29 +5797,36 @@ function unitCell(u,isMine,fig){
       <div class="bar mpb"><i style="width:${u.maxMP?u.MP/u.maxMP*100:0}%"></i></div>`:""}
     ${ailText(u)?`<div class="celrow">${ailText(u)}</div>`:""}
     ${isMine&&u.half?`<div class="cst">被弾 半減</div>`:""}
-    ${aimed&&aimed.n?`<div class="caim${aimed.bad?" bad":""}">狙 ${aimed.n}体</div>`:""}
     ${target&&isMine?`<div class="ctarget">${pending.rev?"起こす":"かける"}</div>`:""}
     ${target&&!isMine&&u.HP>0?(()=>{const A=actor();
        return `<div class="ctarget">${
          threshold(A,u,pending&&pending.kind==="skill"&&A.sk[pending.i]
            ?{thr:A.sk[pending.i].thr||0,even:A.sk[pending.i].even}:{})}以上</div>`;})():""}
-    ${!isMine?`<div class="crole">${ROLEN[roleOf(u)]||""}</div>`:""}
     ${!isMine?(u.HP>0?(()=>{const ic=actIcon(st.t);
-        const all=(st.t&&aimOf(u,st.t)==="all");
-        const tg=foeTarget(u,st.t);
-        return `<div class="cact ${p.danger?"bad":"ok"}" title="${p.txt}">${ic.g}</div>
-          <div class="caimn${all?" all":""}">→ ${all?"全 員":(tg?tg.short:"—")}</div>`;})()
+        /* ===== 誰を狙っているかは 出さない（α1.0.053） =====
+           前は 敵のマスに「→ ナイト」、狙われた味方に「狙 n体」、
+           さらに敵の左上に 役の一文字（盾/牙/射/癒/主/部）を出していた。
+           三つとも **同じことの言い換え**で、しかも一文字の役は読めなかった。
+           いまは **狙われた味方の枠が赤くなる**だけ。役は「詳 細」に
+           「アタッカー」とフルで出ている。 */
+        return `<div class="cact ${p.danger?"bad":"ok"}" title="${p.txt}">${ic.g}</div>`;})()
       /* 倒れても枠は空けておく。消すとセルが縮み、行動一覧が毎ターン動く */
       :`<div class="cact" style="visibility:hidden"></div>`):""}
   </div>`;
 }
 /* その味方が いま何体に狙われているか。予告と同じ関数を通すので 嘘にならない */
+/* ===== こちらへ来る手だけ数える（α1.0.053） =====
+   前は 手の種類を見ずに「foeTarget が誰を返すか」だけで数えていたので、
+   **力をためる・身を固める・仲間を呼ぶ**といった 自分側で完結する手でも
+   味方に印が付いていた。印が枠の色ひとつになったいま、これは嘘になる。
+   こちらへ来るのは `atk`（殴る）と `hex`（呪う）の2つだけ。 */
+const FOEHIT={atk:1, hex:1};
 function aimedBy(u){
   if(!foes||u.HP<=0)return null;
   let n=0,bad=false;
   alive().forEach(f=>{
     const t=shownTele(f).t;
-    if(!t)return;
+    if(!t||!FOEHIT[t.k])return;
     if(aimOf(f,t)!=="all"&&foeTarget(f,t)!==u)return;
     n++;
     if(t.k==="atk")bad=true;
@@ -5932,8 +5948,7 @@ function drawDetail(){
           r?` <span class="elr">耐 ${ELEM[r].n}</span>`:""}</div>
         ${ail?`<div class="dline"><span class="k">状 態</span>${ail}</div>`:""}
         <div class="dline ${now.danger?"now":"safe"}"><span class="k">${st.lbl}</span>
-          ${ni.g} <b>${now.txt.replace(/^[⚔◈▲]\s*/,"")}</b>　${now.sub}
-          <span class="k2">→ ${(foeTarget(f,st.t)||{}).short||"—"}</span></div>
+          ${ni.g} <b>${now.txt.replace(/^[⚔◈▲]\s*/,"")}</b>　${now.sub}</div>
         ${nx?`<div class="dline ${nx.danger?"now":"safe"}"><span class="k">次 の タ ー ン</span>
           ${xi.g} <b>${nx.txt.replace(/^[⚔◈▲]\s*/,"")}</b>　${nx.sub}</div>`:""}
       </div></div>`;

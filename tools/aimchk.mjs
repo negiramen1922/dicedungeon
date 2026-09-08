@@ -125,10 +125,53 @@ const out=await pg.evaluate(async()=>{
     }
     L.push(`　 ${tries}回目で通った → ${party.length} 人中 ${hurt} 人に入った`);
     if(hurt!==party.length)bad.push("全体の手が 全員に入っていない");
-    /* 予告に「全員」と出るか */
-    const cellHtml=unitCell(foes[0],false,40);
-    L.push(`　 予告に「全 員」と出る ${/全\s*員/.test(cellHtml)}`);
-    if(!/全\s*員/.test(cellHtml))bad.push("予告に 全員と出ていない");
+    /* ===== 全体の手は 味方ぜんぶの枠が赤くなる（α1.0.053） =====
+       前は 敵のマスの「→ 全 員」で確かめていたが、
+       誰を狙っているかは もう出さない。**印は味方側の枠だけ。** */
+    const allAimed=party.filter(u=>/\baimed\b/.test(unitCell(u,true,40))).length;
+    L.push(`　 全体の手 → 味方 ${allAimed}/${party.length} の枠が 赤くなる`);
+    if(allAimed!==party.length)bad.push("全体の手で 全員の枠が赤くなっていない");
+  }
+
+  /* ===== 枠が赤くなるのは こちらへ来る手のときだけ（α1.0.053） ===== */
+  {
+    const mk=k=>{
+      foes.length=0;
+      foes.push({...FOE.wolf,id:0,key:"wolf",name:"試",isFoe:true,
+        HP:99,maxHP:99,ail:[],buffs:[],dbuffs:[],block:0,turn:0,
+        tele:{n:"試 し",k,pct:0,heal:5,slow:8,dur:2},acts:[]});
+      const h=party.map(u=>unitCell(u,true,40)).join("");
+      return {付いた:(h.match(/\baimed\b/g)||[]).length,
+              赤:(h.match(/aimed bad/g)||[]).length};
+    };
+    const rows=[["atk","殴る"],["hex","呪う"],["buff","力をためる"],
+                ["guard","身を固める"],["summon","仲間を呼ぶ"],["regen","傷を癒す"]];
+    L.push("\n⑩ 手の種類ごとに 味方の枠が赤くなるか");
+    rows.forEach(([k,n])=>{
+      const r=mk(k);
+      const want=(k==="atk"||k==="hex");
+      L.push(`　 ${n.padEnd(8,"　")} ${k.padEnd(7)} 印 ${r.付いた}　赤 ${r.赤}`);
+      if(want&&!r.付いた)bad.push(`${n}（${k}）で 印が付かない`);
+      if(!want&&r.付いた)bad.push(`${n}（${k}）は こちらへ来ないのに 印が付く`);
+      if(k==="atk"&&!r.赤)bad.push("殴る手なのに 赤くならない");
+      if(k==="hex"&&r.赤)bad.push("呪う手なのに 赤（攻撃の色）になっている");
+    });
+  }
+
+  /* ===== 消したはずの札が 残っていないか（α1.0.053） ===== */
+  {
+    const html=[...party.map(u=>unitCell(u,true,40)),
+                ...foes.map(f=>unitCell(f,false,40))].join("");
+    const gone=[["crole","役の一文字"],["caimn","→ 相手の名"],["caim\"","狙 n体"]];
+    const det=(typeof drawDetail==="function")?(()=>{
+      $("#detail").classList.remove("hide");drawDetail();
+      return $("#detail").innerHTML;})():"";
+    const left=gone.filter(([c])=>new RegExp(c).test(html)).map(x=>x[1]);
+    L.push(`\n⑪ 消した札 ${gone.length} つ　残っているもの ${left.length?left.join("・"):"なし"}`);
+    if(left.length)bad.push("消したはずの札が 残っている："+left.join("・"));
+    if(/→/.test(html))bad.push("盤に 矢印が残っている");
+    L.push(`　 詳細に 矢印が残っている ${/class="k2"|→\s*[^\s<]/.test(det)}`);
+    if(/class="k2"/.test(det))bad.push("詳細に 矢印が残っている");
   }
 
   return {L,bad};
