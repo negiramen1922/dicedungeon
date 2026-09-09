@@ -8,7 +8,11 @@ await pg.goto('http://localhost:8765/'+file);await pg.waitForTimeout(800);
 const out=await pg.evaluate(async()=>{
   const L=[],bad=[];
   window.ovMsg=()=>{};window.ovHide=()=>{};window.rollDice=async()=>0;
-  window.wait=async()=>{};window.r6=()=>6;
+  window.wait=async()=>{};
+  /* 〔罠〕`r6` は スクリプト直下の const なので window に乗っていない。
+     `window.r6=()=>6` は効かない。出目を握るなら Math.random のほう。
+     ただし 戦いを組み立てる前から握ると 乱数を待つところで止まるので、
+     この道具では **当たるまで繰り返す**やり方をそのまま使う。 */
   slot=0; sel.job="knight";sel.race="hume";sel.orig="wrath";
   newGame();
   let g=0;while(g++<14&&modalOpen()){const b=document.querySelector("#mbox [data-i]")

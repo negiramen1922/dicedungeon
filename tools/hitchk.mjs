@@ -20,7 +20,9 @@ const T=await pg.evaluate(async()=>{
   window.popOn=(f,t)=>{if(/^−\d/.test(t))T.push({e:"pop",who:f.name});};
   window.popSelf=(t)=>{if(/^−\d/.test(t))T.push({e:"pop",who:"（受け手）"});};
   SFX.atk=()=>{T.push({e:"snd"});};
-  window.r6=()=>6;               /* 出目は全部 6 ＝ 必ず成功・必ず超過 */
+  /* 〔罠〕`r6` は スクリプト直下の const なので window に乗っていない。
+     `window.r6=()=>6` は 本体の出目を差し替えない。握るなら Math.random。
+     この道具は 確率そのものを見ているので 出目は握らない。 */
   sel.job="knight";sel.race="hume";sel.orig="greed";
   newGame();closeModal();
   dive("plain");sel.enc="p_hard";RUN.elite=true;RUN.boss=false;

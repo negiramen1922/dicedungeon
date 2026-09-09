@@ -32,11 +32,18 @@ const out=await pg.evaluate(async()=>{
   v.tele=(v.acts||[]).find(a=>a.k==="atk")||v.tele;
   L.push(`   ${v.name} に 混乱　狙い先 → ${foeTarget(v,v.tele).name}`);
   if(party.includes(foeTarget(v,v.tele)))bad.push("混乱しているのに こちらを狙っている");
-  /* ③ 赤枠から外れているか */
-  const aimed=party.filter(u=>aimedBy(u));
-  L.push(`   混乱した敵ぶんの 赤枠 ${aimed.length?aimed.map(u=>u.name).join("・"):"なし"}`);
+  /* ③ 赤枠から外れているか。ほかの敵は混乱していないので 赤枠自体は出て当たり前。
+     **混乱した1体を除いたときと 数が同じ**なら、その1体は数えられていない */
+  const withAll=party.map(u=>{const a=aimedBy(u);return a?a.n:0;});
+  const keep=v.ail; v.ail=[];               /* 混乱を外して比べる */
+  const noCharm=party.map(u=>{const a=aimedBy(u);return a?a.n:0;});
+  v.ail=keep;
+  L.push(`   赤枠に数えた敵の数　混乱あり ${withAll.join("/")}　混乱を外すと ${noCharm.join("/")}`);
+  if(withAll.join()===noCharm.join())bad.push("混乱した敵が 赤枠に数えられている");
   const pb=party.map(u=>u.HP), fb=foes.map(f=>f.HP);
+  const _r1=Math.random; Math.random=()=>0.99;
   await enemyAct(v);
+  Math.random=_r1;
   const hitAlly=party.some((u,i)=>u.HP<pb[i]);
   const hitFoe=foes.some((f,i)=>f!==v&&f.HP<fb[i]);
   L.push(`   味方HP ${pb.join("/")} → ${party.map(u=>u.HP).join("/")}`);
@@ -53,7 +60,12 @@ const out=await pg.evaluate(async()=>{
   L.push(`② 敵 ${foes.length} 体　狙い先 → ${foeTarget(w,w.tele).name}`);
   if(foeTarget(w,w.tele)!==w)bad.push("ひとりきりなのに 自分を殴らない");
   const pb2=party.map(u=>u.HP), wb=w.HP;
+  /* 出目を握る。r6 は スクリプト直下の const なので window では差し替わらない ──
+     Math.random のほうを握る（0.99 で 1+floor(0.99×6)=6）。
+     戦いを組み立てる前から握ると 乱数を待つところで止まるので、殴る直前だけ。 */
+  const _r=Math.random; Math.random=()=>0.99;
   await enemyAct(w);
+  Math.random=_r;
   L.push(`   味方HP ${pb2.join("/")} → ${party.map(u=>u.HP).join("/")}`);
   L.push(`   その敵 ${wb} → ${w.HP}`);
   if(party.some((u,i)=>u.HP<pb2[i]))bad.push("ひとりきりの混乱で こちらが殴られた");

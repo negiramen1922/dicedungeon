@@ -1657,7 +1657,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
-const VERSION="α1.0.067";
+const VERSION="α1.0.068";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1670,6 +1670,13 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1068",tag:"bal",v:"α1.0.068",d:"2026-09-09",n:"ナイトとウィザードの DEX が育つようになりました",b:[
+   "<b>ナイトとウィザードは DEX が まったく育っていませんでした。</b>Lv1 も Lv100 も 26〜30 のままです。敵は深い区画で 55〜58 まで行くので、<b>差が 25 を越えて 攻めるときも 受けるときも 命中が 1 段 損</b>していました",
+   "<b>レベルごとに +0.15 伸びます。</b>Lv100 で ナイト 41・ウィザード 46。水没都市の敵（58）との差が 25 を切るので、その 1 段の損が消えます",
+   "スカウトとアーチャーは これまでどおり +0.6（Lv100 で 100）。<b>DEX が彼らの看板である形は そのままです</b>",
+   "〔不具合・表記〕<b>「身を固める」と「息を整える」が シールドを増やすのに「VIT +N」と出していました。</b>VIT が割合になったので「VIT 5+90」という意味の通らない並びになっていました。<b>シールド</b>と出します",
+   "〔道具の直し〕演出を測る道具が <b>出目を握れていませんでした</b>。r6 はスクリプト直下の const なので window では差し替わらず、外れると道具のほうが落ちていました。3本 直しました",
+   "区画ごとの手応えを 測り直して合わせました"]},
  {id:"v1067",tag:"bal",v:"α1.0.067",d:"2026-09-09",n:"鈍足が効くようになりました",b:[
    "<b>鈍足を DEX −20 に上げました。</b>命中閾値の段は <b>DEX の差</b>が 25 に届いて初めて動くので、−10 では 6区画中1区画しか動いていませんでした。−20 なら <b>6区画中5区画</b>で動きます",
    "　足止めの矢 −12→−20　大槌打ち −12→−20　ため息 −10→−20　誘惑 −15→−20　ストーンバレット −10→−18　足引き −10→−18　アースクエイク −8→−15　呪詛 −8→−15",
@@ -4703,13 +4710,19 @@ const ORIG={
    そこへ 0.1/Lv で +10）。ほかの職はその下に並ぶ。
    VIT 0 の者も居てよい ── 1 でも 1% は減るので 0 と 1 の差は はっきりある。 */
 const GROW={
-  knight:{STR:4,VIT:0.1,HP:16,MP:1},
+  /* 〔α1.0.068〕ナイトとウィザードには DEX の伸びが無く、Lv1 も Lv100 も 26〜30 だった。
+     敵は深い区画で DEX 55〜58 まで行くので、差が 25 を越えて **攻めるときも
+     受けるときも 1段 損**していた（dexStep は差 25 で 1段）。
+     0.15/Lv なら Lv100 で +15 ── 水没都市の敵 58 との差が 25 を切る。
+     スカウト・アーチャーは 0.6/Lv（Lv100 で 93）なので、
+     **DEX が彼らの看板である形は崩れない。** */
+  knight:{STR:4,DEX:0.15,VIT:0.1,HP:16,MP:1},
   archer:{STR:3,DEX:0.6,INT:1,VIT:0.05,HP:8,MP:1},
   /* スカウトは DEX を伸ばしていたが、短剣系は STR 依存なので威力が伸びなかった。
      武器を DEX 依存にするのは却下されている（IDEAS.md）ので、成長の側で寄せる。 */
   scout:{STR:4,DEX:0.6,VIT:0.06,HP:8,MP:1},
   /* ウィザードが全階層で最上位だったので、耐久を 1 削る */
-  mage:{INT:5,VIT:0.03,HP:8,MP:2},
+  mage:{INT:5,DEX:0.15,VIT:0.03,HP:8,MP:2},
 };
 const JOB={
   knight:{n:"ナイト",art:"knight",wep:"longsword",scout:3,
@@ -5826,10 +5839,10 @@ function lvScale(t){ t=(t||areaTier()||1); return LVSCALE[t-1]||LVSCALE[LVSCALE.
 
    1体あたりを軽くしても 数が多いぶん 戦いは重いまま。
    精鋭は「用意が要る戦い」であって「勝てない戦い」ではない。 */
-const ELITETOUGH={"plain":0.88,"seed":1.04,"wtree":0.75,"cave":0.54,"hall":1.01,"city":0.89};
+const ELITETOUGH={"plain":0.88,"seed":1.06,"wtree":0.71,"cave":0.54,"hall":1,"city":0.83};
 function eliteTough(){ return ELITETOUGH[RUN&&RUN.area]||1; }
-const AREATOUGH={"plain":1.15,"seed":1.07,"wtree":0.88,"cave":1.5,"hall":0.93,"city":0.91};
-const BOSSTOUGH={"plain":0.76,"seed":0.91,"wtree":0.94,"cave":0.96,"hall":1.14,"city":0.59};
+const AREATOUGH={"plain":1.15,"seed":1.08,"wtree":0.94,"cave":1.5,"hall":0.94,"city":0.97};
+const BOSSTOUGH={"plain":0.76,"seed":0.9,"wtree":0.88,"cave":0.96,"hall":1.17,"city":0.58};
 function areaTough(){ return AREATOUGH[RUN&&RUN.area]||1; }
 function bossTough(){ return BOSSTOUGH[RUN&&RUN.area]||1; }
 /* 敵ひとりに掛かる合計の倍率 */
@@ -8534,7 +8547,7 @@ async function resolvePlayer(a,target){
       const g=Math.min(s.mpGain,A.maxMP-A.MP);
       A.MP+=g;A.block+=s.block;draw();fxOn(A,"guard");
       popSelf("MP+"+g,"blk");SFX.open();
-      log(`<span class="a">${A.name}</span> は息を整えた　MP <span class="m">+${g}</span>　VIT +${s.block}`);
+      log(`<span class="a">${A.name}</span> は息を整えた　MP <span class="m">+${g}</span>　シールド <span class="c">+${s.block}</span>`);
       await wait(650);
     }
     else{
@@ -8606,7 +8619,7 @@ async function resolvePlayer(a,target){
     if(gh){const hh=Math.min(Math.round(A.maxHP*gh),A.maxHP-A.HP);
       if(hh){A.HP+=hh;popSelf("+"+hh,"heal");}}
     draw();fxOn(A,"guard");popSelf("+"+a.block,"blk");SFX.open();
-    log(`<span class="a">${A.name}</span> は身を固めた　<span class="c">VIT ${A.VIT}+${A.block}</span>`+
+    log(`<span class="a">${A.name}</span> は身を固めた　シールド <span class="c">${A.block}</span>`+
       (gm?`　MP <span class="m">+${gm}</span>`:"")+`　再使用待ちが1進む`);
     await wait(600);
   }else if(a.kind==="flee"){
@@ -8911,7 +8924,9 @@ async function enemyAct(f){
     if(startHP>endHP){
       tg.hurtThisRound=true;
     }
-    /* シールドは 殴られたら役目を終える。丸ごと受け止めた回も使ったことにする */
+    /* 〔注意〕シールドは **1発で消えるのではない**。HP と同じように
+       受けたぶんだけ減っていき（`shLeft = sh − soaked`）、残りは次の一撃へ持ち越す。
+       ここで出しているのは「この一撃で いくつ肩代わりしたか」の数字だけ。 */
     if(soaked>0){popSelf("シールド −"+soaked,"blk");}
     {
       /* ===== ひと振りは **一撃**（α1.0.021） =====

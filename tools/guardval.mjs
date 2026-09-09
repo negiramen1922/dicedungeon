@@ -4,8 +4,9 @@
 
    VIT +N を1ターン … その者が受ける一撃が N/(100−いまのVIT) だけ軽くなる
                       → 防いだ被害 ÷ 通常攻撃1発
-   盾 X%           … 最大HP の X% を肩代わり（当たるまで残る）
-                      → 肩代わりした量 ÷ 通常攻撃1発
+   盾 X%           … 最大HP の X% を肩代わり。**1発で消えるのではなく
+                      HP と同じように 受けたぶんだけ減っていく**（残りは持ち越す）
+                      → 肩代わりできる量ぜんぶ ÷ 通常攻撃1発
 
    くらべる相手は 攻めの札（血の契 ×2.05・急所突き ×1.68・タダの札 ×1.00）。
    守りは「1手で どれだけ被害を減らせたか」なので、同じ単位で並ぶ。
@@ -68,11 +69,14 @@ const out=await pg.evaluate(()=>{
   });
   L.push("");
   L.push("");
-  L.push("■ 盾（最大HPの X%）の値打ち ── **1発で使い切る**ので 何発受けても同じ");
+  L.push("■ 盾（最大HPの X%）の値打ち");
+  L.push("　 シールドは **HP と同じように減っていく**（1発で消えるのではない）ので、");
+  L.push("　 戦いが続くかぎり **肩代わりできる量ぜんぶ**が値打ちになる。");
   [8,10,12,15,25].forEach(x=>{
-    const v=av(c=>Math.min(c.maxHP*x/100,c.B)/c.A);
     const full=av(c=>(c.maxHP*x/100)/c.A);
-    L.push(` 盾 ${String(x).padEnd(3)}%  1発ぶん ×${v.toFixed(2)}　（受けきれる量では ×${full.toFixed(2)}）`);
+    const oneHit=av(c=>Math.min(c.maxHP*x/100,c.B)/c.A);
+    L.push(` 盾 ${String(x).padEnd(3)}%  ×${full.toFixed(2)}　`+
+      (full-oneHit>0.01?`（1発で使い切るなら ×${oneHit.toFixed(2)}。それを越えるぶんは 次の一撃へ持ち越す）`:`（敵の一撃 1発ぶんに満たないので 1発で消える）`));
   });
   L.push("");
   L.push("■ いま在る守りの札");
@@ -83,8 +87,8 @@ const out=await pg.evaluate(()=>{
   Object.keys(REW.act).forEach(g=>REW.act[g].forEach(s=>{
     if(s.kind!=="guard"&&!(s.kind==="focus"&&s.defUp))return;
     let v=0,what="";
-    if(s.blockPct){v=av(c=>Math.min(c.maxHP*s.blockPct/100,c.B)/c.A);what=`盾 ${s.blockPct}%`;}
-    if(s.block){v=av(c=>Math.min(s.block,c.B)/c.A);what=`盾 ${s.block}`;}
+    if(s.blockPct){v=av(c=>(c.maxHP*s.blockPct/100)/c.A);what=`盾 ${s.blockPct}%`;}
+    if(s.block){v=av(c=>s.block/c.A);what=`盾 ${s.block}`;}
     if(s.defUp){const t=(s.dur||1)+1;
       v+=av(c=>c.B*(s.defUp/Math.max(1,100-c.vit))/c.A)*t;what+=`${what?" ＋ ":""}VIT +${s.defUp}（${t}ターン）`;}
     rows.push({g,s,v,what});

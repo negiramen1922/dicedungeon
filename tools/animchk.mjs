@@ -8,7 +8,11 @@ await pg.goto('http://localhost:8765/'+file);await pg.waitForTimeout(800);
 const out=await pg.evaluate(async()=>{
   const L=[],bad=[];
   window.ovMsg=()=>{};window.ovHide=()=>{};window.rollDice=async()=>0;
-  window.r6=()=>6;   /* 必ず当てる */
+/* 〔罠〕`r6` は スクリプト直下の const なので **window に乗っていない**。
+     `window.r6=()=>6` と書いても 本体の r6 は差し替わらない（ずっと素の出目のまま
+     測っていて、外れると この道具が落ちていた）。握るなら **Math.random** のほう
+     （0.99 で 1+floor(0.99×6)=6）。ただし **戦いを組み立てる前から握ると
+     乱数を待つところで止まる**ので、握るのは 撃つ直前だけ。 */
   slot=0; sel.job="knight";sel.race="hume";sel.orig="wrath";
   newGame();
   let g=0;while(g++<14&&modalOpen()){const b=document.querySelector("#mbox [data-i]")
@@ -33,7 +37,9 @@ const out=await pg.evaluate(async()=>{
         return i?i.style.width:"";})()});
   },30);
   const t0=Date.now();
+  const _rnd=Math.random; Math.random=()=>0.99;      /* ここから 必ず当てる */
   await playerAttack([t],{});
+  Math.random=_rnd;
   clearInterval(tick);
   const span=x=>{const f=film.filter(x);return f.length?[f[0].t-t0,f[f.length-1].t-t0]:null;};
   const lu=span(f=>f.lunge), fx=span(f=>f.fx>0), pp=span(f=>/−/.test(f.ptx));
