@@ -1410,17 +1410,36 @@ body.play .fh1{padding-right:70px}
 .mail.unread{color:var(--brass);border-color:#5c4a1a}
 /* お知らせ */
 .newsbox{max-width:460px;max-height:82vh;overflow-y:auto}
-.nwitem{border:1px solid var(--line);background:var(--panel);padding:11px 13px;
-  margin-bottom:9px}
+/* ===== お知らせは 畳んで出す（α1.0.070） =====
+   144件・68画面ぶんが一本に流れていた。題だけ並べ、押した1件だけ開く。 */
+.nwitem{border:1px solid var(--line);background:var(--panel);margin-bottom:9px}
 .nwitem.new{border-color:var(--brass)}
-.nwh{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:5px}
+.nwhead{display:block;width:100%;text-align:left;background:none;border:none;
+  color:inherit;font-family:inherit;cursor:pointer;padding:11px 13px;
+  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:0 8px}
+.nwhead:hover{background:var(--panel2)}
+.nwcue{grid-column:2;grid-row:1/4;align-self:center;font-size:10px;color:var(--ink)}
+/* 畳んでいるときの 序文。2行で切る */
+.nwlead{grid-column:1;grid-row:3;font-size:11px;color:var(--ink);line-height:1.6;
+  margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  overflow:hidden}
+.nwbody{padding:0 13px 11px;display:none}
+.nwitem.open .nwbody{display:block}
+.nwmore{display:block;width:100%;background:var(--panel);border:1px solid var(--line);
+  color:var(--dim);font-family:inherit;font-size:12px;letter-spacing:.16em;
+  padding:13px;cursor:pointer;margin-bottom:9px}
+.nwmore:hover{border-color:var(--brass);color:var(--brass)}
+.nwmore span{letter-spacing:.04em;color:var(--ink);font-size:10.5px}
+.nwh{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:5px;
+  grid-column:1;grid-row:1}
 .nwtag{font-size:9px;letter-spacing:.16em;border:1px solid;padding:1px 5px;line-height:1.5}
 .nwv{font-size:10px;color:var(--dim);font-family:ui-monospace,monospace;letter-spacing:.04em}
 .nwd{font-size:10px;color:var(--ink);margin-left:auto}
 .nwnew{font-size:9px;color:var(--blood);letter-spacing:.1em}
-.nwt{font-size:13.5px;color:var(--bone);letter-spacing:.04em;margin-bottom:5px}
+.nwt{font-size:13.5px;color:var(--bone);letter-spacing:.04em;line-height:1.5;
+  grid-column:1;grid-row:2;display:block}
 .nwb{font-size:11.5px;color:var(--dim);line-height:1.75;padding-left:11px;
-  position:relative}
+  position:relative;margin-top:5px}
 .nwb::before{content:"・";position:absolute;left:0;color:var(--ink)}
 .nwb b{color:var(--bone);font-weight:600}
 .nwnone{font-size:12px;color:var(--ink);text-align:center;padding:20px 0}
@@ -1667,7 +1686,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
-const VERSION="α1.0.069";
+const VERSION="α1.0.070";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1680,6 +1699,11 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1070",tag:"up",v:"α1.0.070",d:"2026-09-09",n:"お知らせを畳みました。防御無視の食い違いを直しました",b:[
+   "<b>お知らせが 一本の長い流れでした。</b>144件・68画面ぶんが つながっていて、読み物として成立していませんでした",
+   "<b>最新10件だけ 出します。</b>下の「もっと見る」で 10件ずつ増えます",
+   "<b>1件は 題と 出だしの一行だけ。</b>押すと 中身が開きます",
+   "〔不具合〕<b>防御無視（VIT を貫く）の予告と 実際が食い違っていました。</b>技の値は 0〜1、装備の値は 0〜100 と <b>同じ名前で単位が違って</b>いて、本番は技を 0〜1 で、見立ては 0〜100 で読んでいたためです。<b>徹甲矢は 予告では VIT を 1% しか貫かないのに 本番は 100% 貫いて</b>いました。0〜100 に揃えました"]},
  {id:"v1069",tag:"fix",v:"α1.0.069",d:"2026-09-09",n:"図鑑から戦いへ戻れます。索敵の見た目を直しました",b:[
    "〔不具合〕<b>戦いの最中に 敵の詳細 →「図鑑」と辿って もどると、町へ帰されて 潜行が途切れていました。</b>図鑑の「← もどる」が いつも町へ帰す作りだったためです。<b>来たところへ帰します</b>",
    "〔不具合〕<b>索敵のダイスが 名前の上に重なって出ていました。</b>この枠は「大きな d100 ひとつ」を置く前提で組んであり、索敵が d6 の振り合いになったときに <b>見た目だけ 付いてこなかった</b>ためです。盤（186px）に収まる大きさに詰めました",
@@ -4874,7 +4898,13 @@ const REW={
     d:"手前の3体を巻き込む（1体につき 威力 ×1.34）"},
   ],
   archer:[
-   {id:"aa1",n:"徹甲矢",kind:"atk",mp:6,cd:4,suc:3,powMul:4.46,pen:1,
+   /* ===== pen は 0〜100（％）で揃える（α1.0.070） =====
+      〔不具合〕技の pen は 0〜1、装備の pen は 0〜100 と **同じ名前で単位が違った**。
+      本番の計算（`playerAttack`）は 技を 0〜1 で読み、
+      見立て（`drawActs` の pSk）は 0〜100 で読んでいたので、
+      **予告と実際のダメージが食い違って**いた
+      （徹甲矢は 予告では VIT を 1% しか貫かないのに 本番は 100% 貫いていた）。 */
+   {id:"aa1",n:"徹甲矢",kind:"atk",mp:6,cd:4,suc:3,powMul:4.46,pen:100,
     d:"相手の VIT を 完全に 無視する　威力 ×4.46"},
    {id:"aa2",n:"貫通矢",kind:"atk",powMul:1.98,suc:2,mp:5,cd:3,column:true,
     d:"狙った相手と その1つ奥を 貫く"},
@@ -4956,7 +4986,7 @@ const REW={
     d:"光 属性　威力 ×2.94"},
    {id:"ake2",n:"精霊の宿り",kind:"focus",mp:5,cd:4,elCoat:"light",dur:2,
     d:"3ターンのあいだ 攻撃に 光 属性が乗る"},
-   {id:"ake3",n:"月光の矢",kind:"atk",suc:3,mp:6,cd:4,powMul:4.29,el:"light",pen:1,
+   {id:"ake3",n:"月光の矢",kind:"atk",suc:3,mp:6,cd:4,powMul:4.29,el:"light",pen:100,
     d:"光 属性　相手の VIT を 完全に無視する（威力 ×4.29）"},
    {id:"ake4",n:"木漏れ陽",kind:"atk",suc:1,mp:3,cd:3,powMul:1.24,el:"light",
     ail:[{k:"blur",v:2,t:1}],
@@ -5059,7 +5089,7 @@ const REW={
     d:"場のすべてに喰らいつく（1体につき 威力 ×1.11）　倒した数だけ 最大HPの 15% 回復"},
    {id:"agl4",n:"齧りつく",kind:"atk",suc:1,mp:4,cd:3,powMul:0.88,hits:2,lifeSteal:0.3,
     d:"同じ相手に 2回 齧りつく　与えたダメージの 30% だけ HP が戻る"},
-   {id:"agl5",n:"咀 嚼",kind:"atk",suc:2,mp:5,cd:3,powMul:2.30,pen:0.6,
+   {id:"agl5",n:"咀 嚼",kind:"atk",suc:2,mp:5,cd:3,powMul:2.30,pen:60,
     d:"硬いものごと噛み砕く　相手の VIT の 60% を無視する"},
   ],
   pride:[
@@ -8135,7 +8165,8 @@ async function playerAttack(targets,opt){
        足し算（+30まで）の **二重取り**になっていた。技の説明は
        「失った HP のぶん 威力が上がる（最大 ×1.45）」なので、掛け算のほうが本来の形。
        古い実装の消し忘れと思われる。 */
-    const pen=Math.min(1,(opt.pen||0)+(passOn("pen",A)+(A.gearPen||0))/100);
+    /* pen は 技・特性・装備とも 0〜100（％）。ここで 0〜1 に直す（α1.0.070） */
+    const pen=Math.min(1,((opt.pen||0)+passOn("pen",A)+(A.gearPen||0))/100);
     const tdef=Math.round(defOf(t)*(1-pen));
     const sh=shieldOf(t);
     /* 「合わせ打ち」（α1.0.044）。**図鑑で弱点を知っていれば** その属性で撃つ。
@@ -14904,22 +14935,57 @@ function drawMail(){
   b.innerHTML=`✉${n>0?`<span class="dot">${n>9?"9+":n}</span>`:""}`;
   b.title=n>0?`お知らせ ${n} 件`:"お知らせ";
 }
+/* ===== お知らせは 畳んで出す（α1.0.070） =====
+   144件・68画面ぶんが 一本に流れていて 読み物として成立していなかった。
+     ・まず **最新10件**だけ。下の「もっと見る」で 10件ずつ増える
+     ・1件は **題だけ**。押すと中身（箇条書き）が開く
+     ・**未読は はじめから開いておく**。読ませたいのはそこなので
+   `newsOpen` は開いている id の集合。`newsShown` は いま出している件数。 */
+const NEWSPAGE=10;
+let newsShown=NEWSPAGE;
+let newsOpen=new Set();      /* 押して開いたもの。既定は ぜんぶ畳んである */
 function drawNews(){
   const unread=newsUnread();
-  $("#newsBody").innerHTML=NEWS.length?NEWS.map((x,i)=>{
+  if(!NEWS.length){ $("#newsBody").innerHTML=`<div class="nwnone">まだ お知らせはない</div>`; return; }
+  const n=Math.min(newsShown,NEWS.length);
+  let h=NEWS.slice(0,n).map((x,i)=>{
     const T=NEWSTAG[x.tag]||NEWSTAG.info;
-    return `<div class="nwitem ${i<unread?"new":""}">
-      <div class="nwh">
-        <span class="nwtag" style="color:${T.c};border-color:${T.c}">${T.n}</span>
-        <span class="nwv">${x.v}</span>
-        ${i<unread?`<span class="nwnew">NEW</span>`:""}
-        <span class="nwd">${x.d}</span></div>
-      <div class="nwt">${x.n}</div>
-      ${x.b.map(t=>`<div class="nwb">${t}</div>`).join("")}
+    /* 〔既定は畳む〕はじめて開く人には 144件ぜんぶが未読なので、
+       「未読は開く」だと 6.6画面ぶんが一度に出てしまう。
+       畳んだまま並べ、未読は NEW の印だけで示す。 */
+    const open=newsOpen.has(x.id);
+    /* 畳んでいるときの 序文。1つ目の箇条書きから 印を外して 1行だけ */
+    const lead=(x.b&&x.b[0]||"").replace(/<[^>]*>/g,"").replace(/^〔[^〕]*〕/,"");
+    return `<div class="nwitem ${i<unread?"new":""} ${open?"open":""}" data-nw="${x.id}">
+      <button class="nwhead" data-nwt="${x.id}">
+        <span class="nwh">
+          <span class="nwtag" style="color:${T.c};border-color:${T.c}">${T.n}</span>
+          <span class="nwv">${x.v}</span>
+          ${i<unread?`<span class="nwnew">NEW</span>`:""}
+          <span class="nwd">${x.d}</span></span>
+        <span class="nwt">${x.n}</span>
+        ${open?"":`<span class="nwlead">${lead}</span>`}
+        <span class="nwcue">${open?"▲":"▼"}</span>
+      </button>
+      <div class="nwbody">${x.b.map(t=>`<div class="nwb">${t}</div>`).join("")}</div>
     </div>`;
-  }).join(""):`<div class="nwnone">まだ お知らせはない</div>`;
+  }).join("");
+  const rest=NEWS.length-n;
+  h+=rest>0
+    ? `<button class="nwmore" id="nwMore">も っ と 見 る　<span>あと ${rest} 件</span></button>`
+    : `<div class="nwnone">ここまで（全 ${NEWS.length} 件）</div>`;
+  $("#newsBody").innerHTML=h;
+  $("#newsBody").querySelectorAll("[data-nwt]").forEach(btn=>{
+    btn.onclick=()=>{
+      const id=btn.dataset.nwt;
+      if(newsOpen.has(id))newsOpen.delete(id); else newsOpen.add(id);
+      SFX.click();drawNews();
+    };});
+  const m=$("#nwMore");
+  if(m)m.onclick=()=>{ newsShown+=NEWSPAGE;SFX.open();drawNews(); };
 }
 function openNews(){
+  newsShown=NEWSPAGE;               /* 開くたび 最新10件から（α1.0.070） */
   drawNews();                       /* 開いた時点の未読を印として見せてから */
   $("#newswrap").classList.remove("hide");
   if(NEWS.length&&META.newsSeen!==NEWS[0].id){
