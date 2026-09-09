@@ -66,6 +66,27 @@ const out=await pg.evaluate(async()=>{
   }
   L.push(`　 ${tried} 区画中 ${moved} 区画で 命中閾値が下がる`);
   if(!moved)bad.push("どの区画でも 鈍足 −20 が 命中閾値を動かさない");
+  /* ⑦ 行動順への効き ── 命中閾値だけでは 鈍足の値打ちを測れない。
+     速い敵を遅らせて **味方より後ろへ落とせるか**も 鈍足の仕事。 */
+  let qmoved=0,qtried=0;
+  for(const [ak,tier] of [["plain",1],["seed",2],["cave",2],["wtree",3],["hall",3],["city",4]]){
+    slot=0;sel.job="knight";sel.race="hume";sel.orig="greed";newGame();closeModal();
+    const lv=tierLo(tier)+Math.floor((tierHi(tier)-tierLo(tier))/2);
+    while(me.lv<lv){me.lv++;growUp();}
+    while(skCanUp("fight"))skUp("fight");
+    setParty([me,makeMate("mage","elf",lv),makeMate("archer","beast",lv)]);
+    dive(ak);const A0=AREAS[ak];
+    sel.enc=(A0.norm&&A0.norm.length?A0.norm:A0.easy||A0.solo)[0];
+    RUN.elite=false;RUN.boss=false;await startBattle();
+    const z=foes[0];
+    const pos=()=>{buildQueue();return queue.indexOf(z);};
+    const before=pos();
+    ailAdd(z,"slow",20,3);
+    const after=pos();
+    qtried++; if(after>before)qmoved++;
+    L.push(`⑦ ${AREAS[ak].n.replace(/ /g,"").padEnd(11,"　")} 行動順 ${before+1}番目 → ${after+1}番目（全${queue.length}人）　${after>before?"**後ろへ落ちた**":"変わらず"}`);
+  }
+  L.push(`　 ${qtried} 区画中 ${qmoved} 区画で 行動順が下がる`);
   return {L,bad};
 });
 console.log(out.L.join('\n'));

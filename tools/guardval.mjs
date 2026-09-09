@@ -87,10 +87,15 @@ const out=await pg.evaluate(()=>{
   Object.keys(REW.act).forEach(g=>REW.act[g].forEach(s=>{
     if(s.kind!=="guard"&&!(s.kind==="focus"&&s.defUp))return;
     let v=0,what="";
-    if(s.blockPct){v=av(c=>(c.maxHP*s.blockPct/100)/c.A);what=`盾 ${s.blockPct}%`;}
+    if(s.blockPct){v=av(c=>(c.maxHP*s.blockPct/100)/c.A);what=s.blockPct?`盾 ${s.blockPct}%`:"";}
     if(s.block){v=av(c=>s.block/c.A);what=`盾 ${s.block}`;}
     if(s.defUp){const t=(s.dur||1)+1;
       v+=av(c=>c.B*(s.defUp/Math.max(1,100-c.vit))/c.A)*t;what+=`${what?" ＋ ":""}VIT +${s.defUp}（${t}ターン）`;}
+    /* 反撃（counter）。受けた **生の量**の N% を返す。この手番だけ乗るので 1発ぶん。
+       〔α1.0.071 で足した〕数えていなかったので 痛み返しが ×0.00 と出ていた。 */
+    if(s.counter){ v+=av(c=>c.B*s.counter/c.A);
+      what+=`${what?" ＋ ":""}反撃 ${Math.round(s.counter*100)}%`; }
+    if(s.resistAil){ what+=`${what?" ＋ ":""}耐性（${s.resistAil.map(k=>AIL[k].n.replace(/\s/g,"")).join("・")}）`; }
     rows.push({g,s,v,what});
   }));
   rows.sort((a,b)=>b.v-a.v).forEach(r=>L.push(

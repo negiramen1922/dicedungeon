@@ -7,7 +7,8 @@
      衰弱 weak  X   … 敵の STR から X 引く            → 実際の威力差で測る
      盲目 blur N    … 敵の命中閾値 +N                 → 当たらなくなったぶんの被害
      恐怖 fear N    … 同上
-     弱化 break N   … 敵の VIT −N                     → こちらの一撃が増えたぶん
+     弱化 break N   … **N段**（1段 ＝ その相手が受けるダメージ +20%）
+                      → 増えたぶん。α1.0.066 から VIT は削らない
      鈍足 slow N    … 敵の DEX −N                     → こちらが当てやすくなったぶん
      萎縮 shrink N  … 敵の攻撃ダイス −N               → 当たらなくなったぶんの被害
      麻痺 palsy     … 手番をひとつ飛ばす              → B
@@ -85,11 +86,10 @@ const out=await pg.evaluate(()=>{
       return B*Math.max(0,(p0-p1)/Math.max(1e-6,p0))/A;
     }
     if(k==="break"){
-      /* VIT が下がると こちらの一撃が増える。増えた割合が そのまま値打ち。
-         perHit には下限（残りの VITFLOOR は必ず通る）があるので、
-         下限に張り付いていると **VIT を削っても何も起きない** */
-      const d0=perHit(c.mypw,defOf(f)), d1=perHit(c.mypw,Math.max(0,defOf(f)-v));
-      return Math.max(0,(d1-d0)/Math.max(1,d0));
+      /* 〔α1.0.071 で直した〕この道具は 弱化を「VIT を N 引く」で測っていた。
+         α1.0.066 から 弱化は **VIT を削らず 被ダメージを増やす**（1段 ＝ +20%）ので、
+         古い式では ×0.08 と 実際よりずっと小さく出ていた。 */
+      return BREAKSTEP*v;
     }
     if(k==="slow"){
       /* 遅くなると こちらが当てやすくなる。閾値の差で測る */
@@ -111,12 +111,13 @@ const out=await pg.evaluate(()=>{
   L.push("■ 状態異常 1ターンぶんの値打ち（味方の通常攻撃1発 ＝ 1.00）");
   L.push("　　　　　　" + ctx.map(c=>c.n.slice(0,4).padStart(6,"　")).join("") + "　平均");
   const KINDS=[["weakp",20],["weakp",30],["weak",10],["blur",1],["blur",2],
-    ["fear",1],["fear",2],["break",12],["slow",10],["slow",15],
+    ["fear",1],["fear",2],["break",1],["break",2],["slow",15],["slow",20],
     ["shrink",1],["palsy",0],["charm",0],["poison",10]];
   KINDS.forEach(([k,v])=>{
     const vals=ctx.map(c=>per(c,k,v));
     const av=vals.reduce((a,x)=>a+x,0)/vals.length;
-    L.push(`${(AIL[k].n.replace(/\s/g,"")+" "+(v||"")).padEnd(10,"　")}`+
+    const nm=AIL[k].n.replace(/\s/g,"")+(k==="break"?" "+v+"段":(v?" "+v:""));
+    L.push(`${nm.padEnd(10,"　")}`+
       vals.map(x=>("×"+x.toFixed(2)).padStart(7,"　")).join("")+`　×${av.toFixed(2)}`);
   });
 
