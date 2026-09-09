@@ -35,7 +35,14 @@ const out=await pg.evaluate((NDICE)=>{
     if(s.kind!=="atk")return;
     const need=Math.max(1,s.suc||1);
     const n=Math.max(1,NDICE+(s.dice||0));
-    const mul=s.powMul||1;
+    /* ===== 多段（hits）を数える（α1.0.071 で足した） =====
+       〔罠〕`powMul` だけを見ていたので、**同じ相手を2回・3回 裂く札**が
+       1回ぶんとして測られ、二段突き（×0.97 ×2回）や 爪撃ち（×0.70 ×3回）が
+       「タダの札より弱い」と出ていた。実際は 2倍・3倍 入る。
+       VIT が引き算だった頃は 1回ごとに VIT を引かれるので 多段は損だったが、
+       α1.0.066 で **割合**になったので 何回に分けても総量は変わらない。 */
+    const hits=Math.max(1,s.hits||1);
+    const mul=(s.powMul||1)*hits;
     const mine=eff(need,n,mul);
     const r=L[need-1]||L[L.length-1];
     const base=eff(r.need,NDICE,r.mul);          /* 同じ段の タダの札 */
@@ -50,6 +57,8 @@ const out=await pg.evaluate((NDICE)=>{
     if(s.chain)X.push("連鎖");
     if(s.stun)X.push("行動不能");
     if(s.even)X.push("偶数判定");
+    if(hits>1)X.push(`${hits}回`);
+    if(s.spread)X.push("散らす");
     if(s.lostDice||s.lostPow||s.rage)X.push("手負いで伸びる");
     if(s.lifeSteal||s.drain||s.feast||s.devourHeal)X.push("吸収");
     if(s.loot||s.steal||s.mpDrain)X.push("奪う");
