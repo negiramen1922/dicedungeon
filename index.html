@@ -246,13 +246,13 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
    暗幕の外に出て、上は並び順の帯・下はコマンドの列に重なっていた。
    高さを中身なりに伸ばし、上下の中心で釣り合わせて、暗幕ごと覆う。 */
 .diceOv{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);
-  min-height:100%;padding:10px 0;box-sizing:border-box;
+  min-height:100%;max-height:100%;padding:5px 0;box-sizing:border-box;overflow:hidden;
   z-index:20;display:none;
-  flex-direction:column;align-items:center;justify-content:center;gap:9px;
+  flex-direction:column;align-items:center;justify-content:center;gap:5px;
   background:rgba(20,22,15,.97);animation:fadein .12s ease-out}
 .diceOv.on{display:flex}
 @keyframes fadein{from{opacity:0}to{opacity:1}}
-.ovTop{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:17px;
+.ovTop{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:15px;
   letter-spacing:.32em;color:var(--brass);text-align:center;padding:0 10px;
   animation:cutin .45s cubic-bezier(.2,1.4,.4,1)}
 @keyframes cutin{0%{transform:scale(.75);opacity:0;letter-spacing:.85em}
@@ -319,18 +319,28 @@ button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
   font-family:"DotGothic16",ui-monospace,monospace;color:#1b1d18;background:var(--brass);
   padding:0 4px;border-radius:2px;pointer-events:none}
 .cell{position:relative}
-.scRow{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(52px,auto);
-  align-items:center;gap:8px;
-  width:100%;max-width:340px;padding:6px 10px;border:1px solid var(--line);background:#14160f}
-.scName{font-size:12px;letter-spacing:.02em;text-align:left;line-height:1.3;
+/* ===== 索敵の2行（α1.0.069 で盤に収めた） =====
+   〔不具合〕この枠は **大きな d100 ひとつ**を置く前提で組んであった
+   （`.scRow .d100` が 2列目）。索敵が d6 の振り合いになったとき
+   中身は `.dvRow`（38px の札が何枚も）に変わったのに **CSS が付いてこず**、
+   列の指定が無いまま名前の上に重なって出ていた。
+   盤も α1.0.061 で 186px 固定になったので、そこへ収まる大きさに詰める。 */
+.scRow{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(46px,auto);
+  align-items:center;gap:1px 8px;
+  width:100%;max-width:340px;padding:4px 8px;border:1px solid var(--line);background:#14160f}
+.scName{grid-column:1;grid-row:1;
+  font-size:11px;letter-spacing:.02em;text-align:left;line-height:1.25;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .scName.mine{color:var(--moss)} .scName.foe{color:var(--blood)}
-.scPct{font-size:10px;color:var(--ink);letter-spacing:0;grid-column:1;grid-row:2}
-.scRow .d100{grid-column:2;grid-row:1/3;width:56px;height:56px;font-size:24px}
-.scRes{grid-column:3;grid-row:1/3;font-size:12px;letter-spacing:.08em;text-align:right}
-.scEnd{text-align:center;animation:pop2 .25s ease-out}
-.scDiff{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:15px;letter-spacing:.2em}
-.scGain{font-size:12px;color:var(--moss);letter-spacing:.08em;margin-top:3px}
+.scPct{font-size:9px;color:var(--ink);letter-spacing:0;grid-column:1;grid-row:2}
+.scRow .dvRow{grid-column:2;grid-row:1/3;flex-wrap:nowrap;max-width:none;gap:3px}
+.scRow .dv{width:26px;height:26px;font-size:16px}
+.scRow .d100{grid-column:2;grid-row:1/3;width:44px;height:44px;font-size:20px}
+.scRes{grid-column:3;grid-row:1/3;font-size:11px;letter-spacing:.06em;text-align:right;
+  line-height:1.25}
+.scEnd{text-align:center;animation:pop2 .25s ease-out;line-height:1.3}
+.scDiff{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:14px;letter-spacing:.2em}
+.scGain{font-size:11px;color:var(--moss);letter-spacing:.08em;margin-top:2px}
 .scGain.lose{color:#7d6b68}
 .scGain b{color:var(--brass);font-size:14px}
 .dvRes{font-size:14px;letter-spacing:.06em;color:var(--bone);text-align:center;
@@ -1657,7 +1667,7 @@ body.attitle #brand{display:none}
    大 … ゲームの形が変わったとき
      α0 … ローグライク（1周で終わり・持ち帰るのは知識だけ）
      α1 … 町と持ち帰り（パーティを育てて 何度でも潜る） */
-const VERSION="α1.0.068";
+const VERSION="α1.0.069";
 
 /* ===== お知らせ =====
    新しいものを上に足していく。id は一度決めたら変えないこと
@@ -1670,6 +1680,12 @@ const NEWSTAG={
   info:{n:"お 知 ら せ", c:"#8fa261"},
 };
 const NEWS=[
+ {id:"v1069",tag:"fix",v:"α1.0.069",d:"2026-09-09",n:"図鑑から戦いへ戻れます。索敵の見た目を直しました",b:[
+   "〔不具合〕<b>戦いの最中に 敵の詳細 →「図鑑」と辿って もどると、町へ帰されて 潜行が途切れていました。</b>図鑑の「← もどる」が いつも町へ帰す作りだったためです。<b>来たところへ帰します</b>",
+   "〔不具合〕<b>索敵のダイスが 名前の上に重なって出ていました。</b>この枠は「大きな d100 ひとつ」を置く前提で組んであり、索敵が d6 の振り合いになったときに <b>見た目だけ 付いてこなかった</b>ためです。盤（186px）に収まる大きさに詰めました",
+   "〔遊び方〕<b>ローグライク時代の説明が そのまま残っていました。</b>「金貨も素材も経験も その一周かぎり」「次の冒険者は また Lv1 の手ぶらから」と書いてありましたが、いまは <b>拾ったものも レベルも 町に残ります</b>。全滅しても失うのは その潜行で拾ったものだけで、<b>レベルと経験は 失いません</b>",
+   "〔遊び方〕<b>超過の説明も直しました。</b>「2つまで」と書いてありましたが、実際は 何個超えても <b>一律 +30%</b> です",
+   "〔注記の直し〕ソースの中の説明が 実態とずれていた箇所を直しました ── シールドの消え方・経験の式・図鑑の段（3戦/6戦 → 4戦/8戦）・周回の記録"]},
  {id:"v1068",tag:"bal",v:"α1.0.068",d:"2026-09-09",n:"ナイトとウィザードの DEX が育つようになりました",b:[
    "<b>ナイトとウィザードは DEX が まったく育っていませんでした。</b>Lv1 も Lv100 も 26〜30 のままです。敵は深い区画で 55〜58 まで行くので、<b>差が 25 を越えて 攻めるときも 受けるときも 命中が 1 段 損</b>していました",
    "<b>レベルごとに +0.15 伸びます。</b>Lv100 で ナイト 41・ウィザード 46。水没都市の敵（58）との差が 25 を切るので、その 1 段の損が消えます",
@@ -4182,7 +4198,7 @@ function stateRows(u){
       d:"休んだぶん この手番だけ乗る"});
   }else{
     if(u.block)R.push({icon:ailIcon("up_def"),n:"シールド",c:"#8fd0ff",good:true,
-      v:u.block,d:"受けたダメージを その数だけ肩代わりする"});
+      v:u.block,d:"受けたダメージを その数だけ肩代わりする。敵のシールドは 自分の手番で消える"});
     if(defSum(u))R.push({icon:ailIcon("up_def"),n:"守 り",c:"#8fd0ff",good:true,
       v:"+"+defSum(u),t:(u.dbuffs||[]).reduce((a,b)=>Math.max(a,b.t),0),
       d:"VIT が上がっている"});
@@ -7109,8 +7125,11 @@ function threshold(u,tgt,opt){
   t+=opt.noReach?0:reachOf(u,tgt,opt.act);
   if(!u.isFoe&&tgt.key){
     const c=codexLv(tgt.key);
-    if(c>=2)t-=1;      /* 3戦 */
-    if(c>=3)t-=1;      /* 6戦。段階を遅くしたぶん、ここは前の4段目から繰り上げた */
+    /* 段は CODEXN=[1,4,8,13,20]。2段目 ＝ 4戦、3段目 ＝ 8戦。
+       〔α1.0.069 で注記を直した〕「3戦／6戦」と書いてあったが、
+       それは 段が [1,3,6,10,15] だった頃の数。表を変えたときに ここが残っていた。 */
+    if(c>=2)t-=1;      /* 4戦 */
+    if(c>=3)t-=1;      /* 8戦 */
   }
   if(!u.isFoe){
     /* 「遠隔武器で前に立つと +1」は外した。
@@ -8709,7 +8728,8 @@ function foeModal(f){
   openModal(h,true);
   $("#mbox").querySelectorAll("[data-fx]").forEach(b2=>{
     b2.onclick=()=>{const k=b2.dataset.fx;closeModal();
-      if(k==="cx"){cxNow="foe";cxOne=f.key;drawCodex();showScreen("codex");}};});
+      if(k==="cx"){cxFrom=curScreen;              /* 来たところを覚える（α1.0.069） */
+        cxNow="foe";cxOne=f.key;drawCodex();showScreen("codex");}};});
   $("#fdX").onclick=()=>closeModal();
 }
 
@@ -9236,9 +9256,12 @@ async function finish(win){
 }
 
 /* ============ 探索 ============ */
-/* ===== 周回をまたぐ記録 =====
-   1周ごとに作り直すキャラの外側に残るもの。図鑑・殿堂・弱点の記録・到達階層。
-   「強さは持ち帰らせない。持ち帰るのは知識だけ」（HANDOVER §9）の“知識”がこれ。
+/* ===== 記録の枠をまたいで残るもの =====
+   図鑑・殿堂・弱点の記録・抜けた区画。**枠（セーブスロット）ごとに持つ。**
+
+   〔α0 の名残〕ここは「1周ごとに作り直すキャラの外側に残るもの」だった。
+   α1 で ローグライクをやめ、**キャラも 金貨も 装備も 町に残る**ようになったので、
+   ここが受け持つのは「何度潜っても消えない 知識の側」だけになった。
 
    localStorage に置く。読めない環境（プライベート窓・容量切れ・
    site data を切っている）でも、保存を諦めるだけで遊べるようにしてある。 */
@@ -12722,22 +12745,21 @@ const ACCMAX=4;
    α1.0.038 で上限を外し、α1.0.040 で **買ったもの・拾ったものは
    すべてここに入る**ようにした（誰に着けるかは装備の欄で選ぶ）。 */
 const SKMAX=6;
-/* ===== 次のレベルまでに要る経験（α1.0.014・上限 Lv100） =====
+/* ===== 次のレベルまでに要る経験（上限 Lv100） =====
 
-     f(n) = 11 + 1.4n　（Lv n → n+1）
-     Lv1→2 が 12、Lv50→51 が 81、Lv99→100 が 150
+     f(n) = round(18 + 1.5n + 0.015n²)　（Lv n → n+1）
+     Lv1→2 が 20、Lv50→51 が 131、Lv99→100 が 315。Lv100 までの合計 14455
 
-   **一周の長さは変えていない。**Lv1 から Lv100 までの合計は 8019 で、
-   上限が Lv25 だった頃の合計 7980 とほぼ同じ。**刻みだけ 4倍に細かくした。**
-   節目もそのまま揃う（旧 Lv4 と同じ累積が 新 Lv13、旧8→新29、
-   旧13→新50、旧17→新67、旧25→新100）。
+   〔α1.0.055 で 一次式から二次式にした〕前は `11 + 1.4n` の一次式で、
+   上の段が安すぎた。**一度潜っただけで 適正レベルを 30〜45% 追い越して**いた
+   （原始の草原に1回潜ると Lv16。適正は Lv12）。
+   いまは 原始の草原1回で Lv13 に収まる（`tools/expchk.mjs`）。
 
-   なぜ細かくするか ── **技能に注げる点が レベル1つにつき1点**だから。
-   上限25 では 24点しか配れず、得意技能は 60 → 84 までしか伸びない。
-   Lv100 なら 99点で、「得意を100まで極めるか、二つ目を持つか」の
-   予算の綱引きが生まれる（`IDEAS.md` §17）。
+   **技能に注げる点は レベル1つにつき1点。**Lv100 なら 99点配れるので、
+   「得意を100まで極めるか、二つ目を持つか」の予算の綱引きになる（`IDEAS.md` §17）。
 
-   ここを触ったら 育ちの速さが変わる。`tools/pace.mjs` で測り直すこと。 */
+   ここを触ったら 育ちの速さが変わる。`tools/expchk.mjs` と `tools/pace.mjs` で
+   測り直すこと。 */
 const LVMAX=100;
 /* ===== 必要経験値（α1.0.055 で引き直した） =====
    前は `11 + 1.4n` の **一次式**だった。上の段が安すぎて、
@@ -13625,7 +13647,7 @@ function drawTut(){
          レベルが上がるたび 1 点を 好きな技能に注げます。</p>
       <p><b>技には それぞれ 必要な成功の数があります。</b>
          届かなければ ダメージは出ません。<br>
-         必要より多く成功したぶんは 威力の上乗せになります（2つまで）。</p>
+         必要より多く成功すれば <b>威力が +30%</b>（何個 超えても 同じ +30%）。</p>
       <p>だから <b>何に注ぐか</b>で 使える技が変わります。
          広く伸ばすか、ひとつを極めるか。</p>
     </div>
@@ -13638,11 +13660,17 @@ function drawTut(){
          引けるスキルもパッシブも、選んだ三つで変わります。</p>
     </div>
     <div class="tsec">
-      <div class="th">潜 り、拾 い、ま た 潜 る</div>
-      <p>強さは持ち帰れません。<b>金貨も 素材も 道具も 装備も 経験も、その一周かぎり</b>。<br>
-         次の冒険者は また Lv1 の手ぶらから始まります。</p>
-      <p>残るのは <b>知識だけ</b>。倒した敵・拾った素材・覚えた技が
-         図鑑に書き込まれ、次の冒険者はそれを知った状態で潜れます。</p>
+      <div class="th">町 か ら 潜 り、町 へ 帰 る</div>
+      <p><b>拾ったものは 持ち帰れます。</b>金貨も 素材も 道具も 装備も、
+         町に残ります。レベルと技能も そのまま育っていきます。</p>
+      <p>町へ帰れば <b>HP も MP も 全快</b>し、状態異常も解けます。
+         同じパーティで 何度でも潜れます。</p>
+      <p><b>全滅しても 終わりではありません。</b>ただし
+         その潜行で拾ったもの ── 金貨・素材・道具・装備 ── は
+         <b>潜る前に巻き戻ります</b>。<b>レベルと経験は 失いません。</b><br>
+         どこで引き返すかが 毎回の判断になります。</p>
+      <p>倒した敵・拾った素材・覚えた技は <b>図鑑</b>に書き込まれます。
+         同じ相手を 3戦・6戦と重ねるほど <b>当てやすくなります</b>。</p>
       <p><span class="s">いま スキル ${sk}・パッシブ ${ps}・全 ${c.all} 件</span></p>
     </div>`;
 }
@@ -14294,6 +14322,12 @@ function drawCodex(){
      詳細（5e）… 行を押すと 1体ぶん。**あと何戦で 何が開くか**を必ず出す
    cxOne に鍵が入っているあいだは 詳細を出す。 */
 let cxOne=null, cxArea="all", cxFull=false;
+/* ===== 図鑑を どこから開いたか（α1.0.069） =====
+   〔不具合〕戦いの最中に 敵の詳細 →「図鑑」と辿ると、
+   図鑑の「← もどる」が **いつも町（ホーム）へ帰していた**ので、
+   戦いが画面ごと消えて 潜行が途切れていた。
+   来たところを覚えて そこへ戻す。 */
+let cxFrom=null;
 const CXDEP=[["名 と 列"],["HP ・ 攻"],["VIT ・ 速"],["使う手と その中身"],["弱点と耐性"]];
 /* その敵が どの区画に出るか */
 function foeAreas(k){
@@ -14672,7 +14706,7 @@ function diveTargets(){
 }
 $("#hWorld").onclick=()=>{SFX.click();worldModal();};
 $("#hHall").onclick=()=>{drawHall();showScreen("hall");window.scrollTo(0,0);};
-$("#hCodex").onclick=()=>{drawCodex();showScreen("codex");window.scrollTo(0,0);};
+$("#hCodex").onclick=()=>{cxFrom="home";drawCodex();showScreen("codex");window.scrollTo(0,0);};
 $("#hQuiz").onclick=()=>{qzStep=0;qzAns={};drawQuiz();showScreen("quiz");window.scrollTo(0,0);};
 $("#hTut").onclick=()=>{drawTut();showScreen("tut");window.scrollTo(0,0);};
 $("#hTitle").onclick=()=>{
@@ -14709,7 +14743,18 @@ $("#mkBack").onclick=()=>{
   drawSlots();showScreen("slots");window.scrollTo(0,0);
   if(slot!==null&&!me)startWayModal();       /* 作っている途中なら はじめかたへ */
 };
-$("#cxBack").onclick=()=>{ cxOne=null; if(slot===null)goTitle(); else goHome(); };
+$("#cxBack").onclick=()=>{
+  cxOne=null;
+  /* 来たところへ帰す。戦いの最中に開いていたら 戦いへ戻る（α1.0.069）。
+     盤は消えていないので、描き直すだけで そのまま続けられる。 */
+  const back=cxFrom; cxFrom=null;
+  /* 〔罠〕`inBattle()` は `curScreen==="fight"` を見るので、
+     図鑑を開いている今は 必ず false。戦いが生きているかは 盤の側で見る。 */
+  const fighting=(typeof foes!=="undefined")&&foes&&foes.length&&!over;
+  if(back==="fight"&&fighting){ showScreen("fight");draw();drawActs();window.scrollTo(0,0);return; }
+  if(back==="floor"&&RUN){ drawFloor();showScreen("floor");window.scrollTo(0,0);return; }
+  if(slot===null)goTitle(); else goHome();
+};
 /* 起動。**まず表題。**記録を選ぶまで パーティは居ない。
    α1.0.005 までの控え（dd.run）は 1つ目の枠へ移す。 */
 slotMigrate();
