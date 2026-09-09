@@ -5,8 +5,10 @@
 
    出すのは AREATOUGH（普通・重い・精鋭）と BOSSTOUGH（ボス）。
    どちらも 最大HP と 与ダメの両方に掛かるので 余裕は 1/k² で動く
-   ── 返すべき倍率は √(いま ÷ 目標)。
-   `perHit` が引き算なので 1回では決まらない。**2〜3回まわすこと。** */
+   ── 出すのは √(いま ÷ 目標) を掛けた **新しい値そのもの**（倍率ではない）。
+   〔α1.0.066〕`perHit` が引き算から **割合**になったので、
+   VIT がダメージに非線形に効くことが無くなり **1回で決まる**ようになった。
+   （前は引き算のせいで 2〜3回まわす必要があった。） */
 import {chromium} from '/opt/node22/lib/node_modules/playwright/index.mjs';
 import {EXPECT_SRC} from './expect.mjs';
 
